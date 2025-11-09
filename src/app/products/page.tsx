@@ -64,10 +64,6 @@ export default function ProductsPage() {
           initialProducts={products}
           initialPage={1}
           initialTotal={total}
-          onAddToCart={(productId) => {
-            // TODO: Implement cart functionality
-            alert('سبد خرید به زودی اضافه خواهد شد');
-          }}
         />
       </main>
     </div>

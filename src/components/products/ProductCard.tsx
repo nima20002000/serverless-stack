@@ -1,21 +1,47 @@
+'use client';
+
 import Link from 'next/link';
 import { formatPrice } from '@/services/product-service';
+import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
+import { useState } from 'react';
 
 interface ProductCardProps {
   product: {
     id: string;
     name: string;
     description: string;
-    price: number;
+    price: number | string | { toNumber: () => number };
     stock: number;
     images: string[];
     isActive: boolean;
   };
-  onAddToCart?: (productId: string) => void;
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
+export default function ProductCard({ product }: ProductCardProps) {
+  const addItem = useCartStore((state) => state.addItem);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddToCart = async () => {
+    try {
+      setIsAdding(true);
+      addItem(
+        {
+          productId: product.id,
+          name: product.name,
+          price: Number(product.price),
+          image: product.images[0] || '',
+          stock: product.stock,
+        },
+        1
+      );
+      // Show success feedback
+      setTimeout(() => setIsAdding(false), 500);
+    } catch (error: any) {
+      alert(error.message);
+      setIsAdding(false);
+    }
+  };
   const isOutOfStock = product.stock === 0;
 
   return (
@@ -67,9 +93,10 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           size="md"
           className="w-full"
           disabled={isOutOfStock}
-          onClick={() => onAddToCart && onAddToCart(product.id)}
+          isLoading={isAdding}
+          onClick={handleAddToCart}
         >
-          {isOutOfStock ? 'ناموجود' : 'افزودن به سبد خرید'}
+          {isOutOfStock ? 'ناموجود' : isAdding ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
         </Button>
       </div>
     </div>

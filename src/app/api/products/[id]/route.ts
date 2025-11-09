@@ -10,7 +10,12 @@ export async function GET(
 ) {
   try {
     const product = await getProductById(params.id);
-    return NextResponse.json({ product });
+    // Serialize Decimal to number
+    const serializedProduct = {
+      ...product,
+      price: Number(product.price),
+    };
+    return NextResponse.json({ product: serializedProduct });
   } catch (error: any) {
     console.error('Error fetching product:', error);
     return NextResponse.json(

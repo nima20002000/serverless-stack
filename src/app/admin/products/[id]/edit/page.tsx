@@ -25,10 +25,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  useEffect(() => {
-    fetchProduct();
-  }, [params.id]);
-
   const fetchProduct = async () => {
     try {
       const response = await fetch(`/api/products/${params.id}`);
@@ -50,6 +46,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.id]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};

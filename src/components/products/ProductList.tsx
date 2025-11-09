@@ -18,14 +18,12 @@ interface ProductListProps {
   initialProducts?: Product[];
   initialPage?: number;
   initialTotal?: number;
-  onAddToCart?: (productId: string) => void;
 }
 
 export default function ProductList({
   initialProducts = [],
   initialPage = 1,
   initialTotal = 0,
-  onAddToCart,
 }: ProductListProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [page, setPage] = useState(initialPage);
@@ -79,7 +77,6 @@ export default function ProductList({
           <ProductCard
             key={product.id}
             product={product}
-            onAddToCart={onAddToCart}
           />
         ))}
       </div>

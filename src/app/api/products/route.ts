@@ -12,7 +12,16 @@ export async function GET(req: NextRequest) {
 
     const result = await getActiveProducts({ page, perPage });
 
-    return NextResponse.json(result);
+    // Serialize Decimal prices to numbers
+    const serializedProducts = result.products.map((product) => ({
+      ...product,
+      price: Number(product.price),
+    }));
+
+    return NextResponse.json({
+      ...result,
+      products: serializedProducts,
+    });
   } catch (error: any) {
     console.error('Error fetching products:', error);
     return NextResponse.json(

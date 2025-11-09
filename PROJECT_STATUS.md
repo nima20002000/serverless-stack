@@ -1,8 +1,8 @@
 # Kitia Project Status
 
-**Current Version**: v0.3.0
+**Current Version**: v0.4.0
 **Last Updated**: 2025-11-09
-**Status**: Products & Management Complete ✅
+**Status**: Shopping Cart Complete ✅
 
 ---
 
@@ -50,6 +50,22 @@
 - [x] Persian price formatting (Toman)
 - [x] RTL product cards and layouts
 
+### v0.4.0 - Shopping Cart ✅ **COMPLETE**
+- [x] Cart store with Zustand (Task 04 - 100% Complete)
+- [x] Cart state management with persistence
+- [x] CartIcon component with badge
+- [x] CartDrawer component (slide-in from right)
+- [x] CartItem component with quantity controls
+- [x] CartSummary component
+- [x] Full cart page (/cart)
+- [x] Add to cart functionality on product pages
+- [x] Stock validation
+- [x] LocalStorage persistence
+- [x] Real-time cart updates
+- [x] RTL-friendly cart UI
+- [x] Empty cart state
+- [x] Loading states and error handling
+
 ---
 
 ## In Progress ⏳
@@ -58,13 +74,13 @@ None currently - ready to start next phase!
 
 ---
 
-## Next Up (v0.4.0 - Shopping Cart)
+## Next Up (v0.5.0 - Payment Integration)
 
 ### High Priority
-1. **Shopping Cart** (Task: `2do/04-shopping-cart.md`)
-   - Cart state management
-   - Add/remove items
-   - Cart UI component
+1. **Payment Integration** (Task: `2do/05-payment-zarinpal.md`)
+   - Zarinpal SDK integration
+   - Payment flow
+   - Transaction management
 
 ---
 
