@@ -59,6 +59,7 @@ model Transaction {
   status             TransactionStatus @default(PENDING)
   transactionCode    String            @unique
   zarinpalAuthority  String?
+  zarinpalRefId      String?
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 

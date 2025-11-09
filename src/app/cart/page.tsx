@@ -30,9 +30,7 @@ export default function CartPage() {
   };
 
   const handleCheckout = () => {
-    // TODO: Navigate to checkout page when implemented
-    // For now, show a message
-    alert('صفحه پرداخت در مراحل بعدی پیاده‌سازی خواهد شد');
+    router.push('/checkout');
   };
 
   const handleClearCart = () => {
