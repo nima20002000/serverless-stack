@@ -13,7 +13,7 @@ interface ProductDetailProps {
     id: string;
     name: string;
     description: string;
-    price: number | string | { toNumber: () => number };
+    price: number;
     stock: number;
     images: string[];
     isActive: boolean;
