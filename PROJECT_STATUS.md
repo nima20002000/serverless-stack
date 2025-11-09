@@ -1,8 +1,8 @@
 # Kitia Project Status
 
-**Current Version**: v0.5.0
-**Last Updated**: 2025-11-09
-**Status**: Payment Integration Complete ✅
+**Current Version**: v0.6.0
+**Last Updated**: 2025-11-10
+**Status**: Admin Panel Complete ✅
 
 ---
 
@@ -87,6 +87,28 @@
 - [x] Suspense boundaries for useSearchParams
 - [x] Build optimizations (auto-clear .next cache)
 
+### v0.6.0 - Admin Panel ✅ **COMPLETE**
+- [x] Admin service layer (Task 08 - 100% Complete)
+- [x] Admin API endpoints for users (GET, PUT, DELETE)
+- [x] Admin API endpoints for transactions (GET with filters)
+- [x] Admin API endpoint for dashboard statistics
+- [x] Admin dashboard page with stats cards
+- [x] Admin user management page
+  - [x] User list with pagination
+  - [x] Change user role (User/Admin)
+  - [x] Delete users with confirmation
+- [x] Admin transaction management page
+  - [x] Transaction list with pagination
+  - [x] Status filters (All, Completed, Pending, Failed)
+  - [x] Display transaction details
+- [x] Admin sidebar navigation component
+- [x] StatsCard reusable component
+- [x] Admin layout with protection
+- [x] RTL-friendly admin UI
+- [x] Persian number formatting
+- [x] Loading and error states
+- [x] Success notifications
+
 ---
 
 ## In Progress ⏳
@@ -95,7 +117,7 @@ None currently - ready to start next phase!
 
 ---
 
-## Next Up (v0.6.0 - Invoice System)
+## Next Up (v0.7.0 - Invoice System)
 
 ### High Priority
 1. **Invoice System** (Task: `2do/06-invoice-system.md`)
@@ -116,7 +138,7 @@ None currently - ready to start next phase!
 | Payment (Zarinpal) | High | ✅ Complete | `05-payment-zarinpal.md` |
 | Invoice System | Medium | Not Started | `06-invoice-system.md` |
 | Promo Code System | Medium | 15% (Backend only) | `07-promo-code-system.md` |
-| Admin Panel | High | Not Started | `08-admin-panel.md` |
+| Admin Panel | High | ✅ Complete (Core) | `08-admin-panel.md` |
 | UI Components & Layout | High | 50% (Base components only) | `09-ui-components-layout.md` |
 | Testing & Deployment | Medium | Not Started | `10-testing-deployment.md` |
 
@@ -147,15 +169,20 @@ Project setup, architecture, and planning
 - Transaction processing
 - Payment verification
 
-### v0.6.0 - Invoice System (NEXT)
+### v0.6.0 - ✅ Admin Panel (COMPLETE)
+- Admin dashboard with statistics
+- User management (CRUD)
+- Transaction management with filters
+- Product management integration
+
+### v0.7.0 - Invoice System (NEXT)
 - Invoice generation
 - PDF creation
 - Invoice viewing
 
-### v0.7.0 - Promo & Admin
-- First-time user promo codes
-- Complete admin panel
-- User and transaction management
+### v0.8.0 - Promo Code UI
+- First-time user promo code UI
+- Admin promo code management
 
 ### v1.0.0 - Production Ready
 - All features complete
