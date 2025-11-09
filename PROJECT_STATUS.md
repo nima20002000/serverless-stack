@@ -1,8 +1,8 @@
 # Kitia Project Status
 
-**Current Version**: v0.4.0
+**Current Version**: v0.5.0
 **Last Updated**: 2025-11-09
-**Status**: Shopping Cart Complete ✅
+**Status**: Payment Integration Complete ✅
 
 ---
 
@@ -66,6 +66,27 @@
 - [x] Empty cart state
 - [x] Loading states and error handling
 
+### v0.5.0 - Payment Integration ✅ **COMPLETE**
+- [x] Zarinpal SDK integration (Task 05 - 100% Complete)
+- [x] Zarinpal client wrapper (`src/lib/zarinpal/client.ts`)
+- [x] Transaction service layer (`src/services/transaction-service.ts`)
+- [x] Transaction code generation (KT-XXXXXX format)
+- [x] Payment API endpoints:
+  - [x] POST `/api/transactions/create` - Create transaction and initiate payment
+  - [x] GET `/api/transactions/verify` - Verify payment and update transaction
+  - [x] GET `/api/transactions/[id]` - Get transaction details
+- [x] Checkout page (`/checkout`)
+- [x] Payment verification page (`/payment/verify`)
+- [x] Payment success page (`/payment/success`)
+- [x] Payment failure page (`/payment/failure`)
+- [x] Prisma schema updated (added zarinpalRefId field)
+- [x] Stock reduction after successful payment
+- [x] Cart clearance after successful payment
+- [x] Sandbox mode configuration
+- [x] Error handling and user feedback
+- [x] Suspense boundaries for useSearchParams
+- [x] Build optimizations (auto-clear .next cache)
+
 ---
 
 ## In Progress ⏳
@@ -74,13 +95,13 @@ None currently - ready to start next phase!
 
 ---
 
-## Next Up (v0.5.0 - Payment Integration)
+## Next Up (v0.6.0 - Invoice System)
 
 ### High Priority
-1. **Payment Integration** (Task: `2do/05-payment-zarinpal.md`)
-   - Zarinpal SDK integration
-   - Payment flow
-   - Transaction management
+1. **Invoice System** (Task: `2do/06-invoice-system.md`)
+   - Invoice generation after successful payment
+   - Invoice PDF creation
+   - Invoice viewing and download
 
 ---
 
@@ -91,8 +112,8 @@ None currently - ready to start next phase!
 | Authentication System | High | ✅ Complete | `01-authentication-system.md` |
 | Database Setup | Critical | ✅ Complete | `02-database-setup.md` |
 | Product Management | High | ✅ Complete | `03-product-management.md` |
-| Shopping Cart | High | Not Started | `04-shopping-cart.md` |
-| Payment (Zarinpal) | High | Not Started | `05-payment-zarinpal.md` |
+| Shopping Cart | High | ✅ Complete | `04-shopping-cart.md` |
+| Payment (Zarinpal) | High | ✅ Complete | `05-payment-zarinpal.md` |
 | Invoice System | Medium | Not Started | `06-invoice-system.md` |
 | Promo Code System | Medium | 15% (Backend only) | `07-promo-code-system.md` |
 | Admin Panel | High | Not Started | `08-admin-panel.md` |
@@ -116,17 +137,22 @@ Project setup, architecture, and planning
 - Product listing (public)
 - Product detail pages
 
-### v0.4.0 - Shopping Cart (NEXT)
+### v0.4.0 - ✅ Shopping Cart (COMPLETE)
 - Shopping cart functionality
 - Cart state management
 - Checkout flow
 
-### v0.4.0 - Payment & Invoices
+### v0.5.0 - ✅ Payment Integration (COMPLETE)
 - Zarinpal integration
 - Transaction processing
-- Invoice generation
+- Payment verification
 
-### v0.5.0 - Promo & Admin
+### v0.6.0 - Invoice System (NEXT)
+- Invoice generation
+- PDF creation
+- Invoice viewing
+
+### v0.7.0 - Promo & Admin
 - First-time user promo codes
 - Complete admin panel
 - User and transaction management
