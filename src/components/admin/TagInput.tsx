@@ -85,15 +85,26 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
     onChange(selectedTags.filter(t => t.id !== tagId));
   };
 
+  const generateSlug = (name: string): string => {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\u0600-\u06FF-]/g, '')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '');
+  };
+
   const createNewTag = async () => {
     if (!query.trim() || disabled) return;
 
     try {
       setLoading(true);
+      const slug = generateSlug(query);
       const response = await fetch('/api/admin/tags', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: query.trim() }),
+        body: JSON.stringify({ name: query.trim(), slug }),
       });
 
       if (!response.ok) {

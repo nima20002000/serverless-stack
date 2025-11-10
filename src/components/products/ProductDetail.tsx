@@ -28,6 +28,7 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  media?: MediaItem[];
 }
 
 interface Category {
@@ -160,7 +161,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         {/* Product Gallery */}
         <div>
           {product.media && product.media.length > 0 ? (
-            <ProductGallery media={product.media} productName={product.name} />
+            <ProductGallery
+              media={product.media}
+              productName={product.name}
+              selectedVariant={selectedVariant}
+            />
           ) : (
             <Card>
               <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">

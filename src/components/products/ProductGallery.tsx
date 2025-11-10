@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
@@ -11,18 +11,48 @@ interface MediaItem {
   url: string;
   alt?: string;
   order: number;
+  variantId?: string | null;
+}
+
+interface Variant {
+  id: string;
+  media?: MediaItem[];
 }
 
 interface ProductGalleryProps {
   media: MediaItem[];
   productName: string;
+  selectedVariant?: Variant | null;
 }
 
-export default function ProductGallery({ media, productName }: ProductGalleryProps) {
+export default function ProductGallery({ media, productName, selectedVariant }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
 
-  if (!media || media.length === 0) {
+  // Filter media based on selected variant
+  const getFilteredMedia = (): MediaItem[] => {
+    if (!selectedVariant) {
+      // Show only product-level media (no variantId) when no variant is selected
+      return media.filter(m => !m.variantId);
+    }
+
+    // When variant is selected, show variant-specific media first, then product-level media
+    const variantMedia = selectedVariant.media || [];
+    const productMedia = media.filter(m => !m.variantId);
+
+    // Combine variant media and product media
+    return variantMedia.length > 0 ? variantMedia : productMedia;
+  };
+
+  const displayMedia = getFilteredMedia();
+
+  // Reset selectedIndex when variant changes or media changes
+  useEffect(() => {
+    setSelectedIndex(0);
+    setIsZoomed(false);
+  }, [selectedVariant?.id, media.length]);
+
+  if (!displayMedia || displayMedia.length === 0) {
     return (
       <div className="w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
         <p className="text-gray-400">تصویری موجود نیست</p>
@@ -30,7 +60,7 @@ export default function ProductGallery({ media, productName }: ProductGalleryPro
     );
   }
 
-  const sortedMedia = [...media].sort((a, b) => a.order - b.order);
+  const sortedMedia = [...displayMedia].sort((a, b) => a.order - b.order);
   const currentMedia = sortedMedia[selectedIndex];
 
   const goToPrevious = () => {
@@ -99,6 +129,13 @@ export default function ProductGallery({ media, productName }: ProductGalleryPro
         {sortedMedia.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1 rounded-full">
             {selectedIndex + 1} / {sortedMedia.length}
+          </div>
+        )}
+
+        {/* Variant Indicator */}
+        {selectedVariant && (
+          <div className="absolute top-4 right-4 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
+            {selectedVariant.media && selectedVariant.media.length > 0 ? 'تصاویر این نوع' : 'تصاویر محصول'}
           </div>
         )}
       </div>
