@@ -80,6 +80,17 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
 
   const selectedCategory = value ? findCategoryById(categories, value) : null;
 
+  const generateSlug = (name: string): string => {
+    // Convert Persian/Arabic characters and spaces to URL-friendly format
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^\w\u0600-\u06FF-]/g, '') // Keep alphanumeric, Persian/Arabic chars, and hyphens
+      .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
+      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  };
+
   const handleCreateCategory = async () => {
     if (!createForm.name.trim()) {
       alert('نام دسته‌بندی الزامی است');
@@ -88,11 +99,16 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
 
     try {
       setIsCreating(true);
+
+      // Generate slug from name
+      const slug = generateSlug(createForm.name);
+
       const response = await fetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: createForm.name.trim(),
+          slug: slug,
           description: createForm.description.trim() || undefined,
           parentId: createForm.parentId || undefined,
         }),
