@@ -75,9 +75,25 @@ export async function getActiveProducts(options?: {
 /**
  * Get product by ID
  */
-export async function getProductById(id: string) {
+export async function getProductById(id: string, includeRelations = false) {
   const product = await prisma.product.findUnique({
     where: { id },
+    ...(includeRelations && {
+      include: {
+        category: true,
+        tags: true,
+        media: {
+          orderBy: { order: 'asc' },
+        },
+        variants: {
+          include: {
+            media: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
+    }),
   });
 
   if (!product) {
@@ -134,6 +150,8 @@ export async function createProduct(data: {
   price: number;
   stock: number;
   images?: string[];
+  categoryId?: string;
+  tagIds?: string[];
   isActive?: boolean;
 }) {
   // Validate required fields
@@ -156,7 +174,19 @@ export async function createProduct(data: {
       price: data.price,
       stock: data.stock,
       images: data.images || [],
+      categoryId: data.categoryId,
       isActive: data.isActive !== undefined ? data.isActive : true,
+      ...(data.tagIds && data.tagIds.length > 0 && {
+        tags: {
+          connect: data.tagIds.map((id) => ({ id })),
+        },
+      }),
+    },
+    include: {
+      category: true,
+      tags: true,
+      media: true,
+      variants: true,
     },
   });
 
@@ -174,6 +204,8 @@ export async function updateProduct(
     price: number;
     stock: number;
     images: string[];
+    categoryId: string | null;
+    tagIds: string[];
     isActive: boolean;
   }>
 ) {
@@ -195,9 +227,40 @@ export async function updateProduct(
     throw new Error('موجودی نمی‌تواند منفی باشد');
   }
 
+  // Handle tag updates separately
+  const tagIds = data.tagIds;
+  const updateData: any = { ...data };
+  delete updateData.tagIds;
+
+  // If tagIds provided, update tag connections
+  if (tagIds !== undefined) {
+    // First, disconnect all existing tags
+    await prisma.product.update({
+      where: { id },
+      data: {
+        tags: {
+          set: [],
+        },
+      },
+    });
+
+    // Then connect new tags
+    if (tagIds.length > 0) {
+      updateData.tags = {
+        connect: tagIds.map((tagId) => ({ id: tagId })),
+      };
+    }
+  }
+
   const product = await prisma.product.update({
     where: { id },
-    data,
+    data: updateData,
+    include: {
+      category: true,
+      tags: true,
+      media: true,
+      variants: true,
+    },
   });
 
   return product;
@@ -254,4 +317,182 @@ export async function updateStock(id: string, quantity: number) {
  */
 export function formatPrice(price: number): string {
   return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
+}
+
+// ========== PRODUCT MEDIA FUNCTIONS ==========
+
+/**
+ * Add media to product
+ */
+export async function addProductMedia(data: {
+  productId: string;
+  variantId?: string;
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  alt?: string;
+  order?: number;
+}) {
+  const media = await prisma.productMedia.create({
+    data: {
+      productId: data.productId,
+      variantId: data.variantId,
+      type: data.type,
+      url: data.url,
+      alt: data.alt,
+      order: data.order ?? 0,
+    },
+  });
+
+  return media;
+}
+
+/**
+ * Get all media for a product
+ */
+export async function getProductMedia(productId: string) {
+  const media = await prisma.productMedia.findMany({
+    where: { productId },
+    orderBy: { order: 'asc' },
+  });
+
+  return media;
+}
+
+/**
+ * Update media order or alt text
+ */
+export async function updateProductMedia(
+  id: string,
+  data: Partial<{ alt: string; order: number }>
+) {
+  const media = await prisma.productMedia.update({
+    where: { id },
+    data,
+  });
+
+  return media;
+}
+
+/**
+ * Delete product media
+ */
+export async function deleteProductMedia(id: string) {
+  await prisma.productMedia.delete({
+    where: { id },
+  });
+
+  return { success: true };
+}
+
+// ========== PRODUCT VARIANT FUNCTIONS ==========
+
+/**
+ * Get all variants for a product
+ */
+export async function getProductVariants(productId: string) {
+  const variants = await prisma.productVariant.findMany({
+    where: { productId },
+    include: {
+      media: {
+        orderBy: { order: 'asc' },
+      },
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return variants;
+}
+
+/**
+ * Create product variant
+ */
+export async function createProductVariant(data: {
+  productId: string;
+  name: string;
+  sku?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  priceAdjust?: number;
+  stock: number;
+  isActive?: boolean;
+}) {
+  // Validate SKU uniqueness if provided
+  if (data.sku) {
+    const existing = await prisma.productVariant.findUnique({
+      where: { sku: data.sku },
+    });
+
+    if (existing) {
+      throw new Error('SKU قبلاً ثبت شده است');
+    }
+  }
+
+  const variant = await prisma.productVariant.create({
+    data: {
+      productId: data.productId,
+      name: data.name,
+      sku: data.sku,
+      color: data.color,
+      size: data.size,
+      material: data.material,
+      priceAdjust: data.priceAdjust || 0,
+      stock: data.stock,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+    },
+    include: {
+      media: true,
+    },
+  });
+
+  return variant;
+}
+
+/**
+ * Update product variant
+ */
+export async function updateProductVariant(
+  id: string,
+  data: Partial<{
+    name: string;
+    sku: string;
+    color: string;
+    size: string;
+    material: string;
+    priceAdjust: number;
+    stock: number;
+    isActive: boolean;
+  }>
+) {
+  // Validate SKU uniqueness if being updated
+  if (data.sku) {
+    const existing = await prisma.productVariant.findUnique({
+      where: { sku: data.sku },
+    });
+
+    if (existing && existing.id !== id) {
+      throw new Error('SKU قبلاً ثبت شده است');
+    }
+  }
+
+  const variant = await prisma.productVariant.update({
+    where: { id },
+    data,
+    include: {
+      media: true,
+    },
+  });
+
+  return variant;
+}
+
+/**
+ * Delete product variant
+ */
+export async function deleteProductVariant(id: string) {
+  await prisma.productVariant.delete({
+    where: { id },
+  });
+
+  return { success: true };
 }
