@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatPrice } from '@/services/product-service';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
@@ -48,11 +49,19 @@ export default function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
-        <div className="relative h-48 bg-gray-100 flex items-center justify-center">
+        <div className="relative h-48 bg-gray-100 overflow-hidden">
           {product.images.length > 0 ? (
-            <div className="text-gray-400 text-4xl">📦</div>
+            <Image
+              src={product.images[0]}
+              alt={product.name}
+              fill
+              className="object-cover hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            />
           ) : (
-            <div className="text-gray-400 text-4xl">📦</div>
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-gray-400 text-4xl">📦</div>
+            </div>
           )}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">

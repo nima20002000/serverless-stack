@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
+import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
 import { format } from 'date-fns-jalali';
 
 interface User {
@@ -36,6 +37,7 @@ export default function UsersManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchUsers();
@@ -50,8 +52,8 @@ export default function UsersManagementPage() {
       if (!response.ok) throw new Error('خطا در دریافت کاربران');
       const result = await response.json();
       setData(result);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +87,8 @@ export default function UsersManagementPage() {
 
       setSuccessMessage('نقش کاربر با موفقیت تغییر کرد');
       fetchUsers();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     }
   };
 
@@ -107,10 +109,122 @@ export default function UsersManagementPage() {
 
       setSuccessMessage('کاربر با موفقیت حذف شد');
       fetchUsers();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     }
   };
+
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (!data) return;
+    if (selectedUsers.size === data.users.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(data.users.map(u => u.id)));
+    }
+  };
+
+  const toggleSelectUser = (userId: string) => {
+    const newSelection = new Set(selectedUsers);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUsers(newSelection);
+  };
+
+  // Bulk operations
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          userIds: Array.from(selectedUsers),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'خطا در حذف کاربران');
+      }
+
+      const result = await response.json();
+      setSuccessMessage(result.message);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkPromoteToAdmin = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          userIds: Array.from(selectedUsers),
+          updates: { role: 'ADMIN' as const },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در ارتقای کاربران');
+
+      const result = await response.json();
+      setSuccessMessage(result.message);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkDemoteToUser = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/users/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          userIds: Array.from(selectedUsers),
+          updates: { role: 'USER' as const },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در تنزل کاربران');
+
+      const result = await response.json();
+      setSuccessMessage(result.message);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    {
+      label: 'حذف',
+      variant: 'danger',
+      onClick: handleBulkDelete,
+      requiresConfirmation: true,
+      confirmationMessage: `آیا از حذف ${selectedUsers.size} کاربر انتخاب‌شده اطمینان دارید؟ (فقط کاربران عادی حذف خواهند شد)`,
+    },
+    {
+      label: 'ارتقا به مدیر',
+      variant: 'primary',
+      onClick: handleBulkPromoteToAdmin,
+    },
+    {
+      label: 'تنزل به کاربر',
+      variant: 'secondary',
+      onClick: handleBulkDemoteToUser,
+    },
+  ];
 
   const getRoleBadge = (role: string) => {
     if (role === 'ADMIN') {
@@ -227,6 +341,14 @@ export default function UsersManagementPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
+                    <th className="px-4 py-3 text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={data.users.length > 0 && selectedUsers.size === data.users.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       عملیات
                     </th>
@@ -250,6 +372,14 @@ export default function UsersManagementPage() {
                 <tbody className="divide-y divide-gray-200">
                   {data.users.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.has(user.id)}
+                          onChange={() => toggleSelectUser(user.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex gap-2 justify-end">
                           {user.role === 'USER' ? (
@@ -339,6 +469,13 @@ export default function UsersManagementPage() {
           )}
         </>
       )}
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedUsers.size}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedUsers(new Set())}
+      />
     </div>
   );
 }

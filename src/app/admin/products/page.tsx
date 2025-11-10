@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
+import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
 import { formatPrice } from '@/services/product-service';
 
 interface Product {
@@ -26,6 +27,7 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchProducts();
@@ -41,8 +43,8 @@ export default function AdminProductsPage() {
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const data = await response.json();
       setProducts(data.products);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     } finally {
       setIsLoading(false);
     }
@@ -73,8 +75,8 @@ export default function AdminProductsPage() {
 
       setSuccessMessage('محصول با موفقیت حذف شد');
       fetchProducts();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     }
   };
 
@@ -90,10 +92,118 @@ export default function AdminProductsPage() {
 
       setSuccessMessage('وضعیت محصول به‌روزرسانی شد');
       fetchProducts();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
     }
   };
+
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (selectedProducts.size === products.length) {
+      setSelectedProducts(new Set());
+    } else {
+      setSelectedProducts(new Set(products.map(p => p.id)));
+    }
+  };
+
+  const toggleSelectProduct = (productId: string) => {
+    const newSelection = new Set(selectedProducts);
+    if (newSelection.has(productId)) {
+      newSelection.delete(productId);
+    } else {
+      newSelection.add(productId);
+    }
+    setSelectedProducts(newSelection);
+  };
+
+  // Bulk operations
+  const handleBulkDelete = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          productIds: Array.from(selectedProducts),
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در حذف محصولات');
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkActivate = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          productIds: Array.from(selectedProducts),
+          updates: { isActive: true },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در فعال‌سازی محصولات');
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkDeactivate = async (ids: string[]) => {
+    try {
+      const response = await fetch('/api/admin/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          productIds: Array.from(selectedProducts),
+          updates: { isActive: false },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در غیرفعال‌سازی محصولات');
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedProducts(new Set());
+      fetchProducts();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    {
+      label: 'حذف',
+      variant: 'danger',
+      onClick: handleBulkDelete,
+      requiresConfirmation: true,
+      confirmationMessage: `آیا از حذف ${selectedProducts.size} محصول انتخاب‌شده اطمینان دارید؟`,
+    },
+    {
+      label: 'فعال‌سازی',
+      variant: 'primary',
+      onClick: handleBulkActivate,
+    },
+    {
+      label: 'غیرفعال‌سازی',
+      variant: 'secondary',
+      onClick: handleBulkDeactivate,
+    },
+  ];
 
   if (isLoading) {
     return (
@@ -194,6 +304,14 @@ export default function AdminProductsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 text-center w-12">
+                  <input
+                    type="checkbox"
+                    checked={products.length > 0 && selectedProducts.size === products.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
@@ -204,6 +322,14 @@ export default function AdminProductsPage() {
             <tbody className="divide-y divide-gray-200">
               {products.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={() => toggleSelectProduct(product.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-2 justify-end">
                       <Link href={`/admin/products/${product.id}/edit`}>
@@ -260,6 +386,13 @@ export default function AdminProductsPage() {
           )}
         </div>
       </Card>
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedProducts.size}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedProducts(new Set())}
+      />
     </div>
   );
 }
