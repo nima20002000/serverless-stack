@@ -2,11 +2,45 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/services/product-service';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import ProductGallery from './ProductGallery';
+import VariantSelector from './VariantSelector';
+
+interface MediaItem {
+  id: string;
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  alt?: string;
+  order: number;
+}
+
+interface Variant {
+  id: string;
+  name: string;
+  sku?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  priceAdjust: number;
+  stock: number;
+  isActive: boolean;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface Tag {
+  id: string;
+  name: string;
+  slug: string;
+}
 
 interface ProductDetailProps {
   product: {
@@ -17,6 +51,10 @@ interface ProductDetailProps {
     stock: number;
     images: string[];
     isActive: boolean;
+    category?: Category | null;
+    tags?: Tag[];
+    media?: MediaItem[];
+    variants?: Variant[];
   };
 }
 
@@ -26,11 +64,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState('');
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
 
-  const isOutOfStock = product.stock === 0;
+  // Calculate effective price and stock based on variant selection
+  const effectivePrice = selectedVariant
+    ? product.price + Number(selectedVariant.priceAdjust)
+    : product.price;
+
+  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const isOutOfStock = effectiveStock === 0;
 
   const handleIncrement = () => {
-    if (quantity < product.stock) {
+    if (quantity < effectiveStock) {
       setQuantity((prev) => prev + 1);
     }
   };
@@ -41,20 +86,40 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
   };
 
+  const handleVariantSelect = (variant: Variant | null) => {
+    setSelectedVariant(variant);
+    setQuantity(1); // Reset quantity when variant changes
+    setError('');
+  };
+
   const handleAddToCart = async () => {
     try {
       setError('');
       setIsAdding(true);
+
+      // Get the first media URL or fallback to legacy images
+      const imageUrl =
+        product.media && product.media.length > 0
+          ? product.media[0].url
+          : product.images && product.images.length > 0
+          ? product.images[0]
+          : '';
+
       addItem(
         {
           productId: product.id,
-          name: product.name,
-          price: Number(product.price),
-          image: product.images[0] || '',
-          stock: product.stock,
+          name: selectedVariant
+            ? `${product.name} - ${selectedVariant.name}`
+            : product.name,
+          price: effectivePrice,
+          image: imageUrl,
+          stock: effectiveStock,
+          variantId: selectedVariant?.id,
+          variantName: selectedVariant?.name,
         },
         quantity
       );
+
       // Show success and reset
       setTimeout(() => {
         setIsAdding(false);
@@ -76,17 +141,34 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         >
           محصولات
         </button>
+        {product.category && (
+          <>
+            <span className="mx-2 text-gray-400">/</span>
+            <button
+              onClick={() => router.push(`/products?category=${product.category!.slug}`)}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              {product.category.name}
+            </button>
+          </>
+        )}
         <span className="mx-2 text-gray-400">/</span>
         <span className="text-gray-700">{product.name}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Product Image */}
-        <Card>
-          <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-            <div className="text-gray-400 text-8xl">📦</div>
-          </div>
-        </Card>
+        {/* Product Gallery */}
+        <div>
+          {product.media && product.media.length > 0 ? (
+            <ProductGallery media={product.media} productName={product.name} />
+          ) : (
+            <Card>
+              <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+                <div className="text-gray-400 text-8xl">📦</div>
+              </div>
+            </Card>
+          )}
+        </div>
 
         {/* Product Details */}
         <div>
@@ -94,11 +176,32 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             {product.name}
           </h1>
 
+          {/* Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {product.tags.map((tag) => (
+                <button
+                  key={tag.id}
+                  onClick={() => router.push(`/products?tag=${tag.slug}`)}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
+                >
+                  <TagIcon className="h-3 w-3" />
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Price */}
           <div className="mb-6">
             <span className="text-3xl font-bold text-blue-600">
-              {formatPrice(Number(product.price))}
+              {formatPrice(effectivePrice)}
             </span>
+            {selectedVariant && selectedVariant.priceAdjust !== 0 && (
+              <div className="mt-2 text-sm text-gray-600">
+                قیمت پایه: {formatPrice(product.price)}
+              </div>
+            )}
           </div>
 
           {/* Stock Status */}
@@ -109,10 +212,22 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               </span>
             ) : (
               <span className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-lg font-medium">
-                موجود ({product.stock} عدد)
+                موجود ({effectiveStock} عدد)
               </span>
             )}
           </div>
+
+          {/* Variant Selector */}
+          {product.variants && product.variants.length > 0 && (
+            <Card className="mb-6">
+              <VariantSelector
+                variants={product.variants}
+                basePrice={product.price}
+                onVariantSelect={handleVariantSelect}
+                selectedVariantId={selectedVariant?.id}
+              />
+            </Card>
+          )}
 
           {/* Description */}
           <Card className="mb-6">
@@ -153,17 +268,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
                 <button
                   onClick={handleIncrement}
-                  disabled={quantity >= product.stock}
+                  disabled={quantity >= effectiveStock}
                   className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label="افزایش تعداد"
                 >
                   <PlusIcon className="w-5 h-5 text-gray-600" />
                 </button>
 
-                {quantity >= product.stock && (
-                  <span className="text-sm text-orange-600 mr-2">
-                    حداکثر موجودی
-                  </span>
+                {quantity >= effectiveStock && (
+                  <span className="text-sm text-orange-600 mr-2">حداکثر موجودی</span>
                 )}
               </div>
             </div>

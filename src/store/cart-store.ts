@@ -8,6 +8,8 @@ export interface CartItem {
   quantity: number;
   image: string;
   stock: number;
+  variantId?: string;
+  variantName?: string;
 }
 
 interface CartStore {
@@ -27,7 +29,12 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (product, quantity) => {
         const { items } = get();
-        const existingItem = items.find((item) => item.productId === product.productId);
+        // Match by productId AND variantId (if variant exists)
+        const existingItem = items.find(
+          (item) =>
+            item.productId === product.productId &&
+            item.variantId === product.variantId
+        );
 
         if (existingItem) {
           // Update quantity if item already exists
@@ -40,7 +47,8 @@ export const useCartStore = create<CartStore>()(
 
           set({
             items: items.map((item) =>
-              item.productId === product.productId
+              item.productId === product.productId &&
+              item.variantId === product.variantId
                 ? { ...item, quantity: newQuantity }
                 : item
             ),
