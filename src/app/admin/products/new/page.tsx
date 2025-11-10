@@ -35,6 +35,7 @@ interface Variant {
   priceAdjust: string;
   stock: string;
   isActive: boolean;
+  media?: MediaItem[];
 }
 
 export default function NewProductPage() {
@@ -62,6 +63,7 @@ export default function NewProductPage() {
     stock: '0',
     isActive: true,
   });
+  const [variantMedia, setVariantMedia] = useState<MediaItem[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -144,7 +146,7 @@ export default function NewProductPage() {
       // Step 3: Add variants
       if (variants.length > 0) {
         for (const variant of variants) {
-          await fetch(`/api/products/${productId}/variants`, {
+          const variantResponse = await fetch(`/api/products/${productId}/variants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -158,6 +160,26 @@ export default function NewProductPage() {
               isActive: variant.isActive,
             }),
           });
+
+          const variantData = await variantResponse.json();
+          const variantId = variantData.variant?.id;
+
+          // Step 4: Add variant-specific media
+          if (variantId && variant.media && variant.media.length > 0) {
+            for (const mediaItem of variant.media) {
+              await fetch(`/api/products/${productId}/media`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  variantId: variantId,
+                  type: mediaItem.type,
+                  url: mediaItem.url,
+                  alt: mediaItem.alt,
+                  order: mediaItem.order,
+                }),
+              });
+            }
+          }
         }
       }
 
@@ -203,7 +225,7 @@ export default function NewProductPage() {
       // Update existing variant
       setVariants(variants.map(v =>
         v.id === editingVariantId
-          ? { ...variantForm, id: editingVariantId }
+          ? { ...variantForm, id: editingVariantId, media: variantMedia }
           : v
       ));
       setEditingVariantId(null);
@@ -212,6 +234,7 @@ export default function NewProductPage() {
       const newVariant: Variant = {
         ...variantForm,
         id: `variant-${Date.now()}`,
+        media: variantMedia,
       };
       setVariants([...variants, newVariant]);
     }
@@ -227,6 +250,7 @@ export default function NewProductPage() {
       stock: '0',
       isActive: true,
     });
+    setVariantMedia([]);
     setShowVariantForm(false);
   };
 
@@ -241,6 +265,7 @@ export default function NewProductPage() {
       stock: variant.stock,
       isActive: variant.isActive,
     });
+    setVariantMedia(variant.media || []);
     setEditingVariantId(variant.id);
     setShowVariantForm(true);
   };
@@ -262,6 +287,7 @@ export default function NewProductPage() {
       stock: '0',
       isActive: true,
     });
+    setVariantMedia([]);
     setEditingVariantId(null);
     setShowVariantForm(false);
   };
@@ -502,6 +528,20 @@ export default function NewProductPage() {
                 </label>
               </div>
 
+              <div className="border-t border-blue-200 pt-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2 text-right">
+                  تصاویر این نوع محصول (اختیاری)
+                </h4>
+                <p className="text-xs text-gray-600 mb-3 text-right">
+                  تصاویری که اینجا آپلود می‌کنید فقط برای این نوع محصول نمایش داده می‌شوند
+                </p>
+                <MediaUploader
+                  media={variantMedia}
+                  onChange={setVariantMedia}
+                  disabled={false}
+                />
+              </div>
+
               <div className="flex gap-2 justify-end">
                 <Button
                   type="button"
@@ -530,9 +570,16 @@ export default function NewProductPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 text-right">
-                        {variant.name}
-                      </h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-gray-900 text-right">
+                          {variant.name}
+                        </h4>
+                        {variant.media && variant.media.length > 0 && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            {variant.media.length} تصویر
+                          </span>
+                        )}
+                      </div>
                       <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
                         {variant.sku && <p>SKU: {variant.sku}</p>}
                         {variant.color && (

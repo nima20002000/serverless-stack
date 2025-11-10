@@ -36,15 +36,15 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
       return media.filter(m => !m.variantId);
     }
 
-    // When variant is selected, show variant-specific media first, then product-level media
+    // When variant is selected, show ONLY variant-specific media
     const variantMedia = selectedVariant.media || [];
-    const productMedia = media.filter(m => !m.variantId);
-
-    // Combine variant media and product media
-    return variantMedia.length > 0 ? variantMedia : productMedia;
+    return variantMedia;
   };
 
   const displayMedia = getFilteredMedia();
+
+  // Add state for image transition
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Reset selectedIndex when variant changes or media changes
   useEffect(() => {
@@ -64,15 +64,29 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
   const currentMedia = sortedMedia[selectedIndex];
 
   const goToPrevious = () => {
-    setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
+      setIsTransitioning(false);
+    }, 150);
   };
 
   const goToNext = () => {
-    setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
+      setIsTransitioning(false);
+    }, 150);
   };
 
   const handleThumbnailClick = (index: number) => {
-    setSelectedIndex(index);
+    if (index !== selectedIndex) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setSelectedIndex(index);
+        setIsTransitioning(false);
+      }, 150);
+    }
     setIsZoomed(false);
   };
 
@@ -86,9 +100,9 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               src={currentMedia.url}
               alt={currentMedia.alt || productName}
               fill
-              className={`object-contain transition-transform ${
+              className={`object-contain transition-all duration-300 ${
                 isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
-              }`}
+              } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
               onClick={() => setIsZoomed(!isZoomed)}
               priority={selectedIndex === 0}
             />
@@ -97,7 +111,9 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
           <video
             src={currentMedia.url}
             controls
-            className="w-full h-full object-contain"
+            className={`w-full h-full object-contain transition-opacity duration-300 ${
+              isTransitioning ? 'opacity-0' : 'opacity-100'
+            }`}
             poster={currentMedia.url.replace(/\.[^.]+$/, '-poster.jpg')}
           >
             مرورگر شما از نمایش ویدیو پشتیبانی نمی‌کند.
@@ -133,9 +149,9 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         )}
 
         {/* Variant Indicator */}
-        {selectedVariant && (
+        {selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 && (
           <div className="absolute top-4 right-4 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
-            {selectedVariant.media && selectedVariant.media.length > 0 ? 'تصاویر این نوع' : 'تصاویر محصول'}
+            تصاویر نوع: {selectedVariant.media.length}
           </div>
         )}
       </div>
