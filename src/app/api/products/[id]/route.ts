@@ -9,12 +9,25 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const product = await getProductById(params.id);
-    // Serialize Decimal to number
-    const serializedProduct = {
+    const { searchParams } = new URL(req.url);
+    const includeRelations = searchParams.get('includeRelations') === 'true';
+
+    const product = await getProductById(params.id, includeRelations);
+
+    // Serialize Decimal to number and handle nested relations
+    const serializedProduct: any = {
       ...product,
       price: Number(product.price),
     };
+
+    // Serialize variants if included
+    if (includeRelations && 'variants' in product && Array.isArray((product as any).variants)) {
+      serializedProduct.variants = (product as any).variants.map((v: any) => ({
+        ...v,
+        priceAdjust: Number(v.priceAdjust),
+      }));
+    }
+
     return NextResponse.json({ product: serializedProduct });
   } catch (error: any) {
     console.error('Error fetching product:', error);
@@ -41,7 +54,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, description, price, stock, images, isActive } = body;
+    const { name, description, price, stock, images, isActive, categoryId, tagIds } = body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
@@ -50,6 +63,8 @@ export async function PUT(
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (images !== undefined) updateData.images = images;
     if (isActive !== undefined) updateData.isActive = isActive;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (tagIds !== undefined) updateData.tagIds = tagIds;
 
     const product = await updateProduct(params.id, updateData);
 
