@@ -240,8 +240,13 @@ export default function AdminProductsPage() {
                   <td className="px-4 py-3 text-right">
                     {formatPrice(Number(product.price))}
                   </td>
-                  <td className="px-4 py-3 text-right font-medium text-gray-900">
-                    {product.name}
+                  <td className="px-4 py-3 text-right font-medium">
+                    <Link
+                      href={`/admin/products/${product.id}/edit`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                    >
+                      {product.name}
+                    </Link>
                   </td>
                 </tr>
               ))}

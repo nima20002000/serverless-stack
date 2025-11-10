@@ -45,13 +45,15 @@ export const useCartStore = create<CartStore>()(
             throw new Error('موجودی کافی نیست');
           }
 
+          const newItems = items.map((item) =>
+            item.productId === product.productId &&
+            item.variantId === product.variantId
+              ? { ...item, quantity: newQuantity }
+              : item
+          );
+
           set({
-            items: items.map((item) =>
-              item.productId === product.productId &&
-              item.variantId === product.variantId
-                ? { ...item, quantity: newQuantity }
-                : item
-            ),
+            items: newItems,
           });
         } else {
           // Add new item
@@ -59,15 +61,18 @@ export const useCartStore = create<CartStore>()(
             throw new Error('موجودی کافی نیست');
           }
 
+          const newItems = [...items, { ...product, quantity }];
+
           set({
-            items: [...items, { ...product, quantity }],
+            items: newItems,
           });
         }
       },
 
       removeItem: (productId) => {
+        const newItems = get().items.filter((item) => item.productId !== productId);
         set({
-          items: get().items.filter((item) => item.productId !== productId),
+          items: newItems,
         });
       },
 
@@ -90,10 +95,12 @@ export const useCartStore = create<CartStore>()(
           throw new Error('موجودی کافی نیست');
         }
 
+        const newItems = items.map((i) =>
+          i.productId === productId ? { ...i, quantity } : i
+        );
+
         set({
-          items: items.map((i) =>
-            i.productId === productId ? { ...i, quantity } : i
-          ),
+          items: newItems,
         });
       },
 

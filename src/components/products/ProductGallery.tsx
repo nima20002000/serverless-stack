@@ -36,8 +36,14 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
       return media.filter(m => !m.variantId);
     }
 
-    // When variant is selected, show ONLY variant-specific media
+    // When variant is selected, prefer variant-specific media
     const variantMedia = selectedVariant.media || [];
+
+    // If variant has no specific media, fall back to product-level media
+    if (variantMedia.length === 0) {
+      return media.filter(m => !m.variantId);
+    }
+
     return variantMedia;
   };
 
@@ -149,9 +155,16 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         )}
 
         {/* Variant Indicator */}
-        {selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 && (
-          <div className="absolute top-4 right-4 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg">
-            تصاویر نوع: {selectedVariant.media.length}
+        {selectedVariant && (
+          <div className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
+            selectedVariant.media && selectedVariant.media.length > 0
+              ? 'bg-blue-600'
+              : 'bg-gray-600'
+          }`}>
+            {selectedVariant.media && selectedVariant.media.length > 0
+              ? `تصاویر ویژه نوع: ${selectedVariant.media.length}`
+              : 'تصاویر پیش‌فرض محصول'
+            }
           </div>
         )}
       </div>

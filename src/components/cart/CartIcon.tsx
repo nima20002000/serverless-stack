@@ -9,7 +9,10 @@ interface CartIconProps {
 }
 
 export default function CartIcon({ onClick, className = '' }: CartIconProps) {
-  const itemCount = useCartStore((state) => state.itemCount);
+  // Compute itemCount directly from items to ensure reactivity
+  const itemCount = useCartStore((state) =>
+    state.items.reduce((count, item) => count + item.quantity, 0)
+  );
 
   return (
     <button
