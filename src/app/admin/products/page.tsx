@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
+import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import { formatPrice } from '@/services/product-service';
 
 interface Product {
@@ -22,14 +23,21 @@ export default function AdminProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [stockFilter, setStockFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [searchQuery, statusFilter, stockFilter]);
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/admin/products');
+      setIsLoading(true);
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const stockParam = stockFilter !== 'all' ? `&stock=${stockFilter}` : '';
+      const response = await fetch(`/api/admin/products?${searchParam}${statusParam}${stockParam}`);
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const data = await response.json();
       setProducts(data.products);
@@ -38,6 +46,17 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchProducts();
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setStockFilter('all');
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -86,6 +105,8 @@ export default function AdminProductsPage() {
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
+
       <div className="flex items-center justify-between mb-6">
         <Link href="/admin/products/new">
           <Button variant="primary">افزودن محصول جدید</Button>
@@ -104,6 +125,69 @@ export default function AdminProductsPage() {
           {successMessage}
         </Alert>
       )}
+
+      {/* Search Bar */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Button type="submit" variant="primary">
+              جستجو
+            </Button>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجو بر اساس نام محصول..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            />
+          </form>
+        </div>
+      </Card>
+
+      {/* Filters */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <Button
+              variant="secondary"
+              onClick={clearFilters}
+              size="sm"
+            >
+              پاک کردن فیلترها
+            </Button>
+
+            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+              {/* Status Filter */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                >
+                  <option value="all">همه</option>
+                  <option value="active">فعال</option>
+                  <option value="inactive">غیرفعال</option>
+                </select>
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
+              </div>
+
+              {/* Stock Filter */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={stockFilter}
+                  onChange={(e) => setStockFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                >
+                  <option value="all">همه</option>
+                  <option value="in-stock">موجود</option>
+                  <option value="out-of-stock">ناموجود</option>
+                </select>
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">موجودی:</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       <Card>
         <div className="overflow-x-auto">

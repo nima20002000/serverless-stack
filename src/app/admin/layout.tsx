@@ -33,6 +33,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+
+      {/* Admin User Info Bar */}
+      <div className="bg-blue-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <span className="opacity-90">نقش: </span>
+              <span className="font-medium">مدیر سیستم</span>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <div>
+                <span className="opacity-90">خوش آمدید، </span>
+                <span className="font-medium">{session.user?.name || session.user?.email}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex gap-8">
           <AdminSidebar />

@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Breadcrumbs from '@/components/admin/Breadcrumbs';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -97,6 +98,13 @@ export default function NewProductPage() {
 
   return (
     <div>
+      <Breadcrumbs
+        items={[
+          { label: 'مدیریت محصولات', href: '/admin/products' },
+          { label: 'افزودن محصول جدید' },
+        ]}
+      />
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 text-right">
           افزودن محصول جدید

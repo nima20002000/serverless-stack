@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import { formatPrice } from '@/services/product-service';
 import { format } from 'date-fns-jalali';
 
@@ -48,17 +49,23 @@ export default function TransactionsManagementPage() {
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     fetchTransactions();
-  }, [currentPage, statusFilter]);
+  }, [currentPage, statusFilter, searchQuery, dateFrom, dateTo]);
 
   const fetchTransactions = async () => {
     try {
       setIsLoading(true);
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const dateFromParam = dateFrom ? `&dateFrom=${dateFrom}` : '';
+      const dateToParam = dateTo ? `&dateTo=${dateTo}` : '';
       const response = await fetch(
-        `/api/admin/transactions?page=${currentPage}&limit=20${statusParam}`
+        `/api/admin/transactions?page=${currentPage}&limit=20${statusParam}${searchParam}${dateFromParam}${dateToParam}`
       );
       if (!response.ok) throw new Error('خطا در دریافت تراکنش‌ها');
       const result = await response.json();
@@ -68,6 +75,20 @@ export default function TransactionsManagementPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchTransactions();
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setDateFrom('');
+    setDateTo('');
+    setStatusFilter('all');
+    setCurrentPage(1);
   };
 
   const getStatusBadge = (status: string) => {
@@ -102,6 +123,8 @@ export default function TransactionsManagementPage() {
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: 'مدیریت تراکنش‌ها' }]} />
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 text-right">
           مدیریت تراکنش‌ها
@@ -117,65 +140,79 @@ export default function TransactionsManagementPage() {
         </Alert>
       )}
 
-      {/* Filters */}
+      {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="flex items-center gap-4 justify-end">
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  setStatusFilter('all');
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Button type="submit" variant="primary">
+              جستجو
+            </Button>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجو بر اساس کد تراکنش، نام کاربر یا ایمیل..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            />
+          </form>
+        </div>
+      </Card>
+
+      {/* Date Range Filter */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex gap-2 items-center">
+              <Button
+                variant="secondary"
+                onClick={clearFilters}
+                size="sm"
+              >
+                پاک کردن فیلترها
+              </Button>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                همه
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('COMPLETED');
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-600">تا</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === 'COMPLETED'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                موفق
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('PENDING');
-                  setCurrentPage(1);
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === 'PENDING'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                در انتظار
-              </button>
-              <button
-                onClick={() => {
-                  setStatusFilter('FAILED');
-                  setCurrentPage(1);
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === 'FAILED'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                ناموفق
-              </button>
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <label className="text-sm font-medium text-gray-700">بازه تاریخ:</label>
             </div>
-            <label className="text-sm font-medium text-gray-700">فیلتر وضعیت:</label>
+          </div>
+        </div>
+      </Card>
+
+      {/* Status Filter */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <div className="flex items-center gap-2 justify-end">
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+            >
+              <option value="all">همه</option>
+              <option value="COMPLETED">موفق</option>
+              <option value="PENDING">در انتظار</option>
+              <option value="FAILED">ناموفق</option>
+            </select>
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
           </div>
         </div>
       </Card>

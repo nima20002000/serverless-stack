@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Breadcrumbs from '@/components/admin/Breadcrumbs';
 
 interface EditProductPageProps {
   params: { id: string };
@@ -136,6 +137,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   return (
     <div>
+      <Breadcrumbs
+        items={[
+          { label: 'مدیریت محصولات', href: '/admin/products' },
+          { label: 'ویرایش محصول' },
+        ]}
+      />
+
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 text-right">
           ویرایش محصول

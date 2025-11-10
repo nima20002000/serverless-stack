@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
+import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import { format } from 'date-fns-jalali';
 
 interface User {
@@ -32,15 +34,19 @@ export default function UsersManagementPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage]);
+  }, [currentPage, searchQuery, roleFilter]);
 
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin/users?page=${currentPage}&limit=20`);
+      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const roleParam = roleFilter !== 'all' ? `&role=${roleFilter}` : '';
+      const response = await fetch(`/api/admin/users?page=${currentPage}&limit=20${searchParam}${roleParam}`);
       if (!response.ok) throw new Error('خطا در دریافت کاربران');
       const result = await response.json();
       setData(result);
@@ -49,6 +55,18 @@ export default function UsersManagementPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    fetchUsers();
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('all');
+    setCurrentPage(1);
   };
 
   const handleChangeRole = async (userId: string, newRole: 'USER' | 'ADMIN') => {
@@ -119,6 +137,8 @@ export default function UsersManagementPage() {
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: 'مدیریت کاربران' }]} />
+
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900 text-right">مدیریت کاربران</h1>
         <p className="text-gray-600 text-right mt-2">
@@ -137,6 +157,55 @@ export default function UsersManagementPage() {
           {successMessage}
         </Alert>
       )}
+
+      {/* Search Bar */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Button type="submit" variant="primary">
+              جستجو
+            </Button>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="جستجو بر اساس نام یا ایمیل..."
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+            />
+          </form>
+        </div>
+      </Card>
+
+      {/* Role Filter */}
+      <Card className="mb-6">
+        <div className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <Button
+              variant="secondary"
+              onClick={clearFilters}
+              size="sm"
+            >
+              پاک کردن فیلترها
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={roleFilter}
+                onChange={(e) => {
+                  setRoleFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+              >
+                <option value="all">همه</option>
+                <option value="USER">کاربران</option>
+                <option value="ADMIN">مدیران</option>
+              </select>
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">نقش:</label>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {data && (
         <>
@@ -222,7 +291,12 @@ export default function UsersManagementPage() {
                         {getRoleBadge(user.role)}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-gray-900">
-                        {user.name}
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {user.name}
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600">
                         {user.email}

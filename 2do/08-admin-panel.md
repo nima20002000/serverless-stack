@@ -1,9 +1,10 @@
 # Admin Panel Tasks
 
-## Status: ✅ Complete (Core Features)
+## Status: ✅ Complete (Core + Optional Features)
 **Priority**: High
 **Estimated Complexity**: High
 **Completed**: 2025-11-10
+**Updated**: 2025-11-10 (Added optional features)
 
 ---
 
@@ -44,10 +45,10 @@ Build simple admin panel for managing products, users, and viewing transactions.
 - [x] Create admin layout (`/app/admin/layout.tsx`)
 - [x] Add admin sidebar navigation
 - [x] Add admin header with logout (uses existing Header)
-- [ ] Add breadcrumbs (optional for v1)
+- [x] Add breadcrumbs (optional for v1)
 - [x] Implement RTL layout
-- [ ] Add current user info display (optional for v1)
-- [ ] Add responsive mobile menu (optional for v1)
+- [x] Add current user info display (optional for v1)
+- [x] Add responsive mobile menu (optional for v1)
 
 ### 4. Admin Dashboard
 - [x] Create dashboard page (`/app/admin/page.tsx`)
@@ -72,9 +73,9 @@ Build simple admin panel for managing products, users, and viewing transactions.
   - Add role change buttons
   - Add delete button with confirmation
   - Add pagination
-- [ ] Create user detail page (`/app/admin/users/[id]/page.tsx`) (optional for v1)
-- [ ] Add search functionality (optional for v1)
-- [ ] Add user filters (role, date joined) (optional for v1)
+- [x] Create user detail page (`/app/admin/users/[id]/page.tsx`) (optional for v1)
+- [x] Add search functionality (optional for v1)
+- [x] Add user filters (role filter) (optional for v1)
 
 ### 6. Admin Transaction Management
 - [x] Create transactions list page (`/app/admin/transactions/page.tsx`)
@@ -85,13 +86,15 @@ Build simple admin panel for managing products, users, and viewing transactions.
   - Add pagination
   - Link to invoice
 - [ ] Create transaction detail page (`/app/admin/transactions/[id]/page.tsx`) (optional for v1)
-- [ ] Add search by transaction code (optional for v1)
-- [ ] Add date range filter (optional for v1)
+- [x] Add search by transaction code (optional for v1)
+- [x] Add date range filter (optional for v1)
 
 ### 7. Admin Product Management
 - [x] Already covered in product management tasks (03-product-management.md)
 - [x] Ensure admin product pages are accessible from admin panel
 - [x] Add product management link to admin navigation
+- [x] Add search functionality for products
+- [x] Add filters (active/inactive status, in-stock/out-of-stock)
 
 ### 8. Admin Components
 - [x] Create `StatsCard` component

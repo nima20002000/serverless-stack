@@ -8,11 +8,27 @@ import { Role, TransactionStatus } from '@prisma/client';
 
 // ============ User Management ============
 
-export async function getAllUsers(page: number = 1, limit: number = 20) {
+export async function getAllUsers(page: number = 1, limit: number = 20, search?: string, role?: string) {
   const skip = (page - 1) * limit;
+
+  const where: any = {};
+
+  // Search filter
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' as const } },
+      { email: { contains: search, mode: 'insensitive' as const } },
+    ];
+  }
+
+  // Role filter
+  if (role && (role === 'USER' || role === 'ADMIN')) {
+    where.role = role;
+  }
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
+      where: Object.keys(where).length > 0 ? where : undefined,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
@@ -30,7 +46,7 @@ export async function getAllUsers(page: number = 1, limit: number = 20) {
         },
       },
     }),
-    prisma.user.count(),
+    prisma.user.count({ where: Object.keys(where).length > 0 ? where : undefined }),
   ]);
 
   return {
@@ -110,11 +126,40 @@ export async function deleteUser(id: string) {
 export async function getAllTransactions(
   page: number = 1,
   limit: number = 20,
-  status?: TransactionStatus
+  status?: TransactionStatus,
+  search?: string,
+  dateFrom?: string,
+  dateTo?: string
 ) {
   const skip = (page - 1) * limit;
 
-  const where = status ? { status } : {};
+  const where: any = {};
+
+  if (status) {
+    where.status = status;
+  }
+
+  if (search) {
+    where.OR = [
+      { transactionCode: { contains: search, mode: 'insensitive' } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  // Date range filter
+  if (dateFrom || dateTo) {
+    where.createdAt = {};
+    if (dateFrom) {
+      where.createdAt.gte = new Date(dateFrom);
+    }
+    if (dateTo) {
+      // Add one day to include the entire end date
+      const endDate = new Date(dateTo);
+      endDate.setDate(endDate.getDate() + 1);
+      where.createdAt.lt = endDate;
+    }
+  }
 
   const [transactions, total] = await Promise.all([
     prisma.transaction.findMany({

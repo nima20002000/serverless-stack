@@ -8,14 +8,40 @@ export async function getAllProducts(options?: {
   page?: number;
   perPage?: number;
   includeInactive?: boolean;
+  search?: string;
+  status?: string;
+  stock?: string;
 }) {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const skip = (page - 1) * perPage;
 
-  const where: Prisma.ProductWhereInput = options?.includeInactive
-    ? {}
-    : { isActive: true };
+  const where: Prisma.ProductWhereInput = {};
+
+  // Base isActive filter
+  if (!options?.includeInactive) {
+    where.isActive = true;
+  } else if (options.status) {
+    // Status filter (active/inactive)
+    where.isActive = options.status === 'active';
+  }
+
+  // Search filter
+  if (options?.search) {
+    where.OR = [
+      { name: { contains: options.search, mode: 'insensitive' } },
+      { description: { contains: options.search, mode: 'insensitive' } },
+    ];
+  }
+
+  // Stock filter
+  if (options?.stock) {
+    if (options.stock === 'in-stock') {
+      where.stock = { gt: 0 };
+    } else if (options.stock === 'out-of-stock') {
+      where.stock = 0;
+    }
+  }
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({

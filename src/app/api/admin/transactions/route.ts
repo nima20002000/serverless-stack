@@ -20,12 +20,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status') as TransactionStatus | null;
+    const search = searchParams.get('search') || undefined;
+    const dateFrom = searchParams.get('dateFrom') || undefined;
+    const dateTo = searchParams.get('dateTo') || undefined;
 
     // Get transactions
     const result = await getAllTransactions(
       page,
       limit,
-      status || undefined
+      status || undefined,
+      search,
+      dateFrom,
+      dateTo
     );
 
     return NextResponse.json(result);

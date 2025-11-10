@@ -18,8 +18,18 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '50');
+    const search = searchParams.get('search') || undefined;
+    const status = searchParams.get('status') || undefined;
+    const stock = searchParams.get('stock') || undefined;
 
-    const result = await getAllProducts({ page, perPage, includeInactive: true });
+    const result = await getAllProducts({
+      page,
+      perPage,
+      includeInactive: true,
+      search,
+      status,
+      stock
+    });
 
     // Serialize Decimal prices to numbers
     const serializedProducts = result.products.map((product) => ({
