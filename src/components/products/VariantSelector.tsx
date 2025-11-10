@@ -28,7 +28,13 @@ export default function VariantSelector({
   onVariantSelect,
   selectedVariantId,
 }: VariantSelectorProps) {
+  // Use the parent's selectedVariantId (which may be auto-selected)
   const [selected, setSelected] = useState<string | null>(selectedVariantId || null);
+
+  // Sync with parent's selection changes
+  if (selectedVariantId !== selected && selectedVariantId !== undefined) {
+    setSelected(selectedVariantId);
+  }
 
   if (!variants || variants.length === 0) {
     return null;

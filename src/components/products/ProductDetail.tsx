@@ -65,7 +65,23 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState('');
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+
+  // Auto-select first active variant with media if available
+  const getDefaultVariant = (): Variant | null => {
+    if (!product.variants || product.variants.length === 0) return null;
+
+    // Prioritize variants with media
+    const variantWithMedia = product.variants.find(v =>
+      v.isActive && v.media && v.media.length > 0
+    );
+    if (variantWithMedia) return variantWithMedia;
+
+    // Fallback to first active variant
+    const firstActive = product.variants.find(v => v.isActive);
+    return firstActive || null;
+  };
+
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(getDefaultVariant());
 
   // Calculate effective price and stock based on variant selection
   const effectivePrice = selectedVariant
