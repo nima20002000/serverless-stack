@@ -202,9 +202,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
-      // Add new product-level media (those without an ID from backend)
+      // Add new product-level media (those with temporary IDs starting with 'new-')
       for (const mediaItem of media) {
-        if (!mediaItem.id.startsWith('media-')) continue; // Skip existing media
+        if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
         await fetch(`/api/products/${params.id}/media`, {
           method: 'POST',
@@ -269,10 +269,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             }
           }
 
-          // Add new variant media
+          // Add new variant media (temporary IDs starting with 'new-')
           if (variant.media) {
             for (const mediaItem of variant.media) {
-              if (!mediaItem.id.startsWith('media-')) continue;
+              if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
               await fetch(`/api/products/${params.id}/media`, {
                 method: 'POST',
