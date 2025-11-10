@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, FolderIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 
 interface Category {
   id: string;
@@ -22,6 +24,13 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    description: '',
+    parentId: null as string | null,
+  });
 
   useEffect(() => {
     fetchCategories();
@@ -58,7 +67,65 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
     return null;
   };
 
+  const getAllCategories = (categories: Category[]): Category[] => {
+    let result: Category[] = [];
+    for (const category of categories) {
+      result.push(category);
+      if (category.children) {
+        result = result.concat(getAllCategories(category.children));
+      }
+    }
+    return result;
+  };
+
   const selectedCategory = value ? findCategoryById(categories, value) : null;
+
+  const handleCreateCategory = async () => {
+    if (!createForm.name.trim()) {
+      alert('نام دسته‌بندی الزامی است');
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      const response = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: createForm.name.trim(),
+          description: createForm.description.trim() || undefined,
+          parentId: createForm.parentId || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'خطا در ایجاد دسته‌بندی');
+      }
+
+      const data = await response.json();
+
+      // Refresh categories list
+      await fetchCategories();
+
+      // Select the newly created category
+      onChange(data.category.id);
+
+      // Reset form
+      setCreateForm({
+        name: '',
+        description: '',
+        parentId: null,
+      });
+      setShowCreateForm(false);
+      setIsOpen(false);
+    } catch (err) {
+      console.error('Error creating category:', err);
+      alert(err instanceof Error ? err.message : 'خطا در ایجاد دسته‌بندی');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const renderCategoryOptions = (categories: Category[], level = 0): JSX.Element[] => {
     const elements: JSX.Element[] = [];
@@ -153,11 +220,92 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              setIsOpen(false);
+              setShowCreateForm(false);
+            }}
           />
 
           {/* Menu */}
           <div className="absolute z-20 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+            {/* Create Category Button */}
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="w-full text-right px-4 py-2 hover:bg-gray-100 text-blue-600 font-medium border-b border-gray-200 flex items-center gap-2"
+            >
+              <PlusIcon className="h-4 w-4" />
+              ایجاد دسته‌بندی جدید
+            </button>
+
+            {/* Create Form */}
+            {showCreateForm && (
+              <div className="p-4 border-b border-gray-200 bg-blue-50 space-y-3">
+                <Input
+                  label="نام دسته‌بندی"
+                  value={createForm.name}
+                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  placeholder="مثال: لپ‌تاپ"
+                  disabled={isCreating}
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                    توضیحات (اختیاری)
+                  </label>
+                  <textarea
+                    value={createForm.description}
+                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    placeholder="توضیحات دسته‌بندی..."
+                    disabled={isCreating}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                    دسته‌بندی والد (اختیاری)
+                  </label>
+                  <select
+                    value={createForm.parentId || ''}
+                    onChange={(e) => setCreateForm({ ...createForm, parentId: e.target.value || null })}
+                    disabled={isCreating}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">بدون والد (دسته اصلی)</option>
+                    {getAllCategories(categories).map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setCreateForm({ name: '', description: '', parentId: null });
+                    }}
+                    disabled={isCreating}
+                  >
+                    انصراف
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={handleCreateCategory}
+                    isLoading={isCreating}
+                  >
+                    ایجاد دسته‌بندی
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Clear Selection */}
             <button
               type="button"
@@ -173,7 +321,7 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
             {/* Categories */}
             {categories.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">
-                هیچ دسته‌بندی‌ای موجود نیست
+                هیچ دسته‌بندی‌ای موجود نیست. یکی ایجاد کنید!
               </div>
             ) : (
               renderCategoryOptions(categories)
