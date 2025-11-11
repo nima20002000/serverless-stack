@@ -20,10 +20,11 @@ export async function GET(
     }
 
     return NextResponse.json({ category });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get category error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت دسته‌بندی' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -43,10 +44,11 @@ export async function PUT(
     const category = await updateCategory(params.id, body);
 
     return NextResponse.json({ category });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update category error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در به‌روزرسانی دسته‌بندی';
     return NextResponse.json(
-      { error: error.message || 'خطا در به‌روزرسانی دسته‌بندی' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -65,10 +67,11 @@ export async function DELETE(
     await deleteCategory(params.id);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete category error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی';
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف دسته‌بندی' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

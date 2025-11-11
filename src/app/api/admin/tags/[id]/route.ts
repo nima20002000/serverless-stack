@@ -20,10 +20,11 @@ export async function GET(
     }
 
     return NextResponse.json({ tag });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get tag error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت برچسب';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت برچسب' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -43,10 +44,11 @@ export async function PUT(
     const tag = await updateTag(params.id, body);
 
     return NextResponse.json({ tag });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update tag error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در به‌روزرسانی برچسب';
     return NextResponse.json(
-      { error: error.message || 'خطا در به‌روزرسانی برچسب' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -65,10 +67,11 @@ export async function DELETE(
     await deleteTag(params.id);
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete tag error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف برچسب';
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف برچسب' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

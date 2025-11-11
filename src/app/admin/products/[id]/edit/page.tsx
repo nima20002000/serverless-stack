@@ -105,7 +105,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Load existing variants with their media
       if (product.variants) {
-        const formattedVariants = product.variants.map((v: any) => ({
+        const formattedVariants = product.variants.map((v: Variant) => ({
           id: v.id,
           name: v.name,
           sku: v.sku || '',
@@ -119,8 +119,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }));
         setVariants(formattedVariants);
       }
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -327,8 +328,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       router.push('/admin/products');
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'خطا در ذخیره محصول';
+      setErrorMessage(errorMsg);
     } finally {
       setIsSaving(false);
     }

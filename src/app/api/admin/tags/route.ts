@@ -12,10 +12,11 @@ export async function GET(req: NextRequest) {
 
     const tags = await getAllTags();
     return NextResponse.json({ tags });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get tags error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت برچسب‌ها';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت برچسب‌ها' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -41,10 +42,11 @@ export async function POST(req: NextRequest) {
     const tag = await createTag({ name, slug });
 
     return NextResponse.json({ tag }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create tag error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در ایجاد برچسب';
     return NextResponse.json(
-      { error: error.message || 'خطا در ایجاد برچسب' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

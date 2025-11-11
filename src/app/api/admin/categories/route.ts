@@ -13,10 +13,11 @@ export async function GET(req: NextRequest) {
     const categories = await getAllCategories();
 
     return NextResponse.json({ categories });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get categories error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی‌ها';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت دسته‌بندی‌ها' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -48,10 +49,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ category }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create category error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در ایجاد دسته‌بندی';
     return NextResponse.json(
-      { error: error.message || 'خطا در ایجاد دسته‌بندی' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

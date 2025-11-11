@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -41,10 +41,11 @@ export async function GET(req: NextRequest) {
       ...result,
       products: serializedProducts,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching products:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت محصولات';
     return NextResponse.json(
-      { error: 'خطا در دریافت محصولات' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

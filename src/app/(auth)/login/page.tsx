@@ -60,7 +60,7 @@ export default function LoginPage() {
         router.push('/');
         router.refresh();
       }
-    } catch (error: any) {
+    } catch {
       setErrorMessage('خطا در ورود. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsLoading(false);

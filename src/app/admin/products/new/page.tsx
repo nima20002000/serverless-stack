@@ -184,8 +184,9 @@ export default function NewProductPage() {
       }
 
       router.push('/admin/products');
-    } catch (error: any) {
-      setErrorMessage(error.message);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'خطا در ایجاد محصول';
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }

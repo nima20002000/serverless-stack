@@ -15,7 +15,7 @@ export async function GET(
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -24,10 +24,11 @@ export async function GET(
 
     const user = await getUserById(params.id);
     return NextResponse.json(user);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching user:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت کاربر';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت کاربر' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -40,7 +41,7 @@ export async function PUT(
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -59,10 +60,11 @@ export async function PUT(
 
     const user = await updateUserRole(params.id, role as Role);
     return NextResponse.json(user);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating user:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در به‌روزرسانی کاربر';
     return NextResponse.json(
-      { error: error.message || 'خطا در به‌روزرسانی کاربر' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
@@ -75,7 +77,7 @@ export async function DELETE(
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -84,10 +86,11 @@ export async function DELETE(
 
     await deleteUser(params.id);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting user:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف کاربر';
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف کاربر' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

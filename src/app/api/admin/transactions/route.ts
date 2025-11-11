@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   try {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
-    if (!session || (session.user as any).role !== 'ADMIN') {
+    if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -35,10 +35,11 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching transactions:', error);
+    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها';
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت تراکنش‌ها' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

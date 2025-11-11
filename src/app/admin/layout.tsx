@@ -13,7 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
-    } else if (session && (session.user as any).role !== 'ADMIN') {
+    } else if (session && session.user.role !== 'ADMIN') {
       router.push('/');
     }
   }, [status, session, router]);
@@ -26,7 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!session || (session.user as any).role !== 'ADMIN') {
+  if (!session || session.user.role !== 'ADMIN') {
     return null;
   }
 

@@ -84,8 +84,9 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push('/login');
       }, 2000);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
+      setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -60,8 +60,9 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error('خطا در دریافت آمار');
       const data = await response.json();
       setStats(data);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت آمار';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
