@@ -49,12 +49,51 @@ export async function getAllProducts(options?: {
       skip,
       take: perPage,
       orderBy: { createdAt: 'desc' },
+      include: {
+        media: {
+          where: { variantId: null },
+          orderBy: { order: 'asc' },
+        },
+        variants: {
+          include: {
+            media: {
+              orderBy: { order: 'asc' },
+            },
+          },
+        },
+      },
     }),
     prisma.product.count({ where }),
   ]);
 
+  // Populate images array with media URLs for backward compatibility
+  const productsWithImages = products.map((product) => {
+    let images = [...product.images]; // Start with existing images
+
+    // If no images in the legacy field, populate from media
+    if (images.length === 0) {
+      // First, try to get images from product's direct media
+      const productMediaUrls = product.media.map((m) => m.url);
+
+      if (productMediaUrls.length > 0) {
+        images = productMediaUrls;
+      } else {
+        // If no product media, get images from the first variant that has media
+        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
+        if (variantWithMedia) {
+          images = variantWithMedia.media.map((m) => m.url);
+        }
+      }
+    }
+
+    return {
+      ...product,
+      images,
+    };
+  });
+
   return {
-    products,
+    products: productsWithImages,
     total,
     page,
     perPage,
