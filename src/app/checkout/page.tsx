@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { useCartStore, formatPrice } from '@/store/cart-store';
+import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store/cart-store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -13,7 +13,9 @@ import Alert from '@/components/ui/Alert';
 export default function CheckoutPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { items, total, itemCount } = useCartStore();
+  const items = useCartStore((state) => state.items);
+  const total = useCartStore(selectTotal);
+  const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 

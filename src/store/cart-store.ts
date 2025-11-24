@@ -108,14 +108,9 @@ export const useCartStore = create<CartStore>()(
         set({ items: [] });
       },
 
-      // Computed values using getters
-      get total() {
-        return get().items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      },
-
-      get itemCount() {
-        return get().items.reduce((count, item) => count + item.quantity, 0);
-      },
+      // These are placeholder values - use selectors below for actual computed values
+      total: 0,
+      itemCount: 0,
     }),
     {
       name: 'cart-storage',
@@ -124,6 +119,18 @@ export const useCartStore = create<CartStore>()(
     }
   )
 );
+
+/**
+ * Selector for computing total from items
+ */
+export const selectTotal = (state: CartStore) =>
+  state.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+/**
+ * Selector for computing item count from items
+ */
+export const selectItemCount = (state: CartStore) =>
+  state.items.reduce((count, item) => count + item.quantity, 0);
 
 /**
  * Format price to Persian/Toman format

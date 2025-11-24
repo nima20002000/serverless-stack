@@ -5,15 +5,23 @@
 
 import ZarinPal from 'zarinpal-node-sdk';
 
-const MERCHANT_ID = process.env.ZARINPAL_MERCHANT_ID || 'test';
-const SANDBOX_MODE = process.env.ZARINPAL_SANDBOX === 'true';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+// Create new client on every call to ensure fresh env vars
+function getZarinpalClient(): ZarinPal {
+  const merchantId = process.env.ZARINPAL_MERCHANT_ID || 'test';
+  const sandbox = process.env.ZARINPAL_SANDBOX === 'true';
 
-// Configure Zarinpal with merchant ID
-const zarinpalClient = new ZarinPal({
-  merchantId: MERCHANT_ID,
-  sandbox: SANDBOX_MODE,
-});
+  console.log('Creating Zarinpal client with merchant ID:', merchantId);
+  console.log('Sandbox mode:', sandbox);
+
+  return new ZarinPal({
+    merchantId,
+    sandbox,
+  });
+}
+
+function getAppUrl(): string {
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+}
 
 export interface PaymentRequest {
   amount: number; // Amount in Tomans
@@ -41,7 +49,8 @@ export async function createPaymentRequest(
   request: PaymentRequest
 ): Promise<PaymentRequestResponse> {
   try {
-    const response = await zarinpalClient.payments.create({
+    const client = getZarinpalClient();
+    const response = await client.payments.create({
       amount: request.amount, // In Tomans
       callback_url: request.callbackUrl,
       description: request.description,
@@ -51,7 +60,7 @@ export async function createPaymentRequest(
 
     if (response.data && response.data.authority) {
       const authority = response.data.authority;
-      const url = zarinpalClient.payments.getRedirectUrl(authority);
+      const url = client.payments.getRedirectUrl(authority);
 
       return {
         status: 100,
@@ -75,7 +84,8 @@ export async function verifyPayment(
   amount: number
 ): Promise<PaymentVerification> {
   try {
-    const response = await zarinpalClient.verifications.verify({
+    const client = getZarinpalClient();
+    const response = await client.verifications.verify({
       amount: amount, // Must match original amount
       authority: authority,
     });
@@ -98,12 +108,12 @@ export async function verifyPayment(
  * Check if running in sandbox mode
  */
 export function isSandboxMode(): boolean {
-  return SANDBOX_MODE;
+  return process.env.ZARINPAL_SANDBOX === 'true';
 }
 
 /**
  * Get callback URL for payment verification
  */
 export function getCallbackUrl(): string {
-  return `${APP_URL}/api/transactions/verify`;
+  return `${getAppUrl()}/api/transactions/verify`;
 }

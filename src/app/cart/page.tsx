@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRightIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
-import { useCartStore } from '@/store/cart-store';
+import { useCartStore, selectTotal, selectItemCount } from '@/store/cart-store';
 import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
 import Button from '@/components/ui/Button';
@@ -12,7 +12,9 @@ import Alert from '@/components/ui/Alert';
 
 export default function CartPage() {
   const router = useRouter();
-  const { items, total, itemCount, updateQuantity, removeItem, clearCart } = useCartStore();
+  const { items, updateQuantity, removeItem, clearCart } = useCartStore();
+  const total = useCartStore(selectTotal);
+  const itemCount = useCartStore(selectItemCount);
   const [error, setError] = useState('');
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
@@ -133,7 +135,7 @@ export default function CartPage() {
 
             {/* Cart Summary */}
             <div className="lg:col-span-1">
-              <div className="sticky top-4">
+              <div className="sticky top-4 z-10">
                 <CartSummary
                   subtotal={total}
                   itemCount={itemCount}

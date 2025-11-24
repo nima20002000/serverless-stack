@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import { useCartStore, formatPrice } from '@/store/cart-store';
+import { useCartStore, formatPrice, selectTotal } from '@/store/cart-store';
 import CartItem from './CartItem';
 import Button from '@/components/ui/Button';
 
@@ -15,7 +15,8 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const router = useRouter();
-  const { items, total, updateQuantity, removeItem } = useCartStore();
+  const { items, updateQuantity, removeItem } = useCartStore();
+  const total = useCartStore(selectTotal);
   const [error, setError] = useState('');
 
   const handleUpdateQuantity = (productId: string, quantity: number) => {
