@@ -36,7 +36,7 @@ interface Transaction {
 }
 
 interface TransactionsResponse {
-  transactions: Transaction[];
+  data: Transaction[];
   total: number;
   page: number;
   perPage: number;
@@ -223,7 +223,7 @@ export default function TransactionsManagementPage() {
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  نمایش {data.transactions.length.toLocaleString('fa-IR')} تراکنش از{' '}
+                  نمایش {data.data.length.toLocaleString('fa-IR')} تراکنش از{' '}
                   {data.total.toLocaleString('fa-IR')} تراکنش
                 </div>
                 <div className="text-sm text-gray-600">
@@ -258,7 +258,7 @@ export default function TransactionsManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {data.transactions.map((transaction) => (
+                  {data.data.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm text-gray-600">
@@ -316,7 +316,7 @@ export default function TransactionsManagementPage() {
                 </tbody>
               </table>
 
-              {data.transactions.length === 0 && (
+              {data.data.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   هیچ تراکنشی یافت نشد
                 </div>

@@ -22,7 +22,7 @@ interface User {
 }
 
 interface UsersResponse {
-  users: User[];
+  data: User[];
   total: number;
   page: number;
   perPage: number;
@@ -117,10 +117,10 @@ export default function UsersManagementPage() {
   // Bulk selection handlers
   const toggleSelectAll = () => {
     if (!data) return;
-    if (selectedUsers.size === data.users.length) {
+    if (selectedUsers.size === data.data.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(data.users.map(u => u.id)));
+      setSelectedUsers(new Set(data.data.map(u => u.id)));
     }
   };
 
@@ -327,7 +327,7 @@ export default function UsersManagementPage() {
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  نمایش {data.users.length.toLocaleString('fa-IR')} کاربر از{' '}
+                  نمایش {data.data.length.toLocaleString('fa-IR')} کاربر از{' '}
                   {data.total.toLocaleString('fa-IR')} کاربر
                 </div>
                 <div className="text-sm text-gray-600">
@@ -344,7 +344,7 @@ export default function UsersManagementPage() {
                     <th className="px-4 py-3 text-center w-12">
                       <input
                         type="checkbox"
-                        checked={data.users.length > 0 && selectedUsers.size === data.users.length}
+                        checked={data.data.length > 0 && selectedUsers.size === data.data.length}
                         onChange={toggleSelectAll}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
@@ -370,7 +370,7 @@ export default function UsersManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {data.users.map((user) => (
+                  {data.data.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-center">
                         <input
@@ -436,7 +436,7 @@ export default function UsersManagementPage() {
                 </tbody>
               </table>
 
-              {data.users.length === 0 && (
+              {data.data.length === 0 && (
                 <div className="text-center py-8 text-gray-500">
                   هیچ کاربری یافت نشد
                 </div>
