@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Calculate total and prepare transaction items
     let totalAmount = 0;
-    const transactionItems = [];
+    const transactionItems: Array<{ productId: string; quantity: number; price: number }> = [];
 
     for (const item of items) {
       const product = await getProductById(item.productId);
