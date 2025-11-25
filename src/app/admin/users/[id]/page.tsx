@@ -57,8 +57,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       if (!response.ok) throw new Error('خطا در دریافت اطلاعات کاربر');
       const data = await response.json();
       setUser(data.user);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'خطا در دریافت اطلاعات کاربر');
     } finally {
       setIsLoading(false);
     }
@@ -80,8 +80,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
 
       setSuccessMessage('نقش کاربر با موفقیت تغییر کرد');
       fetchUser();
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'خطا در تغییر نقش کاربر');
     }
   };
 
@@ -104,8 +104,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
 
       setSuccessMessage('کاربر با موفقیت حذف شد');
       setTimeout(() => router.push('/admin/users'), 1500);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'خطا در حذف کاربر');
     }
   };
 

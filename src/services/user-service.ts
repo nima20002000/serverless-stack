@@ -1,6 +1,25 @@
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { createFirstTimePromoCode } from "./promo-service";
+import { Role } from "@prisma/client";
+
+type UserWithoutPassword = Omit<{
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  createdAt: Date;
+  updatedAt: Date;
+}, never>;
+
+type UserInfo = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 /**
  * Validate email format
@@ -25,7 +44,7 @@ export async function createUser(data: {
   email: string;
   password: string;
   name: string;
-}) {
+}): Promise<UserWithoutPassword> {
   const { email, password, name } = data;
 
   // Validate email
@@ -76,7 +95,7 @@ export async function createUser(data: {
 /**
  * Get user by ID
  */
-export async function getUserById(userId: string) {
+export async function getUserById(userId: string): Promise<UserInfo | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -95,7 +114,7 @@ export async function getUserById(userId: string) {
 /**
  * Get user by email
  */
-export async function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string): Promise<UserInfo | null> {
   const user = await prisma.user.findUnique({
     where: { email },
     select: {

@@ -5,10 +5,10 @@ export async function GET(req: NextRequest) {
   try {
     const tags = await getAllTags();
     return NextResponse.json({ tags });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get tags error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت برچسب‌ها' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت برچسب‌ها' },
       { status: 500 }
     );
   }

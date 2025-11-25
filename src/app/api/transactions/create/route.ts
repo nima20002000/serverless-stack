@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Create transaction in database
     const transaction = await createTransaction({
-      userId: (session.user as any).id,
+      userId: session.user.id,
       items: transactionItems,
       amount: totalAmount,
     });
@@ -99,10 +99,10 @@ export async function POST(req: NextRequest) {
       paymentUrl: paymentRequest.url,
       authority: paymentRequest.authority,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating transaction:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در ایجاد تراکنش' },
+      { error: error instanceof Error ? error.message : 'خطا در ایجاد تراکنش' },
       { status: 500 }
     );
   }

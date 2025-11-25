@@ -32,14 +32,14 @@ export async function GET(req: NextRequest) {
     });
 
     // Serialize Decimal prices to numbers
-    const serializedProducts = result.products.map((product) => ({
+    const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
       ...product,
       price: Number(product.price),
     }));
 
     return NextResponse.json({
       ...result,
-      products: serializedProducts,
+      data: serializedProducts,
     });
   } catch (error) {
     console.error('Error fetching products:', error);

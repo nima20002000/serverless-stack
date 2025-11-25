@@ -43,7 +43,7 @@ export default function Header() {
                   >
                     پروفایل
                   </Link>
-                  {session.user && (session.user as any).role === 'ADMIN' && (
+                  {session.user && session.user.role === 'ADMIN' && (
                     <Link
                       href="/admin/products"
                       className="text-blue-600 hover:text-blue-700 font-medium"

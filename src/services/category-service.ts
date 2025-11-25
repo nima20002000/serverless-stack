@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma/client';
 import { CategoryFormData, CategoryWithHierarchy } from '@/types/product';
+import { DeleteResult } from '@/types/api';
 
 export async function getAllCategories(): Promise<CategoryWithHierarchy[]> {
   const categories = await prisma.category.findMany({
@@ -93,7 +94,7 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryWithHiera
   return category;
 }
 
-export async function createCategory(data: CategoryFormData) {
+export async function createCategory(data: CategoryFormData): Promise<CategoryWithHierarchy> {
   // Check if slug already exists
   const existing = await prisma.category.findUnique({
     where: { slug: data.slug },
@@ -134,7 +135,7 @@ export async function createCategory(data: CategoryFormData) {
   return category;
 }
 
-export async function updateCategory(id: string, data: Partial<CategoryFormData>) {
+export async function updateCategory(id: string, data: Partial<CategoryFormData>): Promise<CategoryWithHierarchy> {
   // Check if category exists
   const existing = await prisma.category.findUnique({
     where: { id },
@@ -206,7 +207,7 @@ export async function updateCategory(id: string, data: Partial<CategoryFormData>
   return category;
 }
 
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: string): Promise<DeleteResult> {
   // Check if category exists
   const category = await prisma.category.findUnique({
     where: { id },

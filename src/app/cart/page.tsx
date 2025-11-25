@@ -21,8 +21,8 @@ export default function CartPage() {
     try {
       setError('');
       updateQuantity(productId, quantity);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید');
     }
   };
 

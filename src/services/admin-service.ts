@@ -1,17 +1,54 @@
 import prisma from '@/lib/prisma/client';
-import { Role, TransactionStatus } from '@prisma/client';
+import { Role, TransactionStatus, Prisma } from '@prisma/client';
+import { PaginatedResponse, DeleteResult, DashboardStats } from '@/types/api';
 
 /**
  * Admin Service
  * Handles admin-specific operations for managing users, transactions, and dashboard stats
  */
 
+// User type without password
+type UserWithCount = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  createdAt: Date;
+  _count: {
+    transactions: number;
+    promoCodes: number;
+  };
+};
+
+type UserBasic = {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+};
+
+// Transaction types for admin
+type TransactionWithDetails = Prisma.TransactionGetPayload<{
+  include: {
+    user: { select: { id: true; name: true; email: true } };
+    items: { include: { product: { select: { id: true; name: true } } } };
+    invoice: true;
+  };
+}>;
+
+type UserWithDetails = Omit<Prisma.UserGetPayload<{
+  include: {
+    transactions: { include: { items: { include: { product: true } } } };
+    promoCodes: true;
+  };
+}>, 'password'>;
+
 // ============ User Management ============
 
-export async function getAllUsers(page: number = 1, limit: number = 20, search?: string, role?: string) {
+export async function getAllUsers(page: number = 1, limit: number = 20, search?: string, role?: string): Promise<PaginatedResponse<UserWithCount>> {
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: Prisma.UserWhereInput = {};
 
   // Search filter
   if (search) {
@@ -50,7 +87,7 @@ export async function getAllUsers(page: number = 1, limit: number = 20, search?:
   ]);
 
   return {
-    users,
+    data: users,
     total,
     page,
     perPage: limit,
@@ -58,7 +95,7 @@ export async function getAllUsers(page: number = 1, limit: number = 20, search?:
   };
 }
 
-export async function getUserById(id: string) {
+export async function getUserById(id: string): Promise<UserWithDetails> {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
@@ -86,7 +123,7 @@ export async function getUserById(id: string) {
   return userWithoutPassword;
 }
 
-export async function updateUserRole(id: string, role: Role) {
+export async function updateUserRole(id: string, role: Role): Promise<UserBasic> {
   const user = await prisma.user.update({
     where: { id },
     data: { role },
@@ -101,7 +138,7 @@ export async function updateUserRole(id: string, role: Role) {
   return user;
 }
 
-export async function deleteUser(id: string) {
+export async function deleteUser(id: string): Promise<DeleteResult> {
   // Check if user exists
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) {
@@ -130,10 +167,10 @@ export async function getAllTransactions(
   search?: string,
   dateFrom?: string,
   dateTo?: string
-) {
+): Promise<PaginatedResponse<TransactionWithDetails>> {
   const skip = (page - 1) * limit;
 
-  const where: any = {};
+  const where: Prisma.TransactionWhereInput = {};
 
   if (status) {
     where.status = status;
@@ -192,7 +229,7 @@ export async function getAllTransactions(
   ]);
 
   return {
-    transactions,
+    data: transactions,
     total,
     page,
     perPage: limit,
@@ -200,7 +237,7 @@ export async function getAllTransactions(
   };
 }
 
-export async function getTransactionById(id: string) {
+export async function getTransactionById(id: string): Promise<TransactionWithDetails> {
   const transaction = await prisma.transaction.findUnique({
     where: { id },
     include: {
@@ -229,7 +266,7 @@ export async function getTransactionById(id: string) {
 
 // ============ Dashboard Statistics ============
 
-export async function getDashboardStats() {
+export async function getDashboardStats(): Promise<DashboardStats> {
   // Get counts
   const [
     totalUsers,
@@ -288,24 +325,21 @@ export async function getDashboardStats() {
   });
 
   return {
-    users: {
-      total: totalUsers,
-      new: newUsersThisMonth,
-    },
-    products: {
-      total: totalProducts,
-      active: activeProducts,
-    },
-    transactions: {
-      total: totalTransactions,
-      pending: pendingTransactions,
-      completed: completedTransactions,
-      failed: failedTransactions,
-    },
-    revenue: {
-      total: totalRevenue,
-      thisMonth: monthlyRevenue,
-    },
-    recentTransactions,
+    totalProducts,
+    totalUsers,
+    totalTransactions,
+    completedTransactions,
+    totalRevenue,
+    monthlyRevenue,
+    recentTransactions: recentTransactions.map(t => ({
+      id: t.id,
+      amount: Number(t.amount),
+      status: t.status,
+      createdAt: t.createdAt,
+      user: {
+        name: t.user.name,
+        email: t.user.email,
+      },
+    })),
   };
 }

@@ -14,16 +14,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const promoCode = await getActivePromoCode(userId);
 
     return NextResponse.json({
       promoCode,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching promo code:', error);
     return NextResponse.json(
-      { error: 'خطا در دریافت کد تخفیف' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت کد تخفیف' },
       { status: 500 }
     );
   }

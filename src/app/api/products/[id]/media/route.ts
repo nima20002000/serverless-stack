@@ -14,10 +14,10 @@ export async function GET(
   try {
     const media = await getProductMedia(params.id);
     return NextResponse.json({ media });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get product media error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت رسانه‌ها' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت رسانه‌ها' },
       { status: 500 }
     );
   }
@@ -53,10 +53,10 @@ export async function POST(
     });
 
     return NextResponse.json({ media }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Add product media error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در افزودن رسانه' },
+      { error: error instanceof Error ? error.message : 'خطا در افزودن رسانه' },
       { status: 500 }
     );
   }

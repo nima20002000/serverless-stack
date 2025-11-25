@@ -13,10 +13,10 @@ export async function GET(
   try {
     const variants = await getProductVariants(params.id);
     return NextResponse.json({ variants });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get product variants error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت انواع محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت انواع محصول' },
       { status: 500 }
     );
   }
@@ -62,10 +62,10 @@ export async function POST(
     });
 
     return NextResponse.json({ variant }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create product variant error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در ایجاد نوع محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در ایجاد نوع محصول' },
       { status: 500 }
     );
   }

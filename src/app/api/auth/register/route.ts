@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Registration error:", error);
 
     // Return user-friendly error message
     return NextResponse.json(
-      { error: error.message || "خطا در ثبت‌نام" },
+      { error: error instanceof Error ? error.message : "خطا در ثبت‌نام" },
       { status: 400 }
     );
   }

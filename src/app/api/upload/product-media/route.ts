@@ -37,8 +37,11 @@ export async function POST(req: NextRequest) {
       url: result.url,
       type: validation.isVideo ? 'VIDEO' : 'IMAGE',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Upload API error:', error);
-    return NextResponse.json({ error: 'خطا در آپلود فایل' }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'خطا در آپلود فایل' },
+      { status: 500 }
+    );
   }
 }

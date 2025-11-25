@@ -22,8 +22,8 @@ export async function GET(
 
     // Verify user owns this transaction or is admin
     if (
-      transaction.userId !== (session.user as any).id &&
-      (session.user as any).role !== 'ADMIN'
+      transaction.userId !== session.user.id &&
+      session.user.role !== 'ADMIN'
     ) {
       return NextResponse.json(
         { error: 'شما دسترسی به این تراکنش ندارید' },
@@ -46,10 +46,10 @@ export async function GET(
     };
 
     return NextResponse.json({ transaction: serializedTransaction });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching transaction:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت تراکنش' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت تراکنش' },
       { status: 404 }
     );
   }

@@ -1,5 +1,23 @@
 import prisma from '@/lib/prisma/client';
 import { v4 as uuidv4 } from 'uuid';
+import { Prisma } from '@prisma/client';
+import { PaginatedResponse, StockVerificationResult } from '@/types/api';
+
+// Transaction types
+type TransactionWithItems = Prisma.TransactionGetPayload<{
+  include: {
+    items: { include: { product: true } };
+    user: { select: { id: true; email: true; name: true } };
+  };
+}>;
+
+type TransactionWithFull = Prisma.TransactionGetPayload<{
+  include: {
+    items: { include: { product: true } };
+    user: { select: { id: true; email: true; name: true } };
+    invoice: true;
+  };
+}>;
 
 /**
  * Generate a unique transaction code
@@ -27,7 +45,7 @@ export async function createTransaction(data: {
     price: number;
   }>;
   amount: number;
-}) {
+}): Promise<TransactionWithItems> {
   const transactionCode = generateTransactionCode();
 
   // Create transaction with items in a single transaction
@@ -77,7 +95,7 @@ export async function updateTransactionStatus(
   status: 'PENDING' | 'COMPLETED' | 'FAILED',
   zarinpalAuthority?: string,
   refId?: number
-) {
+): Promise<Prisma.TransactionGetPayload<{ include: { items: { include: { product: true } } } }>> {
   const transaction = await prisma.transaction.update({
     where: { id },
     data: {
@@ -100,7 +118,7 @@ export async function updateTransactionStatus(
 /**
  * Get transaction by ID
  */
-export async function getTransactionById(id: string) {
+export async function getTransactionById(id: string): Promise<TransactionWithFull> {
   const transaction = await prisma.transaction.findUnique({
     where: { id },
     include: {
@@ -130,7 +148,7 @@ export async function getTransactionById(id: string) {
 /**
  * Get transaction by transaction code
  */
-export async function getTransactionByCode(code: string) {
+export async function getTransactionByCode(code: string): Promise<TransactionWithFull> {
   const transaction = await prisma.transaction.findUnique({
     where: { transactionCode: code },
     include: {
@@ -160,7 +178,7 @@ export async function getTransactionByCode(code: string) {
 /**
  * Get transaction by Zarinpal authority
  */
-export async function getTransactionByAuthority(authority: string) {
+export async function getTransactionByAuthority(authority: string): Promise<TransactionWithItems> {
   const transaction = await prisma.transaction.findFirst({
     where: { zarinpalAuthority: authority },
     include: {
@@ -192,7 +210,7 @@ export async function getTransactionByAuthority(authority: string) {
 export async function getUserTransactions(userId: string, options?: {
   page?: number;
   perPage?: number;
-}) {
+}): Promise<PaginatedResponse<Prisma.TransactionGetPayload<{ include: { items: { include: { product: true } }; invoice: true } }>>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const skip = (page - 1) * perPage;
@@ -216,7 +234,7 @@ export async function getUserTransactions(userId: string, options?: {
   ]);
 
   return {
-    transactions,
+    data: transactions,
     total,
     page,
     perPage,
@@ -227,7 +245,7 @@ export async function getUserTransactions(userId: string, options?: {
 /**
  * Reduce product stock after successful payment
  */
-export async function reduceProductStock(transactionId: string) {
+export async function reduceProductStock(transactionId: string): Promise<void> {
   const transaction = await getTransactionById(transactionId);
 
   if (transaction.status !== 'COMPLETED') {
@@ -254,7 +272,7 @@ export async function reduceProductStock(transactionId: string) {
  */
 export async function verifyStockAvailability(
   items: Array<{ productId: string; quantity: number }>
-): Promise<{ available: boolean; errors: string[] }> {
+): Promise<StockVerificationResult> {
   const errors: string[] = [];
 
   for (const item of items) {

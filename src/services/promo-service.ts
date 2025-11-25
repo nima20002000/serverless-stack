@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import prisma from "@/lib/prisma/client";
+import { PromoCode } from "@prisma/client";
 
 /**
  * Generate a unique promo code for first-time users
@@ -14,7 +15,7 @@ export async function generatePromoCode(): Promise<string> {
  * Create a promo code for a new user
  * Expires in 24 hours
  */
-export async function createFirstTimePromoCode(userId: string) {
+export async function createFirstTimePromoCode(userId: string): Promise<PromoCode> {
   const code = await generatePromoCode();
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
@@ -34,7 +35,7 @@ export async function createFirstTimePromoCode(userId: string) {
 /**
  * Get active promo code for a user
  */
-export async function getActivePromoCode(userId: string) {
+export async function getActivePromoCode(userId: string): Promise<PromoCode | null> {
   const promoCode = await prisma.promoCode.findFirst({
     where: {
       userId,
@@ -51,7 +52,7 @@ export async function getActivePromoCode(userId: string) {
 /**
  * Mark promo code as used
  */
-export async function usePromoCode(code: string) {
+export async function usePromoCode(code: string): Promise<PromoCode> {
   const promoCode = await prisma.promoCode.findUnique({
     where: { code },
   });

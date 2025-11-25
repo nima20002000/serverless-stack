@@ -69,8 +69,10 @@ export async function GET(req: NextRequest) {
         req.url
       )
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error verifying payment:', error);
+
+    const errorMessage = error instanceof Error ? error.message : 'خطا در تأیید پرداخت';
 
     // Try to get transaction code for error page
     const searchParams = req.nextUrl.searchParams;
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.redirect(
           new URL(
-            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(error.message)}`,
+            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`,
             req.url
           )
         );
@@ -94,7 +96,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.redirect(
       new URL(
-        `/payment/failure?error=${encodeURIComponent(error.message || 'خطا در تأیید پرداخت')}`,
+        `/payment/failure?error=${encodeURIComponent(errorMessage)}`,
         req.url
       )
     );

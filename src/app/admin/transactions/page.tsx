@@ -70,8 +70,8 @@ export default function TransactionsManagementPage() {
       if (!response.ok) throw new Error('خطا در دریافت تراکنش‌ها');
       const result = await response.json();
       setData(result);
-    } catch (error: any) {
-      setError(error.message);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها');
     } finally {
       setIsLoading(false);
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProductById, updateProduct, deleteProduct } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
+import { Product, ProductVariant, Prisma } from '@prisma/client';
 
 // GET /api/products/[id] - Get single product (public)
 export async function GET(
@@ -15,24 +16,22 @@ export async function GET(
     const product = await getProductById(params.id, includeRelations);
 
     // Serialize Decimal to number and handle nested relations
-    const serializedProduct: any = {
+    const serializedProduct = {
       ...product,
       price: Number(product.price),
+      ...(('variants' in product && Array.isArray(product.variants)) && {
+        variants: product.variants.map((v) => ({
+          ...v,
+          priceAdjust: Number(v.priceAdjust),
+        })),
+      }),
     };
 
-    // Serialize variants if included
-    if (includeRelations && 'variants' in product && Array.isArray((product as any).variants)) {
-      serializedProduct.variants = (product as any).variants.map((v: any) => ({
-        ...v,
-        priceAdjust: Number(v.priceAdjust),
-      }));
-    }
-
     return NextResponse.json({ product: serializedProduct });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching product:', error);
     return NextResponse.json(
-      { error: error.message || 'محصول یافت نشد' },
+      { error: error instanceof Error ? error.message : 'محصول یافت نشد' },
       { status: 404 }
     );
   }
@@ -46,7 +45,7 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -56,7 +55,18 @@ export async function PUT(
     const body = await req.json();
     const { name, description, price, stock, images, isActive, categoryId, tagIds } = body;
 
-    const updateData: any = {};
+    type UpdateData = {
+      name?: string;
+      description?: string;
+      price?: number;
+      stock?: number;
+      images?: string[];
+      isActive?: boolean;
+      categoryId?: string | null;
+      tagIds?: string[];
+    };
+
+    const updateData: UpdateData = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (price !== undefined) updateData.price = parseFloat(price);
@@ -73,10 +83,10 @@ export async function PUT(
       message: 'محصول با موفقیت به‌روزرسانی شد',
       product,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error updating product:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در به‌روزرسانی محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی محصول' },
       { status: 400 }
     );
   }
@@ -90,7 +100,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -103,10 +113,10 @@ export async function DELETE(
       success: true,
       message: 'محصول با موفقیت حذف شد',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در حذف محصول' },
       { status: 400 }
     );
   }

@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma/client';
 import { TagFormData, TagWithCount } from '@/types/product';
+import { DeleteResult } from '@/types/api';
 
 export async function getAllTags(): Promise<TagWithCount[]> {
   const tags = await prisma.tag.findMany({
@@ -60,7 +61,7 @@ export async function getTagBySlug(slug: string): Promise<TagWithCount | null> {
   return tag;
 }
 
-export async function createTag(data: TagFormData) {
+export async function createTag(data: TagFormData): Promise<TagWithCount> {
   // Check if tag with same name or slug exists
   const existing = await prisma.tag.findFirst({
     where: {
@@ -87,7 +88,7 @@ export async function createTag(data: TagFormData) {
   return tag;
 }
 
-export async function updateTag(id: string, data: Partial<TagFormData>) {
+export async function updateTag(id: string, data: Partial<TagFormData>): Promise<TagWithCount> {
   // Check if tag exists
   const existing = await prisma.tag.findUnique({
     where: { id },
@@ -134,7 +135,7 @@ export async function updateTag(id: string, data: Partial<TagFormData>) {
   return tag;
 }
 
-export async function deleteTag(id: string) {
+export async function deleteTag(id: string): Promise<DeleteResult> {
   // Check if tag exists
   const tag = await prisma.tag.findUnique({
     where: { id },

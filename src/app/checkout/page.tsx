@@ -57,8 +57,8 @@ export default function CheckoutPage() {
 
       // Redirect to Zarinpal payment page
       window.location.href = data.paymentUrl;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
       setIsProcessing(false);
     }
   };

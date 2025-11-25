@@ -13,10 +13,10 @@ export async function GET(
     }
 
     return NextResponse.json({ category });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Get category error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در دریافت دسته‌بندی' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی' },
       { status: 500 }
     );
   }

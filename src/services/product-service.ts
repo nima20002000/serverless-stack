@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma/client';
-import { Prisma } from '@prisma/client';
+import { Prisma, Product, ProductMedia, ProductVariant } from '@prisma/client';
+import { ProductWithRelations, VariantWithMedia } from '@/types/product';
+import { PaginatedResponse, DeleteResult } from '@/types/api';
 
 /**
  * Get all products with pagination
@@ -11,7 +13,7 @@ export async function getAllProducts(options?: {
   search?: string;
   status?: string;
   stock?: string;
-}) {
+}): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const skip = (page - 1) * perPage;
@@ -93,7 +95,7 @@ export async function getAllProducts(options?: {
   });
 
   return {
-    products: productsWithImages,
+    data: productsWithImages,
     total,
     page,
     perPage,
@@ -107,14 +109,14 @@ export async function getAllProducts(options?: {
 export async function getActiveProducts(options?: {
   page?: number;
   perPage?: number;
-}) {
+}): Promise<PaginatedResponse<ProductWithRelations>> {
   return getAllProducts({ ...options, includeInactive: false });
 }
 
 /**
  * Get product by ID
  */
-export async function getProductById(id: string, includeRelations = false) {
+export async function getProductById(id: string, includeRelations = false): Promise<Product | ProductWithRelations> {
   const product = await prisma.product.findUnique({
     where: { id },
     ...(includeRelations && {
@@ -148,7 +150,7 @@ export async function getProductById(id: string, includeRelations = false) {
 export async function searchProducts(query: string, options?: {
   page?: number;
   perPage?: number;
-}) {
+}): Promise<PaginatedResponse<Product>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const skip = (page - 1) * perPage;
@@ -172,7 +174,7 @@ export async function searchProducts(query: string, options?: {
   ]);
 
   return {
-    products,
+    data: products,
     total,
     page,
     perPage,
@@ -192,7 +194,7 @@ export async function createProduct(data: {
   categoryId?: string;
   tagIds?: string[];
   isActive?: boolean;
-}) {
+}): Promise<ProductWithRelations> {
   // Validate required fields
   if (!data.name || !data.description) {
     throw new Error('نام و توضیحات محصول الزامی است');
@@ -247,7 +249,7 @@ export async function updateProduct(
     tagIds: string[];
     isActive: boolean;
   }>
-) {
+): Promise<ProductWithRelations> {
   // Check if product exists
   const existingProduct = await prisma.product.findUnique({
     where: { id },
@@ -268,8 +270,8 @@ export async function updateProduct(
 
   // Handle tag updates separately
   const tagIds = data.tagIds;
-  const updateData: any = { ...data };
-  delete updateData.tagIds;
+  const updateData: Prisma.ProductUpdateInput = { ...data };
+  delete (updateData as Record<string, unknown>).tagIds;
 
   // If tagIds provided, update tag connections
   if (tagIds !== undefined) {
@@ -308,7 +310,7 @@ export async function updateProduct(
 /**
  * Delete product (admin only)
  */
-export async function deleteProduct(id: string) {
+export async function deleteProduct(id: string): Promise<DeleteResult> {
   // Check if product exists
   const existingProduct = await prisma.product.findUnique({
     where: { id },
@@ -328,7 +330,7 @@ export async function deleteProduct(id: string) {
 /**
  * Update product stock
  */
-export async function updateStock(id: string, quantity: number) {
+export async function updateStock(id: string, quantity: number): Promise<Product> {
   const product = await prisma.product.findUnique({
     where: { id },
   });
@@ -370,7 +372,7 @@ export async function addProductMedia(data: {
   url: string;
   alt?: string;
   order?: number;
-}) {
+}): Promise<ProductMedia> {
   const media = await prisma.productMedia.create({
     data: {
       productId: data.productId,
@@ -388,7 +390,7 @@ export async function addProductMedia(data: {
 /**
  * Get all media for a product
  */
-export async function getProductMedia(productId: string) {
+export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
   const media = await prisma.productMedia.findMany({
     where: { productId },
     orderBy: { order: 'asc' },
@@ -403,7 +405,7 @@ export async function getProductMedia(productId: string) {
 export async function updateProductMedia(
   id: string,
   data: Partial<{ alt: string; order: number }>
-) {
+): Promise<ProductMedia> {
   const media = await prisma.productMedia.update({
     where: { id },
     data,
@@ -415,7 +417,7 @@ export async function updateProductMedia(
 /**
  * Delete product media
  */
-export async function deleteProductMedia(id: string) {
+export async function deleteProductMedia(id: string): Promise<DeleteResult> {
   await prisma.productMedia.delete({
     where: { id },
   });
@@ -428,7 +430,7 @@ export async function deleteProductMedia(id: string) {
 /**
  * Get all variants for a product
  */
-export async function getProductVariants(productId: string) {
+export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
   const variants = await prisma.productVariant.findMany({
     where: { productId },
     include: {
@@ -455,7 +457,7 @@ export async function createProductVariant(data: {
   priceAdjust?: number;
   stock: number;
   isActive?: boolean;
-}) {
+}): Promise<VariantWithMedia> {
   // Validate SKU uniqueness if provided
   if (data.sku) {
     const existing = await prisma.productVariant.findUnique({
@@ -502,7 +504,7 @@ export async function updateProductVariant(
     stock: number;
     isActive: boolean;
   }>
-) {
+): Promise<VariantWithMedia> {
   // Validate SKU uniqueness if being updated
   if (data.sku) {
     const existing = await prisma.productVariant.findUnique({
@@ -528,7 +530,7 @@ export async function updateProductVariant(
 /**
  * Delete product variant
  */
-export async function deleteProductVariant(id: string) {
+export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   await prisma.productVariant.delete({
     where: { id },
   });

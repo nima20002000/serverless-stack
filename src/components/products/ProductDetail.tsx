@@ -142,8 +142,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         setIsAdding(false);
         setQuantity(1);
       }, 500);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در افزودن به سبد خرید');
       setIsAdding(false);
     }
   };

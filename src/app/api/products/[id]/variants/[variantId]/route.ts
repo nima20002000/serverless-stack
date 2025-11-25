@@ -45,10 +45,10 @@ export async function PUT(
     });
 
     return NextResponse.json({ variant });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update product variant error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در به‌روزرسانی نوع محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی نوع محصول' },
       { status: 500 }
     );
   }
@@ -66,10 +66,10 @@ export async function DELETE(
 
     await deleteProductVariant(params.variantId);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete product variant error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف نوع محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در حذف نوع محصول' },
       { status: 500 }
     );
   }

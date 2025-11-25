@@ -55,8 +55,8 @@ export async function saveFile(file: File, isVideo: boolean): Promise<UploadResu
     // Return public URL
     const url = `/uploads/products/${folder}/${filename}`;
     return { success: true, url };
-  } catch (error: any) {
+  } catch (error) {
     console.error('File upload error:', error);
-    return { success: false, error: 'خطا در آپلود فایل' };
+    return { success: false, error: error instanceof Error ? error.message : 'خطا در آپلود فایل' };
   }
 }

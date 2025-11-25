@@ -13,19 +13,19 @@ export async function GET(req: NextRequest) {
     const result = await getActiveProducts({ page, perPage });
 
     // Serialize Decimal prices to numbers
-    const serializedProducts = result.products.map((product) => ({
+    const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
       ...product,
       price: Number(product.price),
     }));
 
     return NextResponse.json({
       ...result,
-      products: serializedProducts,
+      data: serializedProducts,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
-      { error: 'خطا در دریافت محصولات' },
+      { error: error instanceof Error ? error.message : 'خطا در دریافت محصولات' },
       { status: 500 }
     );
   }
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || (session.user as any).role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
         { status: 403 }
@@ -70,10 +70,10 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating product:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در ایجاد محصول' },
+      { error: error instanceof Error ? error.message : 'خطا در ایجاد محصول' },
       { status: 400 }
     );
   }

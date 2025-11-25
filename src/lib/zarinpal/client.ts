@@ -70,9 +70,9 @@ export async function createPaymentRequest(
     }
 
     throw new Error(`خطا در ایجاد درخواست پرداخت`);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Zarinpal payment request error:', error);
-    throw new Error(error.message || 'خطا در اتصال به درگاه پرداخت');
+    throw new Error(error instanceof Error ? error.message : 'خطا در اتصال به درگاه پرداخت');
   }
 }
 
@@ -98,9 +98,9 @@ export async function verifyPayment(
     }
 
     throw new Error(`تراکنش ناموفق بود`);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Zarinpal payment verification error:', error);
-    throw new Error(error.message || 'خطا در تأیید پرداخت');
+    throw new Error(error instanceof Error ? error.message : 'خطا در تأیید پرداخت');
   }
 }
 

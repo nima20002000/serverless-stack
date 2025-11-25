@@ -38,8 +38,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       );
       // Show success feedback
       setTimeout(() => setIsAdding(false), 500);
-    } catch (error: any) {
-      alert(error.message);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
       setIsAdding(false);
     }
   };

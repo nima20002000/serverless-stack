@@ -79,7 +79,7 @@ export default function ProfilePage() {
     return null;
   }
 
-  const user = session.user as any;
+  const user = session.user;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

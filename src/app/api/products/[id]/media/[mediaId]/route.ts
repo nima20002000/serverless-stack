@@ -15,10 +15,10 @@ export async function DELETE(
 
     await deleteProductMedia(params.mediaId);
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete product media error:', error);
     return NextResponse.json(
-      { error: error.message || 'خطا در حذف رسانه' },
+      { error: error instanceof Error ? error.message : 'خطا در حذف رسانه' },
       { status: 500 }
     );
   }
