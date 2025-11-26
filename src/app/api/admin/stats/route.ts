@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { getDashboardStats } from '@/services/admin-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Check authentication and admin role

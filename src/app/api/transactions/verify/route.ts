@@ -6,6 +6,8 @@ import {
 } from '@/services/transaction-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/transactions/verify - Verify payment callback from Zarinpal
 export async function GET(req: NextRequest) {
   try {

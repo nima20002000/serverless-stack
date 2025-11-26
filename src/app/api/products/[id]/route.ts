@@ -3,6 +3,8 @@ import { getProductById, updateProduct, deleteProduct } from '@/services/product
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/products/[id] - Get single product (public)
 export async function GET(
   req: NextRequest,

@@ -6,6 +6,8 @@ import {
   deleteProductVariant,
 } from '@/services/product-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string; variantId: string } }

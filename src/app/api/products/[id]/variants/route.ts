@@ -6,6 +6,8 @@ import {
   createProductVariant,
 } from '@/services/product-service';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

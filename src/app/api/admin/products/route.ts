@@ -3,6 +3,8 @@ import { getAllProducts } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/admin/products - List all products including inactive (admin only)
 export async function GET(req: NextRequest) {
   try {

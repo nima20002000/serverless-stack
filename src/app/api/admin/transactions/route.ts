@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth/options';
 import { getAllTransactions } from '@/services/admin-service';
 import { TransactionStatus } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check authentication and admin role

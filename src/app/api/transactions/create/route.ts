@@ -12,6 +12,8 @@ import {
   getCallbackUrl,
 } from '@/lib/zarinpal/client';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/transactions/create - Create transaction and initiate payment
 export async function POST(req: NextRequest) {
   try {

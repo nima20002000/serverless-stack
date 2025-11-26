@@ -8,6 +8,8 @@ import {
 } from '@/services/admin-service';
 import { Role } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

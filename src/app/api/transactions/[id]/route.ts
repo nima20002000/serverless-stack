@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { getTransactionById } from '@/services/transaction-service';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/transactions/[id] - Get transaction details
 export async function GET(
   req: NextRequest,
