@@ -5,6 +5,8 @@ import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
 import { Product, ProductVariant } from '@prisma/client';
 
+export const dynamic = 'force-dynamic';
+
 interface ProductPageProps {
   params: { id: string };
 }
