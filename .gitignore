@@ -29,6 +29,13 @@ yarn-error.log*
 .env*.local
 .env
 
+# credentials
+DATABASE_CREDENTIALS.md
+SUPABASE_CREDENTIALS.md
+
+# mcp config
+.mcp.json
+
 # vercel
 .vercel
 
