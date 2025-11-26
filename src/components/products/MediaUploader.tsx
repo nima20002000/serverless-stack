@@ -57,7 +57,7 @@ export default function MediaUploader({
     return response.json();
   };
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (media.length + files.length > maxFiles) {
       alert(`حداکثر ${maxFiles} فایل می‌توانید آپلود کنید`);
@@ -90,7 +90,7 @@ export default function MediaUploader({
       setUploading(false);
       setDragActive(false);
     }
-  };
+  }, [media, maxFiles, onChange]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -101,7 +101,7 @@ export default function MediaUploader({
       if (disabled || uploading) return;
       handleFiles(e.dataTransfer.files);
     },
-    [disabled, uploading, media, maxFiles]
+    [disabled, uploading, handleFiles]
   );
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {

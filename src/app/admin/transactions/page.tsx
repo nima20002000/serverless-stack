@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -53,11 +53,7 @@ export default function TransactionsManagementPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  useEffect(() => {
-    fetchTransactions();
-  }, [currentPage, statusFilter, searchQuery, dateFrom, dateTo]);
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
@@ -75,7 +71,11 @@ export default function TransactionsManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, statusFilter, searchQuery, dateFrom, dateTo]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

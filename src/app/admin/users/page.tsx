@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -39,11 +39,7 @@ export default function UsersManagementPage() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, searchQuery, roleFilter]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
@@ -57,7 +53,11 @@ export default function UsersManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, searchQuery, roleFilter]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

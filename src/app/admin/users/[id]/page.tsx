@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -46,11 +46,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/admin/users/${params.id}`);
@@ -62,7 +58,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const handleChangeRole = async (newRole: 'USER' | 'ADMIN') => {
     if (!confirm(`آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`)) {

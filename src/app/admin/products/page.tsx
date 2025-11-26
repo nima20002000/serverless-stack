@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -29,11 +29,7 @@ export default function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchProducts();
-  }, [searchQuery, statusFilter, stockFilter]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
@@ -48,7 +44,11 @@ export default function AdminProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, statusFilter, stockFilter]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 
 interface Tag {
@@ -34,20 +34,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (query.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      searchTags(query);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const searchTags = async (searchQuery: string) => {
+  const searchTags = useCallback(async (searchQuery: string) => {
     try {
       setLoading(true);
       const response = await fetch(`/api/tags/search?q=${encodeURIComponent(searchQuery)}`);
@@ -70,7 +57,20 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedTags]);
+
+  useEffect(() => {
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      searchTags(query);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query, searchTags]);
 
   const addTag = (tag: Tag) => {
     if (!selectedTags.some(t => t.id === tag.id)) {
