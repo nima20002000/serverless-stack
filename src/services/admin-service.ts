@@ -118,8 +118,9 @@ export async function getUserById(id: string): Promise<UserWithDetails> {
     throw new Error('کاربر یافت نشد');
   }
 
-  // Don't return password
-  const { password, ...userWithoutPassword } = user;
+  // Don't return password - destructure to exclude it
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 }
 
@@ -272,26 +273,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalUsers,
     totalProducts,
     totalTransactions,
-    pendingTransactions,
     completedTransactions,
-    failedTransactions,
-    activeProducts,
-    newUsersThisMonth,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.product.count(),
     prisma.transaction.count(),
-    prisma.transaction.count({ where: { status: 'PENDING' } }),
     prisma.transaction.count({ where: { status: 'COMPLETED' } }),
-    prisma.transaction.count({ where: { status: 'FAILED' } }),
-    prisma.product.count({ where: { isActive: true } }),
-    prisma.user.count({
-      where: {
-        createdAt: {
-          gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        },
-      },
-    }),
   ]);
 
   // Calculate revenue

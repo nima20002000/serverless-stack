@@ -135,7 +135,7 @@ export default function UsersManagementPage() {
   };
 
   // Bulk operations
-  const handleBulkDelete = async (ids: string[]) => {
+  const handleBulkDelete = async () => {
     try {
       const response = await fetch('/api/admin/users/bulk', {
         method: 'POST',
@@ -160,7 +160,7 @@ export default function UsersManagementPage() {
     }
   };
 
-  const handleBulkPromoteToAdmin = async (ids: string[]) => {
+  const handleBulkPromoteToAdmin = async () => {
     try {
       const response = await fetch('/api/admin/users/bulk', {
         method: 'POST',
@@ -183,7 +183,7 @@ export default function UsersManagementPage() {
     }
   };
 
-  const handleBulkDemoteToUser = async (ids: string[]) => {
+  const handleBulkDemoteToUser = async () => {
     try {
       const response = await fetch('/api/admin/users/bulk', {
         method: 'POST',

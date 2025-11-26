@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
           )
         );
       }
-    } catch (e) {
+    } catch {
       // Ignore error
     }
 

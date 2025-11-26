@@ -117,7 +117,7 @@ export default function AdminProductsPage() {
   };
 
   // Bulk operations
-  const handleBulkDelete = async (ids: string[]) => {
+  const handleBulkDelete = async () => {
     try {
       const response = await fetch('/api/admin/products/bulk', {
         method: 'POST',
@@ -139,7 +139,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleBulkActivate = async (ids: string[]) => {
+  const handleBulkActivate = async () => {
     try {
       const response = await fetch('/api/admin/products/bulk', {
         method: 'POST',
@@ -162,7 +162,7 @@ export default function AdminProductsPage() {
     }
   };
 
-  const handleBulkDeactivate = async (ids: string[]) => {
+  const handleBulkDeactivate = async () => {
     try {
       const response = await fetch('/api/admin/products/bulk', {
         method: 'POST',

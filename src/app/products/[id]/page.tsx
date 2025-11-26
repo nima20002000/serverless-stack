@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       title: `${product.name} - کیتیا`,
       description: product.description,
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'محصول یافت نشد - کیتیا',
     };
@@ -28,7 +28,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
   try {
     product = await getProductById(params.id, true);
-  } catch (error) {
+  } catch {
     notFound();
   }
 

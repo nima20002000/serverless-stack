@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAllTags } from '@/services/tag-service';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const tags = await getAllTags();
     return NextResponse.json({ tags });

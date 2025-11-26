@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProductById, updateProduct, deleteProduct } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { Product, ProductVariant, Prisma } from '@prisma/client';
 
 // GET /api/products/[id] - Get single product (public)
 export async function GET(

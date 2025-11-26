@@ -87,7 +87,8 @@ export async function createUser(data: {
     // Don't fail user creation if promo code fails
   }
 
-  // Return user without password
+  // Return user without password - destructure to exclude it
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 }

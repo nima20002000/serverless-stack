@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth/options';
 import {
   getProductMedia,
   addProductMedia,
-  deleteProductMedia,
 } from '@/services/product-service';
 
 export async function GET(

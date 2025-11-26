@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma/client';
-import { Prisma, Product, ProductMedia, ProductVariant } from '@prisma/client';
+import { Prisma, Product, ProductMedia } from '@prisma/client';
 import { ProductWithRelations, VariantWithMedia } from '@/types/product';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
 
