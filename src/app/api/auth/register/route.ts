@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser } from "@/services/user-service";
 import { withLogging } from "@/lib/api/with-logging";
+import { withRateLimit } from "@/lib/api/with-rate-limit";
+import { strictLimiter } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,4 +46,7 @@ async function postHandler(req: NextRequest) {
   }
 }
 
-export const POST = withLogging(postHandler, 'POST /api/auth/register');
+export const POST = withLogging(
+  withRateLimit(postHandler, strictLimiter),
+  'POST /api/auth/register'
+);

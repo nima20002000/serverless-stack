@@ -12,6 +12,8 @@ import {
   getCallbackUrl,
 } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
+import { withRateLimit } from '@/lib/api/with-rate-limit';
+import { apiLimiter } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,4 +113,7 @@ async function postHandler(req: NextRequest) {
   }
 }
 
-export const POST = withLogging(postHandler, 'POST /api/transactions/create');
+export const POST = withLogging(
+  withRateLimit(postHandler, apiLimiter),
+  'POST /api/transactions/create'
+);

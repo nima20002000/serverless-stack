@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getAllTags } from '@/services/tag-service';
 import { withLogging } from '@/lib/api/with-logging';
 import { withCache } from '@/lib/api/with-cache';
 
 export const dynamic = 'force-dynamic';
 
-async function getHandler(req: NextRequest) {
+async function getHandler() {
   try {
     const tags = await getAllTags();
     return NextResponse.json({ tags });

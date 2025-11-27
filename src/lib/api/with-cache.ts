@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCached } from '@/lib/redis/client';
 import { log } from '@/lib/logger';
 
-type ApiHandler = (req: NextRequest, context?: any) => Promise<NextResponse>;
+type ApiHandler = (req: NextRequest, context?: unknown) => Promise<NextResponse>;
 
 export function withCache(
   handler: ApiHandler,
   cacheKeyFn: (req: NextRequest) => string,
   ttl: number = 300
 ): ApiHandler {
-  return async (req: NextRequest, context?: any) => {
+  return async (req: NextRequest, context?: unknown) => {
     // Only cache GET requests
     if (req.method !== 'GET') {
       return handler(req, context);
