@@ -46,3 +46,6 @@ sync-to-production.sh
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temporary test files
+/tmp
