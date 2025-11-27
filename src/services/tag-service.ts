@@ -1,6 +1,16 @@
 import prisma from '@/lib/prisma/client';
 import { TagFormData, TagWithCount } from '@/types/product';
 import { DeleteResult } from '@/types/api';
+import { clearCache } from '@/lib/redis/client';
+import { log } from '@/lib/logger';
+
+/**
+ * Helper to invalidate tag cache
+ */
+async function invalidateTagCache(): Promise<void> {
+  await clearCache('tags:all');
+  log.info('Tag cache invalidated');
+}
 
 export async function getAllTags(): Promise<TagWithCount[]> {
   const tags = await prisma.tag.findMany({
@@ -85,6 +95,9 @@ export async function createTag(data: TagFormData): Promise<TagWithCount> {
     },
   });
 
+  // Invalidate tag cache
+  await invalidateTagCache();
+
   return tag;
 }
 
@@ -132,6 +145,9 @@ export async function updateTag(id: string, data: Partial<TagFormData>): Promise
     },
   });
 
+  // Invalidate tag cache
+  await invalidateTagCache();
+
   return tag;
 }
 
@@ -158,6 +174,9 @@ export async function deleteTag(id: string): Promise<DeleteResult> {
   await prisma.tag.delete({
     where: { id },
   });
+
+  // Invalidate tag cache
+  await invalidateTagCache();
 
   return { success: true };
 }

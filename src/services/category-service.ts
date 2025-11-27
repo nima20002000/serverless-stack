@@ -1,6 +1,17 @@
 import prisma from '@/lib/prisma/client';
 import { CategoryFormData, CategoryWithHierarchy } from '@/types/product';
 import { DeleteResult } from '@/types/api';
+import { clearCachePattern } from '@/lib/redis/client';
+import { log } from '@/lib/logger';
+
+/**
+ * Helper to invalidate all category caches
+ */
+async function invalidateCategoryCache(): Promise<void> {
+  const cacheKeys = ['categories:active', 'categories:tree'];
+  await clearCachePattern(cacheKeys);
+  log.info('Category cache invalidated');
+}
 
 export async function getAllCategories(): Promise<CategoryWithHierarchy[]> {
   const categories = await prisma.category.findMany({
@@ -132,6 +143,9 @@ export async function createCategory(data: CategoryFormData): Promise<CategoryWi
     },
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   return category;
 }
 
@@ -204,6 +218,9 @@ export async function updateCategory(id: string, data: Partial<CategoryFormData>
     },
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   return category;
 }
 
@@ -236,6 +253,9 @@ export async function deleteCategory(id: string): Promise<DeleteResult> {
   await prisma.category.delete({
     where: { id },
   });
+
+  // Invalidate category cache
+  await invalidateCategoryCache();
 
   return { success: true };
 }

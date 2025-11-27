@@ -3,6 +3,23 @@ import { Prisma, Product, ProductMedia } from '@prisma/client';
 import { ProductWithRelations, VariantWithMedia } from '@/types/product';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
 import { log } from '@/lib/logger';
+import { clearCachePattern } from '@/lib/redis/client';
+
+/**
+ * Helper to invalidate all product caches
+ * Since Upstash doesn't support pattern matching, we clear common cache keys
+ */
+async function invalidateProductCache(): Promise<void> {
+  // Clear common pagination keys (pages 1-10, which covers most traffic)
+  const cacheKeys = [];
+  for (let page = 1; page <= 10; page++) {
+    cacheKeys.push(`products:active:page:${page}:limit:20`);
+    cacheKeys.push(`products:active:page:${page}:limit:10`);
+    cacheKeys.push(`products:active:page:${page}:limit:50`);
+  }
+  await clearCachePattern(cacheKeys);
+  log.info('Product cache invalidated', { keysCleared: cacheKeys.length });
+}
 
 /**
  * Get all products with pagination
@@ -244,6 +261,9 @@ export async function createProduct(data: {
       price: product.price,
     });
 
+    // Invalidate product cache
+    await invalidateProductCache();
+
     return product;
   } catch (error) {
     log.error('Failed to create product', {
@@ -324,6 +344,9 @@ export async function updateProduct(
     },
   });
 
+  // Invalidate product cache
+  await invalidateProductCache();
+
   return product;
 }
 
@@ -343,6 +366,9 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
   await prisma.product.delete({
     where: { id },
   });
+
+  // Invalidate product cache
+  await invalidateProductCache();
 
   return { success: true };
 }

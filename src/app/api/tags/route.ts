@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAllTags } from '@/services/tag-service';
+import { withLogging } from '@/lib/api/with-logging';
+import { withCache } from '@/lib/api/with-cache';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+async function getHandler(req: NextRequest) {
   try {
     const tags = await getAllTags();
     return NextResponse.json({ tags });
@@ -15,3 +17,12 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withLogging(
+  withCache(
+    getHandler,
+    () => 'tags:all',
+    600 // 10 minutes
+  ),
+  'GET /api/tags'
+);

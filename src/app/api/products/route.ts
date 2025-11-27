@@ -3,6 +3,7 @@ import { getActiveProducts, createProduct } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
+import { withCache } from '@/lib/api/with-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,5 +83,16 @@ async function postHandler(req: NextRequest) {
   }
 }
 
-export const GET = withLogging(getHandler, 'GET /api/products');
+export const GET = withLogging(
+  withCache(
+    getHandler,
+    (req) => {
+      const page = req.nextUrl.searchParams.get('page') || '1';
+      const perPage = req.nextUrl.searchParams.get('perPage') || '20';
+      return `products:active:page:${page}:limit:${perPage}`;
+    },
+    300 // 5 minutes
+  ),
+  'GET /api/products'
+);
 export const POST = withLogging(postHandler, 'POST /api/products');
