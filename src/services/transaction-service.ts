@@ -1,6 +1,7 @@
 import prisma from '@/lib/prisma/client';
 import { Prisma } from '@prisma/client';
 import { PaginatedResponse, StockVerificationResult } from '@/types/api';
+import { log } from '@/lib/logger';
 
 // Transaction types
 type TransactionWithItems = Prisma.TransactionGetPayload<{
@@ -47,43 +48,65 @@ export async function createTransaction(data: {
 }): Promise<TransactionWithItems> {
   const transactionCode = generateTransactionCode();
 
-  // Create transaction with items in a single transaction
-  const transaction = await prisma.$transaction(async (tx) => {
-    // Create the transaction
-    const newTransaction = await tx.transaction.create({
-      data: {
-        userId: data.userId,
-        amount: data.amount,
-        status: 'PENDING',
-        transactionCode,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    return newTransaction;
+  log.info('Creating transaction', {
+    userId: data.userId,
+    amount: data.amount,
+    itemCount: data.items.length,
+    transactionCode,
   });
 
-  return transaction;
+  try {
+    // Create transaction with items in a single transaction
+    const transaction = await prisma.$transaction(async (tx) => {
+      // Create the transaction
+      const newTransaction = await tx.transaction.create({
+        data: {
+          userId: data.userId,
+          amount: data.amount,
+          status: 'PENDING',
+          transactionCode,
+          items: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return newTransaction;
+    });
+
+    log.info('Transaction created successfully', {
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      amount: transaction.amount,
+    });
+
+    return transaction;
+  } catch (error) {
+    log.error('Failed to create transaction', {
+      userId: data.userId,
+      amount: data.amount,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**
@@ -95,23 +118,44 @@ export async function updateTransactionStatus(
   zarinpalAuthority?: string,
   refId?: number
 ): Promise<Prisma.TransactionGetPayload<{ include: { items: { include: { product: true } } } }>> {
-  const transaction = await prisma.transaction.update({
-    where: { id },
-    data: {
-      status,
-      zarinpalAuthority,
-      ...(refId && { zarinpalRefId: refId.toString() }),
-    },
-    include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
-    },
+  log.info('Updating transaction status', {
+    transactionId: id,
+    status,
+    refId,
   });
 
-  return transaction;
+  try {
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data: {
+        status,
+        zarinpalAuthority,
+        ...(refId && { zarinpalRefId: refId.toString() }),
+      },
+      include: {
+        items: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    log.info('Transaction status updated successfully', {
+      transactionId: id,
+      oldStatus: 'PENDING',
+      newStatus: status,
+    });
+
+    return transaction;
+  } catch (error) {
+    log.error('Failed to update transaction status', {
+      transactionId: id,
+      status,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**
@@ -245,25 +289,44 @@ export async function getUserTransactions(userId: string, options?: {
  * Reduce product stock after successful payment
  */
 export async function reduceProductStock(transactionId: string): Promise<void> {
-  const transaction = await getTransactionById(transactionId);
+  log.info('Reducing product stock for transaction', { transactionId });
 
-  if (transaction.status !== 'COMPLETED') {
-    throw new Error('فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد');
-  }
+  try {
+    const transaction = await getTransactionById(transactionId);
 
-  // Update stock for each product in the transaction
-  await prisma.$transaction(
-    transaction.items.map((item) =>
-      prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
+    if (transaction.status !== 'COMPLETED') {
+      log.warn('Cannot reduce stock for non-completed transaction', {
+        transactionId,
+        status: transaction.status,
+      });
+      throw new Error('فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد');
+    }
+
+    // Update stock for each product in the transaction
+    await prisma.$transaction(
+      transaction.items.map((item) =>
+        prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
           },
-        },
-      })
-    )
-  );
+        })
+      )
+    );
+
+    log.info('Product stock reduced successfully', {
+      transactionId,
+      itemsUpdated: transaction.items.length,
+    });
+  } catch (error) {
+    log.error('Failed to reduce product stock', {
+      transactionId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**

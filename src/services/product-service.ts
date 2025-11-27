@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma/client';
 import { Prisma, Product, ProductMedia } from '@prisma/client';
 import { ProductWithRelations, VariantWithMedia } from '@/types/product';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
+import { log } from '@/lib/logger';
 
 /**
  * Get all products with pagination
@@ -195,43 +196,62 @@ export async function createProduct(data: {
   tagIds?: string[];
   isActive?: boolean;
 }): Promise<ProductWithRelations> {
-  // Validate required fields
-  if (!data.name || !data.description) {
-    throw new Error('نام و توضیحات محصول الزامی است');
-  }
+  log.info('Creating product', { name: data.name, price: data.price, stock: data.stock });
 
-  if (data.price <= 0) {
-    throw new Error('قیمت باید بیشتر از صفر باشد');
-  }
+  try {
+    // Validate required fields
+    if (!data.name || !data.description) {
+      log.warn('Missing required product fields', { name: data.name });
+      throw new Error('نام و توضیحات محصول الزامی است');
+    }
 
-  if (data.stock < 0) {
-    throw new Error('موجودی نمی‌تواند منفی باشد');
-  }
+    if (data.price <= 0) {
+      log.warn('Invalid product price', { price: data.price });
+      throw new Error('قیمت باید بیشتر از صفر باشد');
+    }
 
-  const product = await prisma.product.create({
-    data: {
+    if (data.stock < 0) {
+      log.warn('Invalid product stock', { stock: data.stock });
+      throw new Error('موجودی نمی‌تواند منفی باشد');
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        stock: data.stock,
+        images: data.images || [],
+        categoryId: data.categoryId,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+        ...(data.tagIds && data.tagIds.length > 0 && {
+          tags: {
+            connect: data.tagIds.map((id) => ({ id })),
+          },
+        }),
+      },
+      include: {
+        category: true,
+        tags: true,
+        media: true,
+        variants: true,
+      },
+    });
+
+    log.info('Product created successfully', {
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+    });
+
+    return product;
+  } catch (error) {
+    log.error('Failed to create product', {
       name: data.name,
-      description: data.description,
-      price: data.price,
-      stock: data.stock,
-      images: data.images || [],
-      categoryId: data.categoryId,
-      isActive: data.isActive !== undefined ? data.isActive : true,
-      ...(data.tagIds && data.tagIds.length > 0 && {
-        tags: {
-          connect: data.tagIds.map((id) => ({ id })),
-        },
-      }),
-    },
-    include: {
-      category: true,
-      tags: true,
-      media: true,
-      variants: true,
-    },
-  });
-
-  return product;
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**
@@ -331,26 +351,49 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
  * Update product stock
  */
 export async function updateStock(id: string, quantity: number): Promise<Product> {
-  const product = await prisma.product.findUnique({
-    where: { id },
-  });
+  log.info('Updating product stock', { productId: id, quantity });
 
-  if (!product) {
-    throw new Error('محصول یافت نشد');
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      log.warn('Product not found for stock update', { productId: id });
+      throw new Error('محصول یافت نشد');
+    }
+
+    const newStock = product.stock + quantity;
+
+    if (newStock < 0) {
+      log.warn('Insufficient stock', {
+        productId: id,
+        currentStock: product.stock,
+        requestedChange: quantity,
+      });
+      throw new Error('موجودی کافی نیست');
+    }
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { stock: newStock },
+    });
+
+    log.info('Stock updated successfully', {
+      productId: id,
+      oldStock: product.stock,
+      newStock: updated.stock,
+    });
+
+    return updated;
+  } catch (error) {
+    log.error('Failed to update stock', {
+      productId: id,
+      quantity,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
   }
-
-  const newStock = product.stock + quantity;
-
-  if (newStock < 0) {
-    throw new Error('موجودی کافی نیست');
-  }
-
-  const updated = await prisma.product.update({
-    where: { id },
-    data: { stock: newStock },
-  });
-
-  return updated;
 }
 
 /**

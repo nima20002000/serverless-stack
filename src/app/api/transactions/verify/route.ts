@@ -5,11 +5,12 @@ import {
   reduceProductStock,
 } from '@/services/transaction-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
+import { withLogging } from '@/lib/api/with-logging';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/transactions/verify - Verify payment callback from Zarinpal
-export async function GET(req: NextRequest) {
+async function getHandler(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const authority = searchParams.get('Authority');
@@ -104,3 +105,5 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+export const GET = withLogging(getHandler, 'GET /api/transactions/verify');

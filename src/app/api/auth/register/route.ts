@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser } from "@/services/user-service";
+import { withLogging } from "@/lib/api/with-logging";
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   try {
     const body = await req.json();
     const { email, password, name } = body;
@@ -42,3 +43,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withLogging(postHandler, 'POST /api/auth/register');

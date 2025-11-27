@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { createFirstTimePromoCode } from "./promo-service";
 import { Role } from "@prisma/client";
+import { log } from "@/lib/logger";
 
 type UserWithoutPassword = Omit<{
   id: string;
@@ -47,50 +48,72 @@ export async function createUser(data: {
 }): Promise<UserWithoutPassword> {
   const { email, password, name } = data;
 
-  // Validate email
-  if (!validateEmail(email)) {
-    throw new Error("فرمت ایمیل نامعتبر است");
-  }
+  log.info('Creating user', { email, name });
 
-  // Validate password
-  if (!validatePassword(password)) {
-    throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
-  }
-
-  // Check if user already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (existingUser) {
-    throw new Error("کاربری با این ایمیل قبلاً ثبت‌نام کرده است");
-  }
-
-  // Hash password
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  // Create user
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-      role: "USER",
-    },
-  });
-
-  // Create first-time promo code for new user
   try {
-    await createFirstTimePromoCode(user.id);
-  } catch (error) {
-    console.error("Failed to create promo code:", error);
-    // Don't fail user creation if promo code fails
-  }
+    // Validate email
+    if (!validateEmail(email)) {
+      log.warn('Invalid email format', { email });
+      throw new Error("فرمت ایمیل نامعتبر است");
+    }
 
-  // Return user without password - destructure to exclude it
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+    // Validate password
+    if (!validatePassword(password)) {
+      log.warn('Invalid password length', { email });
+      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      log.warn('User already exists', { email });
+      throw new Error("کاربری با این ایمیل قبلاً ثبت‌نام کرده است");
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: "USER",
+      },
+    });
+
+    log.info('User created successfully', {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    // Create first-time promo code for new user
+    try {
+      await createFirstTimePromoCode(user.id);
+    } catch (error) {
+      log.error("Failed to create promo code", {
+        userId: user.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Don't fail user creation if promo code fails
+    }
+
+    // Return user without password - destructure to exclude it
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  } catch (error) {
+    log.error('Failed to create user', {
+      email,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**

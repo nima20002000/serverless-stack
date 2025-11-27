@@ -11,11 +11,12 @@ import {
   createPaymentRequest,
   getCallbackUrl,
 } from '@/lib/zarinpal/client';
+import { withLogging } from '@/lib/api/with-logging';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/transactions/create - Create transaction and initiate payment
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -109,3 +110,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const POST = withLogging(postHandler, 'POST /api/transactions/create');

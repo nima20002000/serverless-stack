@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getActiveProducts, createProduct } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
+import { withLogging } from '@/lib/api/with-logging';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/products - List active products (public)
-export async function GET(req: NextRequest) {
+async function getHandler(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/products - Create product (admin only)
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -80,3 +81,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const GET = withLogging(getHandler, 'GET /api/products');
+export const POST = withLogging(postHandler, 'POST /api/products');
