@@ -28,10 +28,14 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.production
 
 # credentials
 DATABASE_CREDENTIALS.md
 SUPABASE_CREDENTIALS.md
+
+# production sync script (contains credentials)
+sync-to-production.sh
 
 # mcp config
 .mcp.json
