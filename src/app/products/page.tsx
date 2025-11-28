@@ -27,7 +27,7 @@ export default function ProductsPage() {
     try {
       const response = await fetch('/api/products?page=1&perPage=20');
       const data = await response.json();
-      setProducts(data.products);
+      setProducts(data.data);
       setTotal(data.total);
     } catch (error) {
       console.error('Error fetching products:', error);
