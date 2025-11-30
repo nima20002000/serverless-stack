@@ -77,11 +77,24 @@ export default function VerifyOTPPage() {
       }
 
       // Auto-login with NextAuth after successful verification
-      const result = await signIn('credentials', {
+      // For register: use password that was set
+      // For login: no password needed (OTP already verified)
+      const signInData: any = {
         identifier: phone,
-        password: purpose === 'register' ? password : undefined,
         redirect: false
-      });
+      };
+
+      // Only add password for registration flow
+      if (purpose === 'register' && password) {
+        signInData.password = password;
+      }
+
+      const result = await signIn('credentials', signInData);
+
+      if (result?.error) {
+        console.error('NextAuth sign in error:', result.error);
+        throw new Error(result.error || 'خطا در ورود به حساب کاربری');
+      }
 
       if (result?.ok) {
         router.push(redirectTo);

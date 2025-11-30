@@ -68,9 +68,15 @@ export const authOptions: NextAuthOptions = {
         }
 
         // For phone authentication without password (OTP-verified)
-        if (!credentials.password) {
+        // Only allow passwordless login for phone numbers (not email)
+        if (!credentials.password && identifierType === 'phone') {
           // This path is used after OTP verification
           // The OTP was already verified before calling signIn
+          // Security: Only allow if user is verified (went through OTP)
+          if (!user.isVerified) {
+            throw new Error("لطفاً ابتدا شماره تلفن خود را تایید کنید");
+          }
+
           return {
             id: user.id,
             email: user.email,
