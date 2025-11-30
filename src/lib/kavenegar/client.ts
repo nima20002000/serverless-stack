@@ -20,13 +20,13 @@ export async function sendOTPSMS(phone: string, otp: string): Promise<SendOTPRes
     api.VerifyLookup({
       receptor: phone,
       token: otp,
-      template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-kitia'
+      template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-test'
     }, function(response, status, message) {
       if (status === 200) {
         log.info('OTP sent successfully via Kavenegar', {
           phone,
           messageId: response[0]?.messageid,
-          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-kitia'
+          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-test'
         });
         resolve({ success: true, messageId: response[0]?.messageid });
       } else {
@@ -34,7 +34,7 @@ export async function sendOTPSMS(phone: string, otp: string): Promise<SendOTPRes
           phone,
           status,
           message,
-          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-kitia'
+          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'otp-test'
         });
         resolve({ success: false, error: message || `خطا ${status}` });
       }
