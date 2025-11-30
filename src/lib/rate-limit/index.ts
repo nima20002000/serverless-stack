@@ -11,7 +11,7 @@ const redis = new Redis({
 // Strict rate limiter for authentication endpoints (prevent brute force)
 export const strictLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.slidingWindow(5, '15 m'), // 5 requests per 15 minutes
+  limiter: Ratelimit.slidingWindow(5, '2 m'), // 5 requests per 2 minutes
   analytics: true,
   prefix: 'ratelimit:strict',
 });

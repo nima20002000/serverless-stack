@@ -78,7 +78,7 @@ export default function RegisterPage() {
       // Check for rate limiting
       if (response.status === 429) {
         const rateLimitData = await response.json();
-        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 900000); // 15 min default
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000); // 2 min default
         setIsLoading(false);
         return;
       }

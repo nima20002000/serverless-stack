@@ -11,14 +11,15 @@ export async function middleware(req: NextRequest) {
     let limiter: Ratelimit = apiLimiter;
     let shouldRateLimit = true;
 
-    if (req.nextUrl.pathname.startsWith('/api/auth/')) {
-      // Only apply strict rate limiting to POST requests (actual login/register)
-      // Skip GET requests (session checks, CSRF, etc.)
-      if (req.method === 'POST') {
-        limiter = strictLimiter; // Strict for authentication
-      } else {
-        shouldRateLimit = false; // Don't rate limit GET requests for auth
-      }
+    // Strict rate limiting for authentication endpoints
+    if (
+      req.nextUrl.pathname === '/api/auth/login' ||
+      req.nextUrl.pathname === '/api/auth/register'
+    ) {
+      limiter = strictLimiter; // Strict for login/register (5 requests per 2 minutes)
+    } else if (req.nextUrl.pathname.startsWith('/api/auth/')) {
+      // Don't rate limit other NextAuth endpoints (session, CSRF, providers, etc.)
+      shouldRateLimit = false;
     } else if (
       req.nextUrl.pathname.startsWith('/api/products') ||
       req.nextUrl.pathname.startsWith('/api/categories') ||

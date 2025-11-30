@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
@@ -50,6 +50,33 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      // Check for rate limiting
+      if (response.status === 429) {
+        const rateLimitData = await response.json();
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000); // 2 min default
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'خطا در ورود');
+      }
+
+      // Our custom API validated credentials successfully
+      // Now use NextAuth's signIn to create the actual session
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -57,15 +84,16 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
+        // This shouldn't happen since we already validated, but handle it
         setErrorMessage(result.error);
       } else if (result?.ok) {
-        // Successful login
+        // Successful login - redirect to home page
         router.push('/');
         router.refresh();
       }
     } catch (error) {
-      console.error('Login error:', error);
-      setErrorMessage('خطا در ورود. لطفاً دوباره تلاش کنید.');
+      const errorMessage = error instanceof Error ? error.message : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
+      setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
     }
