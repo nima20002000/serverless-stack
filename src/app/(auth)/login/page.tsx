@@ -89,7 +89,7 @@ export default function LoginPage() {
       } else if (result?.ok) {
         // Successful login - redirect to home page
         router.push('/');
-        router.refresh();
+        // Note: router.refresh() removed - NextAuth already updates session
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
