@@ -50,18 +50,6 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Make a lightweight request to check rate limiting before actual login
-      // We'll check the session endpoint which is also under /api/auth/
-      const rateLimitCheck = await fetch('/api/auth/session');
-
-      if (rateLimitCheck.status === 429) {
-        const rateLimitData = await rateLimitCheck.json();
-        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 900000); // 15 min default
-        setIsLoading(false);
-        return;
-      }
-
-      // If not rate limited, proceed with sign in
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -69,12 +57,7 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        // Check if error message indicates rate limiting
-        if (result.error.includes('بیش از حد مجاز') || result.error.includes('rate limit')) {
-          setRateLimitRetryAfter(Date.now() + 900000); // 15 min default
-        } else {
-          setErrorMessage(result.error);
-        }
+        setErrorMessage(result.error);
       } else if (result?.ok) {
         // Successful login
         router.push('/');

@@ -9,9 +9,16 @@ export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith('/api')) {
     // Choose appropriate limiter based on endpoint
     let limiter: Ratelimit = apiLimiter;
+    let shouldRateLimit = true;
 
     if (req.nextUrl.pathname.startsWith('/api/auth/')) {
-      limiter = strictLimiter; // Strict for authentication
+      // Only apply strict rate limiting to POST requests (actual login/register)
+      // Skip GET requests (session checks, CSRF, etc.)
+      if (req.method === 'POST') {
+        limiter = strictLimiter; // Strict for authentication
+      } else {
+        shouldRateLimit = false; // Don't rate limit GET requests for auth
+      }
     } else if (
       req.nextUrl.pathname.startsWith('/api/products') ||
       req.nextUrl.pathname.startsWith('/api/categories') ||
@@ -20,26 +27,28 @@ export async function middleware(req: NextRequest) {
       limiter = publicLimiter; // Generous for public browsing
     }
 
-    const { success, limit, reset } = await checkRateLimit(req, limiter);
+    if (shouldRateLimit) {
+      const { success, limit, reset } = await checkRateLimit(req, limiter);
 
-    if (!success) {
-      const retryAfter = Math.ceil((reset - Date.now()) / 1000);
+      if (!success) {
+        const retryAfter = Math.ceil((reset - Date.now()) / 1000);
 
-      return NextResponse.json(
-        {
-          error: 'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
-          retryAfter: reset,
-        },
-        {
-          status: 429,
-          headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': reset.toString(),
-            'Retry-After': retryAfter.toString(),
+        return NextResponse.json(
+          {
+            error: 'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
+            retryAfter: reset,
           },
-        }
-      );
+          {
+            status: 429,
+            headers: {
+              'X-RateLimit-Limit': limit.toString(),
+              'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Reset': reset.toString(),
+              'Retry-After': retryAfter.toString(),
+            },
+          }
+        );
+      }
     }
   }
 
