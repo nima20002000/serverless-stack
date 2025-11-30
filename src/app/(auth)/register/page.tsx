@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import RateLimitError from '@/components/ui/RateLimitError';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -52,6 +54,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+    setRateLimitRetryAfter(null);
 
     if (!validateForm()) {
       return;
@@ -71,6 +74,14 @@ export default function RegisterPage() {
           password: formData.password,
         }),
       });
+
+      // Check for rate limiting
+      if (response.status === 429) {
+        const rateLimitData = await response.json();
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 900000); // 15 min default
+        setIsLoading(false);
+        return;
+      }
 
       const data = await response.json();
 
@@ -107,13 +118,21 @@ export default function RegisterPage() {
         ثبت‌نام
       </h2>
 
-      {successMessage && (
+      {rateLimitRetryAfter && (
+        <RateLimitError
+          retryAfter={rateLimitRetryAfter}
+          onRetryReady={() => setRateLimitRetryAfter(null)}
+          className="mb-4"
+        />
+      )}
+
+      {successMessage && !rateLimitRetryAfter && (
         <Alert type="success" className="mb-4">
           {successMessage}
         </Alert>
       )}
 
-      {errorMessage && (
+      {errorMessage && !rateLimitRetryAfter && (
         <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
           {errorMessage}
         </Alert>

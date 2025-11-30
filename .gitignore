@@ -49,3 +49,6 @@ next-env.d.ts
 
 # temporary test files
 /tmp
+
+# education folder
+/education

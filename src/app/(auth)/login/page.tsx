@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import RateLimitError from '@/components/ui/RateLimitError';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(null);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -39,6 +41,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
+    setRateLimitRetryAfter(null);
 
     if (!validateForm()) {
       return;
@@ -47,6 +50,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Check for rate limiting by making a test request to auth endpoint
+      const testResponse = await fetch('/api/auth/csrf');
+      if (testResponse.status === 429) {
+        const rateLimitData = await testResponse.json();
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 900000); // 15 min default
+        setErrorMessage('');
+        setIsLoading(false);
+        return;
+      }
+
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
@@ -82,7 +95,15 @@ export default function LoginPage() {
         ورود
       </h2>
 
-      {errorMessage && (
+      {rateLimitRetryAfter && (
+        <RateLimitError
+          retryAfter={rateLimitRetryAfter}
+          onRetryReady={() => setRateLimitRetryAfter(null)}
+          className="mb-4"
+        />
+      )}
+
+      {errorMessage && !rateLimitRetryAfter && (
         <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
           {errorMessage}
         </Alert>

@@ -1,7 +1,5 @@
 import pino from 'pino';
 
-const isDevelopment = process.env.NODE_ENV !== 'production';
-
 // Create logger without pino-pretty transport to avoid worker thread issues in Next.js
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',

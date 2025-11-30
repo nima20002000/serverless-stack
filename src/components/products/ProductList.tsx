@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import ProductCard from './ProductCard';
 import Button from '@/components/ui/Button';
+import RateLimitError from '@/components/ui/RateLimitError';
+import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
+import Alert from '@/components/ui/Alert';
 
 interface Product {
   id: string;
@@ -29,19 +32,27 @@ export default function ProductList({
   const [page, setPage] = useState(initialPage);
   const [total, setTotal] = useState(initialTotal);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
   const perPage = 20;
   const totalPages = Math.ceil(total / perPage);
 
   const fetchProducts = async (pageNum: number) => {
     setIsLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`/api/products?page=${pageNum}&perPage=${perPage}`);
-      const data = await response.json();
-      setProducts(data.products);
-      setTotal(data.total);
-      setPage(data.page);
-    } catch (error) {
-      console.error('Error fetching products:', error);
+      const data = await fetchWithRateLimit<{ products: Product[]; total: number; page: number }>(
+        () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
+      );
+
+      if (data) {
+        setProducts(data.products);
+        setTotal(data.total);
+        setPage(data.page);
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError('خطا در دریافت محصولات. لطفاً دوباره تلاش کنید.');
     } finally {
       setIsLoading(false);
     }
@@ -71,6 +82,22 @@ export default function ProductList({
 
   return (
     <div>
+      {/* Rate Limit Error */}
+      {rateLimitInfo.isRateLimited && rateLimitInfo.retryAfter && (
+        <RateLimitError
+          retryAfter={rateLimitInfo.retryAfter}
+          onRetryReady={clearRateLimit}
+          className="mb-6"
+        />
+      )}
+
+      {/* General Error */}
+      {error && (
+        <Alert type="error" className="mb-6" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         {products.map((product) => (
