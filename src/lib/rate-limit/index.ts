@@ -35,37 +35,50 @@ export const publicLimiter = new Ratelimit({
 /**
  * Get client identifier for rate limiting
  * Uses user ID if authenticated, otherwise uses IP address
+ * @param req The request object
+ * @param endpoint Optional endpoint identifier to create separate rate limit buckets per endpoint
  */
-export function getClientId(req: Request): string {
+export function getClientId(req: Request, endpoint?: string): string {
   // Try to get user ID from headers (set by NextAuth)
   const userId = req.headers.get('x-user-id');
+
+  // Base identifier
+  let baseId: string;
   if (userId) {
-    return `user:${userId}`;
+    baseId = `user:${userId}`;
+  } else {
+    // Otherwise use IP address
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+    baseId = `ip:${ip}`;
   }
 
-  // Otherwise use IP address
-  const forwarded = req.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+  // Add endpoint-specific suffix to create separate buckets
+  if (endpoint) {
+    return `${baseId}:${endpoint}`;
+  }
 
-  return `ip:${ip}`;
+  return baseId;
 }
 
 /**
  * Check rate limit for a request
  * @param req The request object
  * @param limiter Which rate limiter to use (default: apiLimiter)
+ * @param endpoint Optional endpoint identifier to create separate rate limit buckets
  * @returns Rate limit check result
  */
 export async function checkRateLimit(
   req: Request,
-  limiter: Ratelimit = apiLimiter
+  limiter: Ratelimit = apiLimiter,
+  endpoint?: string
 ): Promise<{
   success: boolean;
   limit: number;
   remaining: number;
   reset: number;
 }> {
-  const identifier = getClientId(req);
+  const identifier = getClientId(req, endpoint);
 
   try {
     const { success, limit, remaining, reset } = await limiter.limit(identifier);
@@ -73,6 +86,7 @@ export async function checkRateLimit(
     if (!success) {
       log.warn('Rate limit exceeded', {
         identifier,
+        endpoint,
         limit,
         reset: new Date(reset).toISOString(),
       });
@@ -82,6 +96,7 @@ export async function checkRateLimit(
   } catch (error) {
     log.error('Rate limit check failed', {
       identifier,
+      endpoint,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 

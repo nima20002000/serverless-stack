@@ -7,16 +7,19 @@ import type { Ratelimit } from '@upstash/ratelimit';
 export async function middleware(req: NextRequest) {
   // Apply rate limiting to ALL API routes FIRST (before any auth checks)
   if (req.nextUrl.pathname.startsWith('/api')) {
-    // Choose appropriate limiter based on endpoint
+    // Choose appropriate limiter and endpoint identifier based on route
     let limiter: Ratelimit = apiLimiter;
     let shouldRateLimit = true;
+    let endpoint: string | undefined;
 
     // Strict rate limiting for authentication endpoints
-    if (
-      req.nextUrl.pathname === '/api/auth/login' ||
-      req.nextUrl.pathname === '/api/auth/register'
-    ) {
-      limiter = strictLimiter; // Strict for login/register (5 requests per 2 minutes)
+    // Each endpoint gets its own rate limit bucket to prevent cross-endpoint blocking
+    if (req.nextUrl.pathname === '/api/auth/login') {
+      limiter = strictLimiter; // Strict for login (5 requests per 2 minutes)
+      endpoint = 'login'; // Separate bucket for login
+    } else if (req.nextUrl.pathname === '/api/auth/register') {
+      limiter = strictLimiter; // Strict for register (5 requests per 2 minutes)
+      endpoint = 'register'; // Separate bucket for register
     } else if (req.nextUrl.pathname.startsWith('/api/auth/')) {
       // Don't rate limit other NextAuth endpoints (session, CSRF, providers, etc.)
       shouldRateLimit = false;
@@ -26,10 +29,11 @@ export async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith('/api/tags')
     ) {
       limiter = publicLimiter; // Generous for public browsing
+      endpoint = 'public'; // Separate bucket for public endpoints
     }
 
     if (shouldRateLimit) {
-      const { success, limit, reset } = await checkRateLimit(req, limiter);
+      const { success, limit, reset } = await checkRateLimit(req, limiter, endpoint);
 
       if (!success) {
         const retryAfter = Math.ceil((reset - Date.now()) / 1000);
