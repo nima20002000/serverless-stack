@@ -79,15 +79,24 @@ export default function VerifyOTPPage() {
       // Auto-login with NextAuth after successful verification
       // For register: use password that was set
       // For login: no password needed (OTP already verified)
-      const signInData: any = {
-        identifier: phone,
-        redirect: false
-      };
+      let signInData: Record<string, any>;
 
-      // Only add password for registration flow
       if (purpose === 'register' && password) {
-        signInData.password = password;
+        // Registration: provide password
+        signInData = {
+          identifier: phone,
+          password: password,
+          redirect: false
+        };
+      } else {
+        // Login with OTP: no password (passwordless auth)
+        signInData = {
+          identifier: phone,
+          redirect: false
+        };
       }
+
+      console.log('Calling signIn with:', { identifier: phone, hasPassword: !!signInData.password, purpose });
 
       const result = await signIn('credentials', signInData);
 
