@@ -52,7 +52,7 @@ export interface DashboardStats {
     createdAt: Date;
     user: {
       name: string;
-      email: string;
+      email: string | null;
     };
   }>;
 }

@@ -13,24 +13,39 @@ import RateLimitError from '@/components/ui/RateLimitError';
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
+    identifier: '', // Email or phone
     password: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(null);
+  const [loginWithOTP, setLoginWithOTP] = useState(false);
+
+  // Detect if identifier is email or phone
+  const detectIdentifierType = (value: string): 'email' | 'phone' | 'invalid' => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^09\d{9}$/;
+
+    if (emailRegex.test(value)) return 'email';
+    if (phoneRegex.test(value)) return 'phone';
+    return 'invalid';
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'ایمیل الزامی است';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'فرمت ایمیل نامعتبر است';
+    if (!formData.identifier.trim()) {
+      newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
+    } else {
+      const type = detectIdentifierType(formData.identifier);
+      if (type === 'invalid') {
+        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است';
+      }
     }
 
-    if (!formData.password) {
+    // Password is only required for password-based login
+    if (!loginWithOTP && !formData.password) {
       newErrors.password = 'رمز عبور الزامی است';
     }
 
@@ -50,13 +65,54 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      const identifierType = detectIdentifierType(formData.identifier);
+
+      // LOGIN WITH OTP: Send OTP code
+      if (loginWithOTP) {
+        // Only allow OTP login for phone numbers
+        if (identifierType !== 'phone') {
+          throw new Error('ورود با کد تایید فقط برای شماره تلفن امکان‌پذیر است');
+        }
+
+        const otpResponse = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: formData.identifier,
+            purpose: 'login'
+          })
+        });
+
+        if (otpResponse.status === 429) {
+          const rateLimitData = await otpResponse.json();
+          setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
+          setIsLoading(false);
+          return;
+        }
+
+        const otpData = await otpResponse.json();
+
+        if (!otpResponse.ok) {
+          throw new Error(otpData.error || 'خطا در ارسال کد تایید');
+        }
+
+        // Redirect to OTP verification page
+        const params = new URLSearchParams({
+          phone: formData.identifier,
+          purpose: 'login'
+        });
+        router.push(`/verify-otp?${params.toString()}`);
+        return;
+      }
+
+      // NORMAL LOGIN WITH PASSWORD
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.identifier, // Using 'email' for backward compatibility
           password: formData.password,
         }),
       });
@@ -64,7 +120,7 @@ export default function LoginPage() {
       // Check for rate limiting
       if (response.status === 429) {
         const rateLimitData = await response.json();
-        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000); // 2 min default
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
         setIsLoading(false);
         return;
       }
@@ -75,21 +131,17 @@ export default function LoginPage() {
         throw new Error(data.error || 'خطا در ورود');
       }
 
-      // Our custom API validated credentials successfully
-      // Now use NextAuth's signIn to create the actual session
+      // Use NextAuth's signIn to create the session
       const result = await signIn('credentials', {
-        email: formData.email,
+        identifier: formData.identifier,
         password: formData.password,
         redirect: false,
       });
 
       if (result?.error) {
-        // This shouldn't happen since we already validated, but handle it
         setErrorMessage(result.error);
       } else if (result?.ok) {
-        // Successful login - redirect to home page
         router.push('/');
-        // Note: router.refresh() removed - NextAuth already updates session
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
@@ -102,11 +154,13 @@ export default function LoginPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
   };
+
+  const identifierType = formData.identifier ? detectIdentifierType(formData.identifier) : null;
+  const isPhone = identifierType === 'phone';
 
   return (
     <Card>
@@ -130,27 +184,36 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="ایمیل"
-          name="email"
-          type="email"
-          value={formData.email}
+          label="ایمیل یا شماره تلفن"
+          name="identifier"
+          type="text"
+          value={formData.identifier}
           onChange={handleChange}
-          error={errors.email}
+          error={errors.identifier}
           disabled={isLoading}
-          placeholder="example@email.com"
+          placeholder="example@email.com یا 09123456789"
           dir="ltr"
+          helperText={
+            identifierType === 'email'
+              ? 'ایمیل وارد شده است'
+              : identifierType === 'phone'
+              ? 'شماره تلفن وارد شده است'
+              : 'ایمیل یا شماره موبایل خود را وارد کنید'
+          }
         />
 
-        <Input
-          label="رمز عبور"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          error={errors.password}
-          disabled={isLoading}
-          placeholder="رمز عبور خود را وارد کنید"
-        />
+        {!loginWithOTP && (
+          <Input
+            label="رمز عبور"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            disabled={isLoading}
+            placeholder="رمز عبور خود را وارد کنید"
+          />
+        )}
 
         <Button
           type="submit"
@@ -159,8 +222,25 @@ export default function LoginPage() {
           isLoading={isLoading}
           disabled={isLoading}
         >
-          ورود
+          {loginWithOTP ? 'ارسال کد تایید' : 'ورود'}
         </Button>
+
+        {isPhone && (
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                setLoginWithOTP(!loginWithOTP);
+                setFormData(prev => ({ ...prev, password: '' }));
+                setErrors({});
+              }}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              disabled={isLoading}
+            >
+              {loginWithOTP ? 'ورود با رمز عبور' : 'ورود با کد تایید (SMS)'}
+            </button>
+          </div>
+        )}
       </form>
 
       <div className="mt-6 text-center">

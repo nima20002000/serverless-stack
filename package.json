@@ -23,6 +23,8 @@
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.6.0",
     "date-fns-jalali": "^3.6.0-1",
+    "kavenegar": "^1.1.4",
+    "libphonenumber-js": "^1.12.30",
     "next": "^14.2.0",
     "next-auth": "^4.24.0",
     "pdfkit": "^0.15.0",
@@ -34,7 +36,6 @@
     "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "pino-pretty": "^13.1.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.12.0",
     "@types/pdfkit": "^0.13.4",
@@ -46,6 +47,7 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
+    "pino-pretty": "^13.1.2",
     "postcss": "^8.4.0",
     "prisma": "^5.14.0",
     "tailwindcss": "^3.4.0",

@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -28,18 +27,22 @@ enum MediaType {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  email      String?  @unique
+  phone      String?  @unique
+  password   String?
+  name       String
+  role       Role     @default(USER)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   transactions Transaction[]
   promoCodes   PromoCode[]
 
   @@map("users")
+  @@index([email])
+  @@index([phone])
 }
 
 model Product {
@@ -182,4 +185,18 @@ model PromoCode {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("promo_codes")
+}
+
+model OTPVerification {
+  id          String   @id @default(uuid())
+  identifier  String   // Email or phone number
+  code        String
+  purpose     String   // "register" | "login" | "reset-password"
+  attempts    Int      @default(0)
+  maxAttempts Int      @default(3)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  @@map("otp_verifications")
+  @@index([identifier, purpose])
 }

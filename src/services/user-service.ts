@@ -6,16 +6,19 @@ import { log } from "@/lib/logger";
 
 type UserWithoutPassword = Omit<{
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   role: Role;
+  isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
 }, never>;
 
 type UserInfo = {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   role: Role;
   createdAt: Date;
@@ -39,56 +42,95 @@ export function validatePassword(password: string): boolean {
 }
 
 /**
+ * Validate Iranian phone number
+ * Format: 09xxxxxxxxx (11 digits starting with 09)
+ */
+export function validatePhone(phone: string): boolean {
+  const phoneRegex = /^09\d{9}$/;
+  return phoneRegex.test(phone);
+}
+
+/**
+ * Detect if input is email or phone
+ */
+export function detectIdentifierType(identifier: string): 'email' | 'phone' | 'invalid' {
+  if (validateEmail(identifier)) return 'email';
+  if (validatePhone(identifier)) return 'phone';
+  return 'invalid';
+}
+
+/**
  * Create a new user
+ * Supports both email and phone registration
  */
 export async function createUser(data: {
-  email: string;
-  password: string;
+  email?: string;
+  phone?: string;
+  password?: string;
   name: string;
 }): Promise<UserWithoutPassword> {
-  const { email, password, name } = data;
+  const { email, phone, password, name } = data;
 
-  log.info('Creating user', { email, name });
+  log.info('Creating user', { email, phone, name });
 
   try {
-    // Validate email
-    if (!validateEmail(email)) {
+    // Validate at least one identifier
+    if (!email && !phone) {
+      throw new Error('ایمیل یا شماره تلفن الزامی است');
+    }
+
+    // Validate email if provided
+    if (email && !validateEmail(email)) {
       log.warn('Invalid email format', { email });
       throw new Error("فرمت ایمیل نامعتبر است");
     }
 
-    // Validate password
-    if (!validatePassword(password)) {
-      log.warn('Invalid password length', { email });
+    // Validate phone if provided
+    if (phone && !validatePhone(phone)) {
+      log.warn('Invalid phone format', { phone });
+      throw new Error("فرمت شماره تلفن نامعتبر است");
+    }
+
+    // Validate password (required for email, optional for phone)
+    if (password && !validatePassword(password)) {
+      log.warn('Invalid password length', { email, phone });
       throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          email ? { email } : { id: undefined },
+          phone ? { phone } : { id: undefined }
+        ].filter(condition => condition.id === undefined ? Object.keys(condition).length > 0 : true)
+      }
     });
 
     if (existingUser) {
-      log.warn('User already exists', { email });
-      throw new Error("کاربری با این ایمیل قبلاً ثبت‌نام کرده است");
+      log.warn('User already exists', { email, phone });
+      throw new Error("کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است");
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password if provided
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
     // Create user
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email || null,
+        phone: phone || null,
         password: hashedPassword,
         name,
         role: "USER",
+        isVerified: !!phone, // Phone users are verified via OTP
       },
     });
 
     log.info('User created successfully', {
       userId: user.id,
       email: user.email,
+      phone: user.phone,
       role: user.role,
     });
 
@@ -110,6 +152,7 @@ export async function createUser(data: {
   } catch (error) {
     log.error('Failed to create user', {
       email,
+      phone,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     throw error;
@@ -125,6 +168,7 @@ export async function getUserById(userId: string): Promise<UserInfo | null> {
     select: {
       id: true,
       email: true,
+      phone: true,
       name: true,
       role: true,
       createdAt: true,
@@ -144,6 +188,7 @@ export async function getUserByEmail(email: string): Promise<UserInfo | null> {
     select: {
       id: true,
       email: true,
+      phone: true,
       name: true,
       role: true,
       createdAt: true,
@@ -152,4 +197,39 @@ export async function getUserByEmail(email: string): Promise<UserInfo | null> {
   });
 
   return user;
+}
+
+/**
+ * Get user by phone
+ */
+export async function getUserByPhone(phone: string): Promise<UserInfo | null> {
+  const user = await prisma.user.findUnique({
+    where: { phone },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      name: true,
+      role: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return user as UserInfo | null;
+}
+
+/**
+ * Get user by identifier (email or phone)
+ */
+export async function getUserByIdentifier(identifier: string): Promise<UserInfo | null> {
+  const type = detectIdentifierType(identifier);
+
+  if (type === 'email') {
+    return getUserByEmail(identifier);
+  } else if (type === 'phone') {
+    return getUserByPhone(identifier);
+  }
+
+  return null;
 }

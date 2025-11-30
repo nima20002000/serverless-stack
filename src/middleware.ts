@@ -20,6 +20,12 @@ export async function middleware(req: NextRequest) {
     } else if (req.nextUrl.pathname === '/api/auth/register') {
       limiter = strictLimiter; // Strict for register (5 requests per 2 minutes)
       endpoint = 'register'; // Separate bucket for register
+    } else if (req.nextUrl.pathname === '/api/auth/send-otp') {
+      limiter = strictLimiter; // Strict for OTP sending (5 requests per 2 minutes)
+      endpoint = 'send-otp'; // Separate bucket for send-otp
+    } else if (req.nextUrl.pathname === '/api/auth/verify-otp') {
+      limiter = strictLimiter; // Strict for OTP verification (5 requests per 2 minutes)
+      endpoint = 'verify-otp'; // Separate bucket for verify-otp
     } else if (req.nextUrl.pathname.startsWith('/api/auth/')) {
       // Don't rate limit other NextAuth endpoints (session, CSRF, providers, etc.)
       shouldRateLimit = false;

@@ -10,7 +10,8 @@ import { PaginatedResponse, DeleteResult, DashboardStats } from '@/types/api';
 // User type without password
 type UserWithCount = {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   role: Role;
   createdAt: Date;
@@ -22,7 +23,8 @@ type UserWithCount = {
 
 type UserBasic = {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   role: Role;
 };
@@ -72,6 +74,7 @@ export async function getAllUsers(page: number = 1, limit: number = 20, search?:
       select: {
         id: true,
         email: true,
+        phone: true,
         name: true,
         role: true,
         createdAt: true,
@@ -131,6 +134,7 @@ export async function updateUserRole(id: string, role: Role): Promise<UserBasic>
     select: {
       id: true,
       email: true,
+      phone: true,
       name: true,
       role: true,
     },

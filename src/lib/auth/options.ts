@@ -3,13 +3,15 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { Role } from "@prisma/client";
+import { detectIdentifierType } from "@/services/user-service";
 
 // Extend the built-in types
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      email: string;
+      email: string | null;
+      phone: string | null;
       name: string;
       role: Role;
     }
@@ -17,7 +19,8 @@ declare module "next-auth" {
 
   interface User {
     id: string;
-    email: string;
+    email: string | null;
+    phone: string | null;
     name: string;
     role: Role;
   }
@@ -27,7 +30,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: Role;
-    email: string;
+    email: string | null;
+    phone: string | null;
     name: string;
   }
 }
@@ -37,20 +41,48 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "ایمیل", type: "email" },
+        identifier: { label: "ایمیل یا شماره تلفن", type: "text" },
         password: { label: "رمز عبور", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("ایمیل و رمز عبور الزامی است");
+        if (!credentials?.identifier) {
+          throw new Error("ایمیل یا شماره تلفن الزامی است");
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+        // Detect if identifier is email or phone
+        const identifierType = detectIdentifierType(credentials.identifier);
+
+        if (identifierType === 'invalid') {
+          throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
+        }
+
+        // Find user by email or phone
+        const user = await prisma.user.findFirst({
+          where: identifierType === 'email'
+            ? { email: credentials.identifier }
+            : { phone: credentials.identifier }
         });
 
         if (!user) {
-          throw new Error("کاربری با این ایمیل یافت نشد");
+          throw new Error("کاربری با این مشخصات یافت نشد");
+        }
+
+        // For phone authentication without password (OTP-verified)
+        if (!credentials.password) {
+          // This path is used after OTP verification
+          // The OTP was already verified before calling signIn
+          return {
+            id: user.id,
+            email: user.email,
+            phone: user.phone,
+            name: user.name,
+            role: user.role,
+          };
+        }
+
+        // For email/phone authentication with password
+        if (!user.password) {
+          throw new Error("برای این حساب از ورود با کد تایید استفاده کنید");
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -65,6 +97,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
+          phone: user.phone,
           name: user.name,
           role: user.role,
         };
@@ -77,6 +110,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.email = user.email;
+        token.phone = user.phone;
         token.name = user.name;
       }
       return token;
@@ -85,7 +119,8 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as Role;
-        session.user.email = token.email as string;
+        session.user.email = token.email as string | null;
+        session.user.phone = token.phone as string | null;
         session.user.name = token.name as string;
       }
       return session;

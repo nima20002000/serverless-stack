@@ -1,0 +1,192 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import OTPInput from '@/components/auth/OTPInput';
+import Alert from '@/components/ui/Alert';
+
+export default function VerifyOTPPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const phone = searchParams.get('phone');
+  const name = searchParams.get('name');
+  const password = searchParams.get('password');
+  const purpose = (searchParams.get('purpose') || 'register') as 'register' | 'login';
+  const redirectTo = searchParams.get('redirectTo') || '/';
+
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [canResend, setCanResend] = useState(false);
+
+  // Redirect if no phone number
+  useEffect(() => {
+    if (!phone) {
+      router.push('/login');
+    }
+  }, [phone, router]);
+
+  // Countdown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Allow resend after 60 seconds
+    const resendTimer = setTimeout(() => {
+      setCanResend(true);
+    }, 60000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(resendTimer);
+    };
+  }, []);
+
+  const handleVerify = async (otp: string) => {
+    setIsVerifying(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone,
+          otp,
+          name,
+          password,
+          purpose
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'خطا در تایید کد');
+      }
+
+      // Auto-login with NextAuth after successful verification
+      const result = await signIn('credentials', {
+        identifier: phone,
+        password: purpose === 'register' ? password : undefined,
+        redirect: false
+      });
+
+      if (result?.ok) {
+        router.push(redirectTo);
+      } else {
+        throw new Error('خطا در ورود به حساب کاربری');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در تایید کد');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setCanResend(false);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, purpose })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'خطا در ارسال مجدد کد');
+      }
+
+      // Reset timer
+      setTimeLeft(300);
+
+      // Allow resend again after 60 seconds
+      setTimeout(() => {
+        setCanResend(true);
+      }, 60000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در ارسال مجدد کد');
+      setCanResend(true);
+    }
+  };
+
+  if (!phone) {
+    return null;
+  }
+
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+
+  return (
+    <Card>
+      <h2 className="text-2xl font-bold text-center mb-2">تایید شماره تلفن</h2>
+
+      <p className="text-center text-gray-600 mb-6">
+        کد تایید ۶ رقمی به شماره{' '}
+        <span className="font-bold text-gray-900" dir="ltr">{phone}</span>
+        {' '}ارسال شد
+      </p>
+
+      {error && (
+        <Alert type="error" className="mb-4" onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
+      <OTPInput
+        length={6}
+        onComplete={handleVerify}
+        disabled={isVerifying || timeLeft === 0}
+        autoFocus
+      />
+
+      <div className="mt-4 text-center">
+        {timeLeft > 0 ? (
+          <p className="text-sm text-gray-600">
+            زمان باقی‌مانده:{' '}
+            <span className="font-mono font-bold text-gray-900">
+              {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-red-600 font-medium">
+            زمان کد تایید به پایان رسید. لطفاً کد جدید درخواست کنید.
+          </p>
+        )}
+      </div>
+
+      <Button
+        onClick={handleResend}
+        disabled={!canResend || isVerifying}
+        variant="secondary"
+        className="w-full mt-4"
+      >
+        {canResend ? 'ارسال مجدد کد' : 'ارسال مجدد کد (۶۰ ثانیه صبر کنید)'}
+      </Button>
+
+      <div className="mt-4 text-center">
+        <button
+          onClick={() => router.back()}
+          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          disabled={isVerifying}
+        >
+          بازگشت
+        </button>
+      </div>
+    </Card>
+  );
+}
