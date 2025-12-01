@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma/client';
 import { sendOTPSMS } from '@/lib/kavenegar/client';
+import { sendOTPEmail } from '@/lib/email/client';
 import { log } from '@/lib/logger';
 
 /**
@@ -78,8 +79,9 @@ export async function sendOTP(
 
     log.info('OTP generated and stored', { identifier, purpose, expiresAt });
 
-    // Send SMS only if identifier is a phone number (starts with 09)
+    // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
+      // Phone number: Send SMS via Kavenegar
       const result = await sendOTPSMS(identifier, code);
       if (!result.success) {
         log.error('Failed to send OTP SMS', { identifier, error: result.error });
@@ -89,6 +91,24 @@ export async function sendOTP(
           error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
         };
       }
+    } else if (identifier.includes('@')) {
+      // Email address: Send email
+      const result = await sendOTPEmail(identifier, code);
+      if (!result.success) {
+        log.error('Failed to send OTP email', { identifier, error: result.error });
+        return {
+          success: false,
+          expiresAt: expiresAt.getTime(),
+          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.'
+        };
+      }
+    } else {
+      log.error('Invalid identifier format', { identifier });
+      return {
+        success: false,
+        expiresAt: expiresAt.getTime(),
+        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است'
+      };
     }
 
     log.info('OTP sent successfully', { identifier, purpose });

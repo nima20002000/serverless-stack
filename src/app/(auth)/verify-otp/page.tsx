@@ -15,6 +15,9 @@ function VerifyOTPContent() {
   const searchParams = useSearchParams();
 
   const phone = searchParams.get('phone');
+  const email = searchParams.get('email');
+  const identifier = phone || email;
+  const isEmail = !!email;
   const name = searchParams.get('name');
   const password = searchParams.get('password');
   const purpose = (searchParams.get('purpose') || 'register') as 'register' | 'login';
@@ -25,12 +28,12 @@ function VerifyOTPContent() {
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [canResend, setCanResend] = useState(false);
 
-  // Redirect if no phone number
+  // Redirect if no identifier
   useEffect(() => {
-    if (!phone) {
+    if (!identifier) {
       router.push('/login');
     }
-  }, [phone, router]);
+  }, [identifier, router]);
 
   // Countdown timer
   useEffect(() => {
@@ -60,16 +63,14 @@ function VerifyOTPContent() {
     setError('');
 
     try {
+      const requestBody = isEmail
+        ? { email, otp, name, password, purpose }
+        : { phone, otp, name, password, purpose };
+
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone,
-          otp,
-          name,
-          password,
-          purpose
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
@@ -81,8 +82,8 @@ function VerifyOTPContent() {
       // Auto-login with NextAuth after successful verification
       // For register: use password that was set
       // For login: no password needed (OTP already verified)
-      if (!phone) {
-        throw new Error('شماره تلفن یافت نشد');
+      if (!identifier) {
+        throw new Error('ایمیل یا شماره تلفن یافت نشد');
       }
 
       let signInData: Record<string, string | boolean>;
@@ -90,19 +91,19 @@ function VerifyOTPContent() {
       if (purpose === 'register' && password) {
         // Registration: provide password
         signInData = {
-          identifier: phone,
+          identifier: identifier,
           password: password,
           redirect: false
         };
       } else {
         // Login with OTP: no password (passwordless auth)
         signInData = {
-          identifier: phone,
+          identifier: identifier,
           redirect: false
         };
       }
 
-      console.log('Calling signIn with:', { identifier: phone, hasPassword: !!signInData.password, purpose });
+      console.log('Calling signIn with:', { identifier, hasPassword: !!signInData.password, purpose });
 
       const result = await signIn('credentials', signInData);
 
@@ -128,10 +129,14 @@ function VerifyOTPContent() {
     setError('');
 
     try {
+      const requestBody = isEmail
+        ? { email, purpose }
+        : { phone, purpose };
+
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, purpose })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -152,7 +157,7 @@ function VerifyOTPContent() {
     }
   };
 
-  if (!phone) {
+  if (!identifier) {
     return null;
   }
 
@@ -161,11 +166,13 @@ function VerifyOTPContent() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-2">تایید شماره تلفن</h2>
+      <h2 className="text-2xl font-bold text-center mb-2">
+        {isEmail ? 'تایید ایمیل' : 'تایید شماره تلفن'}
+      </h2>
 
       <p className="text-center text-gray-600 mb-6">
-        کد تایید ۶ رقمی به شماره{' '}
-        <span className="font-bold text-gray-900" dir="ltr">{phone}</span>
+        کد تایید ۶ رقمی به {isEmail ? 'ایمیل' : 'شماره'}{' '}
+        <span className="font-bold text-gray-900" dir="ltr">{identifier}</span>
         {' '}ارسال شد
       </p>
 

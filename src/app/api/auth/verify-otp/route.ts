@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/services/otp-service';
-import { createUser } from '@/services/user-service';
+import { createUser, getUserByIdentifier } from '@/services/user-service';
 import { authenticateUserByPhone } from '@/services/auth-service';
 import { log } from '@/lib/logger';
 
@@ -9,24 +9,27 @@ export const dynamic = 'force-dynamic';
 /**
  * Verify OTP code
  * POST /api/auth/verify-otp
- * Body: { phone: string, otp: string, purpose: 'register' | 'login', name?: string, password?: string }
+ * Body: { phone?: string, email?: string, otp: string, purpose: 'register' | 'login', name?: string, password?: string }
  */
 export async function POST(req: NextRequest) {
   try {
-    const { phone, otp, name, password, purpose = 'register' } = await req.json();
+    const { phone, email, otp, name, password, purpose = 'register' } = await req.json();
 
-    // Validate required fields
-    if (!phone || !otp) {
+    // Must provide either phone or email
+    const identifier = phone || email;
+    if (!identifier || !otp) {
       return NextResponse.json(
-        { error: 'شماره تلفن و کد تایید الزامی است' },
+        { error: 'ایمیل یا شماره تلفن و کد تایید الزامی است' },
         { status: 400 }
       );
     }
 
-    log.info('Verifying OTP', { phone, purpose });
+    const isEmail = identifier.includes('@');
+
+    log.info('Verifying OTP', { identifier, purpose });
 
     // Verify OTP
-    const result = await verifyOTP(phone, otp, purpose);
+    const result = await verifyOTP(identifier, otp, purpose);
 
     if (!result.success) {
       return NextResponse.json(
@@ -47,14 +50,14 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Create user with phone and password (name is optional)
-      const user = await createUser({
-        phone,
-        name: name || '',
-        password
-      });
+      // Create user with email or phone and password (name is optional)
+      const userData = isEmail
+        ? { email: identifier, name: name || '', password }
+        : { phone: identifier, name: name || '', password };
 
-      log.info('User registered successfully via phone OTP', { phone, userId: user.id });
+      const user = await createUser(userData);
+
+      log.info('User registered successfully via OTP', { identifier, userId: user.id });
 
       return NextResponse.json({
         success: true,
@@ -62,6 +65,7 @@ export async function POST(req: NextRequest) {
         user: {
           id: user.id,
           phone: user.phone,
+          email: user.email,
           name: user.name,
           role: user.role
         }
@@ -70,9 +74,20 @@ export async function POST(req: NextRequest) {
 
     // For login: Verify user exists
     if (purpose === 'login') {
-      const user = await authenticateUserByPhone(phone);
+      // For phone login, use existing authenticateUserByPhone
+      // For email login, use getUserByIdentifier
+      const user = isEmail
+        ? await getUserByIdentifier(identifier)
+        : await authenticateUserByPhone(identifier);
 
-      log.info('User logged in successfully via phone OTP', { phone, userId: user.id });
+      if (!user) {
+        return NextResponse.json(
+          { error: 'کاربری با این مشخصات یافت نشد' },
+          { status: 404 }
+        );
+      }
+
+      log.info('User logged in successfully via OTP', { identifier, userId: user.id });
 
       return NextResponse.json({
         success: true,

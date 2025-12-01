@@ -77,15 +77,16 @@ export default function RegisterPage() {
     try {
       const identifierType = detectIdentifierType(formData.identifier);
 
-      // PHONE FLOW: Send OTP and redirect to verification page
-      if (identifierType === 'phone') {
+      // OTP FLOW: Send OTP for both phone and email
+      if (identifierType === 'phone' || identifierType === 'email') {
+        const requestBody = identifierType === 'phone'
+          ? { phone: formData.identifier, purpose: 'register' }
+          : { email: formData.identifier, purpose: 'register' };
+
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: formData.identifier,
-            purpose: 'register'
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (otpResponse.status === 429) {
@@ -103,7 +104,7 @@ export default function RegisterPage() {
 
         // Redirect to OTP verification page with data
         const params = new URLSearchParams({
-          phone: formData.identifier,
+          [identifierType === 'phone' ? 'phone' : 'email']: formData.identifier,
           name: formData.name,
           password: formData.password,
           purpose: 'register'
@@ -112,51 +113,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // EMAIL FLOW: Direct registration (as before)
-      if (identifierType === 'email') {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.identifier,
-            password: formData.password,
-          }),
-        });
-
-        if (response.status === 429) {
-          const rateLimitData = await response.json();
-          setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
-          setIsLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'خطا در ثبت‌نام');
-        }
-
-        // Auto-login after successful registration
-        const loginResult = await signIn('credentials', {
-          identifier: formData.identifier,
-          password: formData.password,
-          redirect: false
-        });
-
-        if (loginResult?.ok) {
-          setSuccessMessage('ثبت‌نام با موفقیت انجام شد!');
-          setTimeout(() => {
-            router.push('/');
-          }, 1000);
-        } else {
-          // Registration successful but login failed
-          setSuccessMessage('ثبت‌نام با موفقیت انجام شد! در حال انتقال به صفحه ورود...');
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
-        }
-      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
       setErrorMessage(errorMessage);

@@ -67,20 +67,21 @@ export default function LoginPage() {
     try {
       const identifierType = detectIdentifierType(formData.identifier);
 
-      // LOGIN WITH OTP: Send OTP code
+      // LOGIN WITH OTP: Send OTP code (supports both phone and email)
       if (loginWithOTP) {
-        // Only allow OTP login for phone numbers
-        if (identifierType !== 'phone') {
-          throw new Error('ورود با کد تایید فقط برای شماره تلفن امکان‌پذیر است');
+        // Allow OTP login for both phone and email
+        if (identifierType !== 'phone' && identifierType !== 'email') {
+          throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
         }
+
+        const requestBody = identifierType === 'phone'
+          ? { phone: formData.identifier, purpose: 'login' }
+          : { email: formData.identifier, purpose: 'login' };
 
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: formData.identifier,
-            purpose: 'login'
-          })
+          body: JSON.stringify(requestBody)
         });
 
         if (otpResponse.status === 429) {
@@ -98,7 +99,7 @@ export default function LoginPage() {
 
         // Redirect to OTP verification page
         const params = new URLSearchParams({
-          phone: formData.identifier,
+          [identifierType === 'phone' ? 'phone' : 'email']: formData.identifier,
           purpose: 'login'
         });
         router.push(`/verify-otp?${params.toString()}`);
@@ -161,6 +162,8 @@ export default function LoginPage() {
 
   const identifierType = formData.identifier ? detectIdentifierType(formData.identifier) : null;
   const isPhone = identifierType === 'phone';
+  const isEmail = identifierType === 'email';
+  const canUseOTP = isPhone || isEmail;
 
   return (
     <Card>
@@ -225,7 +228,7 @@ export default function LoginPage() {
           {loginWithOTP ? 'ارسال کد تایید' : 'ورود'}
         </Button>
 
-        {isPhone && (
+        {canUseOTP && (
           <div className="text-center">
             <button
               type="button"
@@ -237,7 +240,11 @@ export default function LoginPage() {
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               disabled={isLoading}
             >
-              {loginWithOTP ? 'ورود با رمز عبور' : 'ورود با کد تایید (SMS)'}
+              {loginWithOTP
+                ? 'ورود با رمز عبور'
+                : isPhone
+                  ? 'ورود با کد تایید (SMS)'
+                  : 'ورود با کد تایید (Email)'}
             </button>
           </div>
         )}
