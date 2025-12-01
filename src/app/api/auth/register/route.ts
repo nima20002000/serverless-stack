@@ -11,16 +11,21 @@ async function postHandler(req: NextRequest) {
     const body = await req.json();
     const { email, password, name } = body;
 
-    // Validate required fields
-    if (!email || !password || !name) {
+    // Validate required fields (name is optional)
+    if (!email || !password) {
       return NextResponse.json(
-        { error: "تمام فیلدها الزامی هستند" },
+        { error: "ایمیل و رمز عبور الزامی هستند" },
         { status: 400 }
       );
     }
 
     // Create user (validation happens in service)
-    const user = await createUser({ email, password, name });
+    // If name is not provided, use empty string as default
+    const user = await createUser({
+      email,
+      password,
+      name: name || ''
+    });
 
     return NextResponse.json(
       {

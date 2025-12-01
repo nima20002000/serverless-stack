@@ -40,13 +40,6 @@ export async function POST(req: NextRequest) {
 
     // For registration: Create user
     if (purpose === 'register') {
-      if (!name) {
-        return NextResponse.json(
-          { error: 'نام الزامی است' },
-          { status: 400 }
-        );
-      }
-
       if (!password) {
         return NextResponse.json(
           { error: 'رمز عبور الزامی است' },
@@ -54,8 +47,12 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Create user with phone and password
-      const user = await createUser({ phone, name, password });
+      // Create user with phone and password (name is optional)
+      const user = await createUser({
+        phone,
+        name: name || '',
+        password
+      });
 
       log.info('User registered successfully via phone OTP', { phone, userId: user.id });
 

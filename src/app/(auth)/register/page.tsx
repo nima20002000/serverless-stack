@@ -37,9 +37,7 @@ export default function RegisterPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'نام الزامی است';
-    }
+    // Name is optional - no validation needed
 
     if (!formData.identifier.trim()) {
       newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
@@ -205,7 +203,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="نام"
+          label="نام (اختیاری)"
           name="name"
           type="text"
           value={formData.name}
