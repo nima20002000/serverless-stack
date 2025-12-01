@@ -35,7 +35,7 @@ declare module 'kavenegar' {
 
     AccountInfo(
       params: Record<string, unknown>,
-      callback: (response: any, status: number, message: string) => void
+      callback: (response: Record<string, unknown>, status: number, message: string) => void
     ): void;
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Card from '@/components/ui/Card';
@@ -8,7 +8,9 @@ import Button from '@/components/ui/Button';
 import OTPInput from '@/components/auth/OTPInput';
 import Alert from '@/components/ui/Alert';
 
-export default function VerifyOTPPage() {
+export const dynamic = 'force-dynamic';
+
+function VerifyOTPContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -79,7 +81,11 @@ export default function VerifyOTPPage() {
       // Auto-login with NextAuth after successful verification
       // For register: use password that was set
       // For login: no password needed (OTP already verified)
-      let signInData: Record<string, any>;
+      if (!phone) {
+        throw new Error('شماره تلفن یافت نشد');
+      }
+
+      let signInData: Record<string, string | boolean>;
 
       if (purpose === 'register' && password) {
         // Registration: provide password
@@ -210,5 +216,17 @@ export default function VerifyOTPPage() {
         </button>
       </div>
     </Card>
+  );
+}
+
+export default function VerifyOTPPage() {
+  return (
+    <Suspense fallback={
+      <Card>
+        <div className="text-center">در حال بارگذاری...</div>
+      </Card>
+    }>
+      <VerifyOTPContent />
+    </Suspense>
   );
 }
