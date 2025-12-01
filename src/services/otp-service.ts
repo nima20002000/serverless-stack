@@ -18,13 +18,29 @@ export async function sendOTP(
   purpose: 'register' | 'login' = 'register'
 ): Promise<{ success: boolean; expiresAt: number; error?: string }> {
   try {
-    // Check rate limiting: max 1 OTP per minute per identifier
+    // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
+    await prisma.oTPVerification.deleteMany({
+      where: {
+        identifier,
+        purpose,
+        expiresAt: {
+          lt: new Date() // Delete if expired
+        }
+      }
+    });
+
+    log.info('Cleaned up expired OTPs', { identifier, purpose });
+
+    // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per minute)
     const recentOTP = await prisma.oTPVerification.findFirst({
       where: {
         identifier,
         purpose,
         createdAt: {
           gte: new Date(Date.now() - 60000) // Last 1 minute
+        },
+        expiresAt: {
+          gte: new Date() // Only check non-expired OTPs
         }
       }
     });
@@ -39,7 +55,7 @@ export async function sendOTP(
       };
     }
 
-    // Delete old OTPs for this identifier and purpose
+    // Delete any remaining old OTPs for this identifier and purpose (shouldn't be any after cleanup above)
     await prisma.oTPVerification.deleteMany({
       where: { identifier, purpose }
     });
