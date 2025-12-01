@@ -47,10 +47,10 @@ function VerifyOTPContent() {
       });
     }, 1000);
 
-    // Allow resend after 60 seconds
+    // Allow resend after 120 seconds (2 minutes)
     const resendTimer = setTimeout(() => {
       setCanResend(true);
-    }, 60000);
+    }, 120000);
 
     return () => {
       clearInterval(timer);
@@ -147,10 +147,10 @@ function VerifyOTPContent() {
       // Reset timer
       setTimeLeft(300);
 
-      // Allow resend again after 60 seconds
+      // Allow resend again after 120 seconds (2 minutes)
       setTimeout(() => {
         setCanResend(true);
-      }, 60000);
+      }, 120000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطا در ارسال مجدد کد');
       setCanResend(true);
@@ -210,7 +210,7 @@ function VerifyOTPContent() {
         variant="secondary"
         className="w-full mt-4"
       >
-        {canResend ? 'ارسال مجدد کد' : 'ارسال مجدد کد (۶۰ ثانیه صبر کنید)'}
+        {canResend ? 'ارسال مجدد کد' : 'ارسال مجدد کد (۲ دقیقه صبر کنید)'}
       </Button>
 
       <div className="mt-4 text-center">

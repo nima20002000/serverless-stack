@@ -32,13 +32,13 @@ export async function sendOTP(
 
     log.info('Cleaned up expired OTPs', { identifier, purpose });
 
-    // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per minute)
+    // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per 2 minutes)
     const recentOTP = await prisma.oTPVerification.findFirst({
       where: {
         identifier,
         purpose,
         createdAt: {
-          gte: new Date(Date.now() - 60000) // Last 1 minute
+          gte: new Date(Date.now() - 120000) // Last 2 minutes
         },
         expiresAt: {
           gte: new Date() // Only check non-expired OTPs
@@ -47,7 +47,7 @@ export async function sendOTP(
     });
 
     if (recentOTP) {
-      const waitTime = 60 - Math.floor((Date.now() - recentOTP.createdAt.getTime()) / 1000);
+      const waitTime = 120 - Math.floor((Date.now() - recentOTP.createdAt.getTime()) / 1000);
       log.warn('OTP rate limit hit', { identifier, purpose, waitTime });
       return {
         success: false,
