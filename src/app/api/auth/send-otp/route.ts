@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOTP } from '@/services/otp-service';
-import { validatePhone, validateEmail } from '@/services/user-service';
+import { validatePhone, validateEmail, getUserByIdentifier } from '@/services/user-service';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -43,6 +43,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'نوع درخواست نامعتبر است' },
         { status: 400 }
+      );
+    }
+
+    // Check if user exists
+    const existingUser = await getUserByIdentifier(identifier);
+
+    // For registration: user should NOT exist
+    if (purpose === 'register' && existingUser) {
+      return NextResponse.json(
+        { error: 'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است' },
+        { status: 400 }
+      );
+    }
+
+    // For login: user MUST exist
+    if (purpose === 'login' && !existingUser) {
+      return NextResponse.json(
+        { error: 'کاربری با این مشخصات یافت نشد' },
+        { status: 404 }
       );
     }
 

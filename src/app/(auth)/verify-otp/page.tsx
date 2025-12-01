@@ -103,12 +103,9 @@ function VerifyOTPContent() {
         };
       }
 
-      console.log('Calling signIn with:', { identifier, hasPassword: !!signInData.password, purpose });
-
       const result = await signIn('credentials', signInData);
 
       if (result?.error) {
-        console.error('NextAuth sign in error:', result.error);
         throw new Error(result.error || 'خطا در ورود به حساب کاربری');
       }
 
