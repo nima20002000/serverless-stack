@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { validateFile, saveFile } from '@/lib/upload';
+import { storage, validateFile, generateFilePath } from '@/lib/storage';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,24 +24,39 @@ export async function POST(req: NextRequest) {
 
     // Validate file
     const validation = validateFile(file);
-    if (!validation.valid) {
+    if (!validation.valid || !validation.mediaType) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
-    // Save file
-    const result = await saveFile(file, validation.isVideo);
+    // Generate unique file path
+    const filePath = generateFilePath(file.name, validation.mediaType);
+
+    // Upload to storage (R2)
+    const result = await storage.upload({
+      file,
+      path: filePath,
+      contentType: file.type,
+      isPublic: true,
+    });
 
     if (!result.success) {
+      log.error('Upload failed', { error: result.error, fileName: file.name });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
+
+    log.info('File uploaded successfully', {
+      fileName: file.name,
+      mediaType: validation.mediaType,
+      url: result.url,
+    });
 
     return NextResponse.json({
       success: true,
       url: result.url,
-      type: validation.isVideo ? 'VIDEO' : 'IMAGE',
+      type: validation.mediaType,
     });
   } catch (error) {
-    console.error('Upload API error:', error);
+    log.error('Upload API error', { error });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'خطا در آپلود فایل' },
       { status: 500 }

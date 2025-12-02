@@ -82,6 +82,45 @@ Example: `products:active:page:1:limit:20`
 
 Since Upstash REST API doesn't support pattern matching (no `KEYS` command), cache invalidation clears specific known keys (e.g., pages 1-10).
 
+### File Storage Architecture
+Product images and videos are stored in **Cloudflare R2** (S3-compatible object storage):
+- **Storage abstraction layer**: `/src/lib/storage` - allows switching providers without code changes
+- **Current provider**: Cloudflare R2 via S3 SDK (`@aws-sdk/client-s3`)
+- **Upload endpoint**: `POST /api/upload/product-media` (admin-only)
+- **File validation**: Images (JPG, PNG, WEBP, GIF) max 5MB, Videos (MP4, WEBM, MOV) max 50MB
+- **File paths**: Auto-generated with format `products/{images|videos}/{random}-{timestamp}.{ext}`
+
+**Key benefits of R2:**
+- 10GB free storage (vs 1GB alternatives)
+- Zero egress fees - unlimited bandwidth
+- Global CDN delivery
+- Future-proof: Can migrate to Supabase/S3 by swapping adapter
+
+**Storage adapter pattern:**
+```typescript
+import { storage } from '@/lib/storage';
+
+// Upload file
+const result = await storage.upload({
+  file: fileBuffer,
+  path: 'products/images/example.jpg',
+  contentType: 'image/jpeg',
+  isPublic: true
+});
+
+// Get public URL
+const url = storage.getPublicUrl('products/images/example.jpg');
+```
+
+**Environment variables required:**
+- `R2_ACCOUNT_ID` - Cloudflare account ID
+- `R2_ACCESS_KEY_ID` - R2 API access key
+- `R2_SECRET_ACCESS_KEY` - R2 API secret
+- `R2_BUCKET_NAME` - Bucket name (default: `kitia-products`)
+- `R2_PUBLIC_URL` - Public URL for files (R2.dev subdomain or custom domain)
+
+See `/docs/R2_SETUP.md` for complete setup instructions.
+
 ### Authentication Flow
 - Uses NextAuth.js with Credentials provider
 - JWT strategy (not database sessions)
@@ -176,6 +215,11 @@ Required variables (see `.env.example`):
 - `EMAIL_FROM` - Email sender address (e.g., "کیتیا" <noreply@kitia.ir>)
 - `KAVENEGAR_API_KEY` - Kavenegar SMS API key (for SMS OTP)
 - `KAVENEGAR_TEMPLATE_NAME` - SMS template name
+- `R2_ACCOUNT_ID` - Cloudflare R2 account ID
+- `R2_ACCESS_KEY_ID` - R2 API access key
+- `R2_SECRET_ACCESS_KEY` - R2 API secret key
+- `R2_BUCKET_NAME` - R2 bucket name (default: kitia-products)
+- `R2_PUBLIC_URL` - Public URL for R2 files (R2.dev or custom domain)
 
 ## RTL and Internationalization
 

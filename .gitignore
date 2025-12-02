@@ -51,3 +51,6 @@ next-env.d.ts
 
 # education folder
 /education
+
+# local uploads (files stored in R2 cloud storage)
+/public/uploads/
