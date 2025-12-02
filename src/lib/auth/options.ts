@@ -67,13 +67,13 @@ export const authOptions: NextAuthOptions = {
           throw new Error("کاربری با این مشخصات یافت نشد");
         }
 
-        // For phone authentication without password (OTP-verified)
-        // Only allow passwordless login for phone numbers (not email)
-        if (!credentials.password && identifierType === 'phone') {
+        // For authentication without password (OTP-verified)
+        // Allow passwordless login for both phone and email after OTP verification
+        if (!credentials.password) {
           // This path is used after OTP verification
           // The OTP was already verified before calling signIn
-          // Security: Only allow if user is verified (went through OTP)
-          if (!user.isVerified) {
+          // Security: Only allow if user is verified (went through OTP for phone)
+          if (identifierType === 'phone' && !user.isVerified) {
             throw new Error("لطفاً ابتدا شماره تلفن خود را تایید کنید");
           }
 
@@ -92,7 +92,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const isPasswordValid = await bcrypt.compare(
-          credentials.password,
+          credentials.password!,
           user.password
         );
 
