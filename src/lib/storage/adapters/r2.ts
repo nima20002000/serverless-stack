@@ -42,20 +42,26 @@ export class R2StorageAdapter implements StorageAdapter {
     try {
       const { file, path, contentType } = options;
 
+      log.info('Starting R2 upload', { path, contentType });
+
       // Convert File to Buffer if needed
       let body: Buffer;
       if (Buffer.isBuffer(file)) {
         // Already a Buffer
         body = file;
+        log.info('File is already a Buffer', { size: body.length });
       } else if (file instanceof Blob || (file && typeof (file as unknown as Blob).arrayBuffer === 'function')) {
         // File or Blob (works for both browser File and Next.js FormData File)
+        log.info('Converting File/Blob to Buffer');
         const arrayBuffer = await file.arrayBuffer();
         body = Buffer.from(arrayBuffer);
+        log.info('Converted to Buffer', { size: body.length });
       } else {
         throw new Error('Invalid file type');
       }
 
       // Upload to R2
+      log.info('Initiating R2 upload', { bucket: this.bucketName, path });
       const upload = new Upload({
         client: this.client,
         params: {
@@ -67,18 +73,25 @@ export class R2StorageAdapter implements StorageAdapter {
         },
       });
 
+      log.info('Waiting for upload to complete...');
       await upload.done();
+      log.info('Upload completed successfully');
 
       const url = this.getPublicUrl(path);
 
-      log.info('File uploaded to R2', { path, contentType, size: body.length });
+      log.info('File uploaded to R2', { path, contentType, size: body.length, url });
 
       return {
         success: true,
         url,
       };
     } catch (error) {
-      log.error('R2 upload error', { error, path: options.path });
+      log.error('R2 upload error', {
+        error,
+        path: options.path,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'خطا در آپلود فایل',
