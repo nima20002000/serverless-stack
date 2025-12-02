@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createUser } from "@/services/user-service";
 import { withLogging } from "@/lib/api/with-logging";
-import { withRateLimit } from "@/lib/api/with-rate-limit";
-import { strictLimiter } from "@/lib/rate-limit";
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +49,8 @@ async function postHandler(req: NextRequest) {
   }
 }
 
+// Rate limiting is handled by middleware (strictLimiter, 5 req/2min)
 export const POST = withLogging(
-  withRateLimit(postHandler, strictLimiter),
+  postHandler,
   'POST /api/auth/register'
 );
