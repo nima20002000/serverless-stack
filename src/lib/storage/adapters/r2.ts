@@ -33,6 +33,7 @@ export class R2StorageAdapter implements StorageAdapter {
         accessKeyId,
         secretAccessKey,
       },
+      forcePathStyle: true, // Important: Use path-style URLs for R2 (bucket in path, not subdomain)
     });
 
     log.info('R2 Storage adapter initialized', { bucketName: this.bucketName });
