@@ -4,8 +4,7 @@
  * Uses AWS S3-compatible API to interact with Cloudflare R2
  */
 
-import { S3Client, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { StorageAdapter, UploadOptions, UploadResult, DeleteResult } from '../types';
 import { log } from '@/lib/logger';
 
@@ -33,7 +32,6 @@ export class R2StorageAdapter implements StorageAdapter {
         accessKeyId,
         secretAccessKey,
       },
-      forcePathStyle: true, // Important: Use path-style URLs for R2 (bucket in path, not subdomain)
     });
 
     log.info('R2 Storage adapter initialized', { bucketName: this.bucketName });
@@ -61,21 +59,18 @@ export class R2StorageAdapter implements StorageAdapter {
         throw new Error('Invalid file type');
       }
 
-      // Upload to R2
-      log.info('Initiating R2 upload', { bucket: this.bucketName, path });
-      const upload = new Upload({
-        client: this.client,
-        params: {
-          Bucket: this.bucketName,
-          Key: path,
-          Body: body,
-          ContentType: contentType,
-          // R2 doesn't use ACL, uses bucket-level public access settings
-        },
+      // Upload to R2 using PutObjectCommand
+      log.info('Initiating R2 upload', { bucket: this.bucketName, path, size: body.length });
+
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: path,
+        Body: body,
+        ContentType: contentType,
       });
 
-      log.info('Waiting for upload to complete...');
-      await upload.done();
+      log.info('Sending upload command...');
+      await this.client.send(command);
       log.info('Upload completed successfully');
 
       const url = this.getPublicUrl(path);
