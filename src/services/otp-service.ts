@@ -66,7 +66,7 @@ export async function sendOTP(
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Store OTP in database
-    await prisma.oTPVerification.create({
+    const otpRecord = await prisma.oTPVerification.create({
       data: {
         identifier,
         code,
@@ -84,6 +84,8 @@ export async function sendOTP(
       // Phone number: Send SMS via Kavenegar
       const result = await sendOTPSMS(identifier, code);
       if (!result.success) {
+        // Delete the OTP record since sending failed
+        await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
         log.error('Failed to send OTP SMS', { identifier, error: result.error });
         return {
           success: false,
@@ -95,6 +97,8 @@ export async function sendOTP(
       // Email address: Send email
       const result = await sendOTPEmail(identifier, code);
       if (!result.success) {
+        // Delete the OTP record since sending failed
+        await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
         log.error('Failed to send OTP email', { identifier, error: result.error });
         return {
           success: false,
@@ -103,6 +107,8 @@ export async function sendOTP(
         };
       }
     } else {
+      // Delete the OTP record since format is invalid
+      await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
       log.error('Invalid identifier format', { identifier });
       return {
         success: false,
