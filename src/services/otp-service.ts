@@ -19,8 +19,10 @@ export async function sendOTP(
   purpose: 'register' | 'login' = 'register'
 ): Promise<{ success: boolean; expiresAt: number; error?: string }> {
   try {
+    log.info('🔵 sendOTP called', { identifier, purpose, timestamp: new Date().toISOString() });
+
     // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
-    await prisma.oTPVerification.deleteMany({
+    const deletedExpired = await prisma.oTPVerification.deleteMany({
       where: {
         identifier,
         purpose,
@@ -30,7 +32,7 @@ export async function sendOTP(
       }
     });
 
-    log.info('Cleaned up expired OTPs', { identifier, purpose });
+    log.info('🔵 Cleaned up expired OTPs', { identifier, purpose, count: deletedExpired.count });
 
     // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per 2 minutes)
     const recentOTP = await prisma.oTPVerification.findFirst({
@@ -46,9 +48,18 @@ export async function sendOTP(
       }
     });
 
+    log.info('🔵 Rate limit check', {
+      identifier,
+      purpose,
+      recentOTPFound: !!recentOTP,
+      recentOTPCreatedAt: recentOTP?.createdAt,
+      recentOTPExpiresAt: recentOTP?.expiresAt,
+      now: new Date().toISOString()
+    });
+
     if (recentOTP) {
       const waitTime = 120 - Math.floor((Date.now() - recentOTP.createdAt.getTime()) / 1000);
-      log.warn('OTP rate limit hit', { identifier, purpose, waitTime });
+      log.warn('🔴 OTP rate limit hit', { identifier, purpose, waitTime, recentOTPId: recentOTP.id });
       return {
         success: false,
         expiresAt: recentOTP.expiresAt.getTime(),
@@ -57,13 +68,16 @@ export async function sendOTP(
     }
 
     // Delete any remaining old OTPs for this identifier and purpose (shouldn't be any after cleanup above)
-    await prisma.oTPVerification.deleteMany({
+    const deletedRemaining = await prisma.oTPVerification.deleteMany({
       where: { identifier, purpose }
     });
+    log.info('🔵 Deleted remaining OTPs', { identifier, purpose, count: deletedRemaining.count });
 
     // Generate new OTP
     const code = generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    log.info('🔵 Creating new OTP record', { identifier, purpose, code, expiresAt: expiresAt.toISOString() });
 
     // Store OTP in database
     const otpRecord = await prisma.oTPVerification.create({
@@ -77,7 +91,7 @@ export async function sendOTP(
       }
     });
 
-    log.info('OTP generated and stored', { identifier, purpose, expiresAt });
+    log.info('🔵 OTP generated and stored', { identifier, purpose, expiresAt: expiresAt.toISOString(), otpRecordId: otpRecord.id, createdAt: otpRecord.createdAt.toISOString() });
 
     // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
@@ -95,11 +109,14 @@ export async function sendOTP(
       }
     } else if (identifier.includes('@')) {
       // Email address: Send email
+      log.info('🔵 Attempting to send OTP email', { identifier, code, otpRecordId: otpRecord.id });
       const result = await sendOTPEmail(identifier, code);
+      log.info('🔵 Email send result', { identifier, success: result.success, error: result.error });
+
       if (!result.success) {
         // Delete the OTP record since sending failed
         await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
-        log.error('Failed to send OTP email', { identifier, error: result.error });
+        log.error('🔴 Failed to send OTP email - deleted OTP record', { identifier, error: result.error, otpRecordId: otpRecord.id });
         return {
           success: false,
           expiresAt: expiresAt.getTime(),
