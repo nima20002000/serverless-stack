@@ -101,6 +101,9 @@ Supports passwordless login and registration via OTP codes.
 - Production: Uses Resend API with verified domain (`kitia.ir`)
 - Development: Auto-creates Ethereal test accounts
 - DNS configured: DKIM, SPF, MX records via Cloudflare
+- **CRITICAL**: `EMAIL_FROM` environment variable MUST be set in production
+  - Value: `"کیتیا" <noreply@kitia.ir>`
+  - Without this, Resend will fail to send emails and OTP will fail silently
 
 **SMS OTP** (via Kavenegar):
 - Template-based SMS delivery for Iranian phone numbers
