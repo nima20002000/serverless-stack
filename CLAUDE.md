@@ -94,6 +94,29 @@ Since Upstash REST API doesn't support pattern matching (no `KEYS` command), cac
 
 Session data includes: `id`, `email`, `name`, `role`
 
+### OTP Authentication (Email & SMS)
+Supports passwordless login and registration via OTP codes.
+
+**Email OTP** (via Resend):
+- Production: Uses Resend API with verified domain (`kitia.ir`)
+- Development: Auto-creates Ethereal test accounts
+- DNS configured: DKIM, SPF, MX records via Cloudflare
+
+**SMS OTP** (via Kavenegar):
+- Template-based SMS delivery for Iranian phone numbers
+- Format: `09xxxxxxxxx`
+
+**OTP Service** (`src/services/otp-service.ts`):
+- 6-digit codes, 5-minute expiration
+- Rate limiting: 1 OTP per 2 minutes per identifier
+- Max 3 verification attempts
+- Auto-cleanup of expired OTPs
+- Supports both `register` and `login` purposes
+
+**API Endpoints**:
+- `POST /api/auth/send-otp` - Send OTP to email or phone
+- `POST /api/auth/verify-otp` - Verify OTP code
+
 ### Transaction & Payment Flow
 1. User creates transaction → generates unique `transactionCode` (8-char alphanumeric)
 2. Initiate Zarinpal payment → stores `zarinpalAuthority`
@@ -146,6 +169,10 @@ Required variables (see `.env.example`):
 - `UPSTASH_REDIS_REST_URL` - Upstash Redis REST API URL
 - `UPSTASH_REDIS_REST_TOKEN` - Upstash Redis token
 - `LOG_LEVEL` - "info", "debug", "warn", or "error"
+- `RESEND_API_KEY` - Resend email service API key (for production email OTP)
+- `EMAIL_FROM` - Email sender address (e.g., "کیتیا" <noreply@kitia.ir>)
+- `KAVENEGAR_API_KEY` - Kavenegar SMS API key (for SMS OTP)
+- `KAVENEGAR_TEMPLATE_NAME` - SMS template name
 
 ## RTL and Internationalization
 
