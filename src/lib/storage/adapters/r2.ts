@@ -44,11 +44,15 @@ export class R2StorageAdapter implements StorageAdapter {
 
       // Convert File to Buffer if needed
       let body: Buffer;
-      if (file instanceof File) {
+      if (Buffer.isBuffer(file)) {
+        // Already a Buffer
+        body = file;
+      } else if (file instanceof Blob || (file && typeof (file as unknown as Blob).arrayBuffer === 'function')) {
+        // File or Blob (works for both browser File and Next.js FormData File)
         const arrayBuffer = await file.arrayBuffer();
         body = Buffer.from(arrayBuffer);
       } else {
-        body = file;
+        throw new Error('Invalid file type');
       }
 
       // Upload to R2

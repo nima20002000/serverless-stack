@@ -27,10 +27,12 @@ export default function ProductsPage() {
     try {
       const response = await fetch('/api/products?page=1&perPage=20');
       const data = await response.json();
-      setProducts(data.data);
-      setTotal(data.total);
+      setProducts(data.data || []);
+      setTotal(data.total || 0);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]);
+      setTotal(0);
     } finally {
       setIsLoading(false);
     }

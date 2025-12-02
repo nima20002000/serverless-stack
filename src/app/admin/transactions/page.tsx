@@ -68,6 +68,7 @@ export default function TransactionsManagementPage() {
       setData(result);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها');
+      setData(null);
     } finally {
       setIsLoading(false);
     }

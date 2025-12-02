@@ -63,6 +63,7 @@ export default function AdminDashboard() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت آمار';
       setError(errorMessage);
+      setStats(null);
     } finally {
       setIsLoading(false);
     }

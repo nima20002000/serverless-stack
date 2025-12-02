@@ -50,6 +50,7 @@ export default function UsersManagementPage() {
       setData(result);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setData(null);
     } finally {
       setIsLoading(false);
     }

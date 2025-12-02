@@ -55,6 +55,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       setUser(data.user);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'خطا در دریافت اطلاعات کاربر');
+      setUser(null);
     } finally {
       setIsLoading(false);
     }

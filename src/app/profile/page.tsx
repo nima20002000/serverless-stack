@@ -61,9 +61,12 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setPromoCode(data.promoCode);
+      } else {
+        setPromoCode(null);
       }
     } catch (error) {
       console.error('Error fetching promo code:', error);
+      setPromoCode(null);
     }
   };
 

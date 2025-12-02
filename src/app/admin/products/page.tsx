@@ -38,9 +38,10 @@ export default function AdminProductsPage() {
       const response = await fetch(`/api/admin/products?${searchParam}${statusParam}${stockParam}`);
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const data = await response.json();
-      setProducts(data.products);
+      setProducts(data.data || []);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setProducts([]);
     } finally {
       setIsLoading(false);
     }
