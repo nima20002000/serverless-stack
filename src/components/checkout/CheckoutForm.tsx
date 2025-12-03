@@ -107,7 +107,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
         },
         body: JSON.stringify({
           phone: phone,
-          purpose: 'login',
+          purpose: 'checkout', // Special purpose for checkout (allows both existing and new users)
         }),
       });
 
@@ -151,7 +151,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
         body: JSON.stringify({
           phone: phone,
           code: otpCode,
-          purpose: 'login',
+          purpose: 'checkout',
           createAccount: createAccount,
           name: fullName || undefined,
         }),

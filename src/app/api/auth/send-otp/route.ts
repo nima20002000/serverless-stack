@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate purpose
-    if (!['register', 'login'].includes(purpose)) {
+    if (!['register', 'login', 'checkout'].includes(purpose)) {
       return NextResponse.json(
         { error: 'نوع درخواست نامعتبر است' },
         { status: 400 }
@@ -64,6 +64,8 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    // For checkout: allow both existing and new users (no validation)
 
     log.info('Sending OTP', { identifier, purpose });
 

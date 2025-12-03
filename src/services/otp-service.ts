@@ -16,7 +16,7 @@ function generateOTP(): string {
  */
 export async function sendOTP(
   identifier: string, // Email or phone
-  purpose: 'register' | 'login' = 'register'
+  purpose: 'register' | 'login' | 'checkout' = 'register'
 ): Promise<{ success: boolean; expiresAt: number; error?: string }> {
   try {
     log.info('🔵 sendOTP called', { identifier, purpose, timestamp: new Date().toISOString() });
@@ -150,7 +150,7 @@ export async function sendOTP(
 export async function verifyOTP(
   identifier: string,
   code: string,
-  purpose: 'register' | 'login' = 'register'
+  purpose: 'register' | 'login' | 'checkout' = 'register'
 ): Promise<{ success: boolean; error?: string; attemptsLeft?: number }> {
   try {
     const stored = await prisma.oTPVerification.findFirst({
