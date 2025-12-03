@@ -27,7 +27,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [postalCode, setPostalCode] = useState('');
-  const [createAccount, setCreateAccount] = useState(false); // Default to FALSE for easier checkout
+  const [createAccount, setCreateAccount] = useState(false);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -37,6 +37,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const [isSendingOTP, setIsSendingOTP] = useState(false);
+  const [pendingLogin, setPendingLogin] = useState(false); // Track if user needs to be logged in on payment
 
   // Load user profile data if logged in
   useEffect(() => {
@@ -83,21 +84,13 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       setPhoneVerified(false);
       setOtpError('');
       setOtpSuccess('');
+      setPendingLogin(false);
     }
   }, [createAccount, session]);
 
   const handleSendOTP = async () => {
-    // Validate phone or email
-    const identifier = phone || email;
-    if (!identifier) {
-      setOtpError('لطفاً شماره تلفن یا ایمیل خود را وارد کنید');
-      return;
-    }
-
-    const isEmail = identifier.includes('@');
-
-    // Validate format
-    if (!isEmail && !phone.match(/^09\d{9}$/)) {
+    // Validate phone
+    if (!phone || !phone.match(/^09\d{9}$/)) {
       setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
       return;
     }
@@ -113,7 +106,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          [isEmail ? 'email' : 'phone']: identifier,
+          phone: phone,
           purpose: 'login',
         }),
       });
@@ -126,11 +119,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
       setOtpSent(true);
       setOtpCooldown(60);
-      setOtpSuccess(
-        isEmail
-          ? 'کد تایید به ایمیل شما ارسال شد'
-          : 'کد تایید به شماره تلفن شما ارسال شد'
-      );
+      setOtpSuccess('کد تایید به شماره تلفن شما ارسال شد');
     } catch (error) {
       setOtpError(error instanceof Error ? error.message : 'خطا در ارسال کد تایید');
     } finally {
@@ -144,13 +133,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return;
     }
 
-    const identifier = phone || email;
-    if (!identifier) {
-      setOtpError('لطفاً شماره تلفن یا ایمیل خود را وارد کنید');
+    if (!phone) {
+      setOtpError('لطفاً شماره تلفن خود را وارد کنید');
       return;
     }
-
-    const isEmail = identifier.includes('@');
 
     try {
       setIsVerifyingOTP(true);
@@ -163,7 +149,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          [isEmail ? 'email' : 'phone']: identifier,
+          phone: phone,
           code: otpCode,
           purpose: 'login',
           createAccount: createAccount,
@@ -179,22 +165,19 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
       // Handle different scenarios based on response
       if (data.action === 'login' || data.action === 'register') {
-        // User logged in or registered - create NextAuth session
-        setOtpSuccess(data.message);
+        // Set success message and mark for login on payment
+        setPhoneVerified(true);
+        setPendingLogin(true);
+        setOtpSuccess(
+          data.action === 'register'
+            ? 'حساب کاربری با موفقیت ایجاد شد! اکنون می‌توانید پرداخت کنید'
+            : 'ورود با موفقیت انجام شد! اکنون می‌توانید پرداخت کنید'
+        );
+        setOtpSent(false);
+        setOtpCode('');
 
-        // Sign in with NextAuth using passwordless credentials
-        const result = await signIn('credentials', {
-          identifier: data.identifier,
-          password: '', // Passwordless login (OTP already verified)
-          redirect: false,
-        });
-
-        if (result?.ok) {
-          // Reload the page to get updated session
-          window.location.reload();
-        } else if (result?.error) {
-          setOtpError(result.error);
-        }
+        // Store identifier for later login
+        sessionStorage.setItem('pendingLoginIdentifier', data.identifier);
       }
     } catch (error) {
       setOtpError(error instanceof Error ? error.message : 'خطا در تایید کد');
@@ -203,7 +186,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validation
@@ -228,6 +211,28 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return;
     }
 
+    // If user verified OTP and needs login, log them in first
+    if (pendingLogin && !session) {
+      const identifier = sessionStorage.getItem('pendingLoginIdentifier');
+      if (identifier) {
+        // Sign in with NextAuth
+        const result = await signIn('credentials', {
+          identifier: identifier,
+          password: '', // Passwordless login (OTP already verified)
+          redirect: false,
+        });
+
+        if (result?.ok) {
+          // Clear pending login state
+          sessionStorage.removeItem('pendingLoginIdentifier');
+          // Reload to get new session and then proceed to payment
+          window.location.reload();
+          return;
+        }
+      }
+    }
+
+    // Proceed with checkout
     onSubmit({
       fullName,
       phone,
@@ -249,11 +254,6 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
   const hasVerifiedPhone = !!(session?.user.phone && session.user.isVerified);
   const isLoggedIn = !!session;
-
-  // Only show OTP verification if:
-  // 1. User is NOT logged in AND wants to create account
-  // 2. OR user IS logged in but doesn't have verified phone
-  const showOTPVerification = (!isLoggedIn && createAccount) || (isLoggedIn && !hasVerifiedPhone);
 
   return (
     <Card className="mt-6">
@@ -283,84 +283,20 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 text-right mb-2">
             شماره تلفن <span className="text-red-500">*</span>
           </label>
-          <div className="space-y-2">
-            <input
-              type="tel"
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-              placeholder="09123456789"
-              required
-              dir="ltr"
-              disabled={!!hasVerifiedPhone}
-            />
-
-            {/* Show OTP verification only when createAccount is checked (for guests) or user needs verification */}
-            {showOTPVerification && (
-              <div className="space-y-2">
-                {!otpSent ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-blue-600 text-right">
-                      برای ایجاد حساب کاربری، لطفاً شماره تلفن خود را تایید کنید
-                    </p>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleSendOTP}
-                      disabled={otpCooldown > 0 || isSendingOTP}
-                      className="w-full"
-                      isLoading={isSendingOTP}
-                    >
-                      {otpCooldown > 0 ? `ارسال مجدد (${otpCooldown}ثانیه)` : 'ارسال کد تایید'}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="primary"
-                      onClick={handleVerifyOTP}
-                      className="flex-1"
-                      disabled={isVerifyingOTP}
-                      isLoading={isVerifyingOTP}
-                    >
-                      تایید کد
-                    </Button>
-                    <input
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
-                      placeholder="کد 6 رقمی"
-                      maxLength={6}
-                      dir="ltr"
-                    />
-                  </div>
-                )}
-
-                {otpError && (
-                  <Alert type="error" onClose={() => setOtpError('')}>
-                    {otpError}
-                  </Alert>
-                )}
-
-                {otpSuccess && (
-                  <Alert type="success" onClose={() => setOtpSuccess('')}>
-                    {otpSuccess}
-                  </Alert>
-                )}
-              </div>
-            )}
-
-            {hasVerifiedPhone && (
-              <p className="text-sm text-green-600 text-right">✓ شماره تلفن تایید شده</p>
-            )}
-
-            {phoneVerified && !hasVerifiedPhone && (
-              <p className="text-sm text-green-600 text-right">✓ شماره تلفن تایید شد</p>
-            )}
-          </div>
+          <input
+            type="tel"
+            id="phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+            placeholder="09123456789"
+            required
+            dir="ltr"
+            disabled={!!hasVerifiedPhone}
+          />
+          {hasVerifiedPhone && (
+            <p className="text-sm text-green-600 text-right mt-2">✓ شماره تلفن تایید شده</p>
+          )}
         </div>
 
         {/* Email (Optional) */}
@@ -411,10 +347,11 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           />
         </div>
 
-        {/* Create Account Checkbox (Only for guest users) */}
+        {/* Create Account Section (Only for guest users) */}
         {!session && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center gap-2 justify-end mb-2">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+            {/* Checkbox Row */}
+            <div className="flex items-center gap-2 justify-end">
               <label htmlFor="createAccount" className="text-sm font-medium text-gray-700 cursor-pointer">
                 ساخت حساب کاربری
               </label>
@@ -426,11 +363,75 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
             </div>
+
+            {/* Helper Text */}
             <p className="text-xs text-gray-600 text-right">
               {createAccount
                 ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
                 : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
             </p>
+
+            {/* OTP Verification Section - Only shown when createAccount is checked */}
+            {createAccount && (
+              <div className="pt-2 border-t border-blue-300 space-y-2">
+                {!phoneVerified ? (
+                  <>
+                    {!otpSent ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleSendOTP}
+                        disabled={otpCooldown > 0 || isSendingOTP}
+                        className="w-full"
+                        isLoading={isSendingOTP}
+                      >
+                        {otpCooldown > 0 ? `ارسال مجدد (${otpCooldown}ثانیه)` : 'ارسال کد تایید'}
+                      </Button>
+                    ) : (
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+                          placeholder="کد 6 رقمی را وارد کنید"
+                          maxLength={6}
+                          dir="ltr"
+                        />
+                        <Button
+                          type="button"
+                          variant="primary"
+                          onClick={handleVerifyOTP}
+                          className="w-full"
+                          disabled={isVerifyingOTP}
+                          isLoading={isVerifyingOTP}
+                        >
+                          تایید کد
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <p className="text-sm text-green-700 text-right">
+                      ✓ شماره تلفن تایید شد
+                    </p>
+                  </div>
+                )}
+
+                {otpError && (
+                  <Alert type="error" onClose={() => setOtpError('')}>
+                    {otpError}
+                  </Alert>
+                )}
+
+                {otpSuccess && (
+                  <Alert type="success" onClose={() => setOtpSuccess('')}>
+                    {otpSuccess}
+                  </Alert>
+                )}
+              </div>
+            )}
           </div>
         )}
 
