@@ -129,6 +129,35 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
+            {/* Payment Method */}
+            <Card className="mt-6">
+              <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
+                روش پرداخت
+              </h2>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="zarinpal"
+                    defaultChecked
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <div className="flex-1 text-right">
+                    <div className="font-medium text-gray-900">زرین‌پال</div>
+                    <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: `<script src="https://www.zarinpal.com/webservice/TrustCode" type="text/javascript"></script>`
+                      }}
+                    />
+                  </div>
+                </label>
+              </div>
+            </Card>
+
             {/* User Info */}
             <Card className="mt-6">
               <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
