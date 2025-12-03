@@ -54,3 +54,6 @@ next-env.d.ts
 
 # local uploads (files stored in R2 cloud storage)
 /public/uploads/
+
+# Prevent routing conflicts - products route is at /src/app/products, not (public)/products
+/src/app/(public)/products/
