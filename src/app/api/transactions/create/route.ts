@@ -15,15 +15,24 @@ import {
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
 // POST /api/transactions/create - Create transaction and initiate payment
 async function postHandler(req: NextRequest) {
+  const startTime = Date.now();
+
   try {
     const session = await getServerSession(authOptions);
     const body = await req.json();
     const { items, shippingInfo } = body;
+
+    log.info('Transaction creation started', {
+      userId: session?.user?.id || 'guest',
+      itemCount: items?.length || 0,
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+    });
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -132,6 +141,15 @@ async function postHandler(req: NextRequest) {
       data: { zarinpalAuthority: paymentRequest.authority },
     });
 
+    log.info('Transaction created successfully', {
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      amount: totalAmount,
+      authority: paymentRequest.authority,
+      userId: session?.user?.id || 'guest',
+      elapsedMs: Date.now() - startTime,
+    });
+
     return NextResponse.json({
       success: true,
       transactionId: transaction.id,
@@ -141,6 +159,12 @@ async function postHandler(req: NextRequest) {
       authority: paymentRequest.authority,
     });
   } catch (error) {
+    log.error('Error creating transaction', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      elapsedMs: Date.now() - startTime,
+    });
+
     console.error('Error creating transaction:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'خطا در ایجاد تراکنش' },

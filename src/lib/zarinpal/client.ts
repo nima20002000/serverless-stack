@@ -4,6 +4,7 @@
  */
 
 import ZarinPal from 'zarinpal-node-sdk';
+import { log } from '@/lib/logger';
 
 // Create new client on every call to ensure fresh env vars
 function getZarinpalClient(): ZarinPal {
@@ -48,6 +49,16 @@ export interface PaymentVerification {
 export async function createPaymentRequest(
   request: PaymentRequest
 ): Promise<PaymentRequestResponse> {
+  const startTime = Date.now();
+
+  log.info('Creating Zarinpal payment request', {
+    amount: request.amount,
+    mobile: request.mobile,
+    email: request.email,
+    callbackUrl: request.callbackUrl,
+    sandbox: isSandboxMode(),
+  });
+
   try {
     const client = getZarinpalClient();
     const response = await client.payments.create({
@@ -58,9 +69,21 @@ export async function createPaymentRequest(
       mobile: request.mobile,
     });
 
+    log.info('Zarinpal payment request response', {
+      responseData: response.data,
+      responseErrors: response.errors,
+      elapsedMs: Date.now() - startTime,
+    });
+
     if (response.data && response.data.authority) {
       const authority = response.data.authority;
       const url = client.payments.getRedirectUrl(authority);
+
+      log.info('Payment request created successfully', {
+        authority,
+        url,
+        elapsedMs: Date.now() - startTime,
+      });
 
       return {
         status: 100,
@@ -69,8 +92,19 @@ export async function createPaymentRequest(
       };
     }
 
+    log.error('Zarinpal payment request failed - no authority returned', {
+      response,
+      elapsedMs: Date.now() - startTime,
+    });
+
     throw new Error(`خطا در ایجاد درخواست پرداخت`);
   } catch (error) {
+    log.error('Zarinpal payment request error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      elapsedMs: Date.now() - startTime,
+    });
+
     console.error('Zarinpal payment request error:', error);
     throw new Error(error instanceof Error ? error.message : 'خطا در اتصال به درگاه پرداخت');
   }
@@ -83,6 +117,15 @@ export async function verifyPayment(
   authority: string,
   amount: number
 ): Promise<PaymentVerification> {
+  const startTime = Date.now();
+
+  log.info('Calling Zarinpal verify API', {
+    authority,
+    amount,
+    sandbox: isSandboxMode(),
+    merchantId: process.env.ZARINPAL_MERCHANT_ID || 'test',
+  });
+
   try {
     const client = getZarinpalClient();
     const response = await client.verifications.verify({
@@ -90,15 +133,43 @@ export async function verifyPayment(
       authority: authority,
     });
 
+    log.info('Zarinpal verify API response received', {
+      authority,
+      responseData: response.data,
+      responseErrors: response.errors,
+      elapsedMs: Date.now() - startTime,
+    });
+
     if (response.data && response.data.ref_id) {
+      log.info('Payment verification successful', {
+        authority,
+        refId: response.data.ref_id,
+        elapsedMs: Date.now() - startTime,
+      });
+
       return {
         status: 100,
         refId: response.data.ref_id,
       };
     }
 
+    log.error('Zarinpal verification failed - no ref_id returned', {
+      authority,
+      response,
+      elapsedMs: Date.now() - startTime,
+    });
+
     throw new Error(`تراکنش ناموفق بود`);
   } catch (error) {
+    log.error('Zarinpal payment verification error', {
+      authority,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      // Log the full error object to see Zarinpal's error details
+      errorObject: error,
+      elapsedMs: Date.now() - startTime,
+    });
+
     console.error('Zarinpal payment verification error:', error);
     throw new Error(error instanceof Error ? error.message : 'خطا در تأیید پرداخت');
   }
