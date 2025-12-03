@@ -1,6 +1,6 @@
 'use client';
 
-export default function ZarinpalBadge() {
+export default function ZarinpalFooterBadge() {
   const showZPTrust = () => {
     window.open(
       'https://www.zarinpal.com/trustPage/kitia.ir',
@@ -19,7 +19,7 @@ export default function ZarinpalBadge() {
       <img
         src="https://cdn.zarinpal.com/badges/trustLogo/1.svg"
         alt="دروازه پرداخت معتبر"
-        className="h-8 w-auto"
+        style={{ width: '96px', height: '144px', cursor: 'pointer' }}
       />
     </button>
   );
