@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Session } from 'next-auth';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -22,6 +22,7 @@ interface CheckoutFormProps {
 }
 
 export default function CheckoutForm({ session, onSubmit, isProcessing }: CheckoutFormProps) {
+  const { update: updateSession } = useSession();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -215,18 +216,43 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
     if (pendingLogin && !session) {
       const identifier = sessionStorage.getItem('pendingLoginIdentifier');
       if (identifier) {
-        // Sign in with NextAuth
-        const result = await signIn('credentials', {
-          identifier: identifier,
-          password: '', // Passwordless login (OTP already verified)
-          redirect: false,
-        });
+        try {
+          // Sign in with NextAuth
+          const result = await signIn('credentials', {
+            identifier: identifier,
+            password: '', // Passwordless login (OTP already verified)
+            redirect: false,
+          });
 
-        if (result?.ok) {
-          // Clear pending login state
-          sessionStorage.removeItem('pendingLoginIdentifier');
-          // Reload to get new session and then proceed to payment
-          window.location.reload();
+          if (result?.ok) {
+            // Clear pending login state
+            sessionStorage.removeItem('pendingLoginIdentifier');
+            setPendingLogin(false);
+
+            // Force NextAuth session to refresh
+            await updateSession();
+
+            // Wait a brief moment for session state to propagate
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Now proceed with checkout - session will be available on server
+            onSubmit({
+              fullName,
+              phone,
+              email,
+              shippingAddress,
+              postalCode,
+              createAccount: false, // Account already created during OTP verification if needed
+              phoneVerified,
+            });
+            return;
+          } else {
+            alert('خطا در ورود به حساب کاربری. لطفاً دوباره تلاش کنید.');
+            return;
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          alert('خطا در ورود به حساب کاربری');
           return;
         }
       }

@@ -21,11 +21,12 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Redirect to cart if cart is empty (no auth check)
-    if (items.length === 0) {
+    // Only redirect if cart is empty AND session is not loading
+    // This prevents redirect during session updates (e.g., after OTP login)
+    if (status !== 'loading' && items.length === 0) {
       router.push('/cart');
     }
-  }, [items.length, router]);
+  }, [items.length, router, status]);
 
   const handleCheckout = async (formData: {
     fullName: string;
