@@ -26,6 +26,9 @@ export async function middleware(req: NextRequest) {
     } else if (req.nextUrl.pathname === '/api/auth/verify-otp') {
       // Don't rate limit here - OTP service has its own attempt limiting
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/auth/checkout-verify-otp') {
+      // Don't rate limit here - OTP service has its own attempt limiting
+      shouldRateLimit = false;
     } else if (req.nextUrl.pathname === '/api/transactions/verify') {
       // Don't rate limit - this is an external callback from Zarinpal payment gateway
       // Users cannot trigger this directly; requires valid authority from database

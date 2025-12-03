@@ -25,6 +25,22 @@ npx prisma db push                         # Push schema changes without migrati
 npx prisma studio                          # Open Prisma Studio UI
 ```
 
+### Database Environments
+The project uses **three separate databases**:
+1. **Local PostgreSQL** (Development) - `localhost:5432/kitia`
+2. **Supabase Production** - Connected via MCP (project_ref: `tanqgnztclrucfldxhuk`)
+3. **Supabase Preview** - `aws-1-ap-northeast-2.pooler.supabase.com`
+
+**Important**: When applying schema changes, you must apply migrations to **all three databases**:
+- Local: `npx prisma db push`
+- Supabase Production: Use Supabase MCP `apply_migration` tool
+- Supabase Preview: Use `psql` command with credentials from `CREDENTIALS.md`
+
+**Example - Apply migration to Supabase Preview**:
+```bash
+PGPASSWORD="CVdIKLnQedFv8lza" psql -h aws-1-ap-northeast-2.pooler.supabase.com -U postgres.gozxjxtnrbuurmstjydo -d postgres -p 5432 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
+```
+
 ## Critical Architecture Patterns
 
 ### Service Layer Pattern
