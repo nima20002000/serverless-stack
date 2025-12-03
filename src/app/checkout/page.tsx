@@ -9,6 +9,7 @@ import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -30,26 +31,6 @@ export default function CheckoutPage() {
       router.push('/cart');
     }
   }, [status, items.length, router]);
-
-  useEffect(() => {
-    // Load Zarinpal trust badge script
-    const script = document.createElement('script');
-    script.src = 'https://www.zarinpal.com/webservice/TrustCode';
-    script.type = 'text/javascript';
-    script.async = true;
-
-    const zarinpalDiv = document.getElementById('zarinpal-checkout');
-    if (zarinpalDiv && zarinpalDiv.childNodes.length === 0) {
-      zarinpalDiv.appendChild(script);
-    }
-
-    return () => {
-      // Cleanup script on unmount
-      if (zarinpalDiv && zarinpalDiv.contains(script)) {
-        zarinpalDiv.removeChild(script);
-      }
-    };
-  }, []);
 
   const handleCheckout = async () => {
     try {
@@ -168,7 +149,7 @@ export default function CheckoutPage() {
                     <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
                   </div>
                   <div className="flex-shrink-0">
-                    <div id="zarinpal-checkout" />
+                    <ZarinpalBadge />
                   </div>
                 </label>
               </div>
