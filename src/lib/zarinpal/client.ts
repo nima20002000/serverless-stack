@@ -113,7 +113,16 @@ export function isSandboxMode(): boolean {
 
 /**
  * Get callback URL for payment verification
+ * @param requestUrl Optional request URL to extract origin from (for Vercel preview deployments)
  */
-export function getCallbackUrl(): string {
-  return `${getAppUrl()}/api/transactions/verify`;
+export function getCallbackUrl(requestUrl?: string): string {
+  // Runtime detection: use request origin for preview deployments
+  if (requestUrl) {
+    const origin = new URL(requestUrl).origin;
+    return `${origin}/api/transactions/verify`;
+  }
+
+  // Fallback to NEXTAUTH_URL (Vercel sets this automatically for previews)
+  const baseUrl = process.env.NEXTAUTH_URL || getAppUrl();
+  return `${baseUrl}/api/transactions/verify`;
 }

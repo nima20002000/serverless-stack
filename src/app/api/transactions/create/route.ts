@@ -123,7 +123,7 @@ async function postHandler(req: NextRequest) {
       description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
       email: email || session?.user?.email || undefined,
       mobile: phone,
-      callbackUrl: getCallbackUrl(),
+      callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
     });
 
     // Update transaction with Zarinpal authority
