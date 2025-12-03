@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import Footer from "@/components/layout/Footer";
 
 export const metadata: Metadata = {
   title: "Kitia - فروشگاه آنلاین",
@@ -14,9 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
-      <body className="antialiased">
+      <body className="antialiased flex flex-col min-h-screen">
         <SessionProvider>
           {children}
+          <Footer />
         </SessionProvider>
       </body>
     </html>
