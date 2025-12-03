@@ -31,6 +31,26 @@ export default function CheckoutPage() {
     }
   }, [status, items.length, router]);
 
+  useEffect(() => {
+    // Load Zarinpal trust badge script
+    const script = document.createElement('script');
+    script.src = 'https://www.zarinpal.com/webservice/TrustCode';
+    script.type = 'text/javascript';
+    script.async = true;
+
+    const zarinpalDiv = document.getElementById('zarinpal-checkout');
+    if (zarinpalDiv && zarinpalDiv.childNodes.length === 0) {
+      zarinpalDiv.appendChild(script);
+    }
+
+    return () => {
+      // Cleanup script on unmount
+      if (zarinpalDiv && zarinpalDiv.contains(script)) {
+        zarinpalDiv.removeChild(script);
+      }
+    };
+  }, []);
+
   const handleCheckout = async () => {
     try {
       setError('');
@@ -148,11 +168,7 @@ export default function CheckoutPage() {
                     <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
                   </div>
                   <div className="flex-shrink-0">
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: `<script src="https://www.zarinpal.com/webservice/TrustCode" type="text/javascript"></script>`
-                      }}
-                    />
+                    <div id="zarinpal-checkout" />
                   </div>
                 </label>
               </div>
