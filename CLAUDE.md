@@ -117,7 +117,20 @@ const url = storage.getPublicUrl('products/images/example.jpg');
 - `R2_ACCESS_KEY_ID` - R2 API access key
 - `R2_SECRET_ACCESS_KEY` - R2 API secret
 - `R2_BUCKET_NAME` - Bucket name (default: `kitia-products`)
-- `R2_PUBLIC_URL` - Public URL for files (R2.dev subdomain or custom domain)
+- `R2_PUBLIC_URL` - Public URL for files
+  - **Production**: `https://cdn.kitia.ir` (custom domain configured in Cloudflare R2)
+  - **Development**: Can use r2.dev subdomain (rate-limited)
+- `AWS_EC2_METADATA_DISABLED` - Set to `true` to prevent AWS SDK from trying EC2 metadata service
+
+**Production Custom Domain Setup:**
+The bucket uses `cdn.kitia.ir` as the public-facing domain (configured in Cloudflare R2 bucket settings). This provides:
+- No rate limits (vs r2.dev which is rate-limited)
+- Full Cloudflare CDN caching
+- WAF and security features
+- Clean branded URLs
+
+**CRITICAL: IPv6 Connectivity Issue**
+This development environment does NOT have IPv6 connectivity. The AWS S3 SDK must be configured with `family: 4` in the HTTPS agent to force IPv4 connections, otherwise R2 uploads will fail with `ETIMEDOUT` errors. This is already configured in `/src/lib/storage/adapters/r2.ts`.
 
 See `/docs/R2_SETUP.md` for complete setup instructions.
 

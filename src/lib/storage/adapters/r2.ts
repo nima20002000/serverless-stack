@@ -5,6 +5,8 @@
  */
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
+import { Agent as HttpsAgent } from 'https';
 import { StorageAdapter, UploadOptions, UploadResult, DeleteResult } from '../types';
 import { log } from '@/lib/logger';
 
@@ -24,7 +26,7 @@ export class R2StorageAdapter implements StorageAdapter {
       throw new Error('R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
     }
 
-    // Configure S3 client for R2
+    // Configure S3 client for R2 with proper timeout and connection settings
     this.client = new S3Client({
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -32,6 +34,15 @@ export class R2StorageAdapter implements StorageAdapter {
         accessKeyId,
         secretAccessKey,
       },
+      requestHandler: new NodeHttpHandler({
+        httpsAgent: new HttpsAgent({
+          keepAlive: true,
+          maxSockets: 50,
+          family: 4,                // Force IPv4 to avoid IPv6 connection issues
+        }),
+        requestTimeout: 30000,      // 30 seconds timeout for receiving response
+        connectionTimeout: 10000,    // 10 seconds timeout for establishing connection
+      }),
     });
 
     log.info('R2 Storage adapter initialized', { bucketName: this.bucketName });
