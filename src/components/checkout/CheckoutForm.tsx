@@ -27,7 +27,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [postalCode, setPostalCode] = useState('');
-  const [createAccount, setCreateAccount] = useState(true);
+  const [createAccount, setCreateAccount] = useState(false); // Default to FALSE for easier checkout
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -74,6 +74,17 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return () => clearTimeout(timer);
     }
   }, [otpCooldown]);
+
+  // Reset OTP state when createAccount is unchecked
+  useEffect(() => {
+    if (!createAccount && !session) {
+      setOtpSent(false);
+      setOtpCode('');
+      setPhoneVerified(false);
+      setOtpError('');
+      setOtpSuccess('');
+    }
+  }, [createAccount, session]);
 
   const handleSendOTP = async () => {
     // Validate phone or email
@@ -155,7 +166,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           [isEmail ? 'email' : 'phone']: identifier,
           code: otpCode,
           purpose: 'login',
-          createAccount: !session && createAccount,
+          createAccount: createAccount,
           name: fullName || undefined,
         }),
       });
@@ -184,12 +195,6 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
         } else if (result?.error) {
           setOtpError(result.error);
         }
-      } else if (data.action === 'guest_verified') {
-        // Guest verification only
-        setPhoneVerified(true);
-        setOtpSuccess('شماره تلفن با موفقیت تایید شد');
-        setOtpSent(false);
-        setOtpCode('');
       }
     } catch (error) {
       setOtpError(error instanceof Error ? error.message : 'خطا در تایید کد');
@@ -217,8 +222,8 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return;
     }
 
-    // For non-logged-in users, require phone verification
-    if (!session && !phoneVerified) {
+    // Only require OTP verification if user wants to create account
+    if (!session && createAccount && !phoneVerified) {
       alert('لطفاً ابتدا شماره تلفن خود را با کد تایید تایید کنید');
       return;
     }
@@ -244,7 +249,11 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
   const hasVerifiedPhone = !!(session?.user.phone && session.user.isVerified);
   const isLoggedIn = !!session;
-  const showOTPVerification = !isLoggedIn || (!hasVerifiedPhone && !phoneVerified);
+
+  // Only show OTP verification if:
+  // 1. User is NOT logged in AND wants to create account
+  // 2. OR user IS logged in but doesn't have verified phone
+  const showOTPVerification = (!isLoggedIn && createAccount) || (isLoggedIn && !hasVerifiedPhone);
 
   return (
     <Card className="mt-6">
@@ -287,16 +296,14 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
               disabled={!!hasVerifiedPhone}
             />
 
-            {/* Show OTP verification for non-logged-in users OR logged-in users without verified phone */}
+            {/* Show OTP verification only when createAccount is checked (for guests) or user needs verification */}
             {showOTPVerification && (
               <div className="space-y-2">
                 {!otpSent ? (
                   <div className="space-y-2">
-                    {!isLoggedIn && createAccount && (
-                      <p className="text-xs text-gray-600 text-right">
-                        با تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود
-                      </p>
-                    )}
+                    <p className="text-xs text-blue-600 text-right">
+                      برای ایجاد حساب کاربری، لطفاً شماره تلفن خود را تایید کنید
+                    </p>
                     <Button
                       type="button"
                       variant="secondary"
@@ -421,8 +428,8 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             </div>
             <p className="text-xs text-gray-600 text-right">
               {createAccount
-                ? 'با فعال بودن این گزینه، پس از تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
-                : 'خرید به عنوان کاربر مهمان انجام می‌شود'}
+                ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
+                : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
             </p>
           </div>
         )}
@@ -433,9 +440,11 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           variant="primary"
           className="w-full"
           isLoading={isProcessing}
-          disabled={isProcessing || (!isLoggedIn && !phoneVerified)}
+          disabled={isProcessing || (!isLoggedIn && createAccount && !phoneVerified)}
         >
-          {!isLoggedIn && !phoneVerified ? 'ابتدا شماره تلفن را تایید کنید' : 'پرداخت'}
+          {!isLoggedIn && createAccount && !phoneVerified
+            ? 'ابتدا شماره تلفن را تایید کنید'
+            : 'پرداخت'}
         </Button>
       </form>
     </Card>

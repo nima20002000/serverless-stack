@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     // Check if user exists
     const existingUser = await getUserByIdentifier(identifier);
 
-    // Scenario 1: Existing user - auto-login
+    // Scenario 1: Existing user - auto-login (even if createAccount is false)
     if (existingUser) {
       log.info('Existing user verified via OTP - ready for auto-login', {
         identifier,
@@ -88,14 +88,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Scenario 3: Guest verification (no account creation)
-    log.info('Guest phone verified via OTP', { identifier });
+    // Scenario 3: User doesn't exist and createAccount=false
+    // This shouldn't happen in the new flow, but handle it gracefully
+    log.warn('OTP verified but user not found and createAccount=false', { identifier });
 
     return NextResponse.json({
-      success: true,
-      action: 'guest_verified',
-      message: 'شماره تلفن با موفقیت تایید شد',
-    });
+      error: 'برای ایجاد حساب کاربری، گزینه "ساخت حساب کاربری" را فعال کنید',
+    }, { status: 400 });
   } catch (error) {
     log.error('Checkout OTP verification error', { error });
     return NextResponse.json(
