@@ -8,12 +8,13 @@ import { Product, ProductVariant } from '@prisma/client';
 export const dynamic = 'force-dynamic';
 
 interface ProductPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
   try {
-    const product = await getProductById(params.id, true);
+    const product = await getProductById(id, true);
     return {
       title: `${product.name} - کیتیا`,
       description: product.description,
@@ -26,10 +27,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
+  const { id } = await params;
   let product;
 
   try {
-    product = await getProductById(params.id, true);
+    product = await getProductById(id, true);
   } catch {
     notFound();
   }
