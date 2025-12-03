@@ -1,21 +1,6 @@
-'use client';
-
 import Link from 'next/link';
-import { useEffect } from 'react';
 
 export default function Footer() {
-  useEffect(() => {
-    // Load Zarinpal trust badge script
-    const script = document.createElement('script');
-    script.src = 'https://www.zarinpal.com/webservice/TrustCode';
-    script.type = 'text/javascript';
-    script.async = true;
-
-    const zarinpalDiv = document.getElementById('zarinpal');
-    if (zarinpalDiv) {
-      zarinpalDiv.appendChild(script);
-    }
-  }, []);
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -80,7 +65,11 @@ export default function Footer() {
                 }}
               />
               {/* Zarinpal Trust Badge */}
-              <div id="zarinpal" style={{ margin: 'auto' }} />
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: `<script src="https://www.zarinpal.com/webservice/TrustCode" type="text/javascript"></script>`
+                }}
+              />
             </div>
           </div>
         </div>
