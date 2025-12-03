@@ -65,7 +65,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // For checkout: allow both existing and new users (no validation)
+    // For checkout: existing users should log in, only allow OTP for new users
+    if (purpose === 'checkout' && existingUser) {
+      return NextResponse.json(
+        { error: 'این شماره قبلاً ثبت‌نام شده است. لطفاً وارد حساب کاربری خود شوید' },
+        { status: 400 }
+      );
+    }
 
     log.info('Sending OTP', { identifier, purpose });
 
