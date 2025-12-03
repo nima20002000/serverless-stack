@@ -327,9 +327,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       amount: Number(t.amount),
       status: t.status,
       createdAt: t.createdAt,
-      user: {
+      user: t.user ? {
         name: t.user.name,
         email: t.user.email,
+      } : {
+        name: t.fullName,
+        email: t.email || 'مهمان',
       },
     })),
   };

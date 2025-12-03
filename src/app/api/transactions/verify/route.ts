@@ -4,8 +4,11 @@ import {
   updateTransactionStatus,
   reduceProductStock,
 } from '@/services/transaction-service';
+import { createUser } from '@/services/user-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
+import prisma from '@/lib/prisma/client';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,6 +67,40 @@ async function getHandler(req: NextRequest) {
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
+
+    // Create user account if requested (for guest checkouts)
+    if (!transaction.userId && transaction.createAccount) {
+      try {
+        log.info('Creating user account after successful payment', {
+          transactionId: transaction.id,
+          phone: transaction.phone,
+          email: transaction.email,
+        });
+
+        const newUser = await createUser({
+          phone: transaction.phone,
+          email: transaction.email || undefined,
+          name: transaction.fullName,
+        });
+
+        // Link transaction to newly created user
+        await prisma.transaction.update({
+          where: { id: transaction.id },
+          data: { userId: newUser.id },
+        });
+
+        log.info('User account created and linked to transaction', {
+          userId: newUser.id,
+          transactionId: transaction.id,
+        });
+      } catch (error) {
+        log.error('Failed to create user account after payment', {
+          transactionId: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Don't fail the payment if account creation fails
+      }
+    }
 
     // Redirect to success page
     return NextResponse.redirect(

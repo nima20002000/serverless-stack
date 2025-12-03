@@ -14,6 +14,7 @@ declare module "next-auth" {
       phone: string | null;
       name: string;
       role: Role;
+      isVerified: boolean;
     }
   }
 
@@ -23,6 +24,7 @@ declare module "next-auth" {
     phone: string | null;
     name: string;
     role: Role;
+    isVerified: boolean;
   }
 }
 
@@ -33,6 +35,7 @@ declare module "next-auth/jwt" {
     email: string | null;
     phone: string | null;
     name: string;
+    isVerified: boolean;
   }
 }
 
@@ -83,6 +86,7 @@ export const authOptions: NextAuthOptions = {
             phone: user.phone,
             name: user.name,
             role: user.role,
+            isVerified: user.isVerified,
           };
         }
 
@@ -106,6 +110,7 @@ export const authOptions: NextAuthOptions = {
           phone: user.phone,
           name: user.name,
           role: user.role,
+          isVerified: user.isVerified,
         };
       },
     }),
@@ -118,6 +123,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.phone = user.phone;
         token.name = user.name;
+        token.isVerified = user.isVerified;
       }
       return token;
     },
@@ -128,6 +134,7 @@ export const authOptions: NextAuthOptions = {
         session.user.email = token.email as string | null;
         session.user.phone = token.phone as string | null;
         session.user.name = token.name as string;
+        session.user.isVerified = token.isVerified as boolean;
       }
       return session;
     },

@@ -233,3 +233,31 @@ export async function getUserByIdentifier(identifier: string): Promise<UserInfo 
 
   return null;
 }
+
+/**
+ * Update user's shipping information
+ */
+export async function updateUserShippingInfo(userId: string, data: {
+  shippingAddress: string;
+  postalCode?: string;
+}): Promise<void> {
+  log.info('Updating user shipping info', { userId });
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        shippingAddress: data.shippingAddress,
+        postalCode: data.postalCode,
+      },
+    });
+
+    log.info('User shipping info updated successfully', { userId });
+  } catch (error) {
+    log.error('Failed to update user shipping info', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    // Don't throw error - this is a non-critical update
+  }
+}

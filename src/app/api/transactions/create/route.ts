@@ -7,6 +7,7 @@ import {
   verifyStockAvailability,
 } from '@/services/transaction-service';
 import { getProductById } from '@/services/product-service';
+import { updateUserShippingInfo } from '@/services/user-service';
 import {
   createPaymentRequest,
   getCallbackUrl,
@@ -21,20 +22,38 @@ export const dynamic = 'force-dynamic';
 async function postHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'برای ادامه باید وارد شوید' },
-        { status: 401 }
-      );
-    }
-
     const body = await req.json();
-    const { items } = body;
+    const { items, shippingInfo } = body;
 
+    // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
         { error: 'سبد خرید خالی است' },
+        { status: 400 }
+      );
+    }
+
+    // Validate shipping info
+    if (!shippingInfo) {
+      return NextResponse.json(
+        { error: 'اطلاعات ارسال الزامی است' },
+        { status: 400 }
+      );
+    }
+
+    const { fullName, phone, email, shippingAddress, postalCode, createAccount } = shippingInfo;
+
+    if (!fullName || !phone || !shippingAddress) {
+      return NextResponse.json(
+        { error: 'لطفاً تمام فیلدهای الزامی را پر کنید' },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone format
+    if (!phone.match(/^09\d{9}$/)) {
+      return NextResponse.json(
+        { error: 'فرمت شماره تلفن نامعتبر است' },
         { status: 400 }
       );
     }
@@ -75,18 +94,35 @@ async function postHandler(req: NextRequest) {
       });
     }
 
-    // Create transaction in database
+    // Create transaction in database with shipping info
     const transaction = await createTransaction({
-      userId: session.user.id,
+      userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
       amount: totalAmount,
+      shippingInfo: {
+        fullName,
+        phone,
+        email: email || undefined,
+        shippingAddress,
+        postalCode: postalCode || undefined,
+        createAccount: createAccount && !session, // Only for guest users
+      },
     });
+
+    // If logged-in user, update their profile with shipping info
+    if (session?.user) {
+      await updateUserShippingInfo(session.user.id, {
+        shippingAddress,
+        postalCode: postalCode || undefined,
+      });
+    }
 
     // Create payment request with Zarinpal
     const paymentRequest = await createPaymentRequest({
       amount: totalAmount, // In Tomans
       description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-      email: session.user.email || undefined,
+      email: email || session?.user?.email || undefined,
+      mobile: phone,
       callbackUrl: getCallbackUrl(),
     });
 

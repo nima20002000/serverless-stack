@@ -35,24 +35,33 @@ export function generateTransactionCode(): string {
 }
 
 /**
- * Create a new transaction with items
+ * Create a new transaction with items and shipping information
  */
 export async function createTransaction(data: {
-  userId: string;
+  userId?: string;
   items: Array<{
     productId: string;
     quantity: number;
     price: number;
   }>;
   amount: number;
+  shippingInfo: {
+    fullName: string;
+    phone: string;
+    email?: string;
+    shippingAddress: string;
+    postalCode?: string;
+    createAccount?: boolean;
+  };
 }): Promise<TransactionWithItems> {
   const transactionCode = generateTransactionCode();
 
   log.info('Creating transaction', {
-    userId: data.userId,
+    userId: data.userId || 'guest',
     amount: data.amount,
     itemCount: data.items.length,
     transactionCode,
+    hasShippingInfo: !!data.shippingInfo,
   });
 
   try {
@@ -65,6 +74,12 @@ export async function createTransaction(data: {
           amount: data.amount,
           status: 'PENDING',
           transactionCode,
+          fullName: data.shippingInfo.fullName,
+          phone: data.shippingInfo.phone,
+          email: data.shippingInfo.email,
+          shippingAddress: data.shippingInfo.shippingAddress,
+          postalCode: data.shippingInfo.postalCode,
+          createAccount: data.shippingInfo.createAccount || false,
           items: {
             create: data.items.map((item) => ({
               productId: item.productId,
@@ -79,13 +94,13 @@ export async function createTransaction(data: {
               product: true,
             },
           },
-          user: {
+          user: data.userId ? {
             select: {
               id: true,
               email: true,
               name: true,
             },
-          },
+          } : undefined,
         },
       });
 
@@ -96,12 +111,13 @@ export async function createTransaction(data: {
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
       amount: transaction.amount,
+      isGuest: !data.userId,
     });
 
     return transaction;
   } catch (error) {
     log.error('Failed to create transaction', {
-      userId: data.userId,
+      userId: data.userId || 'guest',
       amount: data.amount,
       error: error instanceof Error ? error.message : 'Unknown error',
     });

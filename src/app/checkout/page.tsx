@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
 import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store/cart-store';
 import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
+import CheckoutForm from '@/components/checkout/CheckoutForm';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -21,21 +21,29 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (status === 'unauthenticated') {
-      router.push('/login?callbackUrl=/checkout');
-    }
-
-    // Redirect to cart if cart is empty
-    if (status === 'authenticated' && items.length === 0) {
+    // Redirect to cart if cart is empty (no auth check)
+    if (items.length === 0) {
       router.push('/cart');
     }
-  }, [status, items.length, router]);
+  }, [items.length, router]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (formData: {
+    fullName: string;
+    phone: string;
+    email: string;
+    shippingAddress: string;
+    postalCode: string;
+    createAccount: boolean;
+    phoneVerified: boolean;
+  }) => {
     try {
       setError('');
       setIsProcessing(true);
+
+      // For logged-in users who haven't verified their phone, require verification
+      if (session && !session.user.phone && !formData.phoneVerified) {
+        throw new Error('لطفاً شماره تلفن خود را تایید کنید');
+      }
 
       const response = await fetch('/api/transactions/create', {
         method: 'POST',
@@ -47,6 +55,14 @@ export default function CheckoutPage() {
             productId: item.productId,
             quantity: item.quantity,
           })),
+          shippingInfo: {
+            fullName: formData.fullName,
+            phone: formData.phone,
+            email: formData.email || undefined,
+            shippingAddress: formData.shippingAddress,
+            postalCode: formData.postalCode || undefined,
+            createAccount: formData.createAccount,
+          },
         }),
       });
 
@@ -102,7 +118,7 @@ export default function CheckoutPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Order Summary */}
+          {/* Order Summary and Shipping Form */}
           <div className="lg:col-span-2">
             <Card>
               <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
@@ -130,6 +146,13 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
+            {/* Shipping Information Form */}
+            <CheckoutForm
+              session={session}
+              onSubmit={handleCheckout}
+              isProcessing={isProcessing}
+            />
+
             {/* Payment Method */}
             <Card className="mt-6">
               <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
@@ -152,23 +175,6 @@ export default function CheckoutPage() {
                     <ZarinpalBadge />
                   </div>
                 </label>
-              </div>
-            </Card>
-
-            {/* User Info */}
-            <Card className="mt-6">
-              <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
-                اطلاعات خریدار
-              </h2>
-              <div className="space-y-3 text-right">
-                <div>
-                  <span className="text-gray-600">نام:</span>{' '}
-                  <span className="font-medium">{session?.user?.name}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">ایمیل:</span>{' '}
-                  <span className="font-medium">{session?.user?.email}</span>
-                </div>
               </div>
             </Card>
           </div>
@@ -201,19 +207,9 @@ export default function CheckoutPage() {
                     <span className="text-gray-900">مبلغ قابل پرداخت</span>
                   </div>
 
-                  <Button
-                    variant="primary"
-                    className="w-full mt-4"
-                    onClick={handleCheckout}
-                    isLoading={isProcessing}
-                    disabled={isProcessing}
-                  >
-                    پرداخت
-                  </Button>
-
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
                     <p className="text-xs text-blue-800 text-right">
-                      پس از کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید
+                      پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید
                     </p>
                   </div>
                 </div>
