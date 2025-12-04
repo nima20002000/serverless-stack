@@ -5,13 +5,21 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t border-gray-200 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">کیتیا</h3>
-            <p className="text-gray-600 text-sm">
-              فروشگاه آنلاین با بهترین محصولات و خدمات
+            <p className="text-gray-600 text-sm leading-relaxed">
+              فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت
             </p>
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-600 text-sm">
+                <span className="font-bold">تلفن:</span> 09912218463
+              </p>
+              <p className="text-gray-600 text-sm">
+                <span className="font-bold">آدرس:</span> تهران - خیابان اردستانی
+              </p>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -23,25 +31,74 @@ export default function Footer() {
               <li>
                 <Link
                   href="/products"
-                  className="text-gray-600 hover:text-gray-900 text-sm"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
                 >
                   محصولات
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/profile"
-                  className="text-gray-600 hover:text-gray-900 text-sm"
+                  href="/about"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
                 >
-                  پروفایل
+                  درباره ما
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/cart"
-                  className="text-gray-600 hover:text-gray-900 text-sm"
+                  href="/contact"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
                 >
-                  سبد خرید
+                  تماس با ما
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/faq"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                >
+                  سوالات متداول
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Customer Support */}
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-3">
+              راهنما و پشتیبانی
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <Link
+                  href="/shipping"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                >
+                  اطلاعات ارسال
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/refund-policy"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                >
+                  قوانین مرجوعی
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/terms"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                >
+                  قوانین و مقررات
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/privacy"
+                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                >
+                  حریم خصوصی
                 </Link>
               </li>
             </ul>
