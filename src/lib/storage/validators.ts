@@ -49,3 +49,15 @@ export function generateFilePath(fileName: string, mediaType: MediaType): string
 
   return `products/${folder}/${random}-${timestamp}.${ext}`;
 }
+
+/**
+ * Generate unique file path for media library
+ */
+export function generateMediaLibraryPath(fileName: string, mediaType: MediaType): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  const ext = fileName.split('.').pop();
+  const folder = mediaType === 'VIDEO' ? 'videos' : 'images';
+
+  return `media-library/${folder}/${random}-${timestamp}.${ext}`;
+}
