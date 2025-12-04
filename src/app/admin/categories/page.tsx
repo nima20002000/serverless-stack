@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
+import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
 
 interface Category {
   id: string;
@@ -30,6 +31,7 @@ export default function CategoriesManagementPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
   // Form state
   const [formData, setFormData] = useState({
@@ -161,6 +163,117 @@ export default function CategoriesManagementPage() {
       setError(error instanceof Error ? error.message : 'خطای نامشخص');
     }
   };
+
+  // Bulk selection handlers
+  const toggleSelectAll = () => {
+    if (selectedCategories.size === categories.length) {
+      setSelectedCategories(new Set());
+    } else {
+      setSelectedCategories(new Set(categories.map(c => c.id)));
+    }
+  };
+
+  const toggleSelectCategory = (categoryId: string) => {
+    const newSelection = new Set(selectedCategories);
+    if (newSelection.has(categoryId)) {
+      newSelection.delete(categoryId);
+    } else {
+      newSelection.add(categoryId);
+    }
+    setSelectedCategories(newSelection);
+  };
+
+  // Bulk operations
+  const handleBulkDelete = async () => {
+    try {
+      const response = await fetch('/api/admin/categories/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'delete',
+          categoryIds: Array.from(selectedCategories),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'خطا در حذف دسته‌بندی‌ها');
+      }
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedCategories(new Set());
+      fetchCategories();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    try {
+      const response = await fetch('/api/admin/categories/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          categoryIds: Array.from(selectedCategories),
+          updates: { isActive: true },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در فعال‌سازی دسته‌بندی‌ها');
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedCategories(new Set());
+      fetchCategories();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    try {
+      const response = await fetch('/api/admin/categories/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          categoryIds: Array.from(selectedCategories),
+          updates: { isActive: false },
+        }),
+      });
+
+      if (!response.ok) throw new Error('خطا در غیرفعال‌سازی دسته‌بندی‌ها');
+
+      const data = await response.json();
+      setSuccessMessage(data.message);
+      setSelectedCategories(new Set());
+      fetchCategories();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    }
+  };
+
+  const bulkActions: BulkAction[] = [
+    {
+      label: 'حذف',
+      variant: 'danger',
+      onClick: handleBulkDelete,
+      requiresConfirmation: true,
+      confirmationMessage: `آیا از حذف ${selectedCategories.size} دسته‌بندی انتخاب‌شده اطمینان دارید؟`,
+    },
+    {
+      label: 'فعال‌سازی',
+      variant: 'primary',
+      onClick: handleBulkActivate,
+    },
+    {
+      label: 'غیرفعال‌سازی',
+      variant: 'secondary',
+      onClick: handleBulkDeactivate,
+    },
+  ];
 
   // Get root categories (no parent)
   const rootCategories = categories.filter(cat => !cat.parentId);
@@ -305,6 +418,14 @@ export default function CategoriesManagementPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-4 py-3 text-center w-12">
+                  <input
+                    type="checkbox"
+                    checked={categories.length > 0 && selectedCategories.size === categories.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">تعداد محصولات</th>
@@ -316,6 +437,14 @@ export default function CategoriesManagementPage() {
               {rootCategories.map((category) => (
                 <>
                   <tr key={category.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.has(category.id)}
+                        onChange={() => toggleSelectCategory(category.id)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex gap-2 justify-end">
                         <Button
@@ -362,6 +491,14 @@ export default function CategoriesManagementPage() {
                   {/* Child categories */}
                   {category.children.map((child) => (
                     <tr key={child.id} className="hover:bg-gray-50 bg-gray-25">
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedCategories.has(child.id)}
+                          onChange={() => toggleSelectCategory(child.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex gap-2 justify-end">
                           <Button
@@ -419,6 +556,13 @@ export default function CategoriesManagementPage() {
           )}
         </div>
       </Card>
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedCategories.size}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedCategories(new Set())}
+      />
     </div>
   );
 }

@@ -1,0 +1,157 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
+import prisma from '@/lib/prisma/client';
+
+export const dynamic = 'force-dynamic';
+
+interface BulkDeleteRequest {
+  categoryIds: string[];
+}
+
+interface BulkUpdateRequest {
+  categoryIds: string[];
+  updates: {
+    isActive?: boolean;
+  };
+}
+
+// POST /api/admin/categories/bulk - Bulk operations on categories
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'دسترسی غیرمجاز' },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const action = body.action as string;
+
+    switch (action) {
+      case 'delete':
+        return await handleBulkDelete(body as BulkDeleteRequest);
+      case 'update':
+        return await handleBulkUpdate(body as BulkUpdateRequest);
+      default:
+        return NextResponse.json(
+          { error: 'عملیات نامعتبر است' },
+          { status: 400 }
+        );
+    }
+  } catch (error) {
+    console.error('Error in bulk operation:', error);
+    return NextResponse.json(
+      { error: 'خطا در انجام عملیات گروهی' },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> {
+  const { categoryIds } = data;
+
+  if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
+    return NextResponse.json(
+      { error: 'شناسه دسته‌بندی‌ها نامعتبر است' },
+      { status: 400 }
+    );
+  }
+
+  // Check if any categories have products
+  const categoriesWithProducts = await prisma.category.findMany({
+    where: {
+      id: {
+        in: categoryIds,
+      },
+      products: {
+        some: {},
+      },
+    },
+    select: {
+      name: true,
+    },
+  });
+
+  if (categoriesWithProducts.length > 0) {
+    return NextResponse.json(
+      {
+        error: `امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: ${categoriesWithProducts.map(c => c.name).join('، ')}`
+      },
+      { status: 400 }
+    );
+  }
+
+  // Check if any categories have children
+  const categoriesWithChildren = await prisma.category.findMany({
+    where: {
+      id: {
+        in: categoryIds,
+      },
+      children: {
+        some: {},
+      },
+    },
+    select: {
+      name: true,
+    },
+  });
+
+  if (categoriesWithChildren.length > 0) {
+    return NextResponse.json(
+      {
+        error: `امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: ${categoriesWithChildren.map(c => c.name).join('، ')}`
+      },
+      { status: 400 }
+    );
+  }
+
+  // Delete categories
+  const result = await prisma.category.deleteMany({
+    where: {
+      id: {
+        in: categoryIds,
+      },
+    },
+  });
+
+  return NextResponse.json({
+    message: `${result.count} دسته‌بندی با موفقیت حذف شد`,
+    count: result.count,
+  });
+}
+
+async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> {
+  const { categoryIds, updates } = data;
+
+  if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
+    return NextResponse.json(
+      { error: 'شناسه دسته‌بندی‌ها نامعتبر است' },
+      { status: 400 }
+    );
+  }
+
+  if (!updates || Object.keys(updates).length === 0) {
+    return NextResponse.json(
+      { error: 'داده‌های به‌روزرسانی نامعتبر است' },
+      { status: 400 }
+    );
+  }
+
+  const result = await prisma.category.updateMany({
+    where: {
+      id: {
+        in: categoryIds,
+      },
+    },
+    data: updates,
+  });
+
+  return NextResponse.json({
+    message: `${result.count} دسته‌بندی با موفقیت به‌روزرسانی شد`,
+    count: result.count,
+  });
+}
