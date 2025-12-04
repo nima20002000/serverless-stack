@@ -26,7 +26,7 @@ export default function ShippingPage() {
             </div>
             <div className="text-gray-700 text-right leading-relaxed space-y-4">
               <p className="text-lg">
-                تمامی سفارشات از طریق <span className="font-bold text-blue-600">پست پیشتاز تیپاکس</span> ارسال می‌شوند.
+                تمامی سفارشات از طریق <span className="font-bold text-blue-600">تیپاکس</span> ارسال می‌شوند.
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <p className="font-bold text-gray-900 mb-2">مزایای ارسال با تیپاکس:</p>
@@ -61,21 +61,14 @@ export default function ShippingPage() {
               <h2 className="text-2xl font-bold text-gray-900">زمان ارسال</h2>
             </div>
             <div className="text-gray-700 text-right leading-relaxed space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-                  <p className="text-sm text-gray-600 mb-2">شهرهای اصلی</p>
-                  <p className="text-3xl font-bold text-blue-600 mb-1">۳-۵ روز</p>
-                  <p className="text-sm text-gray-600">تهران، کرج، اصفهان، مشهد، شیراز و...</p>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-6 border border-orange-200">
-                  <p className="text-sm text-gray-600 mb-2">سایر شهرها</p>
-                  <p className="text-3xl font-bold text-orange-600 mb-1">۵-۷ روز</p>
-                  <p className="text-sm text-gray-600">شهرستان‌ها و مناطق دورتر</p>
-                </div>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                <p className="text-sm text-gray-600 mb-2">زمان تحویل</p>
+                <p className="text-3xl font-bold text-blue-600 mb-1">۱-۳ روز کاری</p>
+                <p className="text-sm text-gray-600">برای سراسر کشور</p>
               </div>
               <div className="bg-yellow-50 border-r-4 border-yellow-400 p-4 mt-4">
                 <p className="text-sm text-gray-700">
-                  <span className="font-bold">توجه:</span> زمان تحویل از روز ارسال محاسبه می‌شود. سفارشات معمولاً ظرف ۲۴ ساعت آماده‌سازی و ارسال می‌شوند.
+                  <span className="font-bold">توجه:</span> برای ارسال فوری در تهران و کرج، می‌توانید با پشتیبانی تماس بگیرید. امکان ارسال با اسنپ باکس در کمتر از ۲ ساعت وجود دارد.
                 </p>
               </div>
             </div>
@@ -90,26 +83,14 @@ export default function ShippingPage() {
               <h2 className="text-2xl font-bold text-gray-900">هزینه ارسال</h2>
             </div>
             <div className="text-gray-700 text-right leading-relaxed space-y-4">
-              <p className="text-lg">
-                هزینه ارسال به مقصد و وزن محموله بستگی دارد و در صفحه تسویه حساب نمایش داده می‌شود.
-              </p>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-                <p className="font-bold text-gray-900 mb-3">نرخ تقریبی ارسال:</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="font-bold text-purple-600">۴۰,۰۰۰ - ۶۰,۰۰۰ تومان</span>
-                    <span className="text-gray-600">داخل استان تهران</span>
-                  </div>
-                  <div className="flex justify-between items-center pb-2 border-b">
-                    <span className="font-bold text-purple-600">۵۰,۰۰۰ - ۸۰,۰۰۰ تومان</span>
-                    <span className="text-gray-600">شهرهای اصلی</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-purple-600">۶۰,۰۰۰ - ۱۰۰,۰۰۰ تومان</span>
-                    <span className="text-gray-600">سایر شهرها</span>
-                  </div>
-                </div>
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
+                <p className="text-sm text-gray-600 mb-3">هزینه ارسال تقریبی</p>
+                <p className="text-4xl font-bold text-purple-600 mb-2">۲۰۰,۰۰۰ تومان</p>
+                <p className="text-sm text-gray-600">± ۲۰٪ بسته به مقصد و وزن</p>
               </div>
+              <p className="text-sm text-gray-600 text-center">
+                هزینه دقیق در صفحه تسویه حساب نمایش داده می‌شود
+              </p>
             </div>
           </div>
 
@@ -122,9 +103,6 @@ export default function ShippingPage() {
               <h2 className="text-2xl font-bold text-gray-900">پیگیری مرسوله</h2>
             </div>
             <div className="text-gray-700 text-right leading-relaxed space-y-4">
-              <p className="text-lg">
-                پس از ارسال سفارش، کد رهگیری تیپاکس در پروفایل کاربری شما قرار می‌گیرد.
-              </p>
               <div className="bg-white rounded-lg p-6 space-y-3">
                 <p className="font-bold text-gray-900 mb-3">روش‌های پیگیری:</p>
                 <div className="space-y-4">
@@ -134,7 +112,7 @@ export default function ShippingPage() {
                     </span>
                     <div>
                       <p className="font-bold text-gray-900">کانال تلگرام کیتیا</p>
-                      <p className="text-sm text-gray-600">@kitia_a - اطلاعات ارسال در کانال منتشر می‌شود</p>
+                      <p className="text-sm text-gray-600">@kitia_a - کد رهگیری تیپاکس در کانال منتشر می‌شود</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -143,7 +121,7 @@ export default function ShippingPage() {
                     </span>
                     <div>
                       <p className="font-bold text-gray-900">پروفایل کاربری</p>
-                      <p className="text-sm text-gray-600">کد رهگیری در بخش سفارشات پروفایل شما نمایش داده می‌شود</p>
+                      <p className="text-sm text-gray-600">کد سفارش خود را در بخش سفارشات پروفایل مشاهده کنید</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -152,7 +130,7 @@ export default function ShippingPage() {
                     </span>
                     <div>
                       <p className="font-bold text-gray-900">سایت تیپاکس</p>
-                      <p className="text-sm text-gray-600">با کد رهگیری از طریق tipaxco.com پیگیری کنید</p>
+                      <p className="text-sm text-gray-600">با کد رهگیری تیپاکس از طریق tipaxco.com پیگیری کنید</p>
                     </div>
                   </div>
                 </div>
@@ -175,7 +153,7 @@ export default function ShippingPage() {
                 <span className="text-2xl">✅</span>
                 <div>
                   <p className="font-bold text-gray-900 mb-1">بازرسی هنگام تحویل</p>
-                  <p className="text-sm text-gray-600">لطفاً بسته را هنگام تحویل بازرسی کنید و در صورت مشکل، پذیرش نکنید</p>
+                  <p className="text-sm text-gray-600">لطفاً بسته را هنگام تحویل بازرسی کنید</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
@@ -202,7 +180,7 @@ export default function ShippingPage() {
               <p className="text-gray-700">تیم پشتیبانی ما آماده پاسخگویی به سوالات شماست</p>
               <div>
                 <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463</p>
-                <p className="text-sm text-gray-600 mt-1">پاسخگویی از ساعت ۹ صبح تا ۹ شب</p>
+                <p className="text-sm text-gray-600 mt-1">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>
           </div>

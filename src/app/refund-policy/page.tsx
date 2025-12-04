@@ -199,30 +199,6 @@ export default function RefundPolicyPage() {
             </div>
           </section>
 
-          {/* Section 7 */}
-          <section className="border-t pt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">تعویض کالا</h2>
-            <div className="text-gray-700 text-right leading-relaxed space-y-3">
-              <p>
-                در صورت تمایل به تعویض محصول با مدل یا رنگ دیگر:
-              </p>
-              <ul className="space-y-3 mt-4">
-                <li className="flex items-start gap-3">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></span>
-                  <span>موجودی محصول مورد نظر بررسی می‌شود</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></span>
-                  <span>محصول جدید پس از دریافت محصول قبلی ارسال می‌شود</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></span>
-                  <span>در صورت اختلاف قیمت، تسویه حساب انجام می‌شود</span>
-                </li>
-              </ul>
-            </div>
-          </section>
-
           {/* Contact */}
           <section className="border-t pt-8 bg-blue-50 -m-8 p-8 rounded-b-lg">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">پشتیبانی مرجوعی</h2>
@@ -232,7 +208,7 @@ export default function RefundPolicyPage() {
               </p>
               <div className="space-y-2">
                 <p className="font-bold">تلفن و واتساپ: 09912218463</p>
-                <p className="text-sm text-gray-600">پاسخگویی از ساعت ۹ صبح تا ۹ شب</p>
+                <p className="text-sm text-gray-600">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>
           </section>

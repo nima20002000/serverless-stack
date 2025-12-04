@@ -32,7 +32,7 @@ export default function ContactPage() {
                 </a>
               </div>
               <p className="text-sm text-gray-500 pt-4 border-t">
-                پاسخگویی از ساعت ۹ صبح تا ۹ شب
+                پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب
               </p>
             </div>
           </div>
