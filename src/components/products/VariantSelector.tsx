@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, memo, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
 
 interface Variant {
@@ -22,7 +22,7 @@ interface VariantSelectorProps {
   selectedVariantId?: string;
 }
 
-export default function VariantSelector({
+function VariantSelector({
   variants,
   basePrice,
   onVariantSelect,
@@ -31,20 +31,24 @@ export default function VariantSelector({
   // Use the parent's selectedVariantId (which may be auto-selected)
   const [selected, setSelected] = useState<string | null>(selectedVariantId || null);
 
-  // Sync with parent's selection changes
-  if (selectedVariantId !== selected && selectedVariantId !== undefined) {
-    setSelected(selectedVariantId);
-  }
+  // Sync with parent's selection changes using useEffect
+  useEffect(() => {
+    if (selectedVariantId !== selected && selectedVariantId !== undefined) {
+      setSelected(selectedVariantId);
+    }
+  }, [selectedVariantId, selected]);
+
+  // Memoize variant filtering to avoid recalculating on every render
+  const { colorVariants, sizeVariants, materialVariants, otherVariants } = useMemo(() => ({
+    colorVariants: variants.filter(v => v.color && v.isActive),
+    sizeVariants: variants.filter(v => v.size && v.isActive),
+    materialVariants: variants.filter(v => v.material && v.isActive),
+    otherVariants: variants.filter(v => !v.color && !v.size && !v.material && v.isActive),
+  }), [variants]);
 
   if (!variants || variants.length === 0) {
     return null;
   }
-
-  // Group variants by type
-  const colorVariants = variants.filter(v => v.color && v.isActive);
-  const sizeVariants = variants.filter(v => v.size && v.isActive);
-  const materialVariants = variants.filter(v => v.material && v.isActive);
-  const otherVariants = variants.filter(v => !v.color && !v.size && !v.material && v.isActive);
 
   const handleSelect = (variant: Variant) => {
     const newSelectedId = selected === variant.id ? null : variant.id;
@@ -245,3 +249,5 @@ export default function VariantSelector({
     </div>
   );
 }
+
+export default memo(VariantSelector);

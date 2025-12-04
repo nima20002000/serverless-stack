@@ -66,6 +66,7 @@ model Product {
   transactionItems TransactionItem[]
 
   @@map("products")
+  @@index([isActive])
 }
 
 model Category {
