@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
@@ -28,29 +28,28 @@ interface ProductGalleryProps {
 export default function ProductGallery({ media, productName, selectedVariant }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Filter media based on selected variant
-  const getFilteredMedia = (): MediaItem[] => {
+  // Memoize filtered and sorted media to avoid recalculating on every render
+  const sortedMedia = useMemo(() => {
+    let displayMedia: MediaItem[];
+
     if (!selectedVariant) {
       // Show only product-level media (no variantId) when no variant is selected
-      return media.filter(m => !m.variantId);
+      displayMedia = media.filter(m => !m.variantId);
+    } else {
+      // When variant is selected, prefer variant-specific media
+      const variantMedia = selectedVariant.media || [];
+
+      // If variant has no specific media, fall back to product-level media
+      displayMedia = variantMedia.length === 0
+        ? media.filter(m => !m.variantId)
+        : variantMedia;
     }
 
-    // When variant is selected, prefer variant-specific media
-    const variantMedia = selectedVariant.media || [];
-
-    // If variant has no specific media, fall back to product-level media
-    if (variantMedia.length === 0) {
-      return media.filter(m => !m.variantId);
-    }
-
-    return variantMedia;
-  };
-
-  const displayMedia = getFilteredMedia();
-
-  // Add state for image transition
-  const [isTransitioning, setIsTransitioning] = useState(false);
+    // Sort by order
+    return [...displayMedia].sort((a, b) => a.order - b.order);
+  }, [media, selectedVariant]);
 
   // Reset selectedIndex when variant changes or media changes
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     setIsZoomed(false);
   }, [selectedVariant?.id, media.length]);
 
-  if (!displayMedia || displayMedia.length === 0) {
+  if (!sortedMedia || sortedMedia.length === 0) {
     return (
       <div className="w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
         <p className="text-gray-400">تصویری موجود نیست</p>
@@ -66,7 +65,6 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     );
   }
 
-  const sortedMedia = [...displayMedia].sort((a, b) => a.order - b.order);
   const currentMedia = sortedMedia[selectedIndex];
 
   const goToPrevious = () => {

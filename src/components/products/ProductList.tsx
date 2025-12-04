@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import ProductCard from './ProductCard';
 import Button from '@/components/ui/Button';
 import RateLimitError from '@/components/ui/RateLimitError';
@@ -23,7 +23,7 @@ interface ProductListProps {
   initialTotal?: number;
 }
 
-export default function ProductList({
+function ProductList({
   initialProducts = [],
   initialPage = 1,
   initialTotal = 0,
@@ -36,6 +36,22 @@ export default function ProductList({
   const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
   const perPage = 20;
   const totalPages = Math.ceil(total / perPage);
+
+  // Memoize pagination page numbers calculation
+  const pageNumbers = useMemo(() => {
+    const maxPages = Math.min(totalPages, 5);
+    return Array.from({ length: maxPages }, (_, i) => {
+      if (totalPages <= 5) {
+        return i + 1;
+      } else if (page <= 3) {
+        return i + 1;
+      } else if (page >= totalPages - 2) {
+        return totalPages - 4 + i;
+      } else {
+        return page - 2 + i;
+      }
+    });
+  }, [totalPages, page]);
 
   const fetchProducts = async (pageNum: number) => {
     setIsLoading(true);
@@ -121,29 +137,16 @@ export default function ProductList({
           </Button>
 
           <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (page <= 3) {
-                pageNum = i + 1;
-              } else if (page >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = page - 2 + i;
-              }
-
-              return (
-                <Button
-                  key={pageNum}
-                  variant={page === pageNum ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => handlePageChange(pageNum)}
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
+            {pageNumbers.map((pageNum) => (
+              <Button
+                key={pageNum}
+                variant={page === pageNum ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handlePageChange(pageNum)}
+              >
+                {pageNum}
+              </Button>
+            ))}
           </div>
 
           <Button
@@ -164,3 +167,5 @@ export default function ProductList({
     </div>
   );
 }
+
+export default memo(ProductList);

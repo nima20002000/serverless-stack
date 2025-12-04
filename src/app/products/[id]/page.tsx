@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header';
 import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
 import { Product, ProductVariant } from '@prisma/client';
+import { cache } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,10 +12,15 @@ interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Cache the product query to avoid duplicate fetching between metadata and page
+const getCachedProduct = cache(async (id: string) => {
+  return getProductById(id, true);
+});
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
   try {
-    const product = await getProductById(id, true);
+    const product = await getCachedProduct(id);
     return {
       title: `${product.name} - کیتیا`,
       description: product.description,
@@ -31,7 +37,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   let product;
 
   try {
-    product = await getProductById(id, true);
+    product = await getCachedProduct(id);
   } catch {
     notFound();
   }

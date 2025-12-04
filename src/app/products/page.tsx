@@ -1,53 +1,17 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import ProductList from '@/components/products/ProductList';
+import { getActiveProducts } from '@/services/product-service';
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  stock: number;
-  images: string[];
-  isActive: boolean;
-}
+export const dynamic = 'force-dynamic';
 
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [total, setTotal] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+export default async function ProductsPage() {
+  const result = await getActiveProducts({ page: 1, perPage: 20 });
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products?page=1&perPage=20');
-      const data = await response.json();
-      setProducts(data.data || []);
-      setTotal(data.total || 0);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts([]);
-      setTotal(0);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="flex items-center justify-center py-12">
-          <div className="text-gray-600">در حال بارگذاری محصولات...</div>
-        </div>
-      </div>
-    );
-  }
+  // Serialize Decimal prices to numbers for client components
+  const products = result.data.map((product) => ({
+    ...product,
+    price: Number(product.price),
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -65,7 +29,7 @@ export default function ProductsPage() {
         <ProductList
           initialProducts={products}
           initialPage={1}
-          initialTotal={total}
+          initialTotal={result.total}
         />
       </main>
     </div>

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { formatPrice } from '@/services/product-service';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 
 interface ProductCardProps {
   product: {
@@ -19,11 +19,11 @@ interface ProductCardProps {
   };
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = useCallback(async () => {
     try {
       setIsAdding(true);
       addItem(
@@ -42,7 +42,8 @@ export default function ProductCard({ product }: ProductCardProps) {
       alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
       setIsAdding(false);
     }
-  };
+  }, [product.id, product.name, product.price, product.images, product.stock, addItem]);
+
   const isOutOfStock = product.stock === 0;
 
   return (
@@ -55,6 +56,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               src={product.images[0]}
               alt={product.name}
               fill
+              loading="lazy"
               className="object-cover hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
@@ -111,3 +113,5 @@ export default function ProductCard({ product }: ProductCardProps) {
     </div>
   );
 }
+
+export default memo(ProductCard);

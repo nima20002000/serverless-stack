@@ -91,7 +91,7 @@ export const GET = withLogging(
       const perPage = req.nextUrl.searchParams.get('perPage') || '20';
       return `products:active:page:${page}:limit:${perPage}`;
     },
-    300 // 5 minutes
+    3600 // 60 minutes (1 hour)
   ),
   'GET /api/products'
 );
