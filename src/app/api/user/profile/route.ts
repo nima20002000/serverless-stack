@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import prisma from '@/lib/prisma/client';
 import { withLogging } from '@/lib/api/with-logging';
+import { updateUserProfile } from '@/services/user-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,8 @@ async function getHandler() {
         postalCode: true,
         isVerified: true,
         role: true,
+        createdAt: true,
+        password: true, // Check if user has password
       },
     });
 
@@ -39,7 +42,13 @@ async function getHandler() {
       );
     }
 
-    return NextResponse.json(user);
+    // Return user info with hasPassword flag (don't send actual password)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userWithoutPassword } = user;
+    return NextResponse.json({
+      ...userWithoutPassword,
+      hasPassword: !!password,
+    });
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return NextResponse.json(
@@ -49,4 +58,42 @@ async function getHandler() {
   }
 }
 
+// PATCH /api/user/profile - Update current user's profile
+async function patchHandler(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { status: 401 }
+      );
+    }
+
+    const data = await req.json();
+    const { name, email, phone, shippingAddress, postalCode } = data;
+
+    // Update user profile using service
+    const updatedUser = await updateUserProfile(session.user.id, {
+      name,
+      email,
+      phone,
+      shippingAddress,
+      postalCode,
+    });
+
+    return NextResponse.json({
+      message: 'پروفایل با موفقیت به‌روزرسانی شد',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی پروفایل' },
+      { status: 500 }
+    );
+  }
+}
+
 export const GET = withLogging(getHandler, 'GET /api/user/profile');
+export const PATCH = withLogging(patchHandler, 'PATCH /api/user/profile');

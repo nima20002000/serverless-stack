@@ -261,3 +261,338 @@ export async function updateUserShippingInfo(userId: string, data: {
     // Don't throw error - this is a non-critical update
   }
 }
+
+/**
+ * Update user profile information
+ */
+export async function updateUserProfile(userId: string, data: {
+  name?: string;
+  email?: string;
+  phone?: string;
+  shippingAddress?: string;
+  postalCode?: string;
+}): Promise<UserInfo> {
+  log.info('Updating user profile', { userId, fields: Object.keys(data) });
+
+  try {
+    // Validate email if provided
+    if (data.email !== undefined) {
+      if (data.email && !validateEmail(data.email)) {
+        log.warn('Invalid email format', { email: data.email });
+        throw new Error("فرمت ایمیل نامعتبر است");
+      }
+
+      // Check if email already exists for another user
+      if (data.email) {
+        const existingUser = await prisma.user.findFirst({
+          where: {
+            email: data.email,
+            NOT: { id: userId }
+          }
+        });
+
+        if (existingUser) {
+          log.warn('Email already in use', { email: data.email });
+          throw new Error("این ایمیل قبلاً استفاده شده است");
+        }
+      }
+    }
+
+    // Validate phone if provided
+    if (data.phone !== undefined) {
+      if (data.phone && !validatePhone(data.phone)) {
+        log.warn('Invalid phone format', { phone: data.phone });
+        throw new Error("فرمت شماره تلفن نامعتبر است");
+      }
+
+      // Check if phone already exists for another user
+      if (data.phone) {
+        const existingUser = await prisma.user.findFirst({
+          where: {
+            phone: data.phone,
+            NOT: { id: userId }
+          }
+        });
+
+        if (existingUser) {
+          log.warn('Phone already in use', { phone: data.phone });
+          throw new Error("این شماره تلفن قبلاً استفاده شده است");
+        }
+      }
+    }
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.email !== undefined && { email: data.email || null }),
+        ...(data.phone !== undefined && { phone: data.phone || null }),
+        ...(data.shippingAddress !== undefined && { shippingAddress: data.shippingAddress }),
+        ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
+      },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    log.info('User profile updated successfully', { userId });
+    return updatedUser;
+  } catch (error) {
+    log.error('Failed to update user profile', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * Change user password
+ * SECURITY: Always requires current password verification if user has a password
+ */
+export async function changeUserPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  log.info('Changing user password', { userId });
+
+  try {
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      log.warn('User not found', { userId });
+      throw new Error("کاربر یافت نشد");
+    }
+
+    // SECURITY: If user has a password, current password is REQUIRED
+    if (user.password) {
+      if (!currentPassword) {
+        log.warn('Current password required but not provided', { userId });
+        throw new Error("رمز عبور فعلی الزامی است");
+      }
+
+      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!isValidPassword) {
+        log.warn('Invalid current password', { userId });
+        throw new Error("رمز عبور فعلی نادرست است");
+      }
+    }
+
+    // Validate new password
+    if (!validatePassword(newPassword)) {
+      log.warn('Invalid new password length', { userId });
+      throw new Error("رمز عبور جدید باید حداقل ۸ کاراکتر باشد");
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    log.info('User password changed successfully', { userId });
+  } catch (error) {
+    log.error('Failed to change user password', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * Reset password via OTP verification (for users who don't know their current password)
+ * This is for users who registered via OTP checkout with auto-generated passwords
+ */
+export async function resetPasswordWithOTP(
+  userId: string,
+  newPassword: string
+): Promise<void> {
+  log.info('Resetting password via OTP', { userId });
+
+  try {
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      log.warn('User not found', { userId });
+      throw new Error("کاربر یافت نشد");
+    }
+
+    // Validate new password
+    if (!validatePassword(newPassword)) {
+      log.warn('Invalid password length', { userId });
+      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    log.info('Password reset successfully via OTP', { userId });
+  } catch (error) {
+    log.error('Failed to reset password', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * Set password for OTP-only users
+ */
+export async function setUserPassword(userId: string, newPassword: string): Promise<void> {
+  log.info('Setting user password', { userId });
+
+  try {
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      log.warn('User not found', { userId });
+      throw new Error("کاربر یافت نشد");
+    }
+
+    // Check if user already has a password
+    if (user.password) {
+      log.warn('User already has a password', { userId });
+      throw new Error("این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید");
+    }
+
+    // Validate new password
+    if (!validatePassword(newPassword)) {
+      log.warn('Invalid password length', { userId });
+      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    log.info('User password set successfully', { userId });
+  } catch (error) {
+    log.error('Failed to set user password', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
+ * Get user's transaction history with details
+ */
+export async function getUserTransactions(userId: string, options?: {
+  limit?: number;
+  offset?: number;
+  status?: 'PENDING' | 'COMPLETED' | 'FAILED';
+}) {
+  log.info('Fetching user transactions', { userId, options });
+
+  try {
+    const { limit = 10, offset = 0, status } = options || {};
+
+    const where = {
+      userId,
+      ...(status && { status }),
+    };
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                  media: {
+                    where: { type: 'IMAGE' },
+                    orderBy: { order: 'asc' },
+                    take: 1,
+                    select: {
+                      url: true,
+                      alt: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          invoice: {
+            select: {
+              invoiceNumber: true,
+              generatedAt: true,
+              pdfUrl: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    log.info('User transactions fetched successfully', {
+      userId,
+      count: transactions.length,
+      total,
+    });
+
+    return {
+      transactions,
+      total,
+      hasMore: offset + transactions.length < total,
+    };
+  } catch (error) {
+    log.error('Failed to fetch user transactions', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
