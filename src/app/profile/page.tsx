@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
@@ -109,14 +109,6 @@ export default function ProfilePage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session?.user) {
-      fetchPromoCode();
-      fetchUserProfile();
-      fetchTransactions();
-    }
-  }, [session]);
-
-  useEffect(() => {
     if (promoCode && !promoCode.isUsed) {
       const interval = setInterval(() => {
         const now = new Date();
@@ -146,7 +138,7 @@ export default function ProfilePage() {
     }
   }, [otpCountdown]);
 
-  const fetchPromoCode = async () => {
+  const fetchPromoCode = useCallback(async () => {
     try {
       const response = await fetch('/api/promo/active');
       if (response.ok) {
@@ -159,9 +151,9 @@ export default function ProfilePage() {
       console.error('Error fetching promo code:', error);
       setPromoCode(null);
     }
-  };
+  }, []);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const response = await fetch('/api/user/profile');
       if (response.ok) {
@@ -178,9 +170,9 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }
-  };
+  }, []);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setTransactionsLoading(true);
     try {
       const response = await fetch('/api/user/transactions?limit=5');
@@ -193,15 +185,15 @@ export default function ProfilePage() {
     } finally {
       setTransactionsLoading(false);
     }
-  };
+  }, []);
 
-  const handleEditProfile = () => {
+  const handleEditProfile = useCallback(() => {
     setIsEditingProfile(true);
     setEditError('');
     setEditSuccess('');
-  };
+  }, []);
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setIsEditingProfile(false);
     setEditError('');
     setEditSuccess('');
@@ -214,9 +206,9 @@ export default function ProfilePage() {
         postalCode: userProfile.postalCode || '',
       });
     }
-  };
+  }, [userProfile]);
 
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = useCallback(async () => {
     setIsUpdating(true);
     setEditError('');
     setEditSuccess('');
@@ -245,9 +237,9 @@ export default function ProfilePage() {
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [editForm, fetchUserProfile, update]);
 
-  const handlePasswordSubmit = async () => {
+  const handlePasswordSubmit = useCallback(async () => {
     setIsSubmittingPassword(true);
     setPasswordError('');
     setPasswordSuccess('');
@@ -303,9 +295,9 @@ export default function ProfilePage() {
     } finally {
       setIsSubmittingPassword(false);
     }
-  };
+  }, [passwordForm, userProfile?.hasPassword, fetchUserProfile]);
 
-  const handleSendOtpForReset = async () => {
+  const handleSendOtpForReset = useCallback(async () => {
     setIsSubmittingOtpReset(true);
     setOtpResetError('');
 
@@ -350,9 +342,9 @@ export default function ProfilePage() {
     } finally {
       setIsSubmittingOtpReset(false);
     }
-  };
+  }, [userProfile?.phone, userProfile?.email]);
 
-  const handleVerifyOtpAndReset = async () => {
+  const handleVerifyOtpAndReset = useCallback(async () => {
     setIsSubmittingOtpReset(true);
     setOtpResetError('');
 
@@ -407,9 +399,9 @@ export default function ProfilePage() {
     } finally {
       setIsSubmittingOtpReset(false);
     }
-  };
+  }, [otpResetForm, fetchUserProfile]);
 
-  const handleStartOtpReset = () => {
+  const handleStartOtpReset = useCallback(() => {
     setIsResettingWithOTP(true);
     setIsChangingPassword(false);
     setPasswordError('');
@@ -417,9 +409,9 @@ export default function ProfilePage() {
     setOtpResetError('');
     setOtpResetSuccess('');
     setOtpResetStep('send');
-  };
+  }, []);
 
-  const handleCancelOtpReset = () => {
+  const handleCancelOtpReset = useCallback(() => {
     setIsResettingWithOTP(false);
     setOtpResetForm({
       otp: '',
@@ -430,9 +422,18 @@ export default function ProfilePage() {
     setOtpResetSuccess('');
     setOtpResetStep('send');
     setOtpCountdown(0);
-  };
+  }, []);
 
-  const getStatusBadge = (status: string) => {
+  // This useEffect depends on callbacks, so must be after their definition
+  useEffect(() => {
+    if (session?.user) {
+      fetchPromoCode();
+      fetchUserProfile();
+      fetchTransactions();
+    }
+  }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
+
+  const getStatusBadge = useCallback((status: string) => {
     const colors = {
       COMPLETED: 'bg-green-100 text-green-800',
       PENDING: 'bg-yellow-100 text-yellow-800',
@@ -448,7 +449,75 @@ export default function ProfilePage() {
         {labels[status as keyof typeof labels]}
       </span>
     );
-  };
+  }, []);
+
+  // Memoize transaction rendering to avoid recalculation on every render
+  // Must be called before any early returns to follow Rules of Hooks
+  const renderedTransactions = useMemo(() => {
+    if (transactionsLoading) {
+      return <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>;
+    }
+
+    if (transactions.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-600">
+          هنوز تراکنشی ثبت نشده است
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {transactions.map((transaction) => (
+          <div
+            key={transaction.id}
+            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="text-right">
+                <div className="font-medium text-gray-900">
+                  کد تراکنش: {transaction.transactionCode}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                </div>
+              </div>
+              {getStatusBadge(transaction.status)}
+            </div>
+
+            <div className="border-t border-gray-100 pt-3 mt-3">
+              <div className="text-sm text-gray-600 mb-2">محصولات:</div>
+              <div className="space-y-2">
+                {transaction.items.map((item) => (
+                  <div key={item.id} className="flex justify-between text-sm">
+                    <span className="text-gray-700">
+                      {item.product.name} × {item.quantity}
+                    </span>
+                    <span className="font-medium">
+                      {Number(item.price).toLocaleString('fa-IR')} تومان
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-3 mt-3 flex justify-between items-center">
+              <span className="text-gray-700 font-medium">مبلغ کل:</span>
+              <span className="text-lg font-bold text-gray-900">
+                {Number(transaction.amount).toLocaleString('fa-IR')} تومان
+              </span>
+            </div>
+
+            {transaction.invoice && (
+              <div className="mt-3 text-sm text-gray-600">
+                شماره فاکتور: {transaction.invoice.invoiceNumber}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }, [transactions, transactionsLoading, getStatusBadge]);
 
   if (status === 'loading') {
     return (
@@ -869,64 +938,7 @@ export default function ProfilePage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4 text-right">
             تاریخچه تراکنش‌ها
           </h2>
-
-          {transactionsLoading ? (
-            <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>
-          ) : transactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-600">
-              هنوز تراکنشی ثبت نشده است
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="text-right">
-                      <div className="font-medium text-gray-900">
-                        کد تراکنش: {transaction.transactionCode}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
-                      </div>
-                    </div>
-                    {getStatusBadge(transaction.status)}
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-3 mt-3">
-                    <div className="text-sm text-gray-600 mb-2">محصولات:</div>
-                    <div className="space-y-2">
-                      {transaction.items.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-gray-700">
-                            {item.product.name} × {item.quantity}
-                          </span>
-                          <span className="font-medium">
-                            {Number(item.price).toLocaleString('fa-IR')} تومان
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-3 mt-3 flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">مبلغ کل:</span>
-                    <span className="text-lg font-bold text-gray-900">
-                      {Number(transaction.amount).toLocaleString('fa-IR')} تومان
-                    </span>
-                  </div>
-
-                  {transaction.invoice && (
-                    <div className="mt-3 text-sm text-gray-600">
-                      شماره فاکتور: {transaction.invoice.invoiceNumber}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {renderedTransactions}
         </Card>
 
         {/* Actions */}

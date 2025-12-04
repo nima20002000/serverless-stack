@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -28,7 +28,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, router, status]);
 
-  const handleCheckout = async (formData: {
+  const handleCheckout = useCallback(async (formData: {
     fullName: string;
     phone: string;
     email: string;
@@ -79,7 +79,7 @@ export default function CheckoutPage() {
       setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
       setIsProcessing(false);
     }
-  };
+  }, [items, session]);
 
   if (status === 'loading') {
     return (

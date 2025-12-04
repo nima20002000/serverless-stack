@@ -158,6 +158,7 @@ model Transaction {
   invoice Invoice?
 
   @@map("transactions")
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model TransactionItem {
@@ -196,6 +197,7 @@ model PromoCode {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("promo_codes")
+  @@index([userId, isUsed])
 }
 
 model OTPVerification {
