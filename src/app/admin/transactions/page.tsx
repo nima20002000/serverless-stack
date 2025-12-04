@@ -15,11 +15,14 @@ interface Transaction {
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   createdAt: string;
   zarinpalRefId: string | null;
+  fullName: string;
+  phone: string;
+  email: string | null;
   user: {
     id: string;
     name: string;
-    email: string;
-  };
+    email: string | null;
+  } | null;
   items: Array<{
     id: string;
     quantity: number;
@@ -290,10 +293,13 @@ export default function TransactionsManagementPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm">
                           <div className="font-medium text-gray-900">
-                            {transaction.user.name}
+                            {transaction.user ? transaction.user.name : transaction.fullName}
+                            {!transaction.user && (
+                              <span className="mr-2 text-xs text-gray-500">(مهمان)</span>
+                            )}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            {transaction.user.email}
+                            {transaction.user ? transaction.user.email : transaction.email || transaction.phone}
                           </div>
                         </div>
                       </td>

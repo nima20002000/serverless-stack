@@ -32,7 +32,7 @@ type UserBasic = {
 // Transaction types for admin
 type TransactionWithDetails = Prisma.TransactionGetPayload<{
   include: {
-    user: { select: { id: true; name: true; email: true } };
+    user: { select: { id: true; name: true; email: true; phone: true } };
     items: { include: { product: { select: { id: true; name: true } } } };
     invoice: true;
   };
@@ -219,6 +219,7 @@ export async function getAllTransactions(
             id: true,
             name: true,
             email: true,
+            phone: true,
           },
         },
         items: {
@@ -255,6 +256,7 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
           id: true,
           name: true,
           email: true,
+          phone: true,
         },
       },
       items: {
