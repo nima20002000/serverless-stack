@@ -49,7 +49,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     name: '',
     description: '',
     price: '',
+    discountPercent: '',
     stock: '',
+    isFeatured: false,
     isActive: true,
     categoryId: null as string | null,
   });
@@ -87,7 +89,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
+        discountPercent: product.discountPercent?.toString() || '',
         stock: product.stock.toString(),
+        isFeatured: product.isFeatured || false,
         isActive: product.isActive,
         categoryId: product.categoryId || null,
       });
@@ -147,6 +151,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       newErrors.price = 'قیمت باید بیشتر از صفر باشد';
     }
 
+    if (formData.discountPercent) {
+      const discount = parseInt(formData.discountPercent);
+      if (discount < 0 || discount > 100) {
+        newErrors.discountPercent = 'تخفیف باید بین 0 تا 100 درصد باشد';
+      }
+    }
+
     if (!formData.stock || parseInt(formData.stock) < 0) {
       newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
     }
@@ -174,7 +185,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
+          discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : null,
           stock: parseInt(formData.stock),
+          isFeatured: formData.isFeatured,
           isActive: formData.isActive,
           categoryId: formData.categoryId,
           tagIds: selectedTags.map(t => t.id),
@@ -538,6 +551,22 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               />
 
               <Input
+                label="تخفیف (درصد)"
+                name="discountPercent"
+                type="number"
+                value={formData.discountPercent}
+                onChange={handleChange}
+                error={errors.discountPercent}
+                disabled={isSaving}
+                placeholder="0"
+                min="0"
+                max="100"
+                dir="ltr"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
                 label="موجودی"
                 name="stock"
                 type="number"
@@ -550,19 +579,36 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               />
             </div>
 
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isActive"
-                name="isActive"
-                checked={formData.isActive}
-                onChange={handleChange}
-                disabled={isSaving}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                محصول فعال باشد
-              </label>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isFeatured"
+                  name="isFeatured"
+                  checked={formData.isFeatured}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <label htmlFor="isFeatured" className="text-sm font-medium text-gray-700">
+                  محصول ویژه
+                </label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  name="isActive"
+                  checked={formData.isActive}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                  محصول فعال باشد
+                </label>
+              </div>
             </div>
           </div>
         </Card>

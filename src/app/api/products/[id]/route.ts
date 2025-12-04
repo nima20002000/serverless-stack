@@ -54,14 +54,16 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, description, price, stock, images, isActive, categoryId, tagIds } = body;
+    const { name, description, price, discountPercent, stock, images, isFeatured, isActive, categoryId, tagIds } = body;
 
     type UpdateData = {
       name?: string;
       description?: string;
       price?: number;
+      discountPercent?: number | null;
       stock?: number;
       images?: string[];
+      isFeatured?: boolean;
       isActive?: boolean;
       categoryId?: string | null;
       tagIds?: string[];
@@ -71,8 +73,10 @@ export async function PUT(
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (price !== undefined) updateData.price = parseFloat(price);
+    if (discountPercent !== undefined) updateData.discountPercent = discountPercent !== null ? parseInt(discountPercent) : null;
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (images !== undefined) updateData.images = images;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (tagIds !== undefined) updateData.tagIds = tagIds;

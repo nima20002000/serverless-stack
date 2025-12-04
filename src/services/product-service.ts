@@ -207,10 +207,12 @@ export async function createProduct(data: {
   name: string;
   description: string;
   price: number;
+  discountPercent?: number | null;
   stock: number;
   images?: string[];
   categoryId?: string;
   tagIds?: string[];
+  isFeatured?: boolean;
   isActive?: boolean;
 }): Promise<ProductWithRelations> {
   log.info('Creating product', { name: data.name, price: data.price, stock: data.stock });
@@ -237,9 +239,11 @@ export async function createProduct(data: {
         name: data.name,
         description: data.description,
         price: data.price,
+        discountPercent: data.discountPercent,
         stock: data.stock,
         images: data.images || [],
         categoryId: data.categoryId,
+        isFeatured: data.isFeatured !== undefined ? data.isFeatured : false,
         isActive: data.isActive !== undefined ? data.isActive : true,
         ...(data.tagIds && data.tagIds.length > 0 && {
           tags: {
@@ -283,10 +287,12 @@ export async function updateProduct(
     name: string;
     description: string;
     price: number;
+    discountPercent: number | null;
     stock: number;
     images: string[];
     categoryId: string | null;
     tagIds: string[];
+    isFeatured: boolean;
     isActive: boolean;
   }>
 ): Promise<ProductWithRelations> {
