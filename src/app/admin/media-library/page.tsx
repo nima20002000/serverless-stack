@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { PhotoIcon, VideoCameraIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect, useCallback } from 'react';
+import { PhotoIcon, VideoCameraIcon, TrashIcon, PencilIcon, ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +18,13 @@ interface MediaItem {
   updatedAt: string;
 }
 
+interface FileWithPreview {
+  file: File;
+  preview: string;
+  alt: string;
+  tags: string;
+}
+
 export default function MediaLibraryPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +36,9 @@ export default function MediaLibraryPage() {
   const [editAlt, setEditAlt] = useState('');
   const [editTags, setEditTags] = useState('');
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<FileWithPreview[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     loadMedia();
@@ -71,42 +81,132 @@ export default function MediaLibraryPage() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Handle file selection
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const newFiles: FileWithPreview[] = [];
 
-    const alt = prompt('متن جایگزین (alt) برای رسانه را وارد کنید (اختیاری):');
-    if (alt) formData.append('alt', alt);
+    Array.from(files).forEach((file) => {
+      // Validate file type
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
 
-    const tags = prompt('برچسب‌ها را با کاما جدا کنید (مثلاً: hero,banner,promotion):');
-    if (tags) formData.append('tags', tags);
+      if (!isImage && !isVideo) {
+        alert(`فایل ${file.name} از نوع مجاز نیست`);
+        return;
+      }
+
+      // Create preview URL
+      const preview = URL.createObjectURL(file);
+
+      newFiles.push({
+        file,
+        preview,
+        alt: '',
+        tags: '',
+      });
+    });
+
+    if (newFiles.length > 0) {
+      setPendingFiles((prev) => [...prev, ...newFiles]);
+      setShowUploadModal(true);
+    }
+  }, []);
+
+  // Handle drag events
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    handleFileSelect(e.dataTransfer.files);
+  }, [handleFileSelect]);
+
+  // Handle input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileSelect(e.target.files);
+    e.target.value = '';
+  };
+
+  // Remove file from pending list
+  const removeFile = (index: number) => {
+    setPendingFiles((prev) => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[index].preview);
+      newFiles.splice(index, 1);
+      if (newFiles.length === 0) {
+        setShowUploadModal(false);
+      }
+      return newFiles;
+    });
+  };
+
+  // Update file metadata
+  const updateFileMetadata = (index: number, field: 'alt' | 'tags', value: string) => {
+    setPendingFiles((prev) => {
+      const newFiles = [...prev];
+      newFiles[index][field] = value;
+      return newFiles;
+    });
+  };
+
+  // Upload all pending files
+  const handleUploadAll = async () => {
+    if (pendingFiles.length === 0) return;
 
     try {
       setUploading(true);
-      const response = await fetch('/api/media-library/upload', {
-        method: 'POST',
-        body: formData,
-      });
 
-      const data = await response.json();
+      for (const fileData of pendingFiles) {
+        const formData = new FormData();
+        formData.append('file', fileData.file);
+        if (fileData.alt) formData.append('alt', fileData.alt);
+        if (fileData.tags) formData.append('tags', fileData.tags);
 
-      if (response.ok) {
-        alert('فایل با موفقیت آپلود شد');
-        loadMedia();
-        loadTags();
-      } else {
-        alert(data.error || 'خطا در آپلود فایل');
+        const response = await fetch('/api/media-library/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          alert(`خطا در آپلود ${fileData.file.name}: ${data.error || 'خطای ناشناخته'}`);
+        }
       }
+
+      alert('همه فایل‌ها با موفقیت آپلود شدند');
+
+      // Clean up
+      pendingFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+      setPendingFiles([]);
+      setShowUploadModal(false);
+      loadMedia();
+      loadTags();
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('خطا در آپلود فایل');
+      alert('خطا در آپلود فایل‌ها');
     } finally {
       setUploading(false);
-      e.target.value = '';
     }
+  };
+
+  // Cancel upload
+  const handleCancelUpload = () => {
+    pendingFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+    setPendingFiles([]);
+    setShowUploadModal(false);
   };
 
   const handleDelete = async (id: string, fileName: string) => {
@@ -194,16 +294,40 @@ export default function MediaLibraryPage() {
       <div className="bg-white rounded-lg shadow-md p-6 mt-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">کتابخانه رسانه</h1>
-          <label className="btn-primary cursor-pointer">
-            {uploading ? 'در حال آپلود...' : 'آپلود فایل جدید'}
+        </div>
+
+        {/* Drag & Drop Upload Area */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-lg p-8 mb-6 text-center transition-colors ${
+            isDragging
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+          }`}
+        >
+          <ArrowUpTrayIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-700 mb-2">
+            فایل‌های خود را اینجا بکشید و رها کنید
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            یا روی دکمه زیر کلیک کنید تا فایل‌ها را انتخاب کنید
+          </p>
+          <label className="btn-primary cursor-pointer inline-block">
+            انتخاب فایل‌ها
             <input
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-              onChange={handleUpload}
+              onChange={handleInputChange}
+              multiple
               disabled={uploading}
               className="hidden"
             />
           </label>
+          <p className="text-xs text-gray-400 mt-4">
+            فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM | حداکثر: 5MB برای تصاویر، 50MB برای ویدیوها
+          </p>
         </div>
 
         {/* Filters */}
@@ -458,6 +582,127 @@ export default function MediaLibraryPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  آپلود فایل‌ها ({pendingFiles.length})
+                </h2>
+                <button
+                  onClick={handleCancelUpload}
+                  className="text-gray-500 hover:text-gray-700"
+                  disabled={uploading}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {pendingFiles.map((fileData, index) => {
+                  const isImage = fileData.file.type.startsWith('image/');
+
+                  return (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex gap-4">
+                        {/* Preview */}
+                        <div className="w-32 h-32 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                          {isImage ? (
+                            <img
+                              src={fileData.preview}
+                              alt={fileData.file.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <video
+                              src={fileData.preview}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
+
+                        {/* File Info & Metadata */}
+                        <div className="flex-1 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                {isImage ? (
+                                  <PhotoIcon className="w-5 h-5 text-blue-600" />
+                                ) : (
+                                  <VideoCameraIcon className="w-5 h-5 text-purple-600" />
+                                )}
+                                <p className="font-medium text-gray-900">{fileData.file.name}</p>
+                              </div>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {formatFileSize(fileData.file.size)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => removeFile(index)}
+                              disabled={uploading}
+                              className="text-red-600 hover:text-red-700 p-1"
+                            >
+                              <XMarkIcon className="w-5 h-5" />
+                            </button>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              متن جایگزین (اختیاری)
+                            </label>
+                            <input
+                              type="text"
+                              value={fileData.alt}
+                              onChange={(e) => updateFileMetadata(index, 'alt', e.target.value)}
+                              placeholder="توضیحی برای این فایل..."
+                              disabled={uploading}
+                              className="input w-full text-sm"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              برچسب‌ها (با کاما جدا کنید)
+                            </label>
+                            <input
+                              type="text"
+                              value={fileData.tags}
+                              onChange={(e) => updateFileMetadata(index, 'tags', e.target.value)}
+                              placeholder="مثال: hero, banner, promotion"
+                              disabled={uploading}
+                              className="input w-full text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-3 mt-6 pt-6 border-t">
+                <button
+                  onClick={handleUploadAll}
+                  disabled={uploading || pendingFiles.length === 0}
+                  className="btn-primary flex-1"
+                >
+                  {uploading ? 'در حال آپلود...' : `آپلود ${pendingFiles.length} فایل`}
+                </button>
+                <button
+                  onClick={handleCancelUpload}
+                  disabled={uploading}
+                  className="btn-secondary"
+                >
+                  انصراف
+                </button>
+              </div>
             </div>
           </div>
         </div>
