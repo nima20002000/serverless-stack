@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-vazir)", "system-ui", "sans-serif"],
+        sans: ["'B Yekan'", "system-ui", "sans-serif"],
       },
     },
   },

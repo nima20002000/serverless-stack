@@ -2,11 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'B Yekan';
+  src: url('/fonts/BYekan.woff2') format('woff2'),
+       url('/fonts/BYekan.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   * {
     @apply border-gray-200;
   }
   body {
     @apply bg-white text-gray-900;
+    font-family: 'B Yekan', sans-serif;
   }
 }
