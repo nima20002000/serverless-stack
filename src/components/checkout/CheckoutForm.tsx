@@ -190,25 +190,28 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Clear previous errors
+    setOtpError('');
+
     // Validation
     if (!fullName.trim()) {
-      alert('لطفاً نام و نام خانوادگی خود را وارد کنید');
+      setOtpError('لطفاً نام و نام خانوادگی خود را وارد کنید');
       return;
     }
 
     if (!phone.trim() || !phone.match(/^09\d{9}$/)) {
-      alert('لطفاً یک شماره تلفن معتبر وارد کنید');
+      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید');
       return;
     }
 
     if (!shippingAddress.trim()) {
-      alert('لطفاً آدرس ارسال را وارد کنید');
+      setOtpError('لطفاً آدرس ارسال را وارد کنید');
       return;
     }
 
     // Only require OTP verification if user wants to create account
     if (!session && createAccount && !phoneVerified) {
-      alert('لطفاً ابتدا شماره تلفن خود را با کد تایید تایید کنید');
+      setOtpError('لطفاً ابتدا شماره تلفن خود را با کد تایید تایید کنید');
       return;
     }
 
@@ -247,12 +250,12 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             });
             return;
           } else {
-            alert('خطا در ورود به حساب کاربری. لطفاً دوباره تلاش کنید.');
+            setOtpError('خطا در ورود به حساب کاربری. لطفاً دوباره تلاش کنید.');
             return;
           }
         } catch (error) {
           console.error('Login error:', error);
-          alert('خطا در ورود به حساب کاربری');
+          setOtpError('خطا در ورود به حساب کاربری');
           return;
         }
       }
@@ -288,6 +291,13 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form-level Error Message - shown for validation errors or when createAccount is off */}
+        {otpError && (!createAccount || (createAccount && phoneVerified)) && (
+          <Alert type="error" onClose={() => setOtpError('')}>
+            {otpError}
+          </Alert>
+        )}
+
         {/* Full Name */}
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 text-right mb-2">
