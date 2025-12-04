@@ -435,6 +435,45 @@ export function formatPrice(price: number): string {
   return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
 }
 
+/**
+ * Calculate discounted price
+ */
+export function calculateDiscountedPrice(
+  basePrice: number,
+  discountPercent: number | null | undefined
+): number {
+  if (!discountPercent || discountPercent <= 0) {
+    return basePrice;
+  }
+  return basePrice * (1 - discountPercent / 100);
+}
+
+/**
+ * Get price display info with discount
+ */
+export function getPriceDisplay(
+  basePrice: number,
+  discountPercent: number | null | undefined
+): {
+  originalPrice: number;
+  finalPrice: number;
+  hasDiscount: boolean;
+  discountAmount: number;
+} {
+  const hasDiscount = !!discountPercent && discountPercent > 0;
+  const finalPrice = hasDiscount
+    ? calculateDiscountedPrice(basePrice, discountPercent)
+    : basePrice;
+  const discountAmount = hasDiscount ? basePrice - finalPrice : 0;
+
+  return {
+    originalPrice: basePrice,
+    finalPrice,
+    hasDiscount,
+    discountAmount,
+  };
+}
+
 // ========== PRODUCT MEDIA FUNCTIONS ==========
 
 /**

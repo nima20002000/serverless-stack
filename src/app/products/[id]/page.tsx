@@ -52,6 +52,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const serializedProduct = {
     ...product,
     price: Number(product.price),
+    discountPercent: product.discountPercent,
+    isFeatured: product.isFeatured,
     category: 'category' in product ? (product as ProductWithRelations).category : null,
     tags: 'tags' in product ? ((product as ProductWithRelations).tags || []) : [],
     media: 'media' in product ? ((product as ProductWithRelations).media || []) : [],

@@ -10,6 +10,8 @@ export default async function ProductsPage() {
   const products = result.data.map((product) => ({
     ...product,
     price: Number(product.price),
+    discountPercent: product.discountPercent,
+    isFeatured: product.isFeatured,
   }));
 
   return (

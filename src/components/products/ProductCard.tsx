@@ -13,15 +13,24 @@ interface ProductCardProps {
     name: string;
     description: string;
     price: number;
+    discountPercent?: number | null;
     stock: number;
     images: string[];
     isActive: boolean;
+    isFeatured?: boolean;
   };
 }
 
 function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
+
+  // Calculate discounted price
+  const discountPercent = product.discountPercent || 0;
+  const originalPrice = Number(product.price);
+  const discountedPrice = discountPercent > 0
+    ? originalPrice * (1 - discountPercent / 100)
+    : originalPrice;
 
   const handleAddToCart = useCallback(async () => {
     try {
@@ -30,7 +39,7 @@ function ProductCard({ product }: ProductCardProps) {
         {
           productId: product.id,
           name: product.name,
-          price: Number(product.price),
+          price: discountedPrice,
           image: product.images[0] || '',
           stock: product.stock,
         },
@@ -42,7 +51,7 @@ function ProductCard({ product }: ProductCardProps) {
       alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
       setIsAdding(false);
     }
-  }, [product.id, product.name, product.price, product.images, product.stock, addItem]);
+  }, [product.id, product.name, discountedPrice, product.images, product.stock, addItem]);
 
   const isOutOfStock = product.stock === 0;
 
@@ -65,6 +74,19 @@ function ProductCard({ product }: ProductCardProps) {
               <div className="text-gray-400 text-4xl">📦</div>
             </div>
           )}
+          {/* Badges */}
+          <div className="absolute top-2 right-2 flex flex-col gap-2">
+            {product.isFeatured && (
+              <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                ویژه
+              </span>
+            )}
+            {discountPercent > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+                {discountPercent}% تخفیف
+              </span>
+            )}
+          </div>
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <span className="text-white font-bold text-lg">ناموجود</span>
@@ -87,9 +109,20 @@ function ProductCard({ product }: ProductCardProps) {
         {/* Price and Stock */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-right">
-            <span className="text-xl font-bold text-gray-900">
-              {formatPrice(Number(product.price))}
-            </span>
+            {discountPercent > 0 ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-sm text-gray-500 line-through">
+                  {formatPrice(originalPrice)}
+                </span>
+                <span className="text-xl font-bold text-red-600">
+                  {formatPrice(discountedPrice)}
+                </span>
+              </div>
+            ) : (
+              <span className="text-xl font-bold text-gray-900">
+                {formatPrice(originalPrice)}
+              </span>
+            )}
           </div>
           <div className="text-left">
             <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>

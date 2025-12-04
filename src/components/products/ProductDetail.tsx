@@ -49,9 +49,11 @@ interface ProductDetailProps {
     name: string;
     description: string;
     price: number;
+    discountPercent?: number | null;
     stock: number;
     images: string[];
     isActive: boolean;
+    isFeatured?: boolean;
     category?: Category | null;
     tags?: Tag[];
     media?: MediaItem[];
@@ -83,10 +85,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(getDefaultVariant());
 
+  // Calculate discount
+  const discountPercent = product.discountPercent || 0;
+
   // Calculate effective price and stock based on variant selection
-  const effectivePrice = selectedVariant
+  const basePrice = selectedVariant
     ? product.price + Number(selectedVariant.priceAdjust)
     : product.price;
+
+  // Apply discount to effective price
+  const effectivePrice = discountPercent > 0
+    ? basePrice * (1 - discountPercent / 100)
+    : basePrice;
 
   const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
   const isOutOfStock = effectiveStock === 0;
@@ -215,12 +225,32 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
           {/* Price */}
           <div className="mb-6">
-            <span className="text-3xl font-bold text-blue-600">
-              {formatPrice(effectivePrice)}
-            </span>
+            <div className="flex items-center gap-3 flex-wrap">
+              {discountPercent > 0 && (
+                <span className="text-2xl font-bold text-gray-500 line-through">
+                  {formatPrice(basePrice)}
+                </span>
+              )}
+              <span className={`text-3xl font-bold ${discountPercent > 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                {formatPrice(effectivePrice)}
+              </span>
+              {discountPercent > 0 && (
+                <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                  {discountPercent}% تخفیف
+                </span>
+              )}
+              {product.isFeatured && (
+                <span className="bg-yellow-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                  ویژه
+                </span>
+              )}
+            </div>
             {selectedVariant && selectedVariant.priceAdjust !== 0 && (
               <div className="mt-2 text-sm text-gray-600">
                 قیمت پایه: {formatPrice(product.price)}
+                {discountPercent > 0 && (
+                  <span className="mr-2">(قبل از تخفیف)</span>
+                )}
               </div>
             )}
           </div>

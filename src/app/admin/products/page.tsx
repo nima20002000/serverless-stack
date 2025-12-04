@@ -14,9 +14,11 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  discountPercent?: number | null;
   stock: number;
   images: string[];
   isActive: boolean;
+  isFeatured?: boolean;
 }
 
 export default function AdminProductsPage() {
@@ -315,6 +317,7 @@ export default function AdminProductsPage() {
                 </th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
@@ -360,12 +363,42 @@ export default function AdminProductsPage() {
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">
+                    <div className="flex gap-1 justify-end flex-wrap">
+                      {product.isFeatured && (
+                        <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
+                          ویژه
+                        </span>
+                      )}
+                      {product.discountPercent && product.discountPercent > 0 && (
+                        <span className="inline-block bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+                          {product.discountPercent}% تخفیف
+                        </span>
+                      )}
+                      {!product.isFeatured && (!product.discountPercent || product.discountPercent === 0) && (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-right">
                     <span className={product.stock === 0 ? 'text-red-600' : 'text-gray-900'}>
                       {product.stock}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {formatPrice(Number(product.price))}
+                    <div className="flex flex-col gap-1">
+                      {product.discountPercent && product.discountPercent > 0 ? (
+                        <>
+                          <span className="text-xs text-gray-500 line-through">
+                            {formatPrice(Number(product.price))}
+                          </span>
+                          <span className="font-semibold text-red-600">
+                            {formatPrice(Number(product.price) * (1 - product.discountPercent / 100))}
+                          </span>
+                        </>
+                      ) : (
+                        <span>{formatPrice(Number(product.price))}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right font-medium">
                     <Link
