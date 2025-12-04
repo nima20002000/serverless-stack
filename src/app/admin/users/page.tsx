@@ -7,11 +7,11 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
-import { format } from 'date-fns-jalali';
 
 interface User {
   id: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   name: string;
   role: 'USER' | 'ADMIN';
   createdAt: string;
@@ -357,16 +357,13 @@ export default function UsersManagementPage() {
                       تراکنش‌ها
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                      تاریخ عضویت
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       نقش
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                      نام
+                      ایمیل / شماره تلفن
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                      ایمیل
+                      نام کاربر
                     </th>
                   </tr>
                 </thead>
@@ -411,15 +408,18 @@ export default function UsersManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="text-sm text-gray-900">
-                          {user._count.transactions.toLocaleString('fa-IR')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
-                        {format(new Date(user.createdAt), 'yyyy/MM/dd')}
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                        >
+                          {user._count.transactions.toLocaleString('fa-IR')} تراکنش
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {getRoleBadge(user.role)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-gray-900">
+                        {user.email || user.phone || 'ندارد'}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-gray-900">
                         <Link
@@ -428,9 +428,6 @@ export default function UsersManagementPage() {
                         >
                           {user.name}
                         </Link>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
-                        {user.email}
                       </td>
                     </tr>
                   ))}
