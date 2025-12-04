@@ -10,6 +10,7 @@ import {
   CreditCardIcon,
   Bars3Icon,
   XMarkIcon,
+  FolderIcon,
 } from '@heroicons/react/24/outline';
 
 interface NavItem {
@@ -23,6 +24,7 @@ const navigation: NavItem[] = [
   { name: 'داشبورد', href: '/admin', icon: HomeIcon },
   { name: 'کاربران', href: '/admin/users', icon: UsersIcon },
   { name: 'محصولات', href: '/admin/products', icon: ShoppingBagIcon },
+  { name: 'دسته‌بندی‌ها', href: '/admin/categories', icon: FolderIcon },
   { name: 'تراکنش‌ها', href: '/admin/transactions', icon: CreditCardIcon },
 ];
 

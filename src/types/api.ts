@@ -39,20 +39,33 @@ export interface UpdateResult<T> {
 
 // Dashboard statistics
 export interface DashboardStats {
-  totalProducts: number;
-  totalUsers: number;
-  totalTransactions: number;
-  completedTransactions: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
+  users: {
+    total: number;
+    new: number;
+  };
+  products: {
+    total: number;
+    active: number;
+  };
+  transactions: {
+    total: number;
+    pending: number;
+    completed: number;
+    failed: number;
+  };
+  revenue: {
+    total: number;
+    thisMonth: number;
+  };
   recentTransactions: Array<{
     id: string;
+    transactionCode: string;
     amount: number;
     status: string;
-    createdAt: Date;
+    createdAt: string;
     user: {
       name: string;
-      email: string | null;
+      email: string;
     };
   }>;
 }

@@ -24,8 +24,32 @@ export async function GET(
       );
     }
 
-    const user = await getUserById(params.id);
-    return NextResponse.json(user);
+    const userData = await getUserById(params.id);
+
+    // Serialize the response to ensure proper format
+    const user = {
+      ...userData,
+      createdAt: userData.createdAt.toISOString(),
+      _count: {
+        transactions: userData.transactions.length,
+        promoCodes: userData.promoCodes.length,
+      },
+      transactions: userData.transactions.map(t => ({
+        id: t.id,
+        transactionCode: t.transactionCode,
+        amount: Number(t.amount),
+        status: t.status,
+        createdAt: t.createdAt.toISOString(),
+      })),
+      promoCodes: userData.promoCodes.map(p => ({
+        id: p.id,
+        code: p.code,
+        expiresAt: p.expiresAt.toISOString(),
+        isUsed: p.isUsed,
+      })),
+    };
+
+    return NextResponse.json({ user });
   } catch (error) {
     console.error('Error fetching user:', error);
     const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت کاربر';
@@ -46,6 +70,14 @@ export async function PUT(
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
+        { status: 403 }
+      );
+    }
+
+    // Prevent admin from changing their own role
+    if (session.user.id === params.id) {
+      return NextResponse.json(
+        { error: 'نمی‌توانید نقش خود را تغییر دهید' },
         { status: 403 }
       );
     }
@@ -82,6 +114,14 @@ export async function DELETE(
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز' },
+        { status: 403 }
+      );
+    }
+
+    // Prevent admin from deleting their own account
+    if (session.user.id === params.id) {
+      return NextResponse.json(
+        { error: 'نمی‌توانید حساب کاربری خود را حذف کنید' },
         { status: 403 }
       );
     }

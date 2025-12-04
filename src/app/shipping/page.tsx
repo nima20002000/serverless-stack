@@ -88,9 +88,6 @@ export default function ShippingPage() {
                 <p className="text-4xl font-bold text-purple-600 mb-2">۲۰۰,۰۰۰ تومان</p>
                 <p className="text-sm text-gray-600">± ۲۰٪ بسته به مقصد و وزن</p>
               </div>
-              <p className="text-sm text-gray-600 text-center">
-                هزینه دقیق در صفحه تسویه حساب نمایش داده می‌شود
-              </p>
             </div>
           </div>
 

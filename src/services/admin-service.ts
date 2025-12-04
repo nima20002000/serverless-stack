@@ -301,6 +301,26 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .filter((t) => t.createdAt >= thisMonth)
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
+  // Get new users this month
+  const newUsersThisMonth = await prisma.user.count({
+    where: {
+      createdAt: {
+        gte: thisMonth,
+      },
+    },
+  });
+
+  // Get active products
+  const activeProducts = await prisma.product.count({
+    where: { isActive: true },
+  });
+
+  // Get transaction stats by status
+  const [pendingTransactions, failedTransactions] = await Promise.all([
+    prisma.transaction.count({ where: { status: 'PENDING' } }),
+    prisma.transaction.count({ where: { status: 'FAILED' } }),
+  ]);
+
   // Get recent transactions
   const recentTransactions = await prisma.transaction.findMany({
     take: 5,
@@ -316,20 +336,33 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   });
 
   return {
-    totalProducts,
-    totalUsers,
-    totalTransactions,
-    completedTransactions,
-    totalRevenue,
-    monthlyRevenue,
+    users: {
+      total: totalUsers,
+      new: newUsersThisMonth,
+    },
+    products: {
+      total: totalProducts,
+      active: activeProducts,
+    },
+    transactions: {
+      total: totalTransactions,
+      pending: pendingTransactions,
+      completed: completedTransactions,
+      failed: failedTransactions,
+    },
+    revenue: {
+      total: totalRevenue,
+      thisMonth: monthlyRevenue,
+    },
     recentTransactions: recentTransactions.map(t => ({
       id: t.id,
+      transactionCode: t.transactionCode,
       amount: Number(t.amount),
       status: t.status,
-      createdAt: t.createdAt,
+      createdAt: t.createdAt.toISOString(),
       user: t.user ? {
         name: t.user.name,
-        email: t.user.email,
+        email: t.user.email || '',
       } : {
         name: t.fullName,
         email: t.email || 'مهمان',

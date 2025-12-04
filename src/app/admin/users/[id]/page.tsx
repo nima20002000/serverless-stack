@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
@@ -33,7 +34,6 @@ interface User {
   promoCodes: Array<{
     id: string;
     code: string;
-    discount: number;
     expiresAt: string;
     isUsed: boolean;
   }>;
@@ -41,10 +41,14 @@ interface User {
 
 export default function UserDetailPage({ params }: UserDetailPageProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Check if viewing own profile
+  const isOwnProfile = session?.user?.id === params.id;
 
   const fetchUser = useCallback(async () => {
     try {
@@ -237,28 +241,37 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               >
                 بازگشت
               </Button>
-              {user.role === 'USER' ? (
-                <Button
-                  variant="primary"
-                  onClick={() => handleChangeRole('ADMIN')}
-                >
-                  ارتقا به مدیر
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  onClick={() => handleChangeRole('USER')}
-                >
-                  تنزل به کاربر
-                </Button>
+              {!isOwnProfile && (
+                <>
+                  {user.role === 'USER' ? (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleChangeRole('ADMIN')}
+                    >
+                      ارتقا به مدیر
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleChangeRole('USER')}
+                    >
+                      تنزل به کاربر
+                    </Button>
+                  )}
+                  <Button
+                    variant="danger"
+                    onClick={handleDeleteUser}
+                    disabled={user.role === 'ADMIN'}
+                  >
+                    حذف کاربر
+                  </Button>
+                </>
               )}
-              <Button
-                variant="danger"
-                onClick={handleDeleteUser}
-                disabled={user.role === 'ADMIN'}
-              >
-                حذف کاربر
-              </Button>
+              {isOwnProfile && (
+                <div className="text-sm text-gray-500 px-4 py-2 bg-gray-50 rounded">
+                  نمی‌توانید نقش خود را تغییر دهید یا حساب خود را حذف کنید
+                </div>
+              )}
             </div>
           </div>
         </Card>
@@ -336,9 +349,6 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         انقضا
                       </th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
-                        تخفیف
-                      </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                         کد
                       </th>
                     </tr>
@@ -365,9 +375,6 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600">
                           {format(new Date(promo.expiresAt), 'yyyy/MM/dd - HH:mm')}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {promo.discount.toLocaleString('fa-IR')}%
                         </td>
                         <td className="px-4 py-3 text-right">
                           <code className="text-sm bg-gray-100 px-2 py-1 rounded font-bold">
