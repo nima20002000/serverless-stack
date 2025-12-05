@@ -12,9 +12,11 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  discountPercent?: number | null;
   stock: number;
   images: string[];
   isActive: boolean;
+  isFeatured?: boolean;
 }
 
 interface ProductListProps {

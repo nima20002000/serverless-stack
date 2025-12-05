@@ -16,10 +16,12 @@ async function getHandler(req: NextRequest) {
 
     const result = await getActiveProducts({ page, perPage });
 
-    // Serialize Decimal prices to numbers
+    // Serialize Decimal prices to numbers and ensure discount fields are included
     const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
       ...product,
       price: Number(product.price),
+      discountPercent: product.discountPercent,
+      isFeatured: product.isFeatured,
     }));
 
     return NextResponse.json({
