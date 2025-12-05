@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, slug, description, parentId, isActive } = body;
+    const { name, slug, description, image, parentId, isActive } = body;
 
     if (!name || !slug) {
       return NextResponse.json(
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
       name,
       slug,
       description,
+      image,
       parentId,
       isActive: isActive ?? true,
     });

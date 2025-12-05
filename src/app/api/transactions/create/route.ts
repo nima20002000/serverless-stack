@@ -93,13 +93,20 @@ async function postHandler(req: NextRequest) {
         );
       }
 
-      const itemTotal = Number(product.price) * item.quantity;
+      // Calculate price with discount if applicable
+      const basePrice = Number(product.price);
+      const discountPercent = product.discountPercent || 0;
+      const finalPrice = discountPercent > 0
+        ? basePrice * (1 - discountPercent / 100)
+        : basePrice;
+
+      const itemTotal = finalPrice * item.quantity;
       totalAmount += itemTotal;
 
       transactionItems.push({
         productId: product.id,
         quantity: item.quantity,
-        price: Number(product.price),
+        price: finalPrice,
       });
     }
 
