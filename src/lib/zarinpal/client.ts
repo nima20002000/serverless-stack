@@ -25,7 +25,7 @@ function getAppUrl(): string {
 }
 
 export interface PaymentRequest {
-  amount: number; // Amount in Tomans
+  amount: number; // Amount in Tomans (will be converted to Rials internally)
   description: string;
   email?: string;
   mobile?: string;
@@ -51,8 +51,12 @@ export async function createPaymentRequest(
 ): Promise<PaymentRequestResponse> {
   const startTime = Date.now();
 
+  // Convert Tomans to Rials (1 Toman = 10 Rials)
+  const amountInRials = request.amount * 10;
+
   log.info('Creating Zarinpal payment request', {
-    amount: request.amount,
+    amountInTomans: request.amount,
+    amountInRials: amountInRials,
     mobile: request.mobile,
     email: request.email,
     callbackUrl: request.callbackUrl,
@@ -62,7 +66,7 @@ export async function createPaymentRequest(
   try {
     const client = getZarinpalClient();
     const response = await client.payments.create({
-      amount: request.amount, // In Tomans
+      amount: amountInRials, // Zarinpal expects Rials
       callback_url: request.callbackUrl,
       description: request.description,
       email: request.email,
@@ -112,6 +116,8 @@ export async function createPaymentRequest(
 
 /**
  * Verify a payment after user returns from Zarinpal
+ * @param authority - Zarinpal authority code
+ * @param amount - Amount in Tomans (will be converted to Rials internally)
  */
 export async function verifyPayment(
   authority: string,
@@ -119,9 +125,13 @@ export async function verifyPayment(
 ): Promise<PaymentVerification> {
   const startTime = Date.now();
 
+  // Convert Tomans to Rials (1 Toman = 10 Rials)
+  const amountInRials = amount * 10;
+
   log.info('Calling Zarinpal verify API', {
     authority,
-    amount,
+    amountInTomans: amount,
+    amountInRials: amountInRials,
     sandbox: isSandboxMode(),
     merchantId: process.env.ZARINPAL_MERCHANT_ID || 'test',
   });
@@ -129,7 +139,7 @@ export async function verifyPayment(
   try {
     const client = getZarinpalClient();
     const response = await client.verifications.verify({
-      amount: amount, // Must match original amount
+      amount: amountInRials, // Must match original amount in Rials
       authority: authority,
     });
 

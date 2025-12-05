@@ -12,6 +12,7 @@ interface Category {
   name: string;
   slug: string;
   description: string | null;
+  image: string | null;
   isActive: boolean;
   parentId: string | null;
   parent: {
@@ -38,9 +39,11 @@ export default function CategoriesManagementPage() {
     name: '',
     slug: '',
     description: '',
+    image: '',
     parentId: '',
     isActive: true,
   });
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -92,6 +95,7 @@ export default function CategoriesManagementPage() {
         name: '',
         slug: '',
         description: '',
+        image: '',
         parentId: '',
         isActive: true,
       });
@@ -107,6 +111,7 @@ export default function CategoriesManagementPage() {
       name: category.name,
       slug: category.slug,
       description: category.description || '',
+      image: category.image || '',
       parentId: category.parentId || '',
       isActive: category.isActive,
     });
@@ -142,9 +147,53 @@ export default function CategoriesManagementPage() {
       name: '',
       slug: '',
       description: '',
+      image: '',
       parentId: '',
       isActive: true,
     });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('لطفاً یک فایل تصویری انتخاب کنید');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('حجم فایل نباید بیشتر از ۵ مگابایت باشد');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      setError('');
+
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+
+      const response = await fetch('/api/upload/product-media', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'خطا در آپلود تصویر');
+      }
+
+      const data = await response.json();
+      setFormData({ ...formData, image: data.url });
+      setSuccessMessage('تصویر با موفقیت آپلود شد');
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطا در آپلود تصویر');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const toggleActive = async (id: string, currentStatus: boolean) => {
@@ -363,6 +412,43 @@ export default function CategoriesManagementPage() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                   rows={3}
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  تصویر دسته‌بندی
+                </label>
+                <div className="space-y-2">
+                  {formData.image && (
+                    <div className="relative w-full h-48 border border-gray-300 rounded-lg overflow-hidden">
+                      <img
+                        src={formData.image}
+                        alt="پیش‌نمایش تصویر"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, image: '' })}
+                        className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600"
+                      >
+                        حذف تصویر
+                      </button>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={isUploadingImage}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {isUploadingImage && (
+                    <p className="text-sm text-blue-600 text-right">در حال آپلود تصویر...</p>
+                  )}
+                  <p className="text-xs text-gray-500 text-right">
+                    حداکثر حجم فایل: ۵ مگابایت - فرمت‌های مجاز: JPG, PNG, WEBP, GIF
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

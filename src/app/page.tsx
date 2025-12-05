@@ -136,9 +136,19 @@ export default async function Home() {
               <Link key={category.id} href={`/products?category=${category.slug}`}>
                 <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer h-full">
                   <div className="text-center">
-                    {/* Category Icon/Image Placeholder */}
-                    <div className="w-full h-48 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-4 flex items-center justify-center">
-                      <div className="text-6xl text-purple-500">📦</div>
+                    {/* Category Image */}
+                    <div className="w-full h-48 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                      {category.image ? (
+                        <Image
+                          src={category.image}
+                          alt={category.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      ) : (
+                        <div className="text-6xl text-purple-500">📦</div>
+                      )}
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
                       {category.name}

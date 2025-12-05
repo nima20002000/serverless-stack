@@ -88,6 +88,7 @@ export interface CategoryFormData {
   name: string;
   slug: string;
   description?: string;
+  image?: string;
   parentId?: string;
   isActive: boolean;
 }
