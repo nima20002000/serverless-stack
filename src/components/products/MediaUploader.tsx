@@ -50,11 +50,23 @@ export default function MediaUploader({
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'خطا در آپلود فایل');
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || 'خطا در آپلود فایل');
+      } else {
+        throw new Error(`خطا در آپلود فایل: ${response.status} ${response.statusText}`);
+      }
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Handle the actual response structure from the API
+    if (data.success && data.url && data.type) {
+      return { url: data.url, type: data.type };
+    }
+
+    throw new Error(data.error || 'خطا در دریافت پاسخ از سرور');
   };
 
   const handleFiles = useCallback(async (files: FileList | null) => {
