@@ -21,6 +21,12 @@ interface MediaUploaderProps {
   disabled?: boolean;
 }
 
+// File size constants (must match server-side validation)
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
 export default function MediaUploader({
   media,
   onChange,
@@ -40,7 +46,46 @@ export default function MediaUploader({
     }
   }, []);
 
-  const uploadFile = async (file: File): Promise<{ url: string; type: 'IMAGE' | 'VIDEO' }> => {
+  const validateFileClient = useCallback((file: File): { valid: boolean; error?: string; type?: 'IMAGE' | 'VIDEO' } => {
+    const isImage = ALLOWED_IMAGE_TYPES.includes(file.type);
+    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+
+    if (!isImage && !isVideo) {
+      return {
+        valid: false,
+        error: 'فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM',
+      };
+    }
+
+    const mediaType = isVideo ? 'VIDEO' : 'IMAGE';
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+
+    if (file.size > maxSize) {
+      const maxSizeMB = Math.floor(maxSize / (1024 * 1024));
+      return {
+        valid: false,
+        error: `حجم فایل "${file.name}" بیشتر از حد مجاز است. حداکثر ${maxSizeMB}MB`,
+        type: mediaType,
+      };
+    }
+
+    if (file.size === 0) {
+      return {
+        valid: false,
+        error: `فایل "${file.name}" خالی است`,
+      };
+    }
+
+    return { valid: true, type: mediaType };
+  }, []);
+
+  const uploadFile = useCallback(async (file: File): Promise<{ url: string; type: 'IMAGE' | 'VIDEO' }> => {
+    // Client-side validation before upload
+    const validation = validateFileClient(file);
+    if (!validation.valid) {
+      throw new Error(validation.error || 'فایل نامعتبر است');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -49,60 +94,127 @@ export default function MediaUploader({
       body: formData,
     });
 
+    // Handle different error scenarios
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
+
+      // Try to parse JSON error response
       if (contentType && contentType.includes('application/json')) {
-        const error = await response.json();
-        throw new Error(error.error || 'خطا در آپلود فایل');
-      } else {
-        throw new Error(`خطا در آپلود فایل: ${response.status} ${response.statusText}`);
+        try {
+          const error = await response.json();
+          throw new Error(error.error || 'خطا در آپلود فایل');
+        } catch (e) {
+          // If JSON parsing fails, use generic error
+          if (e instanceof Error && e.message !== 'خطا در آپلود فایل') {
+            throw new Error(`خطا در آپلود فایل: ${response.status}`);
+          }
+          throw e;
+        }
       }
+
+      // Handle specific HTTP errors
+      if (response.status === 413) {
+        throw new Error('حجم فایل بیش از حد مجاز است. لطفا فایل کوچکتری انتخاب کنید');
+      } else if (response.status === 401 || response.status === 403) {
+        throw new Error('دسترسی غیرمجاز. لطفا دوباره وارد شوید');
+      } else if (response.status >= 500) {
+        throw new Error('خطای سرور. لطفا دوباره تلاش کنید');
+      }
+
+      throw new Error(`خطا در آپلود فایل: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    // Parse successful response
+    let data;
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error('خطا در دریافت پاسخ از سرور');
+    }
 
-    // Handle the actual response structure from the API
+    // Validate response structure
     if (data.success && data.url && data.type) {
       return { url: data.url, type: data.type };
     }
 
-    throw new Error(data.error || 'خطا در دریافت پاسخ از سرور');
-  };
+    throw new Error(data.error || 'پاسخ نامعتبر از سرور');
+  }, [validateFileClient]);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+
+    // Check file count limit
     if (media.length + files.length > maxFiles) {
       alert(`حداکثر ${maxFiles} فایل می‌توانید آپلود کنید`);
       return;
     }
 
+    // Pre-validate all files before uploading
+    const filesArray = Array.from(files);
+    const invalidFiles: string[] = [];
+
+    for (const file of filesArray) {
+      const validation = validateFileClient(file);
+      if (!validation.valid) {
+        invalidFiles.push(validation.error || `فایل "${file.name}" نامعتبر است`);
+      }
+    }
+
+    // If any files are invalid, show all errors and abort
+    if (invalidFiles.length > 0) {
+      alert(`خطا در اعتبارسنجی فایل‌ها:\n\n${invalidFiles.join('\n')}`);
+      return;
+    }
+
     setUploading(true);
     const newMedia: MediaItem[] = [];
+    const errors: string[] = [];
 
     try {
+      // Upload files one by one
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const result = await uploadFile(file);
 
-        newMedia.push({
-          id: `new-${Date.now()}-${i}`,
-          type: result.type,
-          url: result.url,
-          alt: file.name,
-          order: media.length + newMedia.length,
-          isNew: true,
-        });
+        try {
+          const result = await uploadFile(file);
+
+          newMedia.push({
+            id: `new-${Date.now()}-${i}`,
+            type: result.type,
+            url: result.url,
+            alt: file.name,
+            order: media.length + newMedia.length,
+            isNew: true,
+          });
+        } catch (error) {
+          // Collect individual file errors but continue with other files
+          const errorMsg = error instanceof Error ? error.message : 'خطای ناشناخته';
+          errors.push(`${file.name}: ${errorMsg}`);
+          console.error(`Upload error for ${file.name}:`, error);
+        }
       }
 
-      onChange([...media, ...newMedia]);
+      // Add successfully uploaded media
+      if (newMedia.length > 0) {
+        onChange([...media, ...newMedia]);
+      }
+
+      // Show summary of results
+      if (errors.length > 0) {
+        const successCount = newMedia.length;
+        const failCount = errors.length;
+        const summary = `آپلود کامل شد:\n✓ ${successCount} فایل موفق\n✗ ${failCount} فایل ناموفق\n\nخطاها:\n${errors.join('\n')}`;
+        alert(summary);
+      }
     } catch (error) {
-      console.error('Upload error:', error);
-      alert(error instanceof Error ? error.message : 'خطا در آپلود فایل‌ها');
+      // Unexpected error
+      console.error('Unexpected upload error:', error);
+      alert(error instanceof Error ? error.message : 'خطای غیرمنتظره در آپلود فایل‌ها');
     } finally {
       setUploading(false);
       setDragActive(false);
     }
-  }, [media, maxFiles, onChange]);
+  }, [media, maxFiles, onChange, validateFileClient, uploadFile]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {

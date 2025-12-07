@@ -7,6 +7,10 @@ import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
+// Configure body size limit to 60MB (to allow video uploads up to 50MB + overhead)
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds max execution time
+
 /**
  * POST /api/media-library/upload
  * Upload media to library
