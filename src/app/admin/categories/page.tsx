@@ -163,9 +163,9 @@ export default function CategoriesManagementPage() {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('حجم فایل نباید بیشتر از ۵ مگابایت باشد');
+    // Validate file size (max 8MB)
+    if (file.size > 8 * 1024 * 1024) {
+      setError('حجم فایل نباید بیشتر از ۸ مگابایت باشد');
       return;
     }
 
@@ -446,7 +446,7 @@ export default function CategoriesManagementPage() {
                     <p className="text-sm text-blue-600 text-right">در حال آپلود تصویر...</p>
                   )}
                   <p className="text-xs text-gray-500 text-right">
-                    حداکثر حجم فایل: ۵ مگابایت - فرمت‌های مجاز: JPG, PNG, WEBP, GIF
+                    حداکثر حجم فایل: ۸ مگابایت - فرمت‌های مجاز: JPG, PNG, WEBP, GIF
                   </p>
                 </div>
               </div>

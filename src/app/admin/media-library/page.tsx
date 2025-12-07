@@ -326,7 +326,7 @@ export default function MediaLibraryPage() {
             />
           </label>
           <p className="text-xs text-gray-400 mt-4">
-            فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM | حداکثر: 5MB برای تصاویر، 50MB برای ویدیوها
+            فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM | حداکثر: 8MB برای تصاویر، 50MB برای ویدیوها
           </p>
         </div>
 

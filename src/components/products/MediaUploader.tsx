@@ -22,7 +22,7 @@ interface MediaUploaderProps {
 }
 
 // File size constants (must match server-side validation)
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -301,7 +301,7 @@ export default function MediaUploader({
                 فایل‌ها را اینجا بکشید یا کلیک کنید
               </p>
               <p className="text-xs text-gray-500">
-                تصاویر: JPG, PNG, WEBP, GIF (حداکثر 5MB)
+                تصاویر: JPG, PNG, WEBP, GIF (حداکثر 8MB)
                 <br />
                 ویدیو: MP4, WEBM, MOV (حداکثر 50MB)
               </p>
