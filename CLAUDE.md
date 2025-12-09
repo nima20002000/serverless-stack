@@ -28,17 +28,28 @@ npx prisma studio                          # Open Prisma Studio UI
 ### Database Environments
 The project uses **three separate databases**:
 1. **Local PostgreSQL** (Development) - `localhost:5432/kitia`
-2. **Supabase Production** - Connected via MCP (project_ref: `tanqgnztclrucfldxhuk`)
-3. **Supabase Preview** - `aws-1-ap-northeast-2.pooler.supabase.com`
+2. **Supabase Production** - `aws-1-ap-southeast-1.pooler.supabase.com` (project_ref: `tanqgnztclrucfldxhuk`)
+3. **Supabase Preview/Preproduction** - `aws-1-ap-northeast-2.pooler.supabase.com` (project_ref: `gozxjxtnrbuurmstjydo`)
+
+**Database Connection Strings**:
+- **Production**: `postgresql://postgres.tanqgnztclrucfldxhuk:BHZnE4rPyZO4lSmA@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
+- **Preview**: `postgresql://postgres.gozxjxtnrbuurmstjydo:PawK0YK7sYbCzzMi@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true`
 
 **Important**: When applying schema changes, you must apply migrations to **all three databases**:
 - Local: `npx prisma db push`
-- Supabase Production: Use Supabase MCP `apply_migration` tool
-- Supabase Preview: Use `psql` command with credentials from `CREDENTIALS.md`
+- Supabase Production: Use Supabase MCP `apply_migration` tool OR `psql` command
+- Supabase Preview: Use `psql` command
 
-**Example - Apply migration to Supabase Preview**:
+**Examples - Apply migrations**:
+
+Production (via psql):
 ```bash
-PGPASSWORD="CVdIKLnQedFv8lza" psql -h aws-1-ap-northeast-2.pooler.supabase.com -U postgres.gozxjxtnrbuurmstjydo -d postgres -p 5432 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
+PGPASSWORD="BHZnE4rPyZO4lSmA" psql -h aws-1-ap-southeast-1.pooler.supabase.com -U postgres.tanqgnztclrucfldxhuk -d postgres -p 6543 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
+```
+
+Preview (via psql):
+```bash
+PGPASSWORD="PawK0YK7sYbCzzMi" psql -h aws-1-ap-northeast-2.pooler.supabase.com -U postgres.gozxjxtnrbuurmstjydo -d postgres -p 6543 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
 ```
 
 ## Critical Architecture Patterns
