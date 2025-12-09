@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ZarinpalFooterBadge from '@/components/payment/ZarinpalFooterBadge';
+import EnamadBadge from '@/components/badges/EnamadBadge';
 
 export default function Footer() {
   return (
@@ -110,12 +111,8 @@ export default function Footer() {
               نماد اعتماد
             </h4>
             <div className="flex items-start gap-4 flex-wrap">
-              {/* Enamad Badge */}
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0' alt='نماد اعتماد الکترونیکی' style='cursor:pointer' code='bLSyuHwqurNSiHamVBVhFYohNhVDDhi0'></a>`
-                }}
-              />
+              {/* Enamad Badge - Lazy loaded */}
+              <EnamadBadge />
               {/* Union Badge */}
               <div
                 dangerouslySetInnerHTML={{

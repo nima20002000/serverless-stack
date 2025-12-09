@@ -183,7 +183,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
         setOtpCode('');
 
         // Store identifier for later login
-        sessionStorage.setItem('pendingLoginIdentifier', data.identifier);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('pendingLoginIdentifier', data.identifier);
+        }
       }
     } catch (error) {
       setOtpError(error instanceof Error ? error.message : 'خطا در تایید کد');
@@ -228,7 +230,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
     }
 
     // If user verified OTP and needs login, log them in first
-    if (pendingLogin && !session) {
+    if (pendingLogin && !session && typeof window !== 'undefined') {
       const identifier = sessionStorage.getItem('pendingLoginIdentifier');
       if (identifier) {
         try {
@@ -241,7 +243,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
           if (result?.ok) {
             // Clear pending login state
-            sessionStorage.removeItem('pendingLoginIdentifier');
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem('pendingLoginIdentifier');
+            }
             setPendingLogin(false);
 
             // Force NextAuth session to refresh

@@ -16,6 +16,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
+      <head>
+        {/* Preload critical font for faster LCP */}
+        <link
+          rel="preload"
+          href="/fonts/BYekan.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="antialiased flex flex-col min-h-screen">
         <SessionProvider>
           <Header />

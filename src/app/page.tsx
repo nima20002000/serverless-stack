@@ -60,11 +60,12 @@ export default async function Home() {
               {/* Image Container */}
               <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
                 <Image
-                  src={optimizeImage.large("https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg")}
+                  src={optimizeImage.medium("https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg")}
                   alt="کیتیا - فروشگاه آنلاین"
                   fill
                   className="object-cover"
                   priority
+                  fetchPriority="high"
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
