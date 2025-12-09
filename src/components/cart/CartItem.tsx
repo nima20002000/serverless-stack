@@ -3,6 +3,7 @@
 import { TrashIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { CartItem as CartItemType, formatPrice } from '@/store/cart-store';
 import Image from 'next/image';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface CartItemProps {
   item: CartItemType;
@@ -31,7 +32,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
       <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
         {item.image ? (
           <Image
-            src={item.image}
+            src={optimizeImage.cartItem(item.image)}
             alt={item.name}
             width={80}
             height={80}

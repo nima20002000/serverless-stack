@@ -12,6 +12,10 @@ import { StorageAdapter } from './types';
 export * from './types';
 export * from './validators';
 
+// Export image optimization utilities
+export { getOptimizedImageUrl, getResponsiveSrcSet, optimizeImage, IMAGE_VARIANTS } from '../cloudflare-images';
+export type { ImageTransformOptions, ImageFormat, ImageFit, ImageGravity } from '../cloudflare-images';
+
 let storageInstance: StorageAdapter | null = null;
 
 /**

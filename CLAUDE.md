@@ -123,6 +123,45 @@ Product images and videos are stored in **Cloudflare R2** (S3-compatible object 
 - Global CDN delivery
 - Future-proof: Can migrate to Supabase/S3 by swapping adapter
 
+### Image Optimization (Cloudflare Image Resizing)
+Images are optimized on-demand using **Cloudflare Image Resizing**:
+- **Free tier**: 5,000 unique transformations/month (more than enough for most e-commerce sites)
+- **How it works**: On first request, Cloudflare fetches original from R2, transforms it, and caches globally
+- **Supported transformations**: Resize, format conversion (WebP/AVIF), quality compression, smart cropping
+- **Zero storage overhead**: Only original files stored in R2, variants generated on-demand
+
+**Image optimization utilities** (`/src/lib/cloudflare-images-client.ts`):
+```typescript
+import { optimizeImage } from '@/lib/cloudflare-images-client';
+
+// Predefined variants (optimized for specific use cases)
+optimizeImage.thumbnail(url);    // 400x500, WebP, 80% quality (product cards)
+optimizeImage.medium(url);       // 800x1000, WebP, 85% quality (product detail)
+optimizeImage.large(url);        // 1200x1500, WebP, 90% quality (zoom/hero)
+optimizeImage.cartItem(url);     // 100x100, WebP, 75% quality (cart preview)
+optimizeImage.categoryCard(url); // 300x300, WebP, 80% quality (category cards)
+optimizeImage.adminThumb(url);   // 150x150, WebP, 70% quality (admin thumbnails)
+
+// Custom transformations
+import { getOptimizedImageUrl } from '@/lib/cloudflare-images-client';
+
+const customUrl = getOptimizedImageUrl(imageUrl, {
+  width: 600,
+  height: 800,
+  format: 'auto',  // Serves WebP to supported browsers, JPEG fallback
+  quality: 85,
+  fit: 'cover',    // scale-down, contain, cover, crop, pad
+  gravity: 'auto', // Smart focus (detects faces/salient features)
+});
+```
+
+**Important notes**:
+- Use `@/lib/cloudflare-images-client` in client components (browser-safe)
+- Use `@/lib/cloudflare-images` in server components/API routes (includes all features)
+- Original images uploaded to R2 remain unchanged
+- Each unique URL + transformation combo counts as 1 transformation (cached forever)
+- `format: 'auto'` automatically serves WebP to Chrome/Edge, AVIF to newest browsers, JPEG fallback
+
 **Storage adapter pattern:**
 ```typescript
 import { storage } from '@/lib/storage';

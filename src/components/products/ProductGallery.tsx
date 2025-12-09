@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface MediaItem {
   id: string;
@@ -101,7 +102,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         {currentMedia.type === 'IMAGE' ? (
           <>
             <Image
-              src={currentMedia.url}
+              src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
               className={`object-contain transition-all duration-300 ${
@@ -182,7 +183,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
             >
               {item.type === 'IMAGE' ? (
                 <Image
-                  src={item.url}
+                  src={optimizeImage.adminThumb(item.url)}
                   alt={item.alt || `${productName} - ${index + 1}`}
                   fill
                   className="object-cover"
@@ -221,7 +222,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
           <div className="relative w-full h-full max-w-7xl max-h-screen">
             <Image
-              src={currentMedia.url}
+              src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
               className="object-contain"

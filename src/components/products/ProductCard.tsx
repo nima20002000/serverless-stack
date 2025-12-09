@@ -6,6 +6,7 @@ import { formatPrice } from '@/services/product-service';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
 import { useState, useCallback, memo } from 'react';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface ProductCardProps {
   product: {
@@ -62,7 +63,7 @@ function ProductCard({ product }: ProductCardProps) {
         <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
           {product.images.length > 0 ? (
             <Image
-              src={product.images[0]}
+              src={optimizeImage.thumbnail(product.images[0])}
               alt={product.name}
               fill
               loading="lazy"

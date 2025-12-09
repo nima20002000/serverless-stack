@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { XMarkIcon, PhotoIcon, FolderIcon, ArrowUpTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface R2Object {
   key: string;
@@ -267,7 +268,7 @@ export default function R2MediaBrowser({
                       <div className="aspect-square bg-gray-100 relative">
                         {isImg ? (
                           <Image
-                            src={obj.url}
+                            src={optimizeImage.adminThumb(obj.url)}
                             alt={obj.key}
                             fill
                             className="object-cover"

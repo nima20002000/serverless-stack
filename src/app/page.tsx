@@ -5,6 +5,7 @@ import { getCategoryTree } from '@/services/category-service';
 import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,7 @@ export default async function Home() {
               {/* Image Container */}
               <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
                 <Image
-                  src="https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg"
+                  src={optimizeImage.large("https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg")}
                   alt="کیتیا - فروشگاه آنلاین"
                   fill
                   className="object-cover"
@@ -140,7 +141,7 @@ export default async function Home() {
                     <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
                       {category.image ? (
                         <Image
-                          src={category.image}
+                          src={optimizeImage.categoryCard(category.image)}
                           alt={category.name}
                           fill
                           className="object-cover"
