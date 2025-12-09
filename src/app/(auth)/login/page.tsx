@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import RateLimitError from '@/components/ui/RateLimitError';
+import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,10 +26,11 @@ export default function LoginPage() {
   // Detect if identifier is email or phone
   const detectIdentifierType = (value: string): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^09\d{9}$/;
+    // Normalize phone number first to handle Persian digits
+    const normalizedPhone = normalizePhoneNumber(value);
 
     if (emailRegex.test(value)) return 'email';
-    if (phoneRegex.test(value)) return 'phone';
+    if (isValidIranianPhone(normalizedPhone)) return 'phone';
     return 'invalid';
   };
 
@@ -40,7 +42,7 @@ export default function LoginPage() {
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است';
+        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
       }
     }
 
@@ -74,9 +76,14 @@ export default function LoginPage() {
           throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
         }
 
+        // Normalize phone number if it's a phone identifier
+        const identifier = identifierType === 'phone'
+          ? normalizePhoneNumber(formData.identifier)
+          : formData.identifier;
+
         const requestBody = identifierType === 'phone'
-          ? { phone: formData.identifier, purpose: 'login' }
-          : { email: formData.identifier, purpose: 'login' };
+          ? { phone: identifier, purpose: 'login' }
+          : { email: identifier, purpose: 'login' };
 
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
@@ -99,7 +106,7 @@ export default function LoginPage() {
 
         // Redirect to OTP verification page
         const params = new URLSearchParams({
-          [identifierType === 'phone' ? 'phone' : 'email']: formData.identifier,
+          [identifierType === 'phone' ? 'phone' : 'email']: identifier,
           purpose: 'login'
         });
         router.push(`/verify-otp?${params.toString()}`);
@@ -107,13 +114,18 @@ export default function LoginPage() {
       }
 
       // NORMAL LOGIN WITH PASSWORD
+      // Normalize identifier before sending
+      const normalizedIdentifier = identifierType === 'phone'
+        ? normalizePhoneNumber(formData.identifier)
+        : formData.identifier;
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.identifier, // Using 'email' for backward compatibility
+          email: normalizedIdentifier, // Using 'email' for backward compatibility
           password: formData.password,
         }),
       });
@@ -134,7 +146,7 @@ export default function LoginPage() {
 
       // Use NextAuth's signIn to create the session
       const result = await signIn('credentials', {
-        identifier: formData.identifier,
+        identifier: normalizedIdentifier,
         password: formData.password,
         redirect: false,
       });

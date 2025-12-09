@@ -6,6 +6,7 @@ import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
 
 interface CheckoutFormProps {
   session: Session | null;
@@ -90,9 +91,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   }, [createAccount, session]);
 
   const handleSendOTP = async () => {
-    // Validate phone
-    if (!phone || !phone.match(/^09\d{9}$/)) {
-      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (مثال: 09123456789)');
+    // Validate phone - normalize first to handle Persian digits
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!phone || !isValidIranianPhone(normalizedPhone)) {
+      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا 09123456789)');
       return;
     }
 
@@ -107,7 +109,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone: phone,
+          phone: normalizedPhone,
           purpose: 'checkout', // Special purpose for checkout (allows both existing and new users)
         }),
       });
@@ -139,6 +141,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return;
     }
 
+    // Normalize phone before sending
+    const normalizedPhone = normalizePhoneNumber(phone);
+
     try {
       setIsVerifyingOTP(true);
       setOtpError('');
@@ -150,7 +155,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone: phone,
+          phone: normalizedPhone,
           code: otpCode,
           purpose: 'checkout',
           createAccount: createAccount,
@@ -199,8 +204,15 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       return;
     }
 
-    if (!phone.trim() || !phone.match(/^09\d{9}$/)) {
-      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید');
+    if (fullName.trim() && !isValidName(fullName)) {
+      setOtpError('نام و نام خانوادگی باید شامل حروف فارسی یا انگلیسی باشد');
+      return;
+    }
+
+    // Normalize phone for validation
+    const normalizedPhone = normalizePhoneNumber(phone);
+    if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
+      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)');
       return;
     }
 
@@ -261,10 +273,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       }
     }
 
-    // Proceed with checkout
+    // Proceed with checkout - normalize phone before submitting
     onSubmit({
       fullName,
-      phone,
+      phone: normalizedPhone,
       email,
       shippingAddress,
       postalCode,

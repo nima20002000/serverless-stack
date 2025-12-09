@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import { signOut } from 'next-auth/react';
 import { format } from 'date-fns-jalali';
+import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
 
 interface PromoCode {
   id: string;
@@ -213,11 +214,34 @@ export default function ProfilePage() {
     setEditError('');
     setEditSuccess('');
 
+    // Validate name
+    if (editForm.name.trim() && !isValidName(editForm.name)) {
+      setEditError('نام باید شامل حروف فارسی یا انگلیسی باشد');
+      setIsUpdating(false);
+      return;
+    }
+
+    // Validate phone if provided
+    if (editForm.phone.trim()) {
+      const normalizedPhone = normalizePhoneNumber(editForm.phone);
+      if (!isValidIranianPhone(normalizedPhone)) {
+        setEditError('شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)');
+        setIsUpdating(false);
+        return;
+      }
+    }
+
     try {
+      // Normalize phone before sending
+      const normalizedData = {
+        ...editForm,
+        phone: editForm.phone ? normalizePhoneNumber(editForm.phone) : editForm.phone,
+      };
+
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(normalizedData),
       });
 
       const data = await response.json();

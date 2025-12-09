@@ -8,6 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import RateLimitError from '@/components/ui/RateLimitError';
+import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -26,24 +27,28 @@ export default function RegisterPage() {
   // Detect if identifier is email or phone
   const detectIdentifierType = (value: string): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^09\d{9}$/;
+    // Normalize phone number first to handle Persian digits
+    const normalizedPhone = normalizePhoneNumber(value);
 
     if (emailRegex.test(value)) return 'email';
-    if (phoneRegex.test(value)) return 'phone';
+    if (isValidIranianPhone(normalizedPhone)) return 'phone';
     return 'invalid';
   };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Name is optional - no validation needed
+    // Validate name if provided (optional but must be valid if present)
+    if (formData.name.trim() && !isValidName(formData.name)) {
+      newErrors.name = 'نام باید شامل حروف فارسی یا انگلیسی باشد';
+    }
 
     if (!formData.identifier.trim()) {
       newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است';
+        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
       }
     }
 
@@ -78,9 +83,14 @@ export default function RegisterPage() {
 
       // OTP FLOW: Send OTP for both phone and email
       if (identifierType === 'phone' || identifierType === 'email') {
+        // Normalize phone number if it's a phone identifier
+        const identifier = identifierType === 'phone'
+          ? normalizePhoneNumber(formData.identifier)
+          : formData.identifier;
+
         const requestBody = identifierType === 'phone'
-          ? { phone: formData.identifier, purpose: 'register' }
-          : { email: formData.identifier, purpose: 'register' };
+          ? { phone: identifier, purpose: 'register' }
+          : { email: identifier, purpose: 'register' };
 
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
@@ -103,7 +113,7 @@ export default function RegisterPage() {
 
         // Redirect to OTP verification page with data
         const params = new URLSearchParams({
-          [identifierType === 'phone' ? 'phone' : 'email']: formData.identifier,
+          [identifierType === 'phone' ? 'phone' : 'email']: identifier,
           name: formData.name,
           password: formData.password,
           purpose: 'register'
