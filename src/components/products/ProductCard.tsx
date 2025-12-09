@@ -59,7 +59,7 @@ function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
-        <div className="relative h-48 bg-gray-100 overflow-hidden">
+        <div className="relative w-full aspect-[9/16] bg-gray-100 overflow-hidden">
           {product.images.length > 0 ? (
             <Image
               src={product.images[0]}
