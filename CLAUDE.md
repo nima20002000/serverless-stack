@@ -130,6 +130,14 @@ Images are optimized on-demand using **Cloudflare Image Resizing**:
 - **Supported transformations**: Resize, format conversion (WebP/AVIF), quality compression, smart cropping
 - **Zero storage overhead**: Only original files stored in R2, variants generated on-demand
 
+**⚠️ IMPORTANT**: Cloudflare Image Resizing must be **manually enabled in Cloudflare Dashboard**:
+1. Go to https://dash.cloudflare.com → Images → Transformations
+2. Click "Enable Image Resizing"
+3. If not enabled, set `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED="false"` in `.env` to use raw images
+
+**Fallback mechanism**:
+The code automatically falls back to raw R2 URLs if `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED="false"`. This prevents 404 errors when the feature is not enabled in Cloudflare dashboard.
+
 **Image optimization utilities** (`/src/lib/cloudflare-images-client.ts`):
 ```typescript
 import { optimizeImage } from '@/lib/cloudflare-images-client';
@@ -161,6 +169,7 @@ const customUrl = getOptimizedImageUrl(imageUrl, {
 - Original images uploaded to R2 remain unchanged
 - Each unique URL + transformation combo counts as 1 transformation (cached forever)
 - `format: 'auto'` automatically serves WebP to Chrome/Edge, AVIF to newest browsers, JPEG fallback
+- If feature is disabled, functions return original URLs (no optimization)
 
 **Storage adapter pattern:**
 ```typescript
@@ -299,6 +308,7 @@ Required variables (see `.env.example`):
 - `R2_SECRET_ACCESS_KEY` - R2 API secret key
 - `R2_BUCKET_NAME` - R2 bucket name (default: kitia-products)
 - `R2_PUBLIC_URL` - Public URL for R2 files (R2.dev or custom domain)
+- `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED` - "true" to enable Cloudflare Image Resizing, "false" to use raw images (default: "true")
 
 ## RTL and Internationalization
 

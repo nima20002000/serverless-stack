@@ -184,6 +184,17 @@ export function getOptimizedImageUrl(
     return imageUrl;
   }
 
+  // Check if Cloudflare Image Resizing is enabled via environment variable
+  // This allows graceful fallback if the feature is not enabled in Cloudflare dashboard
+  // Default to true (enabled) unless explicitly set to 'false'
+  const isEnabled = process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED !== 'false';
+
+  if (!isEnabled) {
+    // Fallback: return original URL without optimization
+    // This prevents 404 errors when the feature is not enabled in Cloudflare
+    return imageUrl;
+  }
+
   // Build transformation parameters
   const params: string[] = [];
 
