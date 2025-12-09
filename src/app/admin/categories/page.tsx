@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 
 interface Category {
   id: string;
@@ -43,7 +44,7 @@ export default function CategoriesManagementPage() {
     parentId: '',
     isActive: true,
   });
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -153,46 +154,10 @@ export default function CategoriesManagementPage() {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('لطفاً یک فایل تصویری انتخاب کنید');
-      return;
-    }
-
-    // Validate file size (max 8MB)
-    if (file.size > 8 * 1024 * 1024) {
-      setError('حجم فایل نباید بیشتر از ۸ مگابایت باشد');
-      return;
-    }
-
-    try {
-      setIsUploadingImage(true);
-      setError('');
-
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-
-      const response = await fetch('/api/upload/product-media', {
-        method: 'POST',
-        body: uploadFormData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در آپلود تصویر');
-      }
-
-      const data = await response.json();
-      setFormData({ ...formData, image: data.url });
-      setSuccessMessage('تصویر با موفقیت آپلود شد');
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطا در آپلود تصویر');
-    } finally {
-      setIsUploadingImage(false);
+  const handleImageSelect = (urls: string[]) => {
+    if (urls.length > 0) {
+      setFormData({ ...formData, image: urls[0] });
+      setSuccessMessage('تصویر با موفقیت انتخاب شد');
     }
   };
 
@@ -435,18 +400,15 @@ export default function CategoriesManagementPage() {
                       </button>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={isUploadingImage}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {isUploadingImage && (
-                    <p className="text-sm text-blue-600 text-right">در حال آپلود تصویر...</p>
-                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setShowMediaBrowser(true)}
+                  >
+                    {formData.image ? 'تغییر تصویر' : 'انتخاب تصویر از R2'}
+                  </Button>
                   <p className="text-xs text-gray-500 text-right">
-                    حداکثر حجم فایل: ۸ مگابایت - فرمت‌های مجاز: JPG, PNG, WEBP, GIF
+                    تصویر از فضای ذخیره‌سازی R2 انتخاب می‌شود
                   </p>
                 </div>
               </div>
@@ -648,6 +610,16 @@ export default function CategoriesManagementPage() {
         selectedCount={selectedCategories.size}
         actions={bulkActions}
         onClearSelection={() => setSelectedCategories(new Set())}
+      />
+
+      {/* R2MediaBrowser Modal */}
+      <R2MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onSelect={handleImageSelect}
+        multiSelect={false}
+        initialFolder="categories/images"
+        allowUpload={true}
       />
     </div>
   );

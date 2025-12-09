@@ -4,10 +4,10 @@
  * Uses AWS S3-compatible API to interact with Cloudflare R2
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { Agent as HttpsAgent } from 'https';
-import { StorageAdapter, UploadOptions, UploadResult, DeleteResult } from '../types';
+import { StorageAdapter, UploadOptions, UploadResult, DeleteResult, ListObjectsOptions, ListObjectsResult } from '../types';
 import { log } from '@/lib/logger';
 
 export class R2StorageAdapter implements StorageAdapter {
@@ -150,6 +150,46 @@ export class R2StorageAdapter implements StorageAdapter {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  async list(options?: ListObjectsOptions): Promise<ListObjectsResult> {
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: options?.prefix || '',
+        MaxKeys: options?.maxKeys || 100,
+        ContinuationToken: options?.continuationToken,
+      });
+
+      const response = await this.client.send(command);
+
+      const objects = (response.Contents || []).map((item) => ({
+        key: item.Key || '',
+        size: item.Size || 0,
+        lastModified: item.LastModified || new Date(),
+        url: this.getPublicUrl(item.Key || ''),
+        contentType: undefined, // R2 ListObjectsV2 doesn't return ContentType
+      }));
+
+      log.info('Listed R2 objects', {
+        prefix: options?.prefix,
+        count: objects.length,
+        isTruncated: response.IsTruncated,
+      });
+
+      return {
+        success: true,
+        objects,
+        nextContinuationToken: response.NextContinuationToken,
+        isTruncated: response.IsTruncated,
+      };
+    } catch (error) {
+      log.error('R2 list error', { error, options });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
+      };
     }
   }
 }

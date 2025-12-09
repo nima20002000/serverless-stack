@@ -10,6 +10,10 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds max execution time
 
+/**
+ * POST /api/admin/r2-browser/upload
+ * Upload file to R2 storage
+ */
 export async function POST(req: NextRequest) {
   try {
     // Check authentication
@@ -21,6 +25,7 @@ export async function POST(req: NextRequest) {
     // Get form data
     const formData = await req.formData();
     const file = formData.get('file') as File;
+    const folder = formData.get('folder') as string | null;
 
     if (!file) {
       return NextResponse.json({ error: 'فایلی انتخاب نشده است' }, { status: 400 });
@@ -33,7 +38,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate unique file path
-    const filePath = generateFilePath(file.name, validation.mediaType);
+    // If folder is provided, use it; otherwise use default product path
+    let filePath: string;
+    if (folder) {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 8);
+      const ext = file.name.split('.').pop();
+      filePath = `${folder}/${random}-${timestamp}.${ext}`;
+    } else {
+      filePath = generateFilePath(file.name, validation.mediaType);
+    }
 
     // Upload to storage (R2)
     const result = await storage.upload({
@@ -44,23 +58,25 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
-      log.error('Upload failed', { error: result.error, fileName: file.name });
+      log.error('R2 browser upload failed', { error: result.error, fileName: file.name });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    log.info('File uploaded successfully', {
+    log.info('R2 browser upload successful', {
       fileName: file.name,
       mediaType: validation.mediaType,
       url: result.url,
+      folder,
     });
 
     return NextResponse.json({
       success: true,
       url: result.url,
+      path: filePath,
       type: validation.mediaType,
     });
   } catch (error) {
-    log.error('Upload API error', { error });
+    log.error('R2 browser upload API error', { error });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'خطا در آپلود فایل' },
       { status: 500 }

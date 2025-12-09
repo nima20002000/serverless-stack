@@ -11,7 +11,6 @@ import {
   Bars3Icon,
   XMarkIcon,
   FolderIcon,
-  PhotoIcon,
 } from '@heroicons/react/24/outline';
 
 interface NavItem {
@@ -26,7 +25,6 @@ const navigation: NavItem[] = [
   { name: 'کاربران', href: '/admin/users', icon: UsersIcon },
   { name: 'محصولات', href: '/admin/products', icon: ShoppingBagIcon },
   { name: 'دسته‌بندی‌ها', href: '/admin/categories', icon: FolderIcon },
-  { name: 'کتابخانه رسانه', href: '/admin/media-library', icon: PhotoIcon },
   { name: 'تراکنش‌ها', href: '/admin/transactions', icon: CreditCardIcon },
 ];
 

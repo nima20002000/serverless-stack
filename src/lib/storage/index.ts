@@ -59,4 +59,7 @@ export const storage = {
   exists: async (...args: Parameters<StorageAdapter['exists']>) => {
     return getStorageAdapter().exists(...args);
   },
+  list: async (...args: Parameters<StorageAdapter['list']>) => {
+    return getStorageAdapter().list(...args);
+  },
 };

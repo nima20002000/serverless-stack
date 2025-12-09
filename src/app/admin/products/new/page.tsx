@@ -7,9 +7,11 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import MediaUploader from '@/components/products/MediaUploader';
+import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 import CategorySelector from '@/components/admin/CategorySelector';
 import TagInput from '@/components/admin/TagInput';
+import { XMarkIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
 
 interface MediaItem {
   id: string;
@@ -70,6 +72,10 @@ export default function NewProductPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // R2MediaBrowser states
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+  const [showVariantMediaBrowser, setShowVariantMediaBrowser] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -304,6 +310,39 @@ export default function NewProductPage() {
     setShowVariantForm(false);
   };
 
+  // R2MediaBrowser handlers
+  const handleMediaSelect = (urls: string[]) => {
+    const newMedia: MediaItem[] = urls.map((url, index) => ({
+      id: `new-${Date.now()}-${index}`,
+      type: url.includes('/videos/') ? 'VIDEO' : 'IMAGE',
+      url,
+      alt: '',
+      order: media.length + index,
+      isNew: true,
+    }));
+    setMedia([...media, ...newMedia]);
+  };
+
+  const handleVariantMediaSelect = (urls: string[]) => {
+    const newMedia: MediaItem[] = urls.map((url, index) => ({
+      id: `new-${Date.now()}-${index}`,
+      type: url.includes('/videos/') ? 'VIDEO' : 'IMAGE',
+      url,
+      alt: '',
+      order: variantMedia.length + index,
+      isNew: true,
+    }));
+    setVariantMedia([...variantMedia, ...newMedia]);
+  };
+
+  const removeMedia = (id: string) => {
+    setMedia(media.filter(m => m.id !== id));
+  };
+
+  const removeVariantMedia = (id: string) => {
+    setVariantMedia(variantMedia.filter(m => m.id !== id));
+  };
+
   return (
     <div>
       <Breadcrumbs
@@ -464,11 +503,47 @@ export default function NewProductPage() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4 text-right">
             تصاویر و ویدیو
           </h2>
-          <MediaUploader
-            media={media}
-            onChange={setMedia}
+
+          {/* Selected Media Preview */}
+          {media.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              {media.map((item) => (
+                <div key={item.id} className="relative group border rounded-lg overflow-hidden">
+                  <div className="aspect-square relative bg-gray-200">
+                    {item.type === 'IMAGE' ? (
+                      <Image
+                        src={item.url}
+                        alt={item.alt || 'Product media'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-gray-500">
+                        ویدیو
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => removeMedia(item.id)}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setShowMediaBrowser(true)}
             disabled={isLoading}
-          />
+          >
+            + انتخاب رسانه از R2
+          </Button>
         </Card>
 
         {/* Variants */}
@@ -578,13 +653,48 @@ export default function NewProductPage() {
                   تصاویر این نوع محصول (اختیاری)
                 </h4>
                 <p className="text-xs text-gray-600 mb-3 text-right">
-                  تصاویری که اینجا آپلود می‌کنید فقط برای این نوع محصول نمایش داده می‌شوند
+                  تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده می‌شوند
                 </p>
-                <MediaUploader
-                  media={variantMedia}
-                  onChange={setVariantMedia}
-                  disabled={false}
-                />
+
+                {/* Variant Media Preview */}
+                {variantMedia.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {variantMedia.map((item) => (
+                      <div key={item.id} className="relative group border rounded-lg overflow-hidden">
+                        <div className="aspect-square relative bg-gray-200">
+                          {item.type === 'IMAGE' ? (
+                            <Image
+                              src={item.url}
+                              alt={item.alt || 'Variant media'}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 25vw"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500">
+                              ویدیو
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeVariantMedia(item.id)}
+                            className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowVariantMediaBrowser(true)}
+                >
+                  + انتخاب رسانه از R2
+                </Button>
               </div>
 
               <div className="flex gap-2 justify-end">
@@ -686,6 +796,25 @@ export default function NewProductPage() {
           </div>
         </Card>
       </form>
+
+      {/* R2MediaBrowser Modals */}
+      <R2MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onSelect={handleMediaSelect}
+        multiSelect={true}
+        initialFolder="products/images"
+        allowUpload={true}
+      />
+
+      <R2MediaBrowser
+        isOpen={showVariantMediaBrowser}
+        onClose={() => setShowVariantMediaBrowser(false)}
+        onSelect={handleVariantMediaSelect}
+        multiSelect={true}
+        initialFolder="products/images"
+        allowUpload={true}
+      />
     </div>
   );
 }

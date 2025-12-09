@@ -32,6 +32,41 @@ export interface DeleteResult {
   error?: string;
 }
 
+export interface StorageObject {
+  /** File key/path */
+  key: string;
+  /** File size in bytes */
+  size: number;
+  /** Last modified timestamp */
+  lastModified: Date;
+  /** Public URL */
+  url: string;
+  /** Content type (if available) */
+  contentType?: string;
+}
+
+export interface ListObjectsOptions {
+  /** Prefix/folder to list (e.g., "products/images/") */
+  prefix?: string;
+  /** Maximum number of items to return */
+  maxKeys?: number;
+  /** Continuation token for pagination */
+  continuationToken?: string;
+}
+
+export interface ListObjectsResult {
+  /** Whether listing succeeded */
+  success: boolean;
+  /** List of objects */
+  objects?: StorageObject[];
+  /** Continuation token for next page */
+  nextContinuationToken?: string;
+  /** Whether there are more results */
+  isTruncated?: boolean;
+  /** Error message if failed */
+  error?: string;
+}
+
 /**
  * Storage adapter interface
  * All storage providers must implement this interface
@@ -56,6 +91,11 @@ export interface StorageAdapter {
    * Check if file exists
    */
   exists(path: string): Promise<boolean>;
+
+  /**
+   * List objects in storage
+   */
+  list(options?: ListObjectsOptions): Promise<ListObjectsResult>;
 }
 
 export type MediaType = 'IMAGE' | 'VIDEO';

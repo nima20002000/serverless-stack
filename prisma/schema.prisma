@@ -217,19 +217,3 @@ model OTPVerification {
   @@map("otp_verifications")
   @@index([identifier, purpose])
 }
-
-model MediaLibrary {
-  id        String    @id @default(uuid())
-  type      MediaType
-  url       String
-  fileName  String
-  fileSize  Int       // Size in bytes
-  alt       String?
-  tags      String[]  // Tags for categorization (e.g., "hero", "banner", "promotion")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  @@map("media_library")
-  @@index([type])
-  @@index([tags])
-}
