@@ -5,9 +5,20 @@ import { getCategoryTree } from '@/services/category-service';
 import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { optimizeImage, getOptimizedImageUrl } from '@/lib/cloudflare-images-client';
 
 export const dynamic = 'force-dynamic';
+
+// Hero image URL - precomputed for preloading
+const HERO_IMAGE_BASE = "https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg";
+// Optimized hero image with smaller dimensions for faster LCP
+const HERO_IMAGE_OPTIMIZED = getOptimizedImageUrl(HERO_IMAGE_BASE, {
+  width: 500,
+  height: 500,
+  format: 'webp',
+  quality: 80,
+  fit: 'cover',
+});
 
 export default async function Home() {
   // Fetch featured products
@@ -28,51 +39,59 @@ export default async function Home() {
   const topCategories = categories.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-purple-50">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-          {/* Text Content - Right Side */}
-          <div className="order-2 md:order-1 text-right">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              به کیتیا خوش آمدید
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
-              دنیایی از محصولات زیبا و با کیفیت برای شما
-            </p>
-            <p className="text-lg text-gray-500 mb-10 leading-relaxed">
-              کیتیا با ارائه بهترین محصولات و خدمات، همراه شماست تا تجربه‌ای لذت‌بخش از خرید آنلاین داشته باشید.
-            </p>
-            <Link href="/products">
-              <Button variant="primary" size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
-                مشاهده محصولات
-              </Button>
-            </Link>
-          </div>
+    <>
+      {/* Preload hero image for faster LCP */}
+      <link
+        rel="preload"
+        as="image"
+        href={HERO_IMAGE_OPTIMIZED}
+        type="image/webp"
+      />
+      <div className="min-h-screen bg-gradient-to-b from-pink-50 via-white to-purple-50">
+        {/* Hero Section */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+            {/* Text Content - Right Side */}
+            <div className="order-2 md:order-1 text-right">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                به کیتیا خوش آمدید
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed">
+                دنیایی از محصولات زیبا و با کیفیت برای شما
+              </p>
+              <p className="text-lg text-gray-500 mb-10 leading-relaxed">
+                کیتیا با ارائه بهترین محصولات و خدمات، همراه شماست تا تجربه‌ای لذت‌بخش از خرید آنلاین داشته باشید.
+              </p>
+              <Link href="/products">
+                <Button variant="primary" size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
+                  مشاهده محصولات
+                </Button>
+              </Link>
+            </div>
 
-          {/* Image - Left Side with circular overlay */}
-          <div className="order-1 md:order-2 flex justify-center">
-            <div className="relative w-full max-w-md aspect-square">
-              {/* White Circle Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full h-full rounded-full bg-white opacity-80 blur-3xl"></div>
-              </div>
-              {/* Image Container */}
-              <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
-                <Image
-                  src={optimizeImage.medium("https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg")}
-                  alt="کیتیا - فروشگاه آنلاین"
-                  fill
-                  className="object-cover"
-                  priority
-                  fetchPriority="high"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
+            {/* Image - Left Side with circular overlay */}
+            <div className="order-1 md:order-2 flex justify-center">
+              <div className="relative w-full max-w-md aspect-square">
+                {/* White Circle Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-white opacity-80 blur-3xl"></div>
+                </div>
+                {/* Image Container - use img for better LCP with preloaded image */}
+                <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
+                  <img
+                    src={HERO_IMAGE_OPTIMIZED}
+                    alt="کیتیا - فروشگاه آنلاین"
+                    width={500}
+                    height={500}
+                    className="w-full h-full object-cover"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* Featured Products Section */}
       {featuredProducts.length > 0 && (
@@ -256,6 +275,7 @@ export default async function Home() {
           </Link>
         </Card>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

@@ -20,6 +20,9 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <head>
+        {/* Preconnect to CDN for faster resource loading */}
+        <link rel="preconnect" href="https://cdn.kitia.ir" />
+        <link rel="dns-prefetch" href="https://cdn.kitia.ir" />
         {/* Preload critical font for faster LCP */}
         <link
           rel="preload"
