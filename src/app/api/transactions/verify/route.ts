@@ -128,10 +128,13 @@ async function getHandler(req: NextRequest) {
           name: transaction.fullName,
         });
 
-        // Link transaction to newly created user
+        // Link transaction to newly created user and update guest status
         await prisma.transaction.update({
           where: { id: transaction.id },
-          data: { userId: newUser.id },
+          data: {
+            userId: newUser.id,
+            isGuest: false, // User is no longer a guest after account creation
+          },
         });
 
         log.info('User account created and linked to transaction', {

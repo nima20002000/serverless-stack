@@ -56,6 +56,8 @@ export default function CheckoutPage() {
             productId: item.productId,
             quantity: item.quantity,
           })),
+          // TODO: Add payment method selection UI when Digipay is integrated
+          // paymentMethod: 'ZARINPAL' | 'DIGIPAY'
           shippingInfo: {
             fullName: formData.fullName,
             phone: formData.phone,
