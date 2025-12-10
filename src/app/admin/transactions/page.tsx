@@ -5,6 +5,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
+import TransactionDetailModal from '@/components/admin/TransactionDetailModal';
 import { formatPrice } from '@/services/product-service';
 import { format } from 'date-fns-jalali';
 
@@ -16,14 +17,19 @@ interface Transaction {
   paymentMethod: 'ZARINPAL' | 'DIGIPAY';
   isGuest: boolean;
   createdAt: string;
-  zarinpalRefId: string | null;
+  zarinpalAuthority?: string | null;
+  zarinpalRefId?: string | null;
   fullName: string;
   phone: string;
   email: string | null;
+  shippingAddress: string;
+  postalCode: string | null;
+  createAccount: boolean;
   user: {
     id: string;
     name: string;
     email: string | null;
+    phone: string | null;
   } | null;
   items: Array<{
     id: string;
@@ -32,11 +38,13 @@ interface Transaction {
     product: {
       id: string;
       name: string;
+      slug: string;
     };
   }>;
   invoice: {
     id: string;
     invoiceNumber: string;
+    createdAt: string;
   } | null;
 }
 
@@ -57,6 +65,9 @@ export default function TransactionsManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadingTransaction, setLoadingTransaction] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -95,6 +106,26 @@ export default function TransactionsManagementPage() {
     setDateTo('');
     setStatusFilter('all');
     setCurrentPage(1);
+  };
+
+  const handleTransactionClick = async (transactionId: string) => {
+    try {
+      setLoadingTransaction(true);
+      const response = await fetch(`/api/admin/transactions/${transactionId}`);
+      if (!response.ok) throw new Error('خطا در دریافت جزئیات تراکنش');
+      const transactionData = await response.json();
+      setSelectedTransaction(transactionData);
+      setIsModalOpen(true);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'خطا در دریافت جزئیات تراکنش');
+    } finally {
+      setLoadingTransaction(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedTransaction(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -280,7 +311,11 @@ export default function TransactionsManagementPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {data.data.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
+                    <tr
+                      key={transaction.id}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => handleTransactionClick(transaction.id)}
+                    >
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm text-gray-600">
                           {transaction.items.length.toLocaleString('fa-IR')} محصول
@@ -375,6 +410,22 @@ export default function TransactionsManagementPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        transaction={selectedTransaction}
+      />
+
+      {/* Loading indicator for modal */}
+      {loadingTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 shadow-xl">
+            <div className="text-gray-600">در حال بارگذاری جزئیات...</div>
+          </div>
+        </div>
       )}
     </div>
   );
