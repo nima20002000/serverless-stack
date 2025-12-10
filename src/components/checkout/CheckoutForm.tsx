@@ -324,10 +324,16 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="fullName"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
             required
             dir="rtl"
+            disabled={isLoggedIn}
           />
+          {isLoggedIn && (
+            <p className="text-sm text-blue-600 text-right mt-2">
+              💡 برای تغییر نام، به صفحه پروفایل مراجعه کنید
+            </p>
+          )}
         </div>
 
         {/* Phone */}
@@ -340,13 +346,18 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
             placeholder="09123456789"
             required
             dir="ltr"
-            disabled={!!hasVerifiedPhone}
+            disabled={isLoggedIn}
           />
-          {hasVerifiedPhone && (
+          {isLoggedIn && (
+            <p className="text-sm text-blue-600 text-right mt-2">
+              💡 برای تغییر شماره تلفن، به صفحه پروفایل مراجعه کنید
+            </p>
+          )}
+          {hasVerifiedPhone && !isLoggedIn && (
             <p className="text-sm text-green-600 text-right mt-2">✓ شماره تلفن تایید شده</p>
           )}
         </div>
@@ -361,9 +372,15 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
             dir="ltr"
+            disabled={isLoggedIn}
           />
+          {isLoggedIn && (
+            <p className="text-sm text-blue-600 text-right mt-2">
+              💡 برای تغییر ایمیل، به صفحه پروفایل مراجعه کنید
+            </p>
+          )}
         </div>
 
         {/* Shipping Address */}

@@ -51,17 +51,76 @@ async function postHandler(req: NextRequest) {
       );
     }
 
-    const { fullName, phone, email, shippingAddress, postalCode, createAccount } = shippingInfo;
+    // For logged-in users, use their profile data instead of form data
+    // This prevents users from entering arbitrary phone numbers/emails
+    let finalFullName: string;
+    let finalPhone: string;
+    let finalEmail: string | undefined;
 
-    if (!fullName || !phone || !shippingAddress) {
+    if (session?.user) {
+      // Fetch fresh user data from database
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+          name: true,
+          phone: true,
+          email: true,
+        },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: 'کاربر یافت نشد' },
+          { status: 404 }
+        );
+      }
+
+      // For logged-in users, ALWAYS use profile data
+      finalFullName = user.name;
+      finalPhone = user.phone || '';
+      finalEmail = user.email || undefined;
+
+      // Validate that user has required phone number
+      if (!finalPhone) {
+        return NextResponse.json(
+          { error: 'لطفاً ابتدا شماره تلفن خود را در پروفایل تکمیل کنید' },
+          { status: 400 }
+        );
+      }
+
+      log.info('Using authenticated user data for transaction', {
+        userId: session.user.id,
+        phone: finalPhone,
+        email: finalEmail,
+      });
+    } else {
+      // For guest users, use form data
+      const { fullName, phone, email } = shippingInfo;
+
+      if (!fullName || !phone) {
+        return NextResponse.json(
+          { error: 'لطفاً تمام فیلدهای الزامی را پر کنید' },
+          { status: 400 }
+        );
+      }
+
+      finalFullName = fullName;
+      finalPhone = phone;
+      finalEmail = email || undefined;
+    }
+
+    // Validate shipping address (both logged-in and guest users)
+    const { shippingAddress, postalCode, createAccount } = shippingInfo;
+
+    if (!shippingAddress) {
       return NextResponse.json(
-        { error: 'لطفاً تمام فیلدهای الزامی را پر کنید' },
+        { error: 'لطفاً آدرس ارسال را وارد کنید' },
         { status: 400 }
       );
     }
 
     // Validate phone format
-    if (!phone.match(/^09\d{9}$/)) {
+    if (!finalPhone.match(/^09\d{9}$/)) {
       return NextResponse.json(
         { error: 'فرمت شماره تلفن نامعتبر است' },
         { status: 400 }
@@ -121,9 +180,9 @@ async function postHandler(req: NextRequest) {
       amount: totalAmount,
       paymentMethod: validPaymentMethod,
       shippingInfo: {
-        fullName,
-        phone,
-        email: email || undefined,
+        fullName: finalFullName,
+        phone: finalPhone,
+        email: finalEmail,
         shippingAddress,
         postalCode: postalCode || undefined,
         createAccount: createAccount && !session, // Only for guest users
@@ -142,8 +201,8 @@ async function postHandler(req: NextRequest) {
     const paymentRequest = await createPaymentRequest({
       amount: totalAmount, // In Tomans
       description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-      email: email || session?.user?.email || undefined,
-      mobile: phone,
+      email: finalEmail,
+      mobile: finalPhone,
       callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
     });
 
