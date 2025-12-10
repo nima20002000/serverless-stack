@@ -29,7 +29,7 @@ export const IMAGE_VARIANTS = {
     format: 'auto' as ImageFormat,
     quality: 80,
     fit: 'cover' as ImageFit,
-    gravity: 'auto' as ImageGravity,
+    gravity: 'center' as ImageGravity,
   },
   medium: {
     width: 800,
@@ -51,7 +51,7 @@ export const IMAGE_VARIANTS = {
     format: 'auto' as ImageFormat,
     quality: 75,
     fit: 'cover' as ImageFit,
-    gravity: 'auto' as ImageGravity,
+    gravity: 'center' as ImageGravity,
   },
   categoryCard: {
     width: 300,
@@ -67,6 +67,7 @@ export const IMAGE_VARIANTS = {
     format: 'auto' as ImageFormat,
     quality: 70,
     fit: 'cover' as ImageFit,
+    gravity: 'center' as ImageGravity,
   },
 } as const;
 
