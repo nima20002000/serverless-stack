@@ -209,6 +209,27 @@ export async function createUser(data: {
       role: user.role,
     });
 
+    // Link any orphaned guest transactions with this phone number
+    if (phone) {
+      try {
+        const linkedCount = await linkOrphanedTransactions(user.id, phone);
+        if (linkedCount > 0) {
+          log.info('Linked orphaned transactions to new user', {
+            userId: user.id,
+            phone,
+            count: linkedCount,
+          });
+        }
+      } catch (error) {
+        log.error('Failed to link orphaned transactions during user creation', {
+          userId: user.id,
+          phone,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Don't fail user creation if linking fails
+      }
+    }
+
     // Create first-time promo code for new user
     try {
       await createFirstTimePromoCode(user.id);
@@ -592,6 +613,63 @@ export async function setUserPassword(userId: string, newPassword: string): Prom
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     throw error;
+  }
+}
+
+/**
+ * Link orphaned guest transactions to a user account
+ * This is called when a user registers/logs in with OTP to ensure
+ * any previous guest transactions with their phone are linked to their account
+ */
+export async function linkOrphanedTransactions(userId: string, phone: string): Promise<number> {
+  log.info('Linking orphaned guest transactions to user', { userId, phone });
+
+  try {
+    // Find all guest transactions with this phone that don't have a userId
+    const orphanedTransactions = await prisma.transaction.findMany({
+      where: {
+        phone,
+        userId: null, // Orphaned transactions
+        isGuest: true,
+      },
+      select: { id: true, transactionCode: true },
+    });
+
+    if (orphanedTransactions.length === 0) {
+      log.info('No orphaned transactions found for user', { userId, phone });
+      return 0;
+    }
+
+    // Update all orphaned transactions to link them to the user
+    // Keep isGuest=true to indicate these were originally guest transactions
+    await prisma.transaction.updateMany({
+      where: {
+        phone,
+        userId: null,
+        isGuest: true,
+      },
+      data: {
+        userId,
+        // isGuest stays true to preserve history that this was a guest transaction
+      },
+    });
+
+    log.info('Orphaned transactions linked successfully', {
+      userId,
+      phone,
+      count: orphanedTransactions.length,
+      transactionCodes: orphanedTransactions.map(t => t.transactionCode),
+    });
+
+    return orphanedTransactions.length;
+  } catch (error) {
+    log.error('Failed to link orphaned transactions', {
+      userId,
+      phone,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    // Don't throw - this is a best-effort operation
+    return 0;
   }
 }
 

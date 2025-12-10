@@ -4,7 +4,7 @@ import {
   updateTransactionStatus,
   reduceProductStock,
 } from '@/services/transaction-service';
-import { createUser } from '@/services/user-service';
+import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import prisma from '@/lib/prisma/client';
@@ -114,35 +114,63 @@ async function getHandler(req: NextRequest) {
     await reduceProductStock(transaction.id);
 
     // Create user account if requested (for guest checkouts)
-    if (!transaction.userId && transaction.createAccount) {
+    if (!transaction.userId && transaction.createAccount && transaction.phone) {
       try {
-        log.info('Creating user account after successful payment', {
+        log.info('Processing account creation request after successful payment', {
           transactionId: transaction.id,
           phone: transaction.phone,
           email: transaction.email,
         });
 
-        const newUser = await createUser({
-          phone: transaction.phone,
-          email: transaction.email || undefined,
-          name: transaction.fullName,
-        });
+        // First, check if user already exists with this phone (from OTP registration)
+        const existingUser = await getUserByPhone(transaction.phone);
 
-        // Link transaction to newly created user and update guest status
-        await prisma.transaction.update({
-          where: { id: transaction.id },
-          data: {
+        if (existingUser) {
+          // User already exists - just link the transaction
+          log.info('User already exists with this phone, linking transaction', {
+            userId: existingUser.id,
+            transactionId: transaction.id,
+            phone: transaction.phone,
+          });
+
+          // Link this transaction to the existing user
+          await prisma.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              userId: existingUser.id,
+              // Keep isGuest=true to preserve history that this was a guest transaction
+            },
+          });
+        } else {
+          // User doesn't exist - create new account
+          log.info('Creating new user account after successful payment', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+          });
+
+          const newUser = await createUser({
+            phone: transaction.phone,
+            email: transaction.email || undefined,
+            name: transaction.fullName,
+          });
+
+          // Link transaction to newly created user
+          // createUser() already links orphaned transactions, but we need to update this specific one
+          await prisma.transaction.update({
+            where: { id: transaction.id },
+            data: {
+              userId: newUser.id,
+              // Keep isGuest=true to preserve history that this was a guest transaction
+            },
+          });
+
+          log.info('User account created and linked to transaction', {
             userId: newUser.id,
-            isGuest: false, // User is no longer a guest after account creation
-          },
-        });
-
-        log.info('User account created and linked to transaction', {
-          userId: newUser.id,
-          transactionId: transaction.id,
-        });
+            transactionId: transaction.id,
+          });
+        }
       } catch (error) {
-        log.error('Failed to create user account after payment', {
+        log.error('Failed to create/link user account after payment', {
           transactionId: transaction.id,
           error: error instanceof Error ? error.message : 'Unknown error',
         });

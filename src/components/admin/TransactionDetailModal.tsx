@@ -35,6 +35,7 @@ interface Transaction {
   createAccount: boolean;
   user: {
     id: string;
+    uid: string;
     name: string;
     email: string | null;
   } | null;
@@ -202,6 +203,13 @@ export default function TransactionDetailModal({
                       </span>
                     )}
                   </div>
+                  {transaction.user && (
+                    <div className="mt-1">
+                      <code className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">
+                        {transaction.user.uid}
+                      </code>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-start gap-2">

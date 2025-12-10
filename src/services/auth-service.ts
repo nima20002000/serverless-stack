@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { Role } from "@prisma/client";
 import { log } from "@/lib/logger";
-import { detectIdentifierType, generateNextUID } from "./user-service";
+import { detectIdentifierType, generateNextUID, linkOrphanedTransactions } from "./user-service";
 
 export interface AuthUser {
   id: string;
@@ -100,6 +100,25 @@ export async function authenticateUserByPhone(phone: string): Promise<AuthUser> 
     }
 
     log.info("User authenticated successfully via phone", { phone, userId: user.id });
+
+    // Link any orphaned guest transactions with this phone
+    try {
+      const linkedCount = await linkOrphanedTransactions(user.id, phone);
+      if (linkedCount > 0) {
+        log.info('Linked orphaned transactions during phone login', {
+          userId: user.id,
+          phone,
+          count: linkedCount,
+        });
+      }
+    } catch (error) {
+      log.error('Failed to link orphaned transactions during phone login', {
+        userId: user.id,
+        phone,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      // Don't fail authentication if linking fails
+    }
 
     return {
       id: user.id,

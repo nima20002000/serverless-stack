@@ -10,6 +10,7 @@ import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsTo
 
 interface User {
   id: string;
+  uid: string;
   email: string | null;
   phone: string | null;
   name: string;
@@ -365,6 +366,9 @@ export default function UsersManagementPage() {
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       نام کاربر
                     </th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      شناسه
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -428,6 +432,11 @@ export default function UsersManagementPage() {
                         >
                           {user.name}
                         </Link>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <code className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded font-medium">
+                          {user.uid}
+                        </code>
                       </td>
                     </tr>
                   ))}

@@ -27,6 +27,7 @@ interface Transaction {
   createAccount: boolean;
   user: {
     id: string;
+    uid: string;
     name: string;
     email: string | null;
     phone: string | null;

@@ -34,7 +34,7 @@ type UserBasic = {
 // Transaction types for admin
 type TransactionWithDetails = Prisma.TransactionGetPayload<{
   include: {
-    user: { select: { id: true; name: true; email: true; phone: true } };
+    user: { select: { id: true; uid: true; name: true; email: true; phone: true } };
     items: { include: { product: { select: { id: true; name: true } } } };
     invoice: true;
   };
@@ -72,7 +72,10 @@ export async function getAllUsers(page: number = 1, limit: number = 20, search?:
       where: Object.keys(where).length > 0 ? where : undefined,
       skip,
       take: limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { uid: 'desc' }, // Order by UID first (latest users have higher UIDs)
+        { createdAt: 'desc' }, // Then by creation date
+      ],
       select: {
         id: true,
         uid: true,
@@ -221,6 +224,7 @@ export async function getAllTransactions(
         user: {
           select: {
             id: true,
+            uid: true,
             name: true,
             email: true,
             phone: true,
@@ -258,6 +262,7 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
       user: {
         select: {
           id: true,
+          uid: true,
           name: true,
           email: true,
           phone: true,
