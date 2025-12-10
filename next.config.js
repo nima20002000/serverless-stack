@@ -13,7 +13,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.kitia.ir',
-        pathname: '/products/**',
+        pathname: '/**', // Allow all paths (products/*, media-library/*, cdn-cgi/image/*)
       },
     ],
     // Disable Next.js image optimization - Cloudflare CDN already optimizes
