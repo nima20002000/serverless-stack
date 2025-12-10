@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
 
@@ -9,6 +10,11 @@ interface CartIconProps {
 }
 
 export default function CartIcon({ onClick, className = '' }: CartIconProps) {
+  // Manually rehydrate the store on mount (client-side only)
+  useEffect(() => {
+    useCartStore.persist.rehydrate();
+  }, []);
+
   // Compute itemCount directly from items to ensure reactivity
   const itemCount = useCartStore((state) =>
     state.items.reduce((count, item) => count + item.quantity, 0)

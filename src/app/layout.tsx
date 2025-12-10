@@ -7,6 +7,9 @@ import Footer from "@/components/layout/Footer";
 export const metadata: Metadata = {
   title: "Kitia - فروشگاه آنلاین",
   description: "پلتفرم خرید آنلاین کیتیا",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

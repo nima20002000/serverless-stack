@@ -23,6 +23,8 @@ export const useUserStore = create<UserStore>()(
     }),
     {
       name: 'user-storage',
+      // Skip hydration during SSR to prevent storage access errors
+      skipHydration: true,
     }
   )
 );

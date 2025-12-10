@@ -116,6 +116,8 @@ export const useCartStore = create<CartStore>()(
       name: 'cart-storage',
       // Only persist items, computed values will be recalculated
       partialize: (state) => ({ items: state.items }),
+      // Skip hydration during SSR to prevent storage access errors
+      skipHydration: true,
     }
   )
 );
