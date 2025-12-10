@@ -11,6 +11,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   FolderIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 interface NavItem {
@@ -26,6 +27,7 @@ const navigation: NavItem[] = [
   { name: 'محصولات', href: '/admin/products', icon: ShoppingBagIcon },
   { name: 'دسته‌بندی‌ها', href: '/admin/categories', icon: FolderIcon },
   { name: 'تراکنش‌ها', href: '/admin/transactions', icon: CreditCardIcon },
+  { name: 'تنظیمات سایت', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
 export default function AdminSidebar() {

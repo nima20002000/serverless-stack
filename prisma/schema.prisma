@@ -229,3 +229,12 @@ model OTPVerification {
   @@map("otp_verifications")
   @@index([identifier, purpose])
 }
+
+model SiteSettings {
+  id        String   @id @default(uuid())
+  key       String   @unique // "favicon" | "logo" | "site_name" | etc
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}

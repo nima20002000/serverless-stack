@@ -151,7 +151,7 @@ export default async function Home() {
                           src={optimizeImage.categoryCard(category.image)}
                           alt={category.name}
                           fill
-                          className="object-cover"
+                          className="object-cover object-center"
                           sizes="(max-width: 768px) 100vw, 33vw"
                         />
                       ) : (

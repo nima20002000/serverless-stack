@@ -58,6 +58,23 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     setIsZoomed(false);
   }, [selectedVariant?.id, media.length]);
 
+  // Handle ESC key to close zoom modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZoomed) {
+        setIsZoomed(false);
+      }
+    };
+
+    if (isZoomed) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isZoomed]);
+
   if (!sortedMedia || sortedMedia.length === 0) {
     return (
       <div className="w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center">

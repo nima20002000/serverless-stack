@@ -389,7 +389,7 @@ export default function CategoriesManagementPage() {
                       <img
                         src={formData.image}
                         alt="پیش‌نمایش تصویر"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover object-center"
                       />
                       <button
                         type="button"
