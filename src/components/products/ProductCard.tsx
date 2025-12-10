@@ -67,8 +67,7 @@ function ProductCard({ product }: ProductCardProps) {
               alt={product.name}
               fill
               loading="lazy"
-              className="object-cover hover:scale-105 transition-transform duration-300"
-              style={{ objectPosition: 'center 45%' }}
+              className="object-cover object-center hover:scale-105 transition-transform duration-300"
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (

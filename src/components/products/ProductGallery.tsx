@@ -203,8 +203,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
                   src={optimizeImage.adminThumb(item.url)}
                   alt={item.alt || `${productName} - ${index + 1}`}
                   fill
-                  className="object-cover"
-                  style={{ objectPosition: 'center 45%' }}
+                  className="object-cover object-center"
                   sizes="80px"
                 />
               ) : (

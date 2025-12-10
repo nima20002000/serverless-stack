@@ -385,7 +385,7 @@ export default function CategoriesManagementPage() {
                 </label>
                 <div className="space-y-2">
                   {formData.image && (
-                    <div className="relative w-full h-48 border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="relative w-full aspect-[4/5] border border-gray-300 rounded-lg overflow-hidden">
                       <img
                         src={formData.image}
                         alt="پیش‌نمایش تصویر"
