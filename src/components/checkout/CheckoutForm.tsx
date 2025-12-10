@@ -42,6 +42,17 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const [isSendingOTP, setIsSendingOTP] = useState(false);
   const [pendingLogin, setPendingLogin] = useState(false); // Track if user needs to be logged in on payment
 
+  // Track initial profile values loaded from database (to determine which fields should be locked)
+  const [initialProfileData, setInitialProfileData] = useState<{
+    name: string | null;
+    phone: string | null;
+    email: string | null;
+  }>({
+    name: null,
+    phone: null,
+    email: null,
+  });
+
   // Load user profile data if logged in
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -50,6 +61,14 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           const response = await fetch('/api/user/profile');
           if (response.ok) {
             const data = await response.json();
+
+            // Store initial values from database
+            setInitialProfileData({
+              name: data.name || null,
+              phone: data.phone || null,
+              email: data.email || null,
+            });
+
             setFullName(data.name || '');
             setPhone(data.phone || '');
             setEmail(data.email || '');
@@ -301,10 +320,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const hasVerifiedPhone = !!(session?.user.phone && session.user.isVerified);
   const isLoggedIn = !!session;
 
-  // Check which fields are already filled in user profile
-  const hasProfileName = !!(isLoggedIn && fullName);
-  const hasProfilePhone = !!(isLoggedIn && phone);
-  const hasProfileEmail = !!(isLoggedIn && email);
+  // Check which fields are already filled in user profile (based on initial data loaded from DB, not current form state)
+  const hasProfileName = !!(isLoggedIn && initialProfileData.name);
+  const hasProfilePhone = !!(isLoggedIn && initialProfileData.phone);
+  const hasProfileEmail = !!(isLoggedIn && initialProfileData.email);
 
   return (
     <Card className="mt-6">
