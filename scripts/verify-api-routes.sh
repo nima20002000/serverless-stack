@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Script to verify all API routes and Server Component pages have 'export const dynamic' declaration
+# Script to verify all API routes and Server Component pages have rendering mode declaration
 # This prevents Vercel build failures for routes requiring dynamic rendering
+# Accepts: 'export const dynamic' or 'export const revalidate' (ISR)
 
-echo "🔍 Verifying dynamic exports..."
+echo "🔍 Verifying rendering mode exports..."
 echo ""
 
 MISSING_ROUTES=()
@@ -28,7 +29,8 @@ while IFS= read -r file; do
   fi
 
   TOTAL_PAGES=$((TOTAL_PAGES + 1))
-  if ! grep -q "export const dynamic" "$file"; then
+  # Accept either 'export const dynamic' or 'export const revalidate' (ISR)
+  if ! grep -q "export const dynamic" "$file" && ! grep -q "export const revalidate" "$file"; then
     MISSING_PAGES+=("$file")
   fi
 done < <(find src/app -name "page.tsx" -path "*/\[*\]/*" -type f)
@@ -40,12 +42,12 @@ echo ""
 TOTAL_MISSING=$((${#MISSING_ROUTES[@]} + ${#MISSING_PAGES[@]}))
 
 if [ $TOTAL_MISSING -eq 0 ]; then
-  echo "✅ All routes have 'export const dynamic' declaration!"
+  echo "✅ All routes have rendering mode exports (dynamic or revalidate)!"
   echo ""
   echo "Build should succeed on Vercel."
   exit 0
 else
-  echo "❌ Found $TOTAL_MISSING file(s) missing 'export const dynamic':"
+  echo "❌ Found $TOTAL_MISSING file(s) missing rendering mode export:"
   echo ""
 
   if [ ${#MISSING_ROUTES[@]} -gt 0 ]; then
@@ -64,8 +66,9 @@ else
     echo ""
   fi
 
-  echo "Add this line after imports in each file:"
-  echo "  export const dynamic = 'force-dynamic';"
+  echo "Add one of these after imports in each file:"
+  echo "  export const dynamic = 'force-dynamic';  // For SSR"
+  echo "  export const revalidate = 60;            // For ISR (recommended)"
   echo ""
   exit 1
 fi

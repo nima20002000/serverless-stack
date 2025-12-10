@@ -8,8 +8,6 @@ import Button from '@/components/ui/Button';
 import OTPInput from '@/components/auth/OTPInput';
 import Alert from '@/components/ui/Alert';
 
-export const dynamic = 'force-dynamic';
-
 function VerifyOTPContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

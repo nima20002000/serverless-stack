@@ -1,7 +1,8 @@
 import ProductList from '@/components/products/ProductList';
 import { getActiveProducts } from '@/services/product-service';
 
-export const dynamic = 'force-dynamic';
+// Use ISR for better performance - revalidate every 60 seconds
+export const revalidate = 60;
 
 export default async function ProductsPage() {
   const result = await getActiveProducts({ page: 1, perPage: 20 });
