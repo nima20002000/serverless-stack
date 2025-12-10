@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createBrowserStorage } from '@/lib/browser-storage';
 
 interface User {
   id: string;
@@ -23,8 +24,8 @@ export const useUserStore = create<UserStore>()(
     }),
     {
       name: 'user-storage',
-      // Skip hydration during SSR to prevent storage access errors
-      skipHydration: true,
+      // Use browser-safe storage to prevent SSR errors
+      storage: createBrowserStorage(),
     }
   )
 );

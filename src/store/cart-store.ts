@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { createBrowserStorage } from '@/lib/browser-storage';
 
 export interface CartItem {
   productId: string;
@@ -114,10 +115,10 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'cart-storage',
+      // Use browser-safe storage to prevent SSR errors
+      storage: createBrowserStorage(),
       // Only persist items, computed values will be recalculated
       partialize: (state) => ({ items: state.items }),
-      // Skip hydration during SSR to prevent storage access errors
-      skipHydration: true,
     }
   )
 );
