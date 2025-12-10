@@ -13,6 +13,8 @@ interface Transaction {
   transactionCode: string;
   amount: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  isGuest: boolean;
   createdAt: string;
   zarinpalRefId: string | null;
   fullName: string;
@@ -113,6 +115,18 @@ export default function TransactionsManagementPage() {
         }`}
       >
         {labels[status as keyof typeof labels]}
+      </span>
+    );
+  };
+
+  const getPaymentMethodBadge = (method: string) => {
+    const labels = {
+      ZARINPAL: 'زرین‌پال',
+      DIGIPAY: 'دیجی‌پی',
+    };
+    return (
+      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+        {labels[method as keyof typeof labels] || method}
       </span>
     );
   };
@@ -245,6 +259,9 @@ export default function TransactionsManagementPage() {
                       محصولات
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      درگاه
+                    </th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       وضعیت
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
@@ -282,6 +299,9 @@ export default function TransactionsManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
+                        {getPaymentMethodBadge(transaction.paymentMethod)}
+                      </td>
+                      <td className="px-4 py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600">
@@ -292,10 +312,10 @@ export default function TransactionsManagementPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900">
-                            {transaction.user ? transaction.user.name : transaction.fullName}
-                            {!transaction.user && (
-                              <span className="mr-2 text-xs text-gray-500">(مهمان)</span>
+                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                            <span>{transaction.user ? transaction.user.name : transaction.fullName}</span>
+                            {transaction.isGuest && (
+                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">مهمان</span>
                             )}
                           </div>
                           <div className="text-gray-500 text-xs">

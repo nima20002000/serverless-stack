@@ -26,11 +26,12 @@ async function postHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await req.json();
-    const { items, shippingInfo } = body;
+    const { items, shippingInfo, paymentMethod } = body;
 
     log.info('Transaction creation started', {
       userId: session?.user?.id || 'guest',
       itemCount: items?.length || 0,
+      paymentMethod: paymentMethod || 'ZARINPAL',
       ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
     });
 
@@ -110,11 +111,15 @@ async function postHandler(req: NextRequest) {
       });
     }
 
+    // Validate payment method
+    const validPaymentMethod = paymentMethod === 'DIGIPAY' ? 'DIGIPAY' : 'ZARINPAL';
+
     // Create transaction in database with shipping info
     const transaction = await createTransaction({
       userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
       amount: totalAmount,
+      paymentMethod: validPaymentMethod,
       shippingInfo: {
         fullName,
         phone,

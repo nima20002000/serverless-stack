@@ -26,6 +26,11 @@ enum MediaType {
   VIDEO
 }
 
+enum PaymentMethod {
+  ZARINPAL
+  DIGIPAY
+}
+
 model User {
   id              String   @id @default(uuid())
   email           String?  @unique
@@ -144,6 +149,9 @@ model Transaction {
   amount             Decimal           @db.Decimal(10, 2)
   status             TransactionStatus @default(PENDING)
   transactionCode    String            @unique
+  // Payment gateway tracking
+  paymentMethod      PaymentMethod     @default(ZARINPAL)
+  isGuest            Boolean           @default(true)
   zarinpalAuthority  String?
   zarinpalRefId      String?
   // Shipping information (stored on transaction for both guest and registered users)
@@ -163,6 +171,8 @@ model Transaction {
 
   @@map("transactions")
   @@index([userId, createdAt(sort: Desc)])
+  @@index([paymentMethod])
+  @@index([isGuest])
 }
 
 model TransactionItem {

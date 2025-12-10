@@ -45,6 +45,7 @@ export async function createTransaction(data: {
     price: number;
   }>;
   amount: number;
+  paymentMethod?: 'ZARINPAL' | 'DIGIPAY';
   shippingInfo: {
     fullName: string;
     phone: string;
@@ -74,6 +75,8 @@ export async function createTransaction(data: {
           amount: data.amount,
           status: 'PENDING',
           transactionCode,
+          paymentMethod: data.paymentMethod || 'ZARINPAL',
+          isGuest: !data.userId, // Auto-determine guest status
           fullName: data.shippingInfo.fullName,
           phone: data.shippingInfo.phone,
           email: data.shippingInfo.email,

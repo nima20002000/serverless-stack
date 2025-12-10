@@ -33,6 +33,8 @@ interface Transaction {
   id: string;
   amount: string;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  isGuest: boolean;
   transactionCode: string;
   createdAt: string;
   items: {
