@@ -9,8 +9,9 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 export const dynamic = 'force-dynamic';
 
-// Hero image - use raw URL, Cloudflare CDN handles caching
-const HERO_IMAGE_URL = "https://cdn.kitia.ir/media-library/images/2uvp4v-1764882490100.jpg";
+// Optimized hero image URL (640x640, WebP, 85% quality)
+// Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
+const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg";
 
 export default async function Home() {
   // Fetch featured products
@@ -63,12 +64,12 @@ export default async function Home() {
               {/* Image Container */}
               <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
                 <Image
-                  src={HERO_IMAGE_URL}
+                  src={HERO_IMAGE_OPTIMIZED}
                   alt="کیتیا - فروشگاه آنلاین"
                   fill
                   className="object-cover"
                   priority
-                  sizes="(max-width: 768px) 100vw, 448px"
+                  sizes="(max-width: 768px) 100vw, 640px"
                 />
               </div>
             </div>

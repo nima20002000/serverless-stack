@@ -23,6 +23,9 @@ export default function RootLayout({
         {/* Preconnect to CDN for faster resource loading */}
         <link rel="preconnect" href="https://cdn.kitia.ir" />
         <link rel="dns-prefetch" href="https://cdn.kitia.ir" />
+        {/* Preconnect to Zarinpal for payment gateway */}
+        <link rel="preconnect" href="https://cdn.zarinpal.com" />
+        <link rel="dns-prefetch" href="https://cdn.zarinpal.com" />
         {/* Preload critical font for faster LCP */}
         <link
           rel="preload"
@@ -30,6 +33,13 @@ export default function RootLayout({
           as="font"
           type="font/ttf"
           crossOrigin="anonymous"
+        />
+        {/* Preload hero image for LCP optimization */}
+        <link
+          rel="preload"
+          href="https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg"
+          as="image"
+          fetchPriority="high"
         />
       </head>
       <body className="antialiased flex flex-col min-h-screen">
