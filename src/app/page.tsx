@@ -7,7 +7,9 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
-export const dynamic = 'force-dynamic';
+// Use ISR (Incremental Static Regeneration) instead of SSR for better performance
+// Page will be statically generated and revalidated every 60 seconds
+export const revalidate = 60;
 
 // Optimized hero image URL (640x640, WebP, 85% quality)
 // Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
