@@ -209,6 +209,31 @@ export async function createUser(data: {
       role: user.role,
     });
 
+    // Clean up OTP records for this identifier
+    // This prevents rate limiting issues when user tries to use OTP again
+    const identifier = phone || email;
+    if (identifier) {
+      try {
+        const deletedCount = await prisma.oTPVerification.deleteMany({
+          where: { identifier }
+        });
+        if (deletedCount.count > 0) {
+          log.info('Cleaned up OTP records after user creation', {
+            userId: user.id,
+            identifier,
+            count: deletedCount.count,
+          });
+        }
+      } catch (error) {
+        log.error('Failed to clean up OTP records during user creation', {
+          userId: user.id,
+          identifier,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        // Don't fail user creation if OTP cleanup fails
+      }
+    }
+
     // Link any orphaned guest transactions with this phone number
     if (phone) {
       try {
