@@ -62,11 +62,14 @@ export function detectIdentifierType(identifier: string): 'email' | 'phone' | 'i
 /**
  * Generate next available UID for new user
  * Format: U-{6-digit sequential number}
+ *
+ * IMPORTANT: Orders by UID (not createdAt) to prevent race conditions
+ * where users created at similar times could get duplicate UIDs
  */
-async function generateNextUID(): Promise<string> {
-  // Get the last user by UID
+export async function generateNextUID(): Promise<string> {
+  // Get the user with the highest UID number (ordered DESC by uid field)
   const lastUser = await prisma.user.findFirst({
-    orderBy: { createdAt: 'desc' },
+    orderBy: { uid: 'desc' },
     select: { uid: true },
   });
 
@@ -140,21 +143,64 @@ export async function createUser(data: {
     // Hash password if provided
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
-    // Generate next UID
-    const uid = await generateNextUID();
+    // Create user with retry logic for UID conflicts (race condition handling)
+    let user;
+    let retries = 0;
+    const maxRetries = 3;
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        uid,
-        email: email || null,
-        phone: phone || null,
-        password: hashedPassword,
-        name,
-        role: "USER",
-        isVerified: !!phone, // Phone users are verified via OTP
-      },
-    });
+    while (retries < maxRetries) {
+      try {
+        // Generate next UID
+        const uid = await generateNextUID();
+
+        // Attempt to create user
+        user = await prisma.user.create({
+          data: {
+            uid,
+            email: email || null,
+            phone: phone || null,
+            password: hashedPassword,
+            name,
+            role: "USER",
+            isVerified: !!phone, // Phone users are verified via OTP
+          },
+        });
+
+        // Success - break out of retry loop
+        break;
+      } catch (error) {
+        // Check if error is due to unique constraint violation on UID
+        if (error instanceof Error &&
+            'code' in error &&
+            error.code === 'P2002' &&
+            'meta' in error &&
+            typeof error.meta === 'object' &&
+            error.meta !== null &&
+            'target' in error.meta &&
+            Array.isArray(error.meta.target) &&
+            error.meta.target.includes('uid')) {
+          // UID conflict - retry with new UID
+          retries++;
+          log.warn('UID conflict detected, retrying', { retries, email, phone });
+
+          if (retries >= maxRetries) {
+            log.error('Max retries reached for UID generation', { email, phone });
+            throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
+          }
+
+          // Wait a bit before retrying to reduce collision probability
+          await new Promise(resolve => setTimeout(resolve, 100 * retries));
+          continue;
+        }
+
+        // Other error - rethrow
+        throw error;
+      }
+    }
+
+    if (!user) {
+      throw new Error('خطا در ایجاد کاربر');
+    }
 
     log.info('User created successfully', {
       userId: user.id,

@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { Role } from "@prisma/client";
 import { log } from "@/lib/logger";
-import { detectIdentifierType } from "./user-service";
+import { detectIdentifierType, generateNextUID } from "./user-service";
 
 export interface AuthUser {
   id: string;
@@ -147,31 +147,62 @@ export async function registerUser(
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate next UID
-    const lastUser = await prisma.user.findFirst({
-      orderBy: { createdAt: 'desc' },
-      select: { uid: true },
-    });
+    // Create user with retry logic for UID conflicts (race condition handling)
+    let user;
+    let retries = 0;
+    const maxRetries = 3;
 
-    let nextNumber = 1;
-    if (lastUser?.uid) {
-      const match = lastUser.uid.match(/^U-(\d+)$/);
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
+    while (retries < maxRetries) {
+      try {
+        // Generate next UID using centralized function
+        const uid = await generateNextUID();
+
+        // Attempt to create user
+        user = await prisma.user.create({
+          data: {
+            uid,
+            name,
+            email,
+            password: hashedPassword,
+            role: Role.USER, // Default role
+          },
+        });
+
+        // Success - break out of retry loop
+        break;
+      } catch (error) {
+        // Check if error is due to unique constraint violation on UID
+        if (error instanceof Error &&
+            'code' in error &&
+            error.code === 'P2002' &&
+            'meta' in error &&
+            typeof error.meta === 'object' &&
+            error.meta !== null &&
+            'target' in error.meta &&
+            Array.isArray(error.meta.target) &&
+            error.meta.target.includes('uid')) {
+          // UID conflict - retry with new UID
+          retries++;
+          log.warn('UID conflict detected during registration, retrying', { retries, email });
+
+          if (retries >= maxRetries) {
+            log.error('Max retries reached for UID generation during registration', { email });
+            throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
+          }
+
+          // Wait a bit before retrying to reduce collision probability
+          await new Promise(resolve => setTimeout(resolve, 100 * retries));
+          continue;
+        }
+
+        // Other error - rethrow
+        throw error;
       }
     }
-    const uid = `U-${nextNumber.toString().padStart(6, '0')}`;
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        uid,
-        name,
-        email,
-        password: hashedPassword,
-        role: Role.USER, // Default role
-      },
-    });
+    if (!user) {
+      throw new Error('خطا در ثبت‌نام');
+    }
 
     log.info("User registered successfully", { email, userId: user.id });
 
