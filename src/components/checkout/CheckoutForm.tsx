@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Session } from 'next-auth';
 import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
@@ -300,6 +301,11 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
   const hasVerifiedPhone = !!(session?.user.phone && session.user.isVerified);
   const isLoggedIn = !!session;
 
+  // Check which fields are already filled in user profile
+  const hasProfileName = !!(isLoggedIn && fullName);
+  const hasProfilePhone = !!(isLoggedIn && phone);
+  const hasProfileEmail = !!(isLoggedIn && email);
+
   return (
     <Card className="mt-6">
       <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
@@ -324,14 +330,14 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="fullName"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfileName ? 'bg-gray-100' : ''}`}
             required
             dir="rtl"
-            disabled={isLoggedIn}
+            disabled={hasProfileName}
           />
-          {isLoggedIn && (
+          {hasProfileName && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر نام، به صفحه پروفایل مراجعه کنید
+              💡 برای تغییر نام، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
             </p>
           )}
         </div>
@@ -346,15 +352,15 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfilePhone ? 'bg-gray-100' : ''}`}
             placeholder="09123456789"
             required
             dir="ltr"
-            disabled={isLoggedIn}
+            disabled={hasProfilePhone}
           />
-          {isLoggedIn && (
+          {hasProfilePhone && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر شماره تلفن، به صفحه پروفایل مراجعه کنید
+              💡 برای تغییر شماره تلفن، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
             </p>
           )}
           {hasVerifiedPhone && !isLoggedIn && (
@@ -372,13 +378,13 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${isLoggedIn ? 'bg-gray-100' : ''}`}
+            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfileEmail ? 'bg-gray-100' : ''}`}
             dir="ltr"
-            disabled={isLoggedIn}
+            disabled={hasProfileEmail}
           />
-          {isLoggedIn && (
+          {hasProfileEmail && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر ایمیل، به صفحه پروفایل مراجعه کنید
+              💡 برای تغییر ایمیل، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
             </p>
           )}
         </div>

@@ -51,11 +51,12 @@ async function postHandler(req: NextRequest) {
       );
     }
 
-    // For logged-in users, use their profile data instead of form data
-    // This prevents users from entering arbitrary phone numbers/emails
+    // For logged-in users, merge profile data with form data
+    // Use profile data for non-null fields, allow form data to fill in null fields
     let finalFullName: string;
     let finalPhone: string;
     let finalEmail: string | undefined;
+    let shouldUpdateProfile = false;
 
     if (session?.user) {
       // Fetch fresh user data from database
@@ -75,23 +76,55 @@ async function postHandler(req: NextRequest) {
         );
       }
 
-      // For logged-in users, ALWAYS use profile data
-      finalFullName = user.name;
-      finalPhone = user.phone || '';
-      finalEmail = user.email || undefined;
+      const { fullName, phone, email } = shippingInfo;
 
-      // Validate that user has required phone number
-      if (!finalPhone) {
+      // For logged-in users: Use profile data if not null, otherwise allow form data
+      // Priority: Profile data > Form data > Error for required fields
+      finalFullName = user.name || fullName || '';
+      finalPhone = user.phone || phone || '';
+      finalEmail = user.email || email || undefined;
+
+      // Validate required fields
+      if (!finalFullName) {
         return NextResponse.json(
-          { error: 'لطفاً ابتدا شماره تلفن خود را در پروفایل تکمیل کنید' },
+          { error: 'لطفاً نام و نام خانوادگی خود را وارد کنید' },
           { status: 400 }
         );
       }
 
-      log.info('Using authenticated user data for transaction', {
+      if (!finalPhone) {
+        return NextResponse.json(
+          { error: 'لطفاً شماره تلفن خود را وارد کنید' },
+          { status: 400 }
+        );
+      }
+
+      // Check if we need to update profile with new values from form
+      if (!user.name && fullName) {
+        shouldUpdateProfile = true;
+      }
+      if (!user.phone && phone) {
+        shouldUpdateProfile = true;
+      }
+      if (!user.email && email) {
+        shouldUpdateProfile = true;
+      }
+
+      log.info('Using merged user data for transaction', {
         userId: session.user.id,
-        phone: finalPhone,
-        email: finalEmail,
+        finalPhone,
+        finalEmail,
+        fromProfile: {
+          name: !!user.name,
+          phone: !!user.phone,
+          email: !!user.email,
+        },
+        fromForm: {
+          name: !user.name && !!fullName,
+          phone: !user.phone && !!phone,
+          email: !user.email && !!email,
+        },
+        willUpdateProfile: shouldUpdateProfile,
       });
     } else {
       // For guest users, use form data
@@ -189,12 +222,50 @@ async function postHandler(req: NextRequest) {
       },
     });
 
-    // If logged-in user, update their profile with shipping info
+    // If logged-in user, update their profile with shipping info and any new contact info
     if (session?.user) {
+      // Always update shipping info
       await updateUserShippingInfo(session.user.id, {
         shippingAddress,
         postalCode: postalCode || undefined,
       });
+
+      // Update profile with new contact info if user filled in null fields
+      if (shouldUpdateProfile) {
+        const { fullName, phone, email } = shippingInfo;
+        const updateData: { name?: string; phone?: string; email?: string | null } = {};
+
+        // Only update fields that were null in profile
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { name: true, phone: true, email: true },
+        });
+
+        if (user) {
+          if (!user.name && fullName) {
+            updateData.name = fullName;
+          }
+          if (!user.phone && phone) {
+            updateData.phone = phone;
+          }
+          if (!user.email && email) {
+            updateData.email = email;
+          }
+
+          // Only perform update if there are fields to update
+          if (Object.keys(updateData).length > 0) {
+            await prisma.user.update({
+              where: { id: session.user.id },
+              data: updateData,
+            });
+
+            log.info('Updated user profile with new contact info from checkout', {
+              userId: session.user.id,
+              updatedFields: Object.keys(updateData),
+            });
+          }
+        }
+      }
     }
 
     // Create payment request with Zarinpal
