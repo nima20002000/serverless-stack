@@ -174,7 +174,7 @@ async function postHandler(req: NextRequest) {
 
     // Calculate total and prepare transaction items
     let totalAmount = 0;
-    const transactionItems: Array<{ productId: string; quantity: number; price: number }> = [];
+    const transactionItems: Array<{ productId: string; variantId?: string; quantity: number; price: number }> = [];
 
     for (const item of items) {
       const product = await getProductById(item.productId);
@@ -198,6 +198,7 @@ async function postHandler(req: NextRequest) {
 
       transactionItems.push({
         productId: product.id,
+        variantId: item.variantId, // Pass variant ID if present
         quantity: item.quantity,
         price: finalPrice,
       });

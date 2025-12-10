@@ -41,6 +41,7 @@ export async function createTransaction(data: {
   userId?: string;
   items: Array<{
     productId: string;
+    variantId?: string; // Optional: which variant was purchased
     quantity: number;
     price: number;
   }>;
@@ -86,6 +87,7 @@ export async function createTransaction(data: {
           items: {
             create: data.items.map((item) => ({
               productId: item.productId,
+              variantId: item.variantId, // Track which variant was purchased
               quantity: item.quantity,
               price: item.price,
             })),
@@ -305,10 +307,10 @@ export async function getUserTransactions(userId: string, options?: {
 }
 
 /**
- * Reduce product stock after successful payment
+ * Reduce product/variant stock after successful payment
  */
 export async function reduceProductStock(transactionId: string): Promise<void> {
-  log.info('Reducing product stock for transaction', { transactionId });
+  log.info('Reducing product/variant stock for transaction', { transactionId });
 
   try {
     const transaction = await getTransactionById(transactionId);
@@ -321,26 +323,66 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
       throw new Error('فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد');
     }
 
-    // Update stock for each product in the transaction
-    await prisma.$transaction(
-      transaction.items.map((item) =>
-        prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
+    // Update stock for each item in the transaction
+    // Use a Prisma transaction to ensure atomicity
+    await prisma.$transaction(async (tx) => {
+      for (const item of transaction.items) {
+        if (item.variantId) {
+          // Reduce variant stock
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
             },
-          },
-        })
-      )
-    );
+          });
 
-    log.info('Product stock reduced successfully', {
+          // Get all variants for this product to recalculate total stock
+          const variants = await tx.productVariant.findMany({
+            where: { productId: item.productId },
+            select: { stock: true },
+          });
+
+          const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+
+          // Update product stock to sum of all variant stocks
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: totalStock },
+          });
+
+          log.info('Variant stock reduced and product stock recalculated', {
+            variantId: item.variantId,
+            productId: item.productId,
+            quantity: item.quantity,
+            newTotalStock: totalStock,
+          });
+        } else {
+          // No variant - reduce product stock directly (backward compatible)
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          });
+
+          log.info('Product stock reduced (no variant)', {
+            productId: item.productId,
+            quantity: item.quantity,
+          });
+        }
+      }
+    });
+
+    log.info('Product/variant stock reduced successfully', {
       transactionId,
       itemsUpdated: transaction.items.length,
     });
   } catch (error) {
-    log.error('Failed to reduce product stock', {
+    log.error('Failed to reduce product/variant stock', {
       transactionId,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -352,7 +394,7 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
  * Verify stock availability for cart items
  */
 export async function verifyStockAvailability(
-  items: Array<{ productId: string; quantity: number }>
+  items: Array<{ productId: string; variantId?: string; quantity: number }>
 ): Promise<StockVerificationResult> {
   const errors: string[] = [];
 
@@ -372,10 +414,35 @@ export async function verifyStockAvailability(
       continue;
     }
 
-    if (product.stock < item.quantity) {
-      errors.push(
-        `موجودی کافی برای ${product.name} وجود ندارد (موجودی: ${product.stock}، درخواستی: ${item.quantity})`
-      );
+    // Check variant stock if variantId is provided
+    if (item.variantId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: { stock: true, name: true, isActive: true },
+      });
+
+      if (!variant) {
+        errors.push(`واریانت محصول ${product.name} یافت نشد`);
+        continue;
+      }
+
+      if (!variant.isActive) {
+        errors.push(`واریانت ${variant.name} از محصول ${product.name} غیرفعال است`);
+        continue;
+      }
+
+      if (variant.stock < item.quantity) {
+        errors.push(
+          `موجودی کافی برای ${variant.name} (${product.name}) وجود ندارد (موجودی: ${variant.stock}، درخواستی: ${item.quantity})`
+        );
+      }
+    } else {
+      // No variant - check product stock
+      if (product.stock < item.quantity) {
+        errors.push(
+          `موجودی کافی برای ${product.name} وجود ندارد (موجودی: ${product.stock}، درخواستی: ${item.quantity})`
+        );
+      }
     }
   }
 

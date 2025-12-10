@@ -13,18 +13,21 @@ export const revalidate = 60;
 
 // Optimized hero image URL (640x640, WebP, 85% quality)
 // Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
-const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg";
+const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg";
 
 export default async function Home() {
-  // Fetch featured products
-  const featuredProductsResult = await getActiveProducts({ page: 1, perPage: 4 });
-  const featuredProducts = featuredProductsResult.data
+  // Fetch more products to ensure we get enough featured/sale items
+  // Fetch 20 products to increase chance of finding featured/discounted products
+  const allProductsResult = await getActiveProducts({ page: 1, perPage: 20 });
+
+  // Filter for featured products (up to 4)
+  const featuredProducts = allProductsResult.data
     .filter(p => p.isFeatured)
     .slice(0, 4)
     .map(p => ({ ...p, price: Number(p.price) }));
 
-  // Fetch discounted products
-  const discountedProducts = featuredProductsResult.data
+  // Filter for discounted products (up to 4)
+  const discountedProducts = allProductsResult.data
     .filter(p => p.discountPercent && p.discountPercent > 0)
     .slice(0, 4)
     .map(p => ({ ...p, price: Number(p.price) }));

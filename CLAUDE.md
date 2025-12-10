@@ -261,6 +261,9 @@ Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
   - `images` field is deprecated (kept for backward compatibility)
   - Use `ProductMedia` relation for new media
   - Variants can have separate media and pricing adjustments
+  - **Automatic stock calculation**: When a product has variants, its `stock` field is automatically calculated as the sum of all variant stocks
+    - Creating/updating/deleting variants automatically updates parent product stock
+    - Use `updateProductStockFromVariants(productId)` to manually recalculate if needed
 - **Categories**: Hierarchical (self-referencing with `parentId`)
 - **Transactions**: Linked to `TransactionItem[]` for cart contents
 - **PromoCodes**: One per user, 24-hour expiry, one-time use

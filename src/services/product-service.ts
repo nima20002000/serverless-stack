@@ -542,6 +542,37 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
 // ========== PRODUCT VARIANT FUNCTIONS ==========
 
 /**
+ * Recalculate and update product stock based on variants
+ * If product has variants, stock = sum of all variant stocks
+ * If no variants, stock remains as manually set
+ */
+export async function updateProductStockFromVariants(productId: string): Promise<void> {
+  log.info('Updating product stock from variants', { productId });
+
+  // Get all variants for this product
+  const variants = await prisma.productVariant.findMany({
+    where: { productId },
+    select: { stock: true },
+  });
+
+  // Only update if product has variants
+  if (variants.length > 0) {
+    const totalStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { stock: totalStock },
+    });
+
+    log.info('Product stock updated from variants', {
+      productId,
+      variantCount: variants.length,
+      totalStock
+    });
+  }
+}
+
+/**
  * Get all variants for a product
  */
 export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
@@ -572,6 +603,8 @@ export async function createProductVariant(data: {
   stock: number;
   isActive?: boolean;
 }): Promise<VariantWithMedia> {
+  log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
+
   // Validate SKU uniqueness if provided
   if (data.sku) {
     const existing = await prisma.productVariant.findUnique({
@@ -600,6 +633,11 @@ export async function createProductVariant(data: {
     },
   });
 
+  // Update parent product stock
+  await updateProductStockFromVariants(data.productId);
+
+  log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId });
+
   return variant;
 }
 
@@ -619,6 +657,18 @@ export async function updateProductVariant(
     isActive: boolean;
   }>
 ): Promise<VariantWithMedia> {
+  log.info('Updating product variant', { variantId: id, data });
+
+  // Get the variant first to know which product to update
+  const existingVariant = await prisma.productVariant.findUnique({
+    where: { id },
+    select: { productId: true },
+  });
+
+  if (!existingVariant) {
+    throw new Error('واریانت محصول یافت نشد');
+  }
+
   // Validate SKU uniqueness if being updated
   if (data.sku) {
     const existing = await prisma.productVariant.findUnique({
@@ -638,6 +688,13 @@ export async function updateProductVariant(
     },
   });
 
+  // Update parent product stock if variant stock was changed
+  if (data.stock !== undefined) {
+    await updateProductStockFromVariants(existingVariant.productId);
+  }
+
+  log.info('Product variant updated successfully', { variantId: id, productId: existingVariant.productId });
+
   return variant;
 }
 
@@ -645,9 +702,26 @@ export async function updateProductVariant(
  * Delete product variant
  */
 export async function deleteProductVariant(id: string): Promise<DeleteResult> {
+  log.info('Deleting product variant', { variantId: id });
+
+  // Get the variant first to know which product to update
+  const existingVariant = await prisma.productVariant.findUnique({
+    where: { id },
+    select: { productId: true },
+  });
+
+  if (!existingVariant) {
+    throw new Error('واریانت محصول یافت نشد');
+  }
+
   await prisma.productVariant.delete({
     where: { id },
   });
+
+  // Update parent product stock after deletion
+  await updateProductStockFromVariants(existingVariant.productId);
+
+  log.info('Product variant deleted successfully', { variantId: id, productId: existingVariant.productId });
 
   return { success: true };
 }
