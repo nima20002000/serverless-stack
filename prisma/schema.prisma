@@ -33,6 +33,7 @@ enum PaymentMethod {
 
 model User {
   id              String   @id @default(uuid())
+  uid             String   @unique // Human-readable ID: U-000001
   email           String?  @unique
   phone           String?  @unique
   password        String?
@@ -50,6 +51,7 @@ model User {
   @@map("users")
   @@index([email])
   @@index([phone])
+  @@index([uid])
 }
 
 model Product {

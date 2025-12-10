@@ -147,9 +147,25 @@ export async function registerUser(
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generate next UID
+    const lastUser = await prisma.user.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { uid: true },
+    });
+
+    let nextNumber = 1;
+    if (lastUser?.uid) {
+      const match = lastUser.uid.match(/^U-(\d+)$/);
+      if (match) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+    const uid = `U-${nextNumber.toString().padStart(6, '0')}`;
+
     // Create user
     const user = await prisma.user.create({
       data: {
+        uid,
         name,
         email,
         password: hashedPassword,

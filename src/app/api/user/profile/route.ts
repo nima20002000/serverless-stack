@@ -23,6 +23,7 @@ async function getHandler() {
       where: { id: session.user.id },
       select: {
         id: true,
+        uid: true,
         name: true,
         email: true,
         phone: true,

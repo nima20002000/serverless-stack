@@ -19,6 +19,7 @@ interface PromoCode {
 
 interface UserProfile {
   id: string;
+  uid: string;
   name: string;
   email: string | null;
   phone: string | null;
@@ -670,6 +671,12 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-3 text-right">
+              <div>
+                <span className="text-gray-600">شناسه کاربری:</span>{' '}
+                <code className="font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded text-sm">
+                  {userProfile.uid}
+                </code>
+              </div>
               <div>
                 <span className="text-gray-600">نام:</span>{' '}
                 <span className="font-medium text-gray-900">{userProfile.name}</span>

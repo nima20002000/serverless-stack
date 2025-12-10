@@ -60,6 +60,31 @@ export function detectIdentifierType(identifier: string): 'email' | 'phone' | 'i
 }
 
 /**
+ * Generate next available UID for new user
+ * Format: U-{6-digit sequential number}
+ */
+async function generateNextUID(): Promise<string> {
+  // Get the last user by UID
+  const lastUser = await prisma.user.findFirst({
+    orderBy: { createdAt: 'desc' },
+    select: { uid: true },
+  });
+
+  let nextNumber = 1;
+
+  if (lastUser?.uid) {
+    // Extract number from UID (e.g., "U-000123" -> 123)
+    const match = lastUser.uid.match(/^U-(\d+)$/);
+    if (match) {
+      nextNumber = parseInt(match[1], 10) + 1;
+    }
+  }
+
+  // Format as U-{6-digit number}
+  return `U-${nextNumber.toString().padStart(6, '0')}`;
+}
+
+/**
  * Create a new user
  * Supports both email and phone registration
  */
@@ -115,9 +140,13 @@ export async function createUser(data: {
     // Hash password if provided
     const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
 
+    // Generate next UID
+    const uid = await generateNextUID();
+
     // Create user
     const user = await prisma.user.create({
       data: {
+        uid,
         email: email || null,
         phone: phone || null,
         password: hashedPassword,

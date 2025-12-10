@@ -12,6 +12,7 @@ async function main() {
     where: { email: 'admin@kitia.com' },
     update: {},
     create: {
+      uid: 'U-000001',
       email: 'admin@kitia.com',
       password: adminPassword,
       name: 'مدیر سیستم',
@@ -26,6 +27,7 @@ async function main() {
     where: { email: 'user1@test.com' },
     update: {},
     create: {
+      uid: 'U-000002',
       email: 'user1@test.com',
       password: testUser1Password,
       name: 'کاربر تست یک',
@@ -55,6 +57,7 @@ async function main() {
     where: { email: 'user2@test.com' },
     update: {},
     create: {
+      uid: 'U-000003',
       email: 'user2@test.com',
       password: testUser2Password,
       name: 'کاربر تست دو',
