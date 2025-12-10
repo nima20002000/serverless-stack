@@ -122,7 +122,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
-              className={`object-contain transition-all duration-300 ${
+              className={`object-contain object-center transition-all duration-300 ${
                 isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
               } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
               onClick={() => setIsZoomed(!isZoomed)}
@@ -204,6 +204,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
                   alt={item.alt || `${productName} - ${index + 1}`}
                   fill
                   className="object-cover"
+                  style={{ objectPosition: 'center 45%' }}
                   sizes="80px"
                 />
               ) : (
@@ -230,20 +231,22 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
           onClick={() => setIsZoomed(false)}
         >
           <button
-            onClick={() => setIsZoomed(false)}
-            className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(false);
+            }}
+            className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-10"
             aria-label="بستن"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
 
-          <div className="relative w-full h-full max-w-7xl max-h-screen">
+          <div className="relative w-full h-full max-w-7xl max-h-screen pointer-events-none">
             <Image
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
               className="object-contain"
-              onClick={(e) => e.stopPropagation()}
             />
           </div>
         </div>
