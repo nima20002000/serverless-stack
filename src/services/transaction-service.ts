@@ -267,6 +267,35 @@ export async function getTransactionByAuthority(authority: string): Promise<Tran
 }
 
 /**
+ * Get transaction by Digipay ticket
+ */
+export async function getTransactionByDigipayTicket(ticket: string): Promise<TransactionWithItems> {
+  const transaction = await prisma.transaction.findFirst({
+    where: { digipayTicket: ticket },
+    include: {
+      items: {
+        include: {
+          product: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!transaction) {
+    throw new Error('تراکنش یافت نشد');
+  }
+
+  return transaction;
+}
+
+/**
  * Get all transactions for a user
  */
 export async function getUserTransactions(userId: string, options?: {

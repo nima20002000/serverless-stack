@@ -154,8 +154,12 @@ model Transaction {
   // Payment gateway tracking
   paymentMethod      PaymentMethod     @default(ZARINPAL)
   isGuest            Boolean           @default(true)
+  // Zarinpal tracking
   zarinpalAuthority  String?
   zarinpalRefId      String?
+  // Digipay tracking
+  digipayTicket      String?
+  digipayTrackingCode String?
   // Shipping information (stored on transaction for both guest and registered users)
   fullName           String            @default("")
   phone              String            @default("")
@@ -175,6 +179,7 @@ model Transaction {
   @@index([userId, createdAt(sort: Desc)])
   @@index([paymentMethod])
   @@index([isGuest])
+  @@index([digipayTicket])
 }
 
 model TransactionItem {

@@ -248,11 +248,24 @@ Supports passwordless login and registration via OTP codes.
 - `POST /api/auth/verify-otp` - Verify OTP code
 
 ### Transaction & Payment Flow
+
+The application supports two payment gateways: **Zarinpal** (default) and **Digipay**.
+
+#### Zarinpal Flow
 1. User creates transaction → generates unique `transactionCode` (8-char alphanumeric)
 2. Initiate Zarinpal payment → stores `zarinpalAuthority`
 3. User completes payment on Zarinpal gateway
-4. Callback verification → update status to `COMPLETED`, store `zarinpalRefId`
+4. Callback verification (`/api/transactions/verify`) → update status to `COMPLETED`, store `zarinpalRefId`
 5. Auto-generate invoice after successful payment
+
+#### Digipay Flow
+1. User creates transaction → generates unique `transactionCode`
+2. Initiate Digipay payment → stores `digipayTicket`
+3. User completes payment on Digipay gateway (IPG or Wallet)
+4. Callback verification (`/api/transactions/verify-digipay`) → update status to `COMPLETED`, store `digipayTrackingCode`
+5. Auto-generate invoice after successful payment
+
+**Payment Method Selection**: Users can choose their preferred payment gateway on the checkout page.
 
 Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
 
@@ -309,6 +322,13 @@ Required variables (see `.env.example`):
 - `R2_BUCKET_NAME` - R2 bucket name (default: kitia-products)
 - `R2_PUBLIC_URL` - Public URL for R2 files (R2.dev or custom domain)
 - `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED` - "true" to enable Cloudflare Image Resizing, "false" to use raw images (default: "true")
+- `DIGIPAY_BASE_URL` - Digipay API base URL (https://uat.mydigipay.info for testing)
+- `DIGIPAY_CLIENT_ID` - Digipay OAuth client ID
+- `DIGIPAY_CLIENT_SECRET` - Digipay OAuth client secret
+- `DIGIPAY_USERNAME` - Digipay API username
+- `DIGIPAY_PASSWORD` - Digipay API password
+- `DIGIPAY_PROVIDER_ID` - Digipay provider/merchant ID
+- `DIGIPAY_SANDBOX` - "true" for sandbox/UAT mode
 
 ## RTL and Internationalization
 

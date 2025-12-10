@@ -1,0 +1,296 @@
+نمونه ریکوئست این سرویس به صورت زیر است :
+
+curl --location --request POST 'https://uat.mydigipay.info/digipay/api/oauth/token' \
+--header 'Authorization: Basic aXV5cml3eTg4OmpoczY1ZGZn' \
+--form 'username=sampleUsername' \
+--form 'password=samplePassword' \
+--form 'grant_type=password'
+
+نمونه ای از پاسخ این سرویس در قالب json به صورت زیر است :
+
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6Ikxxx",
+  "token_type": "bearer",
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6xxxx",
+  "expires_in": 3599,
+  "scope": "USER WALLET_BUSINESS_INTEGRATION BUSINESS_API test Permission_Test",
+  "jti": "RkuR_-p7mSP4VJzYrxZpRvGI5ww"
+}
+
+برای مثال، یک نمونه از فراخوانی وب سرویس با توکن به این صورت می باشد:
+
+curl --location 'https://uat.mydigipay.info/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9xxxx' \
+--data '{
+    "cellNumber": "09103119100",
+    "amount": 10000,
+    "providerId": 811143348,
+    "callbackUrl": "https://www.digikala.com"
+}'
+
+نمونه درخواست HTTPبرای ریکوئست دریافت تیکت در فیچرهای BNPL یا Credit به شرح زیر می باشد:
+
+curl --location --request POST '/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+
+  "cellNumber" : "09190070450",
+  "amount" : 100000000,
+  "providerId" :"-1106111147",
+  "callbackUrl" : "http://example.com",
+  "basketDetailsDto": {
+    "items": [
+      {
+        "sellerId": "seller-id",
+        "supplierId": "supplier-id",
+        "productCode": "product-code",
+        "brand": "brand",
+
+    "productType": 1,
+        "count": 1,
+        "categoryId": "category-id"
+      }
+    ],
+    "basketId": "basket-id"
+  }
+}'
+
+۲-۵-۵. نمونه درخواست HTTP برای پرداخت IPG یا Wallet
+نمونه ریکوئست درخواست تیکت برای خرید های wallet و درگاه پرداخت به شرح زیر می باشد :
+
+curl --location --request POST '/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "cellNumber": "09303030875",
+    "amount": 10000,
+    "providerId": "32111",
+    "callbackUrl": "http://example.com"
+    }'
+۳-۵-۵. نمونه درخواست HTTP برای فیچرهای تسهیمی
+نمونه ریکوئست درخواست تیکت برای فیچرهای تسهیمی به شرح زیر می باشد:
+
+url --location --request POST '/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+
+  "cellNumber" : "09190070450",
+  "amount" : 100000,
+  "providerId" :"-1106111147",
+  "callbackUrl" : "http://example.com",
+  "splitDetailsList": [
+    {
+      "type": "simple",
+      "amount": 21800,
+      "username": "dk"
+    },
+    {
+      "type": "insurance",
+      "amount": 2180000,
+      "policies": [
+          {
+              "id": "1",
+              "brand": "DOX",
+              "model": "DOX",
+              "price": 100000000,
+              "category": "Mobile",
+              "serialNo": null,
+              "variantId": "37633302",
+              "priceWithDiscount": 100000000,
+              "product_warranty_id": 498
+          }
+      ],
+      "policyHolder": {
+          "address": "اباذر، بلوار فر",
+          "lastName": "last1038214",
+          "postCode": "1471656341",
+          "firstName": "first1038214",
+          "cellNumber": "09390054003",
+          "nationalCode": "8085700281",
+          "digiPlusCustomer": false
+      }
+    }
+  ]
+}'
+4-۵-۵. نمونه درخواست HTTP برای خرید بدون نمایش صفحه‌ی انتخاب ابزار پرداخت
+برای زمانی که نیازی به نمایش صفحه‌ی انتخاب ابزار پرداخت ندارید و می‌خواهید کاربر خود را مستقیما به درگاه خاصی بفرستید،‌ باید مقدار فیلد preferredGateway را مطابق جدول ۶ معادل با درگاه مورد نیاز خود پر کنید.
+
+نمونه درخواست HTTP برای درخواست تیکت مستقیم IPG به شرح زیر است:
+
+curl --location 'https://uat.mydigipay.info/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInRasdddXVCJ9' \
+--data '{
+    "cellNumber": "09335292905",
+    "amount": 10000,
+    "providerId": 811165310,
+    "callbackUrl": "https://example.com",
+    "additionalInfo": {
+        "preferredGateway": 2
+    }
+}'
+
+نمونه درخواست HTTP برای درخواست تیکت مستقیم Wallet به شرح زیر است:
+
+location 'https://uat.mydigipay.info/digipay/api/tickets/business?type=11' \
+--header 'Agent: WEB' \
+--header 'Digipay-Version: 2022-02-02' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInRasdddXVCJ9' \
+--data '{
+    "cellNumber": "09335292905",
+    "amount": 10000,
+    "providerId": 811165310,
+    "callbackUrl": "https://example.com",
+    "additionalInfo": {
+        "preferredGateway": 0
+    }
+}'
+
+نمونه پاسخ HTTP برای درخواست تیکت به شرح زیر است:
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "title": "SUCCESS",
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    },
+    "ticket": "v2:ab17ec383d654be3b009f9fc45202f80",
+    "redirectUrl": "https://uatweb.mydigipay.info/web-pay/tgs/v2:ab17ec383d654be3b009f9fc45202f80"
+}
+6-4-2. نمونه پاسخ درخواست های دارای جزییات تسهیمی
+
+نمونه پاسخ درخواست های HTTP که دارای جزیییات تسهیمی می باشد به شرح زیر است:
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "title": "SUCCESS",
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    },
+    "ticket": "v2:ab17ec383d654be3b009f9fc45202f80",
+    "redirectUrl": "https://uatweb.mydigipay.info/web-pay/tgs/v2:ab17ec383d654be3b009f9fc45202f80",
+    "insurancePolicies": [
+        {
+            "id": "1",
+            "policyDraftNo": "1059488"
+        }
+    ]
+}
+curl --location --request POST '/digipay/api/purchases/verify?type=5' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ'\
+--header 'Content-Type: application/json'
+--data-raw '{
+    "trackingCode": "10357963991735727353649",
+    "providerId": "9345622059488682121"
+}'
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    },
+    "trackingCode": "19259313601650191846745",
+    "providerId": "132713002000200010",
+    "fpCode": "7",
+    "fpName": "DIGIPAY",
+    "amount": 200000,
+    "paymentGateway": 4,
+    "additionalInfo": {
+        "prepaymentAmount": 0,
+        "cashAmount": 0,
+        "creditAmount": 200000,
+        "instantFinalization": false,
+        "generateInvoice": false
+    }
+}
+curl --location --request POST '/digipay/api/reverse' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data '{
+    "purchaseTrackingCode": "571*********98",
+    "providerId": "{{purchaseProviderId}}"
+}'
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    },
+    "providerId": "{{purchaseProviderId}}",
+    "trackingCode": "571000000098",
+    "rrn": "**********************",
+    "maskedPan": "**********************",
+    "amount": 56547774478,
+    "paymentGateway": 0
+}
+curl --location --request POST '/digipay/api/purchases/deliver?type=5' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "deliveryDate": 1592502763000,
+    "invoiceNumber": "7471288365484",
+    "trackingCode": "5239470511667728782510",
+    "products": [
+        "product-4",
+        "product-5",
+        "product-6",
+        "product-7"
+    ]
+}'
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    }
+}
+
+curl --location --request POST '/digipay/api/refunds?type=0
+' \
+--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "providerId": 1592502763000,
+    "amount": "7471288365484",
+    "saleTrackingCode": "5239470511667728782510"
+        "product-4"
+}'
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=UTF-8
+{
+    "result": {
+        "title" : "SUCCESS",
+        "status": 0,
+        "message": "عملیات با موفقیت انجام شد",
+        "level": "INFO"
+    },
+    "trackingCode": "571000000098"
+}

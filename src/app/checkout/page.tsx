@@ -9,6 +9,7 @@ import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
+import DigipayBadge from '@/components/payment/DigipayBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 
 export default function CheckoutPage() {
@@ -19,6 +20,7 @@ export default function CheckoutPage() {
   const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>('zarinpal');
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -56,8 +58,7 @@ export default function CheckoutPage() {
             productId: item.productId,
             quantity: item.quantity,
           })),
-          // TODO: Add payment method selection UI when Digipay is integrated
-          // paymentMethod: 'ZARINPAL' | 'DIGIPAY'
+          paymentMethod: paymentMethod === 'digipay' ? 'DIGIPAY' : 'ZARINPAL',
           shippingInfo: {
             fullName: formData.fullName,
             phone: formData.phone,
@@ -81,7 +82,7 @@ export default function CheckoutPage() {
       setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
       setIsProcessing(false);
     }
-  }, [items, session]);
+  }, [items, session, paymentMethod]);
 
   if (status === 'loading') {
     return (
@@ -162,12 +163,19 @@ export default function CheckoutPage() {
                 روش پرداخت
               </h2>
               <div className="space-y-3">
-                <label className="flex items-center gap-3 p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer">
+                <label
+                  className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    paymentMethod === 'zarinpal'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="paymentMethod"
                     value="zarinpal"
-                    defaultChecked
+                    checked={paymentMethod === 'zarinpal'}
+                    onChange={() => setPaymentMethod('zarinpal')}
                     className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                   />
                   <div className="flex-1 text-right">
@@ -176,6 +184,30 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex-shrink-0">
                     <ZarinpalBadge />
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    paymentMethod === 'digipay'
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="digipay"
+                    checked={paymentMethod === 'digipay'}
+                    onChange={() => setPaymentMethod('digipay')}
+                    className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                  />
+                  <div className="flex-1 text-right">
+                    <div className="font-medium text-gray-900">دیجی‌پی</div>
+                    <div className="text-sm text-gray-600">پرداخت با کیف پول یا کارت بانکی</div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <DigipayBadge />
                   </div>
                 </label>
               </div>
@@ -210,9 +242,21 @@ export default function CheckoutPage() {
                     <span className="text-gray-900">مبلغ قابل پرداخت</span>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                    <p className="text-xs text-blue-800 text-right">
-                      پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید
+                  <div
+                    className={`${
+                      paymentMethod === 'digipay'
+                        ? 'bg-purple-50 border-purple-200'
+                        : 'bg-blue-50 border-blue-200'
+                    } border rounded-lg p-3 mt-4`}
+                  >
+                    <p
+                      className={`text-xs ${
+                        paymentMethod === 'digipay' ? 'text-purple-800' : 'text-blue-800'
+                      } text-right`}
+                    >
+                      {paymentMethod === 'digipay'
+                        ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
+                        : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
                     </p>
                   </div>
                 </div>

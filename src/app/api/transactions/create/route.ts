@@ -268,37 +268,79 @@ async function postHandler(req: NextRequest) {
       }
     }
 
-    // Create payment request with Zarinpal
-    const paymentRequest = await createPaymentRequest({
-      amount: totalAmount, // In Tomans
-      description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-      email: finalEmail,
-      mobile: finalPhone,
-      callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
-    });
+    // Create payment request with selected payment gateway
+    let paymentUrl: string;
+    let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay
 
-    // Update transaction with Zarinpal authority
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: { zarinpalAuthority: paymentRequest.authority },
-    });
+    if (validPaymentMethod === 'DIGIPAY') {
+      // Digipay payment flow
+      const digipayClient = await import('@/lib/digipay/client');
 
-    log.info('Transaction created successfully', {
-      transactionId: transaction.id,
-      transactionCode: transaction.transactionCode,
-      amount: totalAmount,
-      authority: paymentRequest.authority,
-      userId: session?.user?.id || 'guest',
-      elapsedMs: Date.now() - startTime,
-    });
+      const digipayRequest = await digipayClient.createPaymentRequest({
+        amount: totalAmount, // In Tomans
+        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
+        cellNumber: finalPhone,
+        callbackUrl: `${digipayClient.getCallbackUrl(req.url)}?ticket=${transaction.id}`,
+        // Optional: Allow user to select preferred gateway in UI
+        // preferredGateway: 'IPG' | 'WALLET'
+      });
+
+      // Update transaction with Digipay ticket
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { digipayTicket: digipayRequest.ticket },
+      });
+
+      paymentUrl = digipayRequest.redirectUrl;
+      paymentIdentifier = digipayRequest.ticket;
+
+      log.info('Digipay transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        ticket: digipayRequest.ticket,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    } else {
+      // Zarinpal payment flow (default)
+      const paymentRequest = await createPaymentRequest({
+        amount: totalAmount, // In Tomans
+        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
+        email: finalEmail,
+        mobile: finalPhone,
+        callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
+      });
+
+      // Update transaction with Zarinpal authority
+      await prisma.transaction.update({
+        where: { id: transaction.id },
+        data: { zarinpalAuthority: paymentRequest.authority },
+      });
+
+      paymentUrl = paymentRequest.url;
+      paymentIdentifier = paymentRequest.authority;
+
+      log.info('Zarinpal transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        authority: paymentRequest.authority,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
       amount: totalAmount,
-      paymentUrl: paymentRequest.url,
-      authority: paymentRequest.authority,
+      paymentMethod: validPaymentMethod,
+      paymentUrl,
+      // For compatibility, include both identifiers (one will be undefined)
+      authority: validPaymentMethod === 'ZARINPAL' ? paymentIdentifier : undefined,
+      ticket: validPaymentMethod === 'DIGIPAY' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {
