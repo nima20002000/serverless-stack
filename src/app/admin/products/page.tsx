@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import Pagination from '@/components/ui/Pagination';
 import { formatPrice } from '@/services/product-service';
 
 interface Product {
@@ -21,11 +22,20 @@ interface Product {
   isFeatured?: boolean;
 }
 
+interface ProductsResponse {
+  data: Product[];
+  total: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+}
+
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [data, setData] = useState<ProductsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
@@ -37,17 +47,17 @@ export default function AdminProductsPage() {
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const stockParam = stockFilter !== 'all' ? `&stock=${stockFilter}` : '';
-      const response = await fetch(`/api/admin/products?${searchParam}${statusParam}${stockParam}`);
+      const response = await fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`);
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
-      const data = await response.json();
-      setProducts(data.data || []);
+      const result = await response.json();
+      setData(result);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'خطای نامشخص');
-      setProducts([]);
+      setData(null);
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, statusFilter, stockFilter]);
+  }, [currentPage, searchQuery, statusFilter, stockFilter]);
 
   useEffect(() => {
     fetchProducts();
@@ -55,6 +65,7 @@ export default function AdminProductsPage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1);
     fetchProducts();
   };
 
@@ -62,6 +73,7 @@ export default function AdminProductsPage() {
     setSearchQuery('');
     setStatusFilter('all');
     setStockFilter('all');
+    setCurrentPage(1);
   };
 
   const handleDelete = async (id: string, name: string) => {
@@ -102,10 +114,11 @@ export default function AdminProductsPage() {
 
   // Bulk selection handlers
   const toggleSelectAll = () => {
-    if (selectedProducts.size === products.length) {
+    if (!data) return;
+    if (selectedProducts.size === data.data.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(products.map(p => p.id)));
+      setSelectedProducts(new Set(data.data.map(p => p.id)));
     }
   };
 
@@ -274,7 +287,10 @@ export default function AdminProductsPage() {
               <div className="flex items-center gap-2">
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
                 >
                   <option value="all">همه</option>
@@ -288,7 +304,10 @@ export default function AdminProductsPage() {
               <div className="flex items-center gap-2">
                 <select
                   value={stockFilter}
-                  onChange={(e) => setStockFilter(e.target.value)}
+                  onChange={(e) => {
+                    setStockFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
                 >
                   <option value="all">همه</option>
@@ -302,29 +321,44 @@ export default function AdminProductsPage() {
         </div>
       </Card>
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-center w-12">
-                  <input
-                    type="checkbox"
-                    checked={products.length > 0 && selectedProducts.size === products.length}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {products.map((product) => (
+      {data && (
+        <>
+          <Card>
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
+                  {data.total.toLocaleString('fa-IR')} محصول
+                </div>
+                <div className="text-sm text-gray-600">
+                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
+                  {data.totalPages.toLocaleString('fa-IR')}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-center w-12">
+                      <input
+                        type="checkbox"
+                        checked={data.data.length > 0 && selectedProducts.size === data.data.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                    </th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {data.data.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 text-center">
                     <input
@@ -409,17 +443,30 @@ export default function AdminProductsPage() {
                     </Link>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                  ))}
+                </tbody>
+              </table>
 
-          {products.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              هیچ محصولی وجود ندارد
+              {data.data.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  هیچ محصولی یافت نشد
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Pagination */}
+          {data.totalPages > 1 && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={data.totalPages}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
-        </div>
-      </Card>
+        </>
+      )}
 
       {/* Bulk Actions Toolbar */}
       <BulkActionsToolbar

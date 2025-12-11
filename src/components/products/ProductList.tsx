@@ -79,14 +79,14 @@ function ProductList({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchWithRateLimit<{ products: Product[]; total: number; page: number }>(
+      const result = await fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
         () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
       );
 
-      if (data) {
-        setProducts(data.products);
-        setTotal(data.total);
-        setPage(data.page);
+      if (result) {
+        setProducts(result.data);
+        setTotal(result.total);
+        setPage(result.page);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -97,6 +97,16 @@ function ProductList({
   };
 
   const handlePageChange = (newPage: number) => {
+    // Validate page number
+    if (newPage < 1 || newPage > totalPages) {
+      return;
+    }
+
+    // Don't fetch if already on that page
+    if (newPage === page) {
+      return;
+    }
+
     fetchProducts(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
