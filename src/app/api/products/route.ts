@@ -51,7 +51,7 @@ async function postHandler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, price, discountPercent, stock, images, isFeatured, isActive } = body;
+    const { name, description, price, discountPercent, stock, images, hasVariants, isFeatured, isActive } = body;
 
     if (!name || !description || price === undefined || stock === undefined) {
       return NextResponse.json(
@@ -67,6 +67,7 @@ async function postHandler(req: NextRequest) {
       discountPercent: discountPercent !== undefined && discountPercent !== null ? parseInt(discountPercent) : null,
       stock: parseInt(stock),
       images: images || [],
+      hasVariants: hasVariants !== undefined ? hasVariants : false,
       isFeatured: isFeatured !== undefined ? isFeatured : false,
       isActive: isActive !== undefined ? isActive : true,
     });

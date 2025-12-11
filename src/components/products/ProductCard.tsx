@@ -45,12 +45,37 @@ interface ProductCardProps {
 function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [currentImage, setCurrentImage] = useState(product.images[0] || '');
 
   // Get active variants
   const activeVariants = product.variants?.filter(v => v.isActive) || [];
   const hasVariants = product.hasVariants && activeVariants.length > 0;
+
+  // Auto-select first active variant with media if available
+  const getDefaultVariant = (): Variant | null => {
+    if (!hasVariants) return null;
+
+    // Prefer variant with media
+    const variantWithMedia = activeVariants.find(v =>
+      v.media && v.media.length > 0
+    );
+    if (variantWithMedia) return variantWithMedia;
+
+    // Fallback to first active variant
+    return activeVariants[0] || null;
+  };
+
+  const defaultVariant = getDefaultVariant();
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(defaultVariant);
+
+  // Set initial image based on default variant or product images
+  const getInitialImage = () => {
+    if (defaultVariant?.media && defaultVariant.media.length > 0) {
+      return defaultVariant.media[0].url;
+    }
+    return product.images[0] || '';
+  };
+
+  const [currentImage, setCurrentImage] = useState(getInitialImage());
 
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
