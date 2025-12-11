@@ -31,10 +31,14 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
   const [isZoomed, setIsZoomed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Touch swipe handling
+  // Touch swipe handling (for main gallery)
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
   const minSwipeDistance = 50; // Minimum swipe distance in pixels
+
+  // Touch swipe handling (for zoom modal)
+  const zoomTouchStartX = useRef<number>(0);
+  const zoomTouchEndX = useRef<number>(0)
 
   // Memoize filtered and sorted media to avoid recalculating on every render
   const sortedMedia = useMemo(() => {
@@ -122,7 +126,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     setIsZoomed(false);
   };
 
-  // Touch swipe handlers
+  // Touch swipe handlers for main gallery
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndX.current = 0; // Reset
     touchStartX.current = e.targetTouches[0].clientX;
@@ -149,6 +153,37 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     // Reset
     touchStartX.current = 0;
     touchEndX.current = 0;
+  };
+
+  // Touch swipe handlers for zoom modal
+  const onZoomTouchStart = (e: React.TouchEvent) => {
+    zoomTouchEndX.current = 0; // Reset
+    zoomTouchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onZoomTouchMove = (e: React.TouchEvent) => {
+    zoomTouchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onZoomTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation(); // Prevent closing modal on swipe
+
+    if (!zoomTouchStartX.current || !zoomTouchEndX.current) return;
+
+    const distance = zoomTouchStartX.current - zoomTouchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // In RTL, left swipe = previous, right swipe = next
+    if (isLeftSwipe) {
+      goToPrevious();
+    } else if (isRightSwipe) {
+      goToNext();
+    }
+
+    // Reset
+    zoomTouchStartX.current = 0;
+    zoomTouchEndX.current = 0;
   };
 
   return (
@@ -272,8 +307,12 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         <div
           className="fixed inset-0 z-50 bg-black bg-opacity-95 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setIsZoomed(false)}
+          onTouchStart={onZoomTouchStart}
+          onTouchMove={onZoomTouchMove}
+          onTouchEnd={onZoomTouchEnd}
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}
         >
+          {/* Close Button */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -284,6 +323,40 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
+
+          {/* Navigation Arrows for Modal */}
+          {sortedMedia.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToPrevious();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
+                aria-label="تصویر قبلی"
+              >
+                <ChevronLeftIcon className="h-6 w-6 text-white" />
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToNext();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
+                aria-label="تصویر بعدی"
+              >
+                <ChevronRightIcon className="h-6 w-6 text-white" />
+              </button>
+            </>
+          )}
+
+          {/* Counter for Modal */}
+          {sortedMedia.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/20 text-white text-sm px-4 py-2 rounded-full z-10">
+              {selectedIndex + 1} / {sortedMedia.length}
+            </div>
+          )}
 
           <div className="relative w-full h-full max-w-7xl max-h-screen pointer-events-none">
             <Image
