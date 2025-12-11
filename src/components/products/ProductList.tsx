@@ -7,6 +7,24 @@ import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
 
+interface Variant {
+  id: string;
+  name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
+  priceAdjust: number;
+  stock: number;
+  isActive: boolean;
+  media?: Array<{
+    id: string;
+    type: 'IMAGE' | 'VIDEO';
+    url: string;
+    alt?: string | null;
+    order: number;
+  }>;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -17,6 +35,8 @@ interface Product {
   images: string[];
   isActive: boolean;
   isFeatured?: boolean;
+  hasVariants?: boolean;
+  variants?: Variant[];
 }
 
 interface ProductListProps {
