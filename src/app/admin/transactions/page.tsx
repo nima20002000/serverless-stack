@@ -39,7 +39,6 @@ interface Transaction {
     product: {
       id: string;
       name: string;
-      slug: string;
     };
     variant: {
       id: string;
