@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
@@ -31,6 +31,11 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
   const [isZoomed, setIsZoomed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Touch swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const minSwipeDistance = 50; // Minimum swipe distance in pixels
+
   // Memoize filtered and sorted media to avoid recalculating on every render
   const sortedMedia = useMemo(() => {
     let displayMedia: MediaItem[];
@@ -58,7 +63,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     setIsZoomed(false);
   }, [selectedVariant?.id, media.length]);
 
-  // Handle ESC key to close zoom modal
+  // Handle ESC key to close zoom modal and prevent body scroll
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isZoomed) {
@@ -67,10 +72,15 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     };
 
     if (isZoomed) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
     }
 
     return () => {
+      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isZoomed]);
@@ -112,10 +122,44 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     setIsZoomed(false);
   };
 
+  // Touch swipe handlers
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndX.current = 0; // Reset
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // In RTL, left swipe = previous, right swipe = next
+    if (isLeftSwipe) {
+      goToPrevious();
+    } else if (isRightSwipe) {
+      goToNext();
+    }
+
+    // Reset
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
+
   return (
     <div className="space-y-4">
       {/* Main Display */}
-      <div className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden group">
+      <div
+        className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden group"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {currentMedia.type === 'IMAGE' ? (
           <>
             <Image
@@ -142,23 +186,23 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
           </video>
         )}
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - Always visible on mobile, hover on desktop */}
         {sortedMedia.length > 1 && (
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
               aria-label="تصویر قبلی"
             >
-              <ChevronLeftIcon className="h-6 w-6 text-gray-800" />
+              <ChevronLeftIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
             </button>
 
             <button
               onClick={goToNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
               aria-label="تصویر بعدی"
             >
-              <ChevronRightIcon className="h-6 w-6 text-gray-800" />
+              <ChevronRightIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
             </button>
           </>
         )}
@@ -226,15 +270,16 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
       {/* Zoom Modal */}
       {isZoomed && currentMedia.type === 'IMAGE' && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black bg-opacity-95 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setIsZoomed(false)}
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}
         >
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsZoomed(false);
             }}
-            className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-10"
+            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-colors z-10"
             aria-label="بستن"
           >
             <XMarkIcon className="h-6 w-6" />
@@ -246,6 +291,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               alt={currentMedia.alt || productName}
               fill
               className="object-contain"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
         </div>
