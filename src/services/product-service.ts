@@ -501,6 +501,8 @@ export async function updateProduct(
 
 /**
  * Delete product (admin only)
+ * NOTE: Products that have been purchased cannot be deleted (to preserve order history).
+ * Use soft delete (isActive = false) instead for products with transaction history.
  */
 export async function deleteProduct(id: string): Promise<DeleteResult> {
   // Check if product exists
@@ -512,9 +514,26 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
     throw new Error('محصول یافت نشد');
   }
 
+  // Check if product has been purchased (has transaction items)
+  const transactionItemsCount = await prisma.transactionItem.count({
+    where: { productId: id },
+  });
+
+  if (transactionItemsCount > 0) {
+    log.warn('Cannot delete product with transaction history', {
+      productId: id,
+      transactionItemsCount,
+    });
+    throw new Error(
+      `این محصول قابل حذف نیست زیرا ${transactionItemsCount} سفارش ثبت شده دارد. برای مخفی کردن محصول، آن را غیرفعال کنید.`
+    );
+  }
+
   await prisma.product.delete({
     where: { id },
   });
+
+  log.info('Product deleted successfully', { productId: id });
 
   // Invalidate product cache
   await invalidateProductCache();
