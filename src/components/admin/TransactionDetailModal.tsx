@@ -48,6 +48,13 @@ interface Transaction {
       name: string;
       slug: string;
     };
+    variant: {
+      id: string;
+      name: string;
+      color: string | null;
+      size: string | null;
+      material: string | null;
+    } | null;
   }>;
   invoice: {
     id: string;
@@ -291,6 +298,14 @@ export default function TransactionDetailModal({
                       <div className="font-medium text-gray-900">
                         {item.product.name}
                       </div>
+                      {item.variant && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          {item.variant.name}
+                          {item.variant.color && ` - ${item.variant.color}`}
+                          {item.variant.size && ` - ${item.variant.size}`}
+                          {item.variant.material && ` - ${item.variant.material}`}
+                        </div>
+                      )}
                       <div className="text-xs text-gray-500">
                         {item.product.slug}
                       </div>

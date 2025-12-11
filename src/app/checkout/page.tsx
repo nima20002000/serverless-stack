@@ -54,6 +54,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: items.map((item) => ({
             productId: item.productId,
+            variantId: item.variantId,
             quantity: item.quantity,
           })),
           // TODO: Add payment method selection UI when Digipay is integrated
@@ -131,12 +132,17 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 {items.map((item) => (
                   <div
-                    key={item.productId}
+                    key={`${item.productId}-${item.variantId || 'no-variant'}`}
                     className="flex items-center gap-4 py-3 border-b last:border-b-0"
                   >
                     <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg" />
                     <div className="flex-1 text-right">
                       <h3 className="font-medium text-gray-900">{item.name}</h3>
+                      {item.variantName && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {item.variantName}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-600">
                         {formatPrice(item.price)} × {item.quantity}
                       </p>

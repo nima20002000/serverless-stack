@@ -35,7 +35,12 @@ type UserBasic = {
 type TransactionWithDetails = Prisma.TransactionGetPayload<{
   include: {
     user: { select: { id: true; uid: true; name: true; email: true; phone: true } };
-    items: { include: { product: { select: { id: true; name: true } } } };
+    items: {
+      include: {
+        product: { select: { id: true; name: true } };
+        variant: { select: { id: true; name: true; color: true; size: true; material: true } };
+      }
+    };
     invoice: true;
   };
 }>;
@@ -238,6 +243,15 @@ export async function getAllTransactions(
                 name: true,
               },
             },
+            variant: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+                size: true,
+                material: true,
+              },
+            },
           },
         },
         invoice: true,
@@ -271,6 +285,15 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
       items: {
         include: {
           product: true,
+          variant: {
+            select: {
+              id: true,
+              name: true,
+              color: true,
+              size: true,
+              material: true,
+            },
+          },
         },
       },
       invoice: true,

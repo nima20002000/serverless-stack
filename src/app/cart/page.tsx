@@ -17,18 +17,18 @@ export default function CartPage() {
   const itemCount = useCartStore(selectItemCount);
   const [error, setError] = useState('');
 
-  const handleUpdateQuantity = (productId: string, quantity: number) => {
+  const handleUpdateQuantity = (productId: string, quantity: number, variantId?: string) => {
     try {
       setError('');
-      updateQuantity(productId, quantity);
+      updateQuantity(productId, quantity, variantId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید');
     }
   };
 
-  const handleRemove = (productId: string) => {
+  const handleRemove = (productId: string, variantId?: string) => {
     setError('');
-    removeItem(productId);
+    removeItem(productId, variantId);
   };
 
   const handleCheckout = () => {
@@ -113,7 +113,7 @@ export default function CartPage() {
                 <div className="space-y-0">
                   {items.map((item) => (
                     <CartItem
-                      key={item.productId}
+                      key={`${item.productId}-${item.variantId || 'no-variant'}`}
                       item={item}
                       onUpdateQuantity={handleUpdateQuantity}
                       onRemove={handleRemove}

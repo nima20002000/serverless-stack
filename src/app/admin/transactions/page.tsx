@@ -41,6 +41,13 @@ interface Transaction {
       name: string;
       slug: string;
     };
+    variant: {
+      id: string;
+      name: string;
+      color: string | null;
+      size: string | null;
+      material: string | null;
+    } | null;
   }>;
   invoice: {
     id: string;
@@ -324,7 +331,13 @@ export default function TransactionsManagementPage() {
                             <div className="text-xs text-gray-500 mt-1">
                               {transaction.items.slice(0, 2).map((item) => (
                                 <div key={item.id}>
-                                  {item.product.name} (×{item.quantity.toLocaleString('fa-IR')})
+                                  {item.product.name}
+                                  {item.variant && (
+                                    <span className="text-blue-600">
+                                      {' '}({item.variant.name})
+                                    </span>
+                                  )}
+                                  {' '}(×{item.quantity.toLocaleString('fa-IR')})
                                 </div>
                               ))}
                               {transaction.items.length > 2 && (
