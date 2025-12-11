@@ -151,7 +151,7 @@ export default async function Home() {
                 <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer h-full">
                   <div className="text-center">
                     {/* Category Image */}
-                    <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                    <div className="w-full aspect-[4/5] rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
                       {category.image ? (
                         <Image
                           src={optimizeImage.categoryCard(category.image)}
