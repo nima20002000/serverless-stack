@@ -233,11 +233,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Update or create variants
+      // Track created variant IDs for reordering later
+      const variantIdMapping: Record<string, string> = {}; // tempId -> realId
+
       for (const variant of variantManager.variants) {
         const isExisting = !variant.id.startsWith('variant-');
 
         if (isExisting) {
-          // Update existing variant (including order)
+          // Update existing variant (without order - will be handled by reorder endpoint)
           await fetch(`/api/products/${params.id}/variants/${variant.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -249,10 +252,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               material: variant.material || undefined,
               priceAdjust: parseFloat(variant.priceAdjust),
               stock: parseInt(variant.stock),
-              order: variant.order,
               isActive: variant.isActive,
             }),
           });
+
+          // Map existing variant ID to itself
+          variantIdMapping[variant.id] = variant.id;
 
           // Sync variant media
           const variantMediaResponse = await fetch(`/api/products/${params.id}/media`);
@@ -322,6 +327,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           const variantData = await variantResponse.json();
           const variantId = variantData.variant?.id;
 
+          // Map temporary ID to real database ID
+          if (variantId) {
+            variantIdMapping[variant.id] = variantId;
+          }
+
           // Add variant media
           if (variantId && variant.media && variant.media.length > 0) {
             for (const mediaItem of variant.media) {
@@ -340,6 +350,23 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             }
           }
         }
+      }
+
+      // Step 4: Reorder all variants in a single transaction
+      // This ensures the order is persisted correctly
+      if (variantManager.variants.length > 0) {
+        const variantOrders = variantManager.variants.map(v => ({
+          id: variantIdMapping[v.id] || v.id, // Use real ID from mapping
+          order: v.order,
+        }));
+
+        await fetch(`/api/products/${params.id}/variants/reorder`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            variantOrders,
+          }),
+        });
       }
 
       router.push('/admin/products');
