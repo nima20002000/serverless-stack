@@ -132,6 +132,122 @@ export async function getActiveProducts(options?: {
 }
 
 /**
+ * Get featured products (database-level filtering)
+ * Optimized query that directly fetches only featured products
+ */
+export async function getFeaturedProducts(options?: {
+  limit?: number;
+}): Promise<ProductWithRelations[]> {
+  const limit = options?.limit || 4;
+
+  const products = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      isFeatured: true,
+    },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      media: {
+        where: { variantId: null },
+        orderBy: { order: 'asc' },
+      },
+      variants: {
+        include: {
+          media: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  // Populate images array with media URLs for backward compatibility
+  const productsWithImages = products.map((product) => {
+    let images = [...product.images];
+
+    if (images.length === 0) {
+      const productMediaUrls = product.media.map((m) => m.url);
+
+      if (productMediaUrls.length > 0) {
+        images = productMediaUrls;
+      } else {
+        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
+        if (variantWithMedia) {
+          images = variantWithMedia.media.map((m) => m.url);
+        }
+      }
+    }
+
+    return {
+      ...product,
+      images,
+    };
+  });
+
+  return productsWithImages;
+}
+
+/**
+ * Get discounted/sale products (database-level filtering)
+ * Optimized query that directly fetches only products with active discounts
+ */
+export async function getDiscountedProducts(options?: {
+  limit?: number;
+}): Promise<ProductWithRelations[]> {
+  const limit = options?.limit || 4;
+
+  const products = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      discountPercent: {
+        gt: 0,
+      },
+    },
+    take: limit,
+    orderBy: { discountPercent: 'desc' }, // Sort by highest discount first
+    include: {
+      media: {
+        where: { variantId: null },
+        orderBy: { order: 'asc' },
+      },
+      variants: {
+        include: {
+          media: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      },
+    },
+  });
+
+  // Populate images array with media URLs for backward compatibility
+  const productsWithImages = products.map((product) => {
+    let images = [...product.images];
+
+    if (images.length === 0) {
+      const productMediaUrls = product.media.map((m) => m.url);
+
+      if (productMediaUrls.length > 0) {
+        images = productMediaUrls;
+      } else {
+        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
+        if (variantWithMedia) {
+          images = variantWithMedia.media.map((m) => m.url);
+        }
+      }
+    }
+
+    return {
+      ...product,
+      images,
+    };
+  });
+
+  return productsWithImages;
+}
+
+/**
  * Get product by ID
  */
 export async function getProductById(id: string, includeRelations = false): Promise<Product | ProductWithRelations> {

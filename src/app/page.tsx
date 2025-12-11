@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getActiveProducts } from '@/services/product-service';
+import { getFeaturedProducts, getDiscountedProducts } from '@/services/product-service';
 import { getCategoryTree } from '@/services/category-service';
 import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
@@ -16,24 +16,19 @@ export const revalidate = 60;
 const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg";
 
 export default async function Home() {
-  // Fetch more products to ensure we get enough featured/sale items
-  // Fetch 20 products to increase chance of finding featured/discounted products
-  const allProductsResult = await getActiveProducts({ page: 1, perPage: 20 });
+  // Fetch featured and discounted products directly from database
+  // Using database-level filtering for optimal performance
+  const [featuredProductsRaw, discountedProductsRaw, categories] = await Promise.all([
+    getFeaturedProducts({ limit: 4 }),
+    getDiscountedProducts({ limit: 4 }),
+    getCategoryTree(),
+  ]);
 
-  // Filter for featured products (up to 4)
-  const featuredProducts = allProductsResult.data
-    .filter(p => p.isFeatured)
-    .slice(0, 4)
-    .map(p => ({ ...p, price: Number(p.price) }));
+  // Convert price to number for display
+  const featuredProducts = featuredProductsRaw.map(p => ({ ...p, price: Number(p.price) }));
+  const discountedProducts = discountedProductsRaw.map(p => ({ ...p, price: Number(p.price) }));
 
-  // Filter for discounted products (up to 4)
-  const discountedProducts = allProductsResult.data
-    .filter(p => p.discountPercent && p.discountPercent > 0)
-    .slice(0, 4)
-    .map(p => ({ ...p, price: Number(p.price) }));
-
-  // Fetch categories (top 3)
-  const categories = await getCategoryTree();
+  // Get top 3 categories
   const topCategories = categories.slice(0, 3);
 
   return (
