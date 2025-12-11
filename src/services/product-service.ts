@@ -5,6 +5,99 @@ import { PaginatedResponse, DeleteResult } from '@/types/api';
 import { log } from '@/lib/logger';
 import { clearCachePattern } from '@/lib/redis/client';
 
+// ========== PRISMA QUERY PATTERNS ==========
+
+/**
+ * Standard ordering for media (default image first, then by order)
+ */
+const MEDIA_ORDER_BY: Prisma.ProductMediaOrderByWithRelationInput[] = [
+  { isDefault: 'desc' },
+  { order: 'asc' },
+];
+
+/**
+ * Include pattern for product media (excludes variant-specific media)
+ */
+const PRODUCT_MEDIA_INCLUDE: Prisma.ProductMediaFindManyArgs = {
+  where: { variantId: null },
+  orderBy: MEDIA_ORDER_BY,
+};
+
+/**
+ * Include pattern for variant media
+ */
+const VARIANT_MEDIA_INCLUDE: Prisma.ProductMediaFindManyArgs = {
+  orderBy: MEDIA_ORDER_BY,
+};
+
+/**
+ * Standard include pattern for products with all relations
+ */
+const PRODUCT_WITH_RELATIONS_INCLUDE: Prisma.ProductInclude = {
+  media: PRODUCT_MEDIA_INCLUDE,
+  variants: {
+    include: {
+      media: VARIANT_MEDIA_INCLUDE,
+    },
+  },
+};
+
+/**
+ * Full include pattern with category and tags
+ */
+const PRODUCT_FULL_INCLUDE: Prisma.ProductInclude = {
+  category: true,
+  tags: true,
+  media: {
+    orderBy: MEDIA_ORDER_BY,
+  },
+  variants: {
+    include: {
+      media: VARIANT_MEDIA_INCLUDE,
+    },
+  },
+};
+
+// ========== HELPER FUNCTIONS ==========
+
+/**
+ * Populate images array from media for backward compatibility
+ * Handles fallback logic: product.images → product.media → first variant.media
+ */
+function populateProductImages(product: ProductWithRelations): ProductWithRelations {
+  let images = [...product.images];
+
+  // If no images in legacy field, populate from media
+  if (images.length === 0 && product.media && product.variants) {
+    // First, try product's direct media
+    const productMediaUrls = product.media.map((m) => m.url);
+
+    if (productMediaUrls.length > 0) {
+      images = productMediaUrls;
+    } else {
+      // If no product media, get images from first variant that has media
+      const variantWithMedia = product.variants.find(
+        (v): v is VariantWithMedia => 'media' in v && Array.isArray(v.media) && v.media.length > 0
+      );
+      if (variantWithMedia) {
+        images = variantWithMedia.media.map((m) => m.url);
+      }
+    }
+  }
+
+  return {
+    ...product,
+    images,
+  };
+}
+
+/**
+ * Populate images for an array of products
+ */
+function populateProductsImages(products: ProductWithRelations[]): ProductWithRelations[] {
+  return products.map(populateProductImages);
+}
+
 /**
  * Helper to invalidate all product caches
  * Since Upstash doesn't support pattern matching, we clear common cache keys
@@ -69,57 +162,13 @@ export async function getAllProducts(options?: {
       skip,
       take: perPage,
       orderBy: { createdAt: 'desc' },
-      include: {
-        media: {
-          where: { variantId: null },
-          orderBy: [
-            { isDefault: 'desc' }, // Default image first
-            { order: 'asc' },      // Then by order
-          ],
-        },
-        variants: {
-          include: {
-            media: {
-              orderBy: [
-                { isDefault: 'desc' }, // Default image first
-                { order: 'asc' },      // Then by order
-              ],
-            },
-          },
-        },
-      },
+      include: PRODUCT_WITH_RELATIONS_INCLUDE,
     }),
     prisma.product.count({ where }),
   ]);
 
-  // Populate images array with media URLs for backward compatibility
-  const productsWithImages = products.map((product) => {
-    let images = [...product.images]; // Start with existing images
-
-    // If no images in the legacy field, populate from media
-    if (images.length === 0) {
-      // First, try to get images from product's direct media
-      const productMediaUrls = product.media.map((m) => m.url);
-
-      if (productMediaUrls.length > 0) {
-        images = productMediaUrls;
-      } else {
-        // If no product media, get images from the first variant that has media
-        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
-        if (variantWithMedia) {
-          images = variantWithMedia.media.map((m) => m.url);
-        }
-      }
-    }
-
-    return {
-      ...product,
-      images,
-    };
-  });
-
   return {
-    data: productsWithImages,
+    data: populateProductsImages(products),
     total,
     page,
     perPage,
@@ -153,51 +202,10 @@ export async function getFeaturedProducts(options?: {
     },
     take: limit,
     orderBy: { createdAt: 'desc' },
-    include: {
-      media: {
-        where: { variantId: null },
-        orderBy: [
-          { isDefault: 'desc' }, // Default image first
-          { order: 'asc' },      // Then by order
-        ],
-      },
-      variants: {
-        include: {
-          media: {
-            orderBy: [
-              { isDefault: 'desc' }, // Default image first
-              { order: 'asc' },      // Then by order
-            ],
-          },
-        },
-      },
-    },
+    include: PRODUCT_WITH_RELATIONS_INCLUDE,
   });
 
-  // Populate images array with media URLs for backward compatibility
-  const productsWithImages = products.map((product) => {
-    let images = [...product.images];
-
-    if (images.length === 0) {
-      const productMediaUrls = product.media.map((m) => m.url);
-
-      if (productMediaUrls.length > 0) {
-        images = productMediaUrls;
-      } else {
-        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
-        if (variantWithMedia) {
-          images = variantWithMedia.media.map((m) => m.url);
-        }
-      }
-    }
-
-    return {
-      ...product,
-      images,
-    };
-  });
-
-  return productsWithImages;
+  return populateProductsImages(products);
 }
 
 /**
@@ -218,51 +226,10 @@ export async function getDiscountedProducts(options?: {
     },
     take: limit,
     orderBy: { discountPercent: 'desc' }, // Sort by highest discount first
-    include: {
-      media: {
-        where: { variantId: null },
-        orderBy: [
-          { isDefault: 'desc' }, // Default image first
-          { order: 'asc' },      // Then by order
-        ],
-      },
-      variants: {
-        include: {
-          media: {
-            orderBy: [
-              { isDefault: 'desc' }, // Default image first
-              { order: 'asc' },      // Then by order
-            ],
-          },
-        },
-      },
-    },
+    include: PRODUCT_WITH_RELATIONS_INCLUDE,
   });
 
-  // Populate images array with media URLs for backward compatibility
-  const productsWithImages = products.map((product) => {
-    let images = [...product.images];
-
-    if (images.length === 0) {
-      const productMediaUrls = product.media.map((m) => m.url);
-
-      if (productMediaUrls.length > 0) {
-        images = productMediaUrls;
-      } else {
-        const variantWithMedia = product.variants.find((v) => v.media.length > 0);
-        if (variantWithMedia) {
-          images = variantWithMedia.media.map((m) => m.url);
-        }
-      }
-    }
-
-    return {
-      ...product,
-      images,
-    };
-  });
-
-  return productsWithImages;
+  return populateProductsImages(products);
 }
 
 /**
@@ -279,26 +246,7 @@ export async function getProductById(
   const product = await prisma.product.findUnique({
     where: { id },
     ...(includeRelations && {
-      include: {
-        category: true,
-        tags: true,
-        media: {
-          orderBy: [
-            { isDefault: 'desc' }, // Default image first
-            { order: 'asc' },      // Then by order
-          ],
-        },
-        variants: {
-          include: {
-            media: {
-              orderBy: [
-                { isDefault: 'desc' }, // Default image first
-                { order: 'asc' },      // Then by order
-              ],
-            },
-          },
-        },
-      },
+      include: PRODUCT_FULL_INCLUDE,
     }),
   });
 
@@ -405,12 +353,7 @@ export async function createProduct(data: {
           },
         }),
       },
-      include: {
-        category: true,
-        tags: true,
-        media: true,
-        variants: true,
-      },
+      include: PRODUCT_FULL_INCLUDE,
     });
 
     log.info('Product created successfully', {
@@ -497,12 +440,7 @@ export async function updateProduct(
   const product = await prisma.product.update({
     where: { id },
     data: updateData,
-    include: {
-      category: true,
-      tags: true,
-      media: true,
-      variants: true,
-    },
+    include: PRODUCT_FULL_INCLUDE,
   });
 
   // Invalidate product cache
@@ -708,10 +646,7 @@ export async function addProductMedia(data: {
 export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
   const media = await prisma.productMedia.findMany({
     where: { productId },
-    orderBy: [
-      { isDefault: 'desc' }, // Default image first
-      { order: 'asc' },      // Then by order
-    ],
+    orderBy: MEDIA_ORDER_BY,
   });
 
   return media;
@@ -782,10 +717,7 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
         productId: media.productId,
         variantId: media.variantId,
       },
-      orderBy: [
-        { isDefault: 'desc' }, // Shouldn't matter since we just deleted the default
-        { order: 'asc' },      // Get the first by order
-      ],
+      orderBy: MEDIA_ORDER_BY,
     });
 
     if (firstRemainingMedia) {
@@ -839,12 +771,7 @@ export async function getProductVariants(productId: string): Promise<VariantWith
   const variants = await prisma.productVariant.findMany({
     where: { productId },
     include: {
-      media: {
-        orderBy: [
-          { isDefault: 'desc' }, // Default image first
-          { order: 'asc' },      // Then by order
-        ],
-      },
+      media: VARIANT_MEDIA_INCLUDE,
     },
     orderBy: { createdAt: 'asc' },
   });
@@ -892,7 +819,7 @@ export async function createProductVariant(data: {
       isActive: data.isActive !== undefined ? data.isActive : true,
     },
     include: {
-      media: true,
+      media: VARIANT_MEDIA_INCLUDE,
     },
   });
 
@@ -947,7 +874,7 @@ export async function updateProductVariant(
     where: { id },
     data,
     include: {
-      media: true,
+      media: VARIANT_MEDIA_INCLUDE,
     },
   });
 
