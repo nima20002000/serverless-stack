@@ -267,8 +267,15 @@ export async function getDiscountedProducts(options?: {
 
 /**
  * Get product by ID
+ * @param id - Product ID
+ * @param includeRelations - Whether to include related data (category, tags, media, variants)
+ * @param includeInactive - Whether to include inactive products (default: false, for public access)
  */
-export async function getProductById(id: string, includeRelations = false): Promise<Product | ProductWithRelations> {
+export async function getProductById(
+  id: string,
+  includeRelations = false,
+  includeInactive = false
+): Promise<Product | ProductWithRelations> {
   const product = await prisma.product.findUnique({
     where: { id },
     ...(includeRelations && {
@@ -296,6 +303,11 @@ export async function getProductById(id: string, includeRelations = false): Prom
   });
 
   if (!product) {
+    throw new Error('محصول یافت نشد');
+  }
+
+  // Check if product is active (unless explicitly including inactive products)
+  if (!includeInactive && !product.isActive) {
     throw new Error('محصول یافت نشد');
   }
 
