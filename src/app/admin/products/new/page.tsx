@@ -19,6 +19,7 @@ interface MediaItem {
   url: string;
   alt?: string;
   order: number;
+  isDefault?: boolean;
 }
 
 interface Tag {
@@ -165,6 +166,7 @@ export default function NewProductPage() {
               url: mediaItem.url,
               alt: mediaItem.alt,
               order: mediaItem.order,
+              isDefault: mediaItem.isDefault,
             }),
           });
         }
@@ -203,6 +205,7 @@ export default function NewProductPage() {
                   url: mediaItem.url,
                   alt: mediaItem.alt,
                   order: mediaItem.order,
+                  isDefault: mediaItem.isDefault,
                 }),
               });
             }
@@ -328,9 +331,17 @@ export default function NewProductPage() {
       url,
       alt: '',
       order: media.length + index,
+      isDefault: media.length === 0 && index === 0, // First photo is default if no media exists
       isNew: true,
     }));
     setMedia([...media, ...newMedia]);
+  };
+
+  const setDefaultMedia = (id: string) => {
+    setMedia(media.map(m => ({
+      ...m,
+      isDefault: m.id === id,
+    })));
   };
 
   const handleVariantMediaSelect = (urls: string[]) => {
@@ -340,17 +351,41 @@ export default function NewProductPage() {
       url,
       alt: '',
       order: variantMedia.length + index,
+      isDefault: variantMedia.length === 0 && index === 0, // First photo is default if no media exists
       isNew: true,
     }));
     setVariantMedia([...variantMedia, ...newMedia]);
   };
 
+  const setDefaultVariantMedia = (id: string) => {
+    setVariantMedia(variantMedia.map(m => ({
+      ...m,
+      isDefault: m.id === id,
+    })));
+  };
+
   const removeMedia = (id: string) => {
-    setMedia(media.filter(m => m.id !== id));
+    const removedItem = media.find(m => m.id === id);
+    const remaining = media.filter(m => m.id !== id);
+
+    // If removing the default media and there are remaining items, make the first one default
+    if (removedItem?.isDefault && remaining.length > 0) {
+      remaining[0].isDefault = true;
+    }
+
+    setMedia(remaining);
   };
 
   const removeVariantMedia = (id: string) => {
-    setVariantMedia(variantMedia.filter(m => m.id !== id));
+    const removedItem = variantMedia.find(m => m.id === id);
+    const remaining = variantMedia.filter(m => m.id !== id);
+
+    // If removing the default media and there are remaining items, make the first one default
+    if (removedItem?.isDefault && remaining.length > 0) {
+      remaining[0].isDefault = true;
+    }
+
+    setVariantMedia(remaining);
   };
 
   return (
@@ -542,7 +577,14 @@ export default function NewProductPage() {
           {media.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
               {media.map((item) => (
-                <div key={item.id} className="relative group border rounded-lg overflow-hidden">
+                <div
+                  key={item.id}
+                  className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer ${
+                    item.isDefault ? 'border-blue-500' : 'border-gray-200'
+                  }`}
+                  onClick={() => setDefaultMedia(item.id)}
+                  title="کلیک کنید تا عکس پیش‌فرض شود"
+                >
                   <div className="aspect-square relative bg-gray-200">
                     {item.type === 'IMAGE' ? (
                       <Image
@@ -557,9 +599,17 @@ export default function NewProductPage() {
                         ویدیو
                       </div>
                     )}
+                    {item.isDefault && (
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                        پیش‌فرض
+                      </div>
+                    )}
                     <button
                       type="button"
-                      onClick={() => removeMedia(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeMedia(item.id);
+                      }}
                       className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <XMarkIcon className="h-4 w-4" />
@@ -701,7 +751,14 @@ export default function NewProductPage() {
                 {variantMedia.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     {variantMedia.map((item) => (
-                      <div key={item.id} className="relative group border rounded-lg overflow-hidden">
+                      <div
+                        key={item.id}
+                        className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer ${
+                          item.isDefault ? 'border-blue-500' : 'border-gray-200'
+                        }`}
+                        onClick={() => setDefaultVariantMedia(item.id)}
+                        title="کلیک کنید تا عکس پیش‌فرض شود"
+                      >
                         <div className="aspect-square relative bg-gray-200">
                           {item.type === 'IMAGE' ? (
                             <Image
@@ -716,9 +773,17 @@ export default function NewProductPage() {
                               ویدیو
                             </div>
                           )}
+                          {item.isDefault && (
+                            <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                              پیش‌فرض
+                            </div>
+                          )}
                           <button
                             type="button"
-                            onClick={() => removeVariantMedia(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeVariantMedia(item.id);
+                            }}
                             className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
                             <XMarkIcon className="h-4 w-4" />

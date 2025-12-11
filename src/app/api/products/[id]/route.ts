@@ -101,7 +101,7 @@ export async function PUT(
 
 // DELETE /api/products/[id] - Delete product (admin only)
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

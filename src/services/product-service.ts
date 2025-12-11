@@ -605,7 +605,33 @@ export async function addProductMedia(data: {
   url: string;
   alt?: string;
   order?: number;
+  isDefault?: boolean;
 }): Promise<ProductMedia> {
+  // Check if there are any existing media for this product/variant
+  const existingMediaCount = await prisma.productMedia.count({
+    where: {
+      productId: data.productId,
+      variantId: data.variantId || null,
+    },
+  });
+
+  // If this is the first media, make it default automatically (unless explicitly set to false)
+  const shouldBeDefault = data.isDefault ?? (existingMediaCount === 0);
+
+  // If this is set as default, unset any existing default for the same product/variant
+  if (shouldBeDefault) {
+    await prisma.productMedia.updateMany({
+      where: {
+        productId: data.productId,
+        variantId: data.variantId || null,
+        isDefault: true,
+      },
+      data: {
+        isDefault: false,
+      },
+    });
+  }
+
   const media = await prisma.productMedia.create({
     data: {
       productId: data.productId,
@@ -614,6 +640,7 @@ export async function addProductMedia(data: {
       url: data.url,
       alt: data.alt,
       order: data.order ?? 0,
+      isDefault: shouldBeDefault,
     },
   });
 
@@ -633,12 +660,37 @@ export async function getProductMedia(productId: string): Promise<ProductMedia[]
 }
 
 /**
- * Update media order or alt text
+ * Update media order, alt text, or default status
  */
 export async function updateProductMedia(
   id: string,
-  data: Partial<{ alt: string; order: number }>
+  data: Partial<{ alt: string; order: number; isDefault: boolean }>
 ): Promise<ProductMedia> {
+  // Get the media to find its productId and variantId
+  const existingMedia = await prisma.productMedia.findUnique({
+    where: { id },
+    select: { productId: true, variantId: true },
+  });
+
+  if (!existingMedia) {
+    throw new Error('رسانه یافت نشد');
+  }
+
+  // If setting as default, unset any existing default for the same product/variant
+  if (data.isDefault) {
+    await prisma.productMedia.updateMany({
+      where: {
+        productId: existingMedia.productId,
+        variantId: existingMedia.variantId,
+        isDefault: true,
+        id: { not: id }, // Don't update the current media
+      },
+      data: {
+        isDefault: false,
+      },
+    });
+  }
+
   const media = await prisma.productMedia.update({
     where: { id },
     data,
@@ -651,9 +703,37 @@ export async function updateProductMedia(
  * Delete product media
  */
 export async function deleteProductMedia(id: string): Promise<DeleteResult> {
+  // Get the media being deleted to check if it's the default
+  const media = await prisma.productMedia.findUnique({
+    where: { id },
+    select: { productId: true, variantId: true, isDefault: true },
+  });
+
+  if (!media) {
+    throw new Error('رسانه یافت نشد');
+  }
+
   await prisma.productMedia.delete({
     where: { id },
   });
+
+  // If the deleted media was the default, set the first remaining media as default
+  if (media.isDefault) {
+    const firstRemainingMedia = await prisma.productMedia.findFirst({
+      where: {
+        productId: media.productId,
+        variantId: media.variantId,
+      },
+      orderBy: { order: 'asc' },
+    });
+
+    if (firstRemainingMedia) {
+      await prisma.productMedia.update({
+        where: { id: firstRemainingMedia.id },
+        data: { isDefault: true },
+      });
+    }
+  }
 
   return { success: true };
 }

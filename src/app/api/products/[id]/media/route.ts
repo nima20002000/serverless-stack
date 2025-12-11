@@ -9,7 +9,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -35,7 +35,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { variantId, type, url, alt, order } = body;
+    const { variantId, type, url, alt, order, isDefault } = body;
 
     if (!type || !url) {
       return NextResponse.json(
@@ -51,6 +51,7 @@ export async function POST(
       url,
       alt,
       order,
+      isDefault,
     });
 
     return NextResponse.json({ media }, { status: 201 });

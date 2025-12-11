@@ -96,6 +96,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       const timer = setTimeout(() => setOtpCooldown(otpCooldown - 1), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [otpCooldown]);
 
   // Reset OTP state when createAccount is unchecked

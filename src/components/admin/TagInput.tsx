@@ -62,7 +62,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
   useEffect(() => {
     if (query.trim().length < 2) {
       setSuggestions([]);
-      return;
+      return undefined;
     }
 
     const timer = setTimeout(() => {

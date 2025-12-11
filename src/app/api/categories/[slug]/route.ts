@@ -4,7 +4,7 @@ import { getCategoryBySlug } from '@/services/category-service';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {

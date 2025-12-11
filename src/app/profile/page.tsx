@@ -139,6 +139,7 @@ export default function ProfilePage() {
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [promoCode]);
 
   // OTP countdown timer
@@ -147,6 +148,7 @@ export default function ProfilePage() {
       const timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [otpCountdown]);
 
   const fetchPromoCode = useCallback(async () => {
