@@ -74,18 +74,6 @@ function SortableVariantCard({
       className="p-4 border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 transition-colors"
     >
       <div className="flex items-start justify-between gap-3">
-        {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing mt-1 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="جابجایی واریانت"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-          </svg>
-        </button>
-
         {/* Variant info */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
@@ -136,6 +124,25 @@ function SortableVariantCard({
             حذف
           </Button>
         </div>
+
+        {/* Drag handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 transition-colors p-1"
+          aria-label="جابجایی واریانت"
+          type="button"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
     </div>
   );
