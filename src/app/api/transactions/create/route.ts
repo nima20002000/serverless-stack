@@ -186,12 +186,37 @@ async function postHandler(req: NextRequest) {
         );
       }
 
-      // Calculate price with discount if applicable
+      // Calculate base price with discount if applicable
       const basePrice = Number(product.price);
       const discountPercent = product.discountPercent || 0;
-      const finalPrice = discountPercent > 0
+      let finalPrice = discountPercent > 0
         ? basePrice * (1 - discountPercent / 100)
         : basePrice;
+
+      // If variant is specified, add variant's price adjustment
+      if (item.variantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { priceAdjust: true, isActive: true },
+        });
+
+        if (!variant) {
+          return NextResponse.json(
+            { error: `واریانت محصول ${product.name} یافت نشد` },
+            { status: 400 }
+          );
+        }
+
+        if (!variant.isActive) {
+          return NextResponse.json(
+            { error: `واریانت محصول ${product.name} غیرفعال است` },
+            { status: 400 }
+          );
+        }
+
+        // Add variant price adjustment to the final price
+        finalPrice += Number(variant.priceAdjust);
+      }
 
       const itemTotal = finalPrice * item.quantity;
       totalAmount += itemTotal;
