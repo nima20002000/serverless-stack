@@ -10,6 +10,7 @@ import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 import CategorySelector from '@/components/admin/CategorySelector';
 import TagInput from '@/components/admin/TagInput';
+import GradientColorPicker from '@/components/ui/GradientColorPicker';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Image from 'next/image';
 
@@ -677,30 +678,32 @@ export default function NewProductPage() {
                 placeholder="PRD-RED-L"
               />
 
-              <div className="grid grid-cols-3 gap-4">
-                <Input
+              <div className="space-y-4">
+                <GradientColorPicker
                   label="رنگ"
                   name="color"
-                  type="color"
                   value={variantForm.color}
                   onChange={handleVariantFormChange}
+                  placeholder="#000000"
                 />
 
-                <Input
-                  label="سایز"
-                  name="size"
-                  value={variantForm.size}
-                  onChange={handleVariantFormChange}
-                  placeholder="L, XL, ..."
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <Input
+                    label="سایز"
+                    name="size"
+                    value={variantForm.size}
+                    onChange={handleVariantFormChange}
+                    placeholder="L, XL, ..."
+                  />
 
-                <Input
-                  label="جنس"
-                  name="material"
-                  value={variantForm.material}
-                  onChange={handleVariantFormChange}
-                  placeholder="پنبه، پشم، ..."
-                />
+                  <Input
+                    label="جنس"
+                    name="material"
+                    value={variantForm.material}
+                    onChange={handleVariantFormChange}
+                    placeholder="پنبه، پشم، ..."
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -848,7 +851,7 @@ export default function NewProductPage() {
                             رنگ:
                             <span
                               className="inline-block w-4 h-4 rounded border"
-                              style={{ backgroundColor: variant.color }}
+                              style={{ background: variant.color }}
                             />
                           </p>
                         )}

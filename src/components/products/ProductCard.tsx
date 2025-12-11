@@ -212,7 +212,7 @@ function ProductCard({ product }: ProductCardProps) {
                     {variant.color && (
                       <span
                         className="inline-block w-3 h-3 rounded-full border border-gray-300 ml-1"
-                        style={{ backgroundColor: variant.color }}
+                        style={{ background: variant.color }}
                       />
                     )}
                     {variant.size || variant.material || variant.name}
