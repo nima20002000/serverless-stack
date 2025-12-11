@@ -72,12 +72,18 @@ export async function getAllProducts(options?: {
       include: {
         media: {
           where: { variantId: null },
-          orderBy: { order: 'asc' },
+          orderBy: [
+            { isDefault: 'desc' }, // Default image first
+            { order: 'asc' },      // Then by order
+          ],
         },
         variants: {
           include: {
             media: {
-              orderBy: { order: 'asc' },
+              orderBy: [
+                { isDefault: 'desc' }, // Default image first
+                { order: 'asc' },      // Then by order
+              ],
             },
           },
         },
@@ -150,12 +156,18 @@ export async function getFeaturedProducts(options?: {
     include: {
       media: {
         where: { variantId: null },
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { isDefault: 'desc' }, // Default image first
+          { order: 'asc' },      // Then by order
+        ],
       },
       variants: {
         include: {
           media: {
-            orderBy: { order: 'asc' },
+            orderBy: [
+              { isDefault: 'desc' }, // Default image first
+              { order: 'asc' },      // Then by order
+            ],
           },
         },
       },
@@ -209,12 +221,18 @@ export async function getDiscountedProducts(options?: {
     include: {
       media: {
         where: { variantId: null },
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { isDefault: 'desc' }, // Default image first
+          { order: 'asc' },      // Then by order
+        ],
       },
       variants: {
         include: {
           media: {
-            orderBy: { order: 'asc' },
+            orderBy: [
+              { isDefault: 'desc' }, // Default image first
+              { order: 'asc' },      // Then by order
+            ],
           },
         },
       },
@@ -258,12 +276,18 @@ export async function getProductById(id: string, includeRelations = false): Prom
         category: true,
         tags: true,
         media: {
-          orderBy: { order: 'asc' },
+          orderBy: [
+            { isDefault: 'desc' }, // Default image first
+            { order: 'asc' },      // Then by order
+          ],
         },
         variants: {
           include: {
             media: {
-              orderBy: { order: 'asc' },
+              orderBy: [
+                { isDefault: 'desc' }, // Default image first
+                { order: 'asc' },      // Then by order
+              ],
             },
           },
         },
@@ -653,7 +677,10 @@ export async function addProductMedia(data: {
 export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
   const media = await prisma.productMedia.findMany({
     where: { productId },
-    orderBy: { order: 'asc' },
+    orderBy: [
+      { isDefault: 'desc' }, // Default image first
+      { order: 'asc' },      // Then by order
+    ],
   });
 
   return media;
@@ -724,7 +751,10 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
         productId: media.productId,
         variantId: media.variantId,
       },
-      orderBy: { order: 'asc' },
+      orderBy: [
+        { isDefault: 'desc' }, // Shouldn't matter since we just deleted the default
+        { order: 'asc' },      // Get the first by order
+      ],
     });
 
     if (firstRemainingMedia) {
@@ -779,7 +809,10 @@ export async function getProductVariants(productId: string): Promise<VariantWith
     where: { productId },
     include: {
       media: {
-        orderBy: { order: 'asc' },
+        orderBy: [
+          { isDefault: 'desc' }, // Default image first
+          { order: 'asc' },      // Then by order
+        ],
       },
     },
     orderBy: { createdAt: 'asc' },
