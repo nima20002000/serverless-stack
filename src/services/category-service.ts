@@ -19,7 +19,11 @@ export async function getAllCategories(): Promise<CategoryWithHierarchy[]> {
       parent: true,
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
     orderBy: { name: 'asc' },
@@ -37,7 +41,11 @@ export async function getActiveCategories(): Promise<CategoryWithHierarchy[]> {
         where: { isActive: true },
       },
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
     orderBy: { name: 'asc' },
@@ -61,12 +69,20 @@ export async function getCategoryTree(): Promise<CategoryWithHierarchy[]> {
             where: { isActive: true },
           },
           _count: {
-            select: { products: true },
+            select: {
+              products: {
+                where: { isActive: true }
+              }
+            },
           },
         },
       },
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
     orderBy: { name: 'asc' },
@@ -82,7 +98,11 @@ export async function getCategoryById(id: string): Promise<CategoryWithHierarchy
       parent: true,
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
   });
@@ -97,7 +117,11 @@ export async function getCategoryBySlug(slug: string): Promise<CategoryWithHiera
       parent: true,
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
   });
@@ -139,7 +163,11 @@ export async function createCategory(data: CategoryFormData): Promise<CategoryWi
       parent: true,
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
   });
@@ -215,7 +243,11 @@ export async function updateCategory(id: string, data: Partial<CategoryFormData>
       parent: true,
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
   });
@@ -233,7 +265,11 @@ export async function deleteCategory(id: string): Promise<DeleteResult> {
     include: {
       children: true,
       _count: {
-        select: { products: true },
+        select: {
+          products: {
+            where: { isActive: true }
+          }
+        },
       },
     },
   });
