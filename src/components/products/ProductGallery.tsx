@@ -363,7 +363,9 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
-              className="object-contain"
+              className={`object-contain transition-opacity duration-300 ${
+                isTransitioning ? 'opacity-0' : 'opacity-100'
+              }`}
               onClick={(e) => e.stopPropagation()}
             />
           </div>
