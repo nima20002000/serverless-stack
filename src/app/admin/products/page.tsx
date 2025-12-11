@@ -9,6 +9,23 @@ import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
 import Pagination from '@/components/ui/Pagination';
 import { formatPrice } from '@/services/product-service';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface Product {
   id: string;
@@ -20,6 +37,7 @@ interface Product {
   images: string[];
   isActive: boolean;
   isFeatured?: boolean;
+  displayOrder: number;
 }
 
 interface ProductsResponse {
@@ -28,6 +46,159 @@ interface ProductsResponse {
   page: number;
   perPage: number;
   totalPages: number;
+}
+
+/**
+ * Sortable product row component with drag handle
+ */
+function SortableProductRow({
+  product,
+  selectedProducts,
+  onToggleSelect,
+  onToggleActive,
+  onDelete,
+}: {
+  product: Product;
+  selectedProducts: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleActive: (id: string, currentStatus: boolean) => void;
+  onDelete: (id: string, name: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} className="hover:bg-gray-50">
+      {/* Drag Handle */}
+      <td className="px-4 py-3 text-center">
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="جابجایی محصول"
+          type="button"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </td>
+
+      {/* Checkbox */}
+      <td className="px-4 py-3 text-center">
+        <input
+          type="checkbox"
+          checked={selectedProducts.has(product.id)}
+          onChange={() => onToggleSelect(product.id)}
+          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+      </td>
+
+      {/* Actions */}
+      <td className="px-4 py-3 text-right">
+        <div className="flex gap-2 justify-end">
+          <Link href={`/admin/products/${product.id}/edit`}>
+            <Button variant="secondary" size="sm">
+              ویرایش
+            </Button>
+          </Link>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => onDelete(product.id, product.name)}
+          >
+            حذف
+          </Button>
+        </div>
+      </td>
+
+      {/* Status */}
+      <td className="px-4 py-3 text-right">
+        <button
+          onClick={() => onToggleActive(product.id, product.isActive)}
+          className={`px-3 py-1 rounded-full text-xs font-medium ${
+            product.isActive
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}
+        >
+          {product.isActive ? 'فعال' : 'غیرفعال'}
+        </button>
+      </td>
+
+      {/* Features */}
+      <td className="px-4 py-3 text-right">
+        <div className="flex gap-1 justify-end flex-wrap">
+          {product.isFeatured && (
+            <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
+              ویژه
+            </span>
+          )}
+          {product.discountPercent && product.discountPercent > 0 && (
+            <span className="inline-block bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+              {product.discountPercent}% تخفیف
+            </span>
+          )}
+          {!product.isFeatured && (!product.discountPercent || product.discountPercent === 0) && (
+            <span className="text-gray-400 text-xs">-</span>
+          )}
+        </div>
+      </td>
+
+      {/* Stock */}
+      <td className="px-4 py-3 text-right">
+        <span className={product.stock === 0 ? 'text-red-600' : 'text-gray-900'}>
+          {product.stock}
+        </span>
+      </td>
+
+      {/* Price */}
+      <td className="px-4 py-3 text-right">
+        <div className="flex flex-col gap-1">
+          {product.discountPercent && product.discountPercent > 0 ? (
+            <>
+              <span className="text-xs text-gray-500 line-through">
+                {formatPrice(Number(product.price))}
+              </span>
+              <span className="font-semibold text-red-600">
+                {formatPrice(Number(product.price) * (1 - product.discountPercent / 100))}
+              </span>
+            </>
+          ) : (
+            <span>{formatPrice(Number(product.price))}</span>
+          )}
+        </div>
+      </td>
+
+      {/* Name */}
+      <td className="px-4 py-3 text-right font-medium">
+        <Link
+          href={`/products/${product.id}`}
+          className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+        >
+          {product.name}
+        </Link>
+      </td>
+    </tr>
+  );
 }
 
 export default function AdminProductsPage() {
@@ -40,6 +211,20 @@ export default function AdminProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [hasOrderChanges, setHasOrderChanges] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts (prevents accidental drags)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -62,6 +247,63 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && data) {
+      const oldIndex = data.data.findIndex((p) => p.id === active.id);
+      const newIndex = data.data.findIndex((p) => p.id === over.id);
+
+      const reorderedProducts = arrayMove(data.data, oldIndex, newIndex);
+
+      setData({
+        ...data,
+        data: reorderedProducts,
+      });
+
+      setHasOrderChanges(true);
+    }
+  };
+
+  const handleConfirmOrder = async () => {
+    if (!data || !hasOrderChanges) return;
+
+    setIsSavingOrder(true);
+    setError('');
+
+    try {
+      // Create product order array with new displayOrder values
+      const productOrders = data.data.map((product, index) => ({
+        id: product.id,
+        displayOrder: index,
+      }));
+
+      const response = await fetch('/api/admin/products/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productOrders }),
+      });
+
+      if (!response.ok) throw new Error('خطا در ذخیره ترتیب محصولات');
+
+      const result = await response.json();
+      setSuccessMessage(result.message);
+      setHasOrderChanges(false);
+
+      // Refresh products to get updated displayOrder from server
+      await fetchProducts();
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleCancelOrder = () => {
+    setHasOrderChanges(false);
+    fetchProducts();
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,9 +476,29 @@ export default function AdminProductsPage() {
       <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
 
       <div className="flex items-center justify-between mb-6">
-        <Link href="/admin/products/new">
-          <Button variant="primary">افزودن محصول جدید</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/products/new">
+            <Button variant="primary">افزودن محصول جدید</Button>
+          </Link>
+          {hasOrderChanges && (
+            <>
+              <Button
+                variant="primary"
+                onClick={handleConfirmOrder}
+                disabled={isSavingOrder}
+              >
+                {isSavingOrder ? 'در حال ذخیره...' : 'تأیید ترتیب'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleCancelOrder}
+                disabled={isSavingOrder}
+              >
+                لغو
+              </Button>
+            </>
+          )}
+        </div>
         <h1 className="text-2xl font-bold text-gray-900">مدیریت محصولات</h1>
       </div>
 
@@ -338,114 +600,60 @@ export default function AdminProductsPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-center w-12">
-                      <input
-                        type="checkbox"
-                        checked={data.data.length > 0 && selectedProducts.size === data.data.length}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.data.map((product) => (
-                <tr key={product.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.has(product.id)}
-                      onChange={() => toggleSelectProduct(product.id)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Link href={`/admin/products/${product.id}/edit`}>
-                        <Button variant="secondary" size="sm">
-                          ویرایش
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDelete(product.id, product.name)}
-                      >
-                        حذف
-                      </Button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => toggleActive(product.id, product.isActive)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        product.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {product.isActive ? 'فعال' : 'غیرفعال'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex gap-1 justify-end flex-wrap">
-                      {product.isFeatured && (
-                        <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
-                          ویژه
-                        </span>
-                      )}
-                      {product.discountPercent && product.discountPercent > 0 && (
-                        <span className="inline-block bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
-                          {product.discountPercent}% تخفیف
-                        </span>
-                      )}
-                      {!product.isFeatured && (!product.discountPercent || product.discountPercent === 0) && (
-                        <span className="text-gray-400 text-xs">-</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={product.stock === 0 ? 'text-red-600' : 'text-gray-900'}>
-                      {product.stock}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex flex-col gap-1">
-                      {product.discountPercent && product.discountPercent > 0 ? (
-                        <>
-                          <span className="text-xs text-gray-500 line-through">
-                            {formatPrice(Number(product.price))}
-                          </span>
-                          <span className="font-semibold text-red-600">
-                            {formatPrice(Number(product.price) * (1 - product.discountPercent / 100))}
-                          </span>
-                        </>
-                      ) : (
-                        <span>{formatPrice(Number(product.price))}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium">
-                    <Link
-                      href={`/products/${product.id}`}
-                      className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                    >
-                      {product.name}
-                    </Link>
-                  </td>
-                </tr>
-                  ))}
-                </tbody>
-              </table>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-3 text-center w-12">
+                        <svg
+                          className="w-5 h-5 text-gray-400 mx-auto"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+                        </svg>
+                      </th>
+                      <th className="px-4 py-3 text-center w-12">
+                        <input
+                          type="checkbox"
+                          checked={data.data.length > 0 && selectedProducts.size === data.data.length}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
+                    </tr>
+                  </thead>
+                  <SortableContext
+                    items={data.data.map(p => p.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <tbody className="divide-y divide-gray-200">
+                      {data.data.map((product) => (
+                        <SortableProductRow
+                          key={product.id}
+                          product={product}
+                          selectedProducts={selectedProducts}
+                          onToggleSelect={toggleSelectProduct}
+                          onToggleActive={toggleActive}
+                          onDelete={handleDelete}
+                        />
+                      ))}
+                    </tbody>
+                  </SortableContext>
+                </table>
+              </DndContext>
 
               {data.data.length === 0 && (
                 <div className="text-center py-8 text-gray-500">

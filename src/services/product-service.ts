@@ -169,7 +169,10 @@ export async function getAllProducts(options?: {
       where,
       skip,
       take: perPage,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { createdAt: 'desc' },
+      ],
       include: PRODUCT_WITH_RELATIONS_INCLUDE,
     }),
     prisma.product.count({ where }),
@@ -209,7 +212,10 @@ export async function getFeaturedProducts(options?: {
       isFeatured: true,
     },
     take: limit,
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { displayOrder: 'asc' },
+      { createdAt: 'desc' },
+    ],
     include: PRODUCT_WITH_RELATIONS_INCLUDE,
   });
 
@@ -233,7 +239,11 @@ export async function getDiscountedProducts(options?: {
       },
     },
     take: limit,
-    orderBy: { discountPercent: 'desc' }, // Sort by highest discount first
+    orderBy: [
+      { displayOrder: 'asc' },
+      { discountPercent: 'desc' }, // Secondary sort by highest discount
+      { createdAt: 'desc' },
+    ],
     include: PRODUCT_WITH_RELATIONS_INCLUDE,
   });
 
@@ -975,4 +985,30 @@ export async function reorderProductVariants(
   );
 
   log.info('Product variants reordered successfully', { productId });
+}
+
+/**
+ * Reorder products
+ * Updates the displayOrder field for multiple products in a single transaction
+ * This affects the display order on product listing pages, featured products, and discounted products sections
+ */
+export async function reorderProducts(
+  productOrders: Array<{ id: string; displayOrder: number }>
+): Promise<void> {
+  log.info('Reordering products', { count: productOrders.length });
+
+  // Use transaction to ensure atomicity
+  await prisma.$transaction(
+    productOrders.map(({ id, displayOrder }) =>
+      prisma.product.update({
+        where: { id },
+        data: { displayOrder },
+      })
+    )
+  );
+
+  // Invalidate product cache after reordering
+  await invalidateProductCache();
+
+  log.info('Products reordered successfully', { count: productOrders.length });
 }
