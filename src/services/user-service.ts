@@ -738,6 +738,15 @@ export async function getUserTransactions(userId: string, options?: {
                   },
                 },
               },
+              variant: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                  size: true,
+                  material: true,
+                },
+              },
             },
           },
           invoice: {

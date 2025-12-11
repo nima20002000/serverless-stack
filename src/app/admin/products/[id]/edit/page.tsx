@@ -606,14 +606,39 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  id="hasVariants"
+                  name="hasVariants"
+                  checked={formData.hasVariants}
+                  onChange={handleChange}
+                  disabled={isSaving}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <label htmlFor="hasVariants" className="text-sm font-medium text-gray-700">
+                  این محصول دارای انواع مختلف است
+                </label>
+              </div>
+            </div>
+
+            {formData.hasVariants && variants.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
+                <p className="font-medium mb-1">توجه:</p>
+                <p>موجودی محصول به صورت خودکار از مجموع موجودی انواع محاسبه می‌شود.</p>
+                <p className="mt-1">موجودی فعلی: {variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)} عدد</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
               <Input
                 label="موجودی"
                 name="stock"
                 type="number"
-                value={formData.stock}
+                value={formData.hasVariants ? variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0).toString() : formData.stock}
                 onChange={handleChange}
                 error={errors.stock}
-                disabled={isSaving}
+                disabled={isSaving || formData.hasVariants}
                 placeholder="10"
                 dir="ltr"
               />

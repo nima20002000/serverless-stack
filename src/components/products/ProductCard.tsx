@@ -8,6 +8,24 @@ import Button from '@/components/ui/Button';
 import { useState, useCallback, memo } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
+interface Variant {
+  id: string;
+  name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
+  priceAdjust: number;
+  stock: number;
+  isActive: boolean;
+  media?: Array<{
+    id: string;
+    type: 'IMAGE' | 'VIDEO';
+    url: string;
+    alt?: string | null;
+    order: number;
+  }>;
+}
+
 interface ProductCardProps {
   product: {
     id: string;
@@ -19,30 +37,65 @@ interface ProductCardProps {
     images: string[];
     isActive: boolean;
     isFeatured?: boolean;
+    hasVariants?: boolean;
+    variants?: Variant[];
   };
 }
 
 function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+  const [currentImage, setCurrentImage] = useState(product.images[0] || '');
+
+  // Get active variants
+  const activeVariants = product.variants?.filter(v => v.isActive) || [];
+  const hasVariants = product.hasVariants && activeVariants.length > 0;
 
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
-  const originalPrice = Number(product.price);
+  const basePrice = Number(product.price);
+  const effectivePrice = selectedVariant
+    ? basePrice + Number(selectedVariant.priceAdjust)
+    : basePrice;
   const discountedPrice = discountPercent > 0
-    ? originalPrice * (1 - discountPercent / 100)
-    : originalPrice;
+    ? effectivePrice * (1 - discountPercent / 100)
+    : effectivePrice;
+
+  // Effective stock considering variant selection
+  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const isOutOfStock = effectiveStock === 0;
+
+  const handleVariantSelect = (variant: Variant) => {
+    setSelectedVariant(variant);
+
+    // Update image when variant is selected
+    if (variant.media && variant.media.length > 0) {
+      setCurrentImage(variant.media[0].url);
+    } else {
+      // Fallback to product's first image
+      setCurrentImage(product.images[0] || '');
+    }
+  };
 
   const handleAddToCart = useCallback(async () => {
     try {
+      // If product has variants, variant selection is REQUIRED
+      if (hasVariants && !selectedVariant) {
+        alert('لطفاً یک نوع محصول (رنگ، سایز، ...) انتخاب کنید');
+        return;
+      }
+
       setIsAdding(true);
       addItem(
         {
           productId: product.id,
-          name: product.name,
+          name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
           price: discountedPrice,
-          image: product.images[0] || '',
-          stock: product.stock,
+          image: currentImage,
+          stock: effectiveStock,
+          variantId: selectedVariant?.id,
+          variantName: selectedVariant?.name,
         },
         1
       );
@@ -52,18 +105,16 @@ function ProductCard({ product }: ProductCardProps) {
       alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
       setIsAdding(false);
     }
-  }, [product.id, product.name, discountedPrice, product.images, product.stock, addItem]);
-
-  const isOutOfStock = product.stock === 0;
+  }, [product.id, product.name, hasVariants, selectedVariant, discountedPrice, currentImage, effectiveStock, addItem]);
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
         <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
-          {product.images.length > 0 ? (
+          {currentImage ? (
             <Image
-              src={optimizeImage.thumbnail(product.images[0])}
+              src={optimizeImage.thumbnail(currentImage)}
               alt={product.name}
               fill
               loading="lazy"
@@ -107,13 +158,53 @@ function ProductCard({ product }: ProductCardProps) {
           {product.description}
         </p>
 
+        {/* Variant Selector - Compact Version for Cards */}
+        {hasVariants && (
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-700 mb-2 text-right">
+              انتخاب نوع:
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {activeVariants.map((variant) => {
+                const isSelected = selectedVariant?.id === variant.id;
+                const variantOutOfStock = variant.stock === 0;
+
+                return (
+                  <button
+                    key={variant.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!variantOutOfStock) handleVariantSelect(variant);
+                    }}
+                    disabled={variantOutOfStock}
+                    className={`px-2 py-1 text-xs rounded border transition-all ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
+                        : 'border-gray-300 hover:border-gray-400 text-gray-700'
+                    } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
+                    title={variantOutOfStock ? 'ناموجود' : variant.name}
+                  >
+                    {variant.color && (
+                      <span
+                        className="inline-block w-3 h-3 rounded-full border border-gray-300 ml-1"
+                        style={{ backgroundColor: variant.color }}
+                      />
+                    )}
+                    {variant.size || variant.material || variant.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Price and Stock */}
         <div className="flex items-center justify-between mb-3">
           <div className="text-right">
             {discountPercent > 0 ? (
               <div className="flex flex-col gap-1">
                 <span className="text-sm text-gray-500 line-through">
-                  {formatPrice(originalPrice)}
+                  {formatPrice(effectivePrice)}
                 </span>
                 <span className="text-xl font-bold text-red-600">
                   {formatPrice(discountedPrice)}
@@ -121,13 +212,13 @@ function ProductCard({ product }: ProductCardProps) {
               </div>
             ) : (
               <span className="text-xl font-bold text-gray-900">
-                {formatPrice(originalPrice)}
+                {formatPrice(effectivePrice)}
               </span>
             )}
           </div>
           <div className="text-left">
-            <span className={`text-sm ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {product.stock > 0 ? `موجود: ${product.stock}` : 'ناموجود'}
+            <span className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {effectiveStock > 0 ? `موجود: ${effectiveStock}` : 'ناموجود'}
             </span>
           </div>
         </div>

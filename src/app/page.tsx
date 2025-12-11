@@ -24,9 +24,17 @@ export default async function Home() {
     getCategoryTree(),
   ]);
 
-  // Convert price to number for display
-  const featuredProducts = featuredProductsRaw.map(p => ({ ...p, price: Number(p.price) }));
-  const discountedProducts = discountedProductsRaw.map(p => ({ ...p, price: Number(p.price) }));
+  // Convert price and variant priceAdjust to number for display
+  const featuredProducts = featuredProductsRaw.map(p => ({
+    ...p,
+    price: Number(p.price),
+    variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
+  }));
+  const discountedProducts = discountedProductsRaw.map(p => ({
+    ...p,
+    price: Number(p.price),
+    variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
+  }));
 
   // Get top 3 categories
   const topCategories = categories.slice(0, 3);

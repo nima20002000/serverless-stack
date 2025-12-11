@@ -22,6 +22,7 @@ async function getHandler(req: NextRequest) {
       price: Number(product.price),
       discountPercent: product.discountPercent,
       isFeatured: product.isFeatured,
+      variants: product.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
     }));
 
     return NextResponse.json({

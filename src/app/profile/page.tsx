@@ -51,6 +51,13 @@ interface Transaction {
         alt: string | null;
       }>;
     };
+    variant: {
+      id: string;
+      name: string;
+      color: string | null;
+      size: string | null;
+      material: string | null;
+    } | null;
   }[];
   invoice: {
     invoiceNumber: string;
@@ -517,9 +524,16 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 {transaction.items.map((item) => (
                   <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-gray-700">
-                      {item.product.name} × {item.quantity}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-gray-700">
+                        {item.product.name} × {item.quantity}
+                      </span>
+                      {item.variant && (
+                        <span className="text-xs text-blue-600 mt-0.5">
+                          {item.variant.name}
+                        </span>
+                      )}
+                    </div>
                     <span className="font-medium">
                       {Number(item.price).toLocaleString('fa-IR')} تومان
                     </span>
