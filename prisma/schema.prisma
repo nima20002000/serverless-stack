@@ -63,6 +63,7 @@ model Product {
   stock          Int      @default(0)
   images         String[] // Deprecated - kept for backward compatibility
   categoryId     String?
+  hasVariants    Boolean  @default(false) // If true, product uses variant system (variant stock/price override product values)
   isFeatured     Boolean  @default(false)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())

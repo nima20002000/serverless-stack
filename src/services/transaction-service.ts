@@ -401,7 +401,7 @@ export async function verifyStockAvailability(
   for (const item of items) {
     const product = await prisma.product.findUnique({
       where: { id: item.productId },
-      select: { stock: true, name: true, isActive: true },
+      select: { stock: true, name: true, isActive: true, hasVariants: true },
     });
 
     if (!product) {
@@ -411,6 +411,12 @@ export async function verifyStockAvailability(
 
     if (!product.isActive) {
       errors.push(`محصول ${product.name} غیرفعال است`);
+      continue;
+    }
+
+    // If product has variants enabled, variantId is REQUIRED
+    if (product.hasVariants && !item.variantId) {
+      errors.push(`برای محصول ${product.name} باید یک نوع (رنگ، سایز، ...) انتخاب کنید`);
       continue;
     }
 
@@ -437,8 +443,8 @@ export async function verifyStockAvailability(
         );
       }
     } else {
-      // No variant - check product stock
-      if (product.stock < item.quantity) {
+      // No variant - check product stock (only if hasVariants is false)
+      if (!product.hasVariants && product.stock < item.quantity) {
         errors.push(
           `موجودی کافی برای ${product.name} وجود ندارد (موجودی: ${product.stock}، درخواستی: ${item.quantity})`
         );

@@ -52,6 +52,7 @@ interface ProductDetailProps {
     discountPercent?: number | null;
     stock: number;
     images: string[];
+    hasVariants?: boolean;
     isActive: boolean;
     isFeatured?: boolean;
     category?: Category | null;
@@ -122,6 +123,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const handleAddToCart = async () => {
     try {
       setError('');
+
+      // If product has variants enabled, variant selection is REQUIRED
+      if (product.hasVariants && !selectedVariant) {
+        setError('لطفاً یک نوع محصول (رنگ، سایز، ...) انتخاب کنید');
+        return;
+      }
+
       setIsAdding(true);
 
       // Get the first media URL or fallback to legacy images

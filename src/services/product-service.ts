@@ -328,6 +328,7 @@ export async function createProduct(data: {
   images?: string[];
   categoryId?: string;
   tagIds?: string[];
+  hasVariants?: boolean;
   isFeatured?: boolean;
   isActive?: boolean;
 }): Promise<ProductWithRelations> {
@@ -359,6 +360,7 @@ export async function createProduct(data: {
         stock: data.stock,
         images: data.images || [],
         categoryId: data.categoryId,
+        hasVariants: data.hasVariants !== undefined ? data.hasVariants : false,
         isFeatured: data.isFeatured !== undefined ? data.isFeatured : false,
         isActive: data.isActive !== undefined ? data.isActive : true,
         ...(data.tagIds && data.tagIds.length > 0 && {
@@ -408,6 +410,7 @@ export async function updateProduct(
     images: string[];
     categoryId: string | null;
     tagIds: string[];
+    hasVariants: boolean;
     isFeatured: boolean;
     isActive: boolean;
   }>

@@ -48,6 +48,7 @@ export default function NewProductPage() {
     price: '',
     discountPercent: '',
     stock: '',
+    hasVariants: false,
     isFeatured: false,
     isActive: true,
     categoryId: null as string | null,
@@ -99,8 +100,16 @@ export default function NewProductPage() {
       }
     }
 
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+    // Stock validation - required only if hasVariants is false
+    if (!formData.hasVariants) {
+      if (!formData.stock || parseInt(formData.stock) < 0) {
+        newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+      }
+    }
+
+    // Variant validation - if hasVariants is true, at least one variant is required
+    if (formData.hasVariants && variants.length === 0) {
+      newErrors.variants = 'حداقل یک نوع محصول باید اضافه شود';
     }
 
     setErrors(newErrors);
@@ -127,7 +136,8 @@ export default function NewProductPage() {
           description: formData.description,
           price: parseFloat(formData.price),
           discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : null,
-          stock: parseInt(formData.stock),
+          stock: formData.hasVariants ? 0 : parseInt(formData.stock), // If variants enabled, stock is 0 initially
+          hasVariants: formData.hasVariants,
           isFeatured: formData.isFeatured,
           isActive: formData.isActive,
           categoryId: formData.categoryId,
@@ -450,15 +460,39 @@ export default function NewProductPage() {
               />
             </div>
 
+            <div className="flex items-center gap-3 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <input
+                type="checkbox"
+                id="hasVariants"
+                name="hasVariants"
+                checked={formData.hasVariants}
+                onChange={handleChange}
+                disabled={isLoading}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <label htmlFor="hasVariants" className="text-sm font-medium text-gray-700">
+                این محصول دارای انواع مختلف است (رنگ، سایز، جنس، ...)
+              </label>
+            </div>
+
+            {formData.hasVariants && (
+              <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
+                  حتماً حداقل یک نوع محصول با موجودی مشخص اضافه کنید.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="موجودی"
+                label={formData.hasVariants ? "موجودی (محاسبه خودکار از انواع)" : "موجودی"}
                 name="stock"
                 type="number"
-                value={formData.stock}
+                value={formData.hasVariants ? variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0).toString() : formData.stock}
                 onChange={handleChange}
                 error={errors.stock}
-                disabled={isLoading}
+                disabled={isLoading || formData.hasVariants}
                 placeholder="10"
                 dir="ltr"
               />
@@ -546,23 +580,30 @@ export default function NewProductPage() {
           </Button>
         </Card>
 
-        {/* Variants */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 text-right">
-              انواع محصول (رنگ، سایز، ...)
-            </h2>
-            {!showVariantForm && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowVariantForm(true)}
-                disabled={isLoading}
-              >
-                + افزودن نوع جدید
-              </Button>
+        {/* Variants - Only show if hasVariants is enabled */}
+        {formData.hasVariants && (
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 text-right">
+                انواع محصول (رنگ، سایز، ...)
+              </h2>
+              {!showVariantForm && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowVariantForm(true)}
+                  disabled={isLoading}
+                >
+                  + افزودن نوع جدید
+                </Button>
+              )}
+            </div>
+
+            {errors.variants && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 text-right">{errors.variants}</p>
+              </div>
             )}
-          </div>
 
           {showVariantForm && (
             <div className="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg space-y-4">
@@ -777,7 +818,8 @@ export default function NewProductPage() {
               هیچ نوع محصولی اضافه نشده است
             </p>
           )}
-        </Card>
+          </Card>
+        )}
 
         {/* Submit Buttons */}
         <Card>

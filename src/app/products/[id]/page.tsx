@@ -54,6 +54,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     ...product,
     price: Number(product.price),
     discountPercent: product.discountPercent,
+    hasVariants: product.hasVariants,
     isFeatured: product.isFeatured,
     category: 'category' in product ? (product as ProductWithRelations).category : null,
     tags: 'tags' in product ? ((product as ProductWithRelations).tags || []) : [],
