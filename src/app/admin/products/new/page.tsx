@@ -131,7 +131,7 @@ export default function NewProductPage() {
         }
       }
 
-      // Step 3: Add variants
+      // Step 3: Add variants (with order)
       if (variantManager.variants.length > 0) {
         for (const variant of variantManager.variants) {
           const variantResponse = await fetch(`/api/products/${productId}/variants`, {
@@ -145,6 +145,7 @@ export default function NewProductPage() {
               material: variant.material || undefined,
               priceAdjust: parseFloat(variant.priceAdjust),
               stock: parseInt(variant.stock),
+              order: variant.order,
               isActive: variant.isActive,
             }),
           });
@@ -265,6 +266,7 @@ export default function NewProductPage() {
               onCancel={variantManager.cancelVariantEdit}
               onShowForm={() => variantManager.setShowVariantForm(true)}
               onSetVariantMedia={variantManager.setVariantMedia}
+              onReorder={variantManager.reorderVariants}
               disabled={isLoading}
               hasVariantsError={errors.variants}
             />

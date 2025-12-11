@@ -38,18 +38,23 @@ export function useVariantManager(initialVariants: Variant[] = []) {
     }
 
     if (editingVariantId) {
-      // Update existing variant
+      // Update existing variant (preserve order)
       setVariants(variants.map(v =>
         v.id === editingVariantId
-          ? { ...variantForm, id: editingVariantId, media: variantMedia }
+          ? { ...variantForm, id: editingVariantId, order: v.order, media: variantMedia }
           : v
       ));
       setEditingVariantId(null);
     } else {
-      // Add new variant
+      // Add new variant at the end
+      const newOrder = variants.length > 0
+        ? Math.max(...variants.map(v => v.order)) + 1
+        : 0;
+
       const newVariant: Variant = {
         ...variantForm,
         id: `variant-${Date.now()}`,
+        order: newOrder,
         media: variantMedia,
       };
       setVariants([...variants, newVariant]);
@@ -77,8 +82,33 @@ export function useVariantManager(initialVariants: Variant[] = []) {
 
   const deleteVariant = (variantId: string) => {
     if (confirm('آیا از حذف این نوع محصول اطمینان دارید؟')) {
-      setVariants(variants.filter(v => v.id !== variantId));
+      const deletedVariant = variants.find(v => v.id === variantId);
+      if (!deletedVariant) return;
+
+      // Remove variant and renumber remaining ones
+      const updatedVariants = variants
+        .filter(v => v.id !== variantId)
+        .map(v => ({
+          ...v,
+          order: v.order > deletedVariant.order ? v.order - 1 : v.order,
+        }));
+
+      setVariants(updatedVariants);
     }
+  };
+
+  const reorderVariants = (startIndex: number, endIndex: number) => {
+    const result = Array.from(variants);
+    const [removed] = result.splice(startIndex, 1);
+    result.splice(endIndex, 0, removed);
+
+    // Update order field for all variants
+    const reordered = result.map((variant, index) => ({
+      ...variant,
+      order: index,
+    }));
+
+    setVariants(reordered);
   };
 
   const resetVariantForm = () => {
@@ -112,6 +142,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
     addOrUpdateVariant,
     editVariant,
     deleteVariant,
+    reorderVariants,
     cancelVariantEdit,
   };
 }

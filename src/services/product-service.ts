@@ -39,6 +39,10 @@ const PRODUCT_WITH_RELATIONS_INCLUDE: Prisma.ProductInclude = {
     include: {
       media: VARIANT_MEDIA_INCLUDE,
     },
+    orderBy: [
+      { order: 'asc' },
+      { createdAt: 'asc' },
+    ],
   },
 };
 
@@ -55,6 +59,10 @@ const PRODUCT_FULL_INCLUDE: Prisma.ProductInclude = {
     include: {
       media: VARIANT_MEDIA_INCLUDE,
     },
+    orderBy: [
+      { order: 'asc' },
+      { createdAt: 'asc' },
+    ],
   },
 };
 
@@ -765,7 +773,7 @@ export async function updateProductStockFromVariants(productId: string): Promise
 }
 
 /**
- * Get all variants for a product
+ * Get all variants for a product (ordered by 'order' field)
  */
 export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
   const variants = await prisma.productVariant.findMany({
@@ -773,14 +781,17 @@ export async function getProductVariants(productId: string): Promise<VariantWith
     include: {
       media: VARIANT_MEDIA_INCLUDE,
     },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [
+      { order: 'asc' },
+      { createdAt: 'asc' },
+    ],
   });
 
   return variants;
 }
 
 /**
- * Create product variant
+ * Create product variant with auto-assigned order
  */
 export async function createProductVariant(data: {
   productId: string;
@@ -791,6 +802,7 @@ export async function createProductVariant(data: {
   material?: string;
   priceAdjust?: number;
   stock: number;
+  order?: number;
   isActive?: boolean;
 }): Promise<VariantWithMedia> {
   log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
@@ -806,6 +818,17 @@ export async function createProductVariant(data: {
     }
   }
 
+  // Auto-assign order if not provided (append to end)
+  let order = data.order;
+  if (order === undefined) {
+    const maxOrder = await prisma.productVariant.findFirst({
+      where: { productId: data.productId },
+      orderBy: { order: 'desc' },
+      select: { order: true },
+    });
+    order = (maxOrder?.order ?? -1) + 1;
+  }
+
   const variant = await prisma.productVariant.create({
     data: {
       productId: data.productId,
@@ -816,6 +839,7 @@ export async function createProductVariant(data: {
       material: data.material,
       priceAdjust: data.priceAdjust || 0,
       stock: data.stock,
+      order,
       isActive: data.isActive !== undefined ? data.isActive : true,
     },
     include: {
@@ -826,7 +850,7 @@ export async function createProductVariant(data: {
   // Update parent product stock
   await updateProductStockFromVariants(data.productId);
 
-  log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId });
+  log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId, order });
 
   return variant;
 }
@@ -897,15 +921,29 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   // Get the variant first to know which product to update
   const existingVariant = await prisma.productVariant.findUnique({
     where: { id },
-    select: { productId: true },
+    select: { productId: true, order: true },
   });
 
   if (!existingVariant) {
     throw new Error('واریانت محصول یافت نشد');
   }
 
+  // Delete the variant
   await prisma.productVariant.delete({
     where: { id },
+  });
+
+  // Renumber remaining variants to fill the gap
+  await prisma.productVariant.updateMany({
+    where: {
+      productId: existingVariant.productId,
+      order: { gt: existingVariant.order },
+    },
+    data: {
+      order: {
+        decrement: 1,
+      },
+    },
   });
 
   // Update parent product stock after deletion
@@ -914,4 +952,27 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   log.info('Product variant deleted successfully', { variantId: id, productId: existingVariant.productId });
 
   return { success: true };
+}
+
+/**
+ * Reorder product variants
+ * Updates the order field for multiple variants in a single transaction
+ */
+export async function reorderProductVariants(
+  productId: string,
+  variantOrders: Array<{ id: string; order: number }>
+): Promise<void> {
+  log.info('Reordering product variants', { productId, count: variantOrders.length });
+
+  // Use transaction to ensure atomicity
+  await prisma.$transaction(
+    variantOrders.map(({ id, order }) =>
+      prisma.productVariant.update({
+        where: { id },
+        data: { order },
+      })
+    )
+  );
+
+  log.info('Product variants reordered successfully', { productId });
 }

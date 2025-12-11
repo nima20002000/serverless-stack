@@ -74,20 +74,23 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         setSelectedTags(product.tags);
       }
 
-      // Load existing variants with their media
+      // Load existing variants with their media (sorted by order)
       if (product.variants) {
-        const formattedVariants = product.variants.map((v: Variant) => ({
-          id: v.id,
-          name: v.name,
-          sku: v.sku || '',
-          color: v.color || '',
-          size: v.size || '',
-          material: v.material || '',
-          priceAdjust: v.priceAdjust.toString(),
-          stock: v.stock.toString(),
-          isActive: v.isActive,
-          media: v.media || [],
-        }));
+        const formattedVariants = product.variants
+          .sort((a: Variant, b: Variant) => (a.order ?? 0) - (b.order ?? 0))
+          .map((v: Variant) => ({
+            id: v.id,
+            name: v.name,
+            sku: v.sku || '',
+            color: v.color || '',
+            size: v.size || '',
+            material: v.material || '',
+            priceAdjust: v.priceAdjust.toString(),
+            stock: v.stock.toString(),
+            order: v.order ?? 0,
+            isActive: v.isActive,
+            media: v.media || [],
+          }));
         variantManager.setVariants(formattedVariants);
       }
     } catch (error) {
@@ -234,7 +237,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         const isExisting = !variant.id.startsWith('variant-');
 
         if (isExisting) {
-          // Update existing variant
+          // Update existing variant (including order)
           await fetch(`/api/products/${params.id}/variants/${variant.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -246,6 +249,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               material: variant.material || undefined,
               priceAdjust: parseFloat(variant.priceAdjust),
               stock: parseInt(variant.stock),
+              order: variant.order,
               isActive: variant.isActive,
             }),
           });
@@ -298,7 +302,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             }
           }
         } else {
-          // Create new variant
+          // Create new variant (including order)
           const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -310,6 +314,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               material: variant.material || undefined,
               priceAdjust: parseFloat(variant.priceAdjust),
               stock: parseInt(variant.stock),
+              order: variant.order,
               isActive: variant.isActive,
             }),
           });
@@ -437,6 +442,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             onCancel={variantManager.cancelVariantEdit}
             onShowForm={() => variantManager.setShowVariantForm(true)}
             onSetVariantMedia={variantManager.setVariantMedia}
+            onReorder={variantManager.reorderVariants}
             disabled={isSaving}
           />
         </Card>

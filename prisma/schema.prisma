@@ -137,6 +137,7 @@ model ProductVariant {
   material    String?
   priceAdjust Decimal  @default(0) @db.Decimal(10, 2)
   stock       Int      @default(0)
+  order       Int      @default(0) // Display order for variant sorting (0 = first/default)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -146,6 +147,7 @@ model ProductVariant {
   transactionItems TransactionItem[]
 
   @@map("product_variants")
+  @@index([productId, order])
 }
 
 model Transaction {

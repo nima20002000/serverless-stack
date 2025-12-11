@@ -5,6 +5,22 @@ import MediaManager from '@/components/admin/MediaManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useState } from 'react';
 import type { Variant, VariantFormData, MediaItem } from '@/types/product-admin';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface VariantManagerProps {
   variants: Variant[];
@@ -19,8 +35,110 @@ interface VariantManagerProps {
   onCancel: () => void;
   onShowForm: () => void;
   onSetVariantMedia: (media: MediaItem[]) => void;
+  onReorder?: (startIndex: number, endIndex: number) => void;
   disabled?: boolean;
   hasVariantsError?: string;
+}
+
+/**
+ * Sortable variant card component
+ */
+function SortableVariantCard({
+  variant,
+  onEdit,
+  onDelete,
+}: {
+  variant: Variant;
+  onEdit: (variant: Variant) => void;
+  onDelete: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: variant.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="p-4 border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-3">
+        {/* Drag handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing mt-1 text-gray-400 hover:text-gray-600 transition-colors"
+          aria-label="جابجایی واریانت"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+          </svg>
+        </button>
+
+        {/* Variant info */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+              {variant.order + 1}
+            </span>
+            <h4 className="font-medium text-gray-900 text-right">
+              {variant.name}
+            </h4>
+            {variant.media && variant.media.length > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                {variant.media.length} تصویر
+              </span>
+            )}
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
+            {variant.sku && <p>SKU: {variant.sku}</p>}
+            {variant.color && (
+              <p className="flex items-center gap-2">
+                رنگ:
+                <span
+                  className="inline-block w-4 h-4 rounded border"
+                  style={{ background: variant.color }}
+                />
+              </p>
+            )}
+            {variant.size && <p>سایز: {variant.size}</p>}
+            {variant.material && <p>جنس: {variant.material}</p>}
+            <p>تغییر قیمت: {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان</p>
+            <p>موجودی: {variant.stock}</p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onEdit(variant)}
+          >
+            ویرایش
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={() => onDelete(variant.id)}
+          >
+            حذف
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
@@ -40,10 +158,34 @@ export default function VariantManager({
   onCancel,
   onShowForm,
   onSetVariantMedia,
+  onReorder,
   disabled = false,
   hasVariantsError,
 }: VariantManagerProps) {
   const [showVariantMediaBrowser, setShowVariantMediaBrowser] = useState(false);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts (prevents accidental drags)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id && onReorder) {
+      const oldIndex = variants.findIndex((v) => v.id === active.id);
+      const newIndex = variants.findIndex((v) => v.id === over.id);
+
+      onReorder(oldIndex, newIndex);
+    }
+  };
 
   // Use media manager hook for variant media
   const variantMediaManager = useMediaManager(variantMedia);
@@ -224,62 +366,33 @@ export default function VariantManager({
         </div>
       )}
 
-      {/* Variant List */}
+      {/* Variant List with Drag and Drop */}
       {variants.length > 0 ? (
-        <div className="space-y-3">
-          {variants.map((variant) => (
-            <div
-              key={variant.id}
-              className="p-4 border border-gray-200 rounded-lg bg-gray-50"
+        <div>
+          <p className="text-xs text-gray-500 mb-3 text-right">
+            💡 برای تغییر ترتیب نمایش، واریانت‌ها را با نگه داشتن آیکن کشیده و جابجا کنید
+          </p>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={variants.map((v) => v.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-medium text-gray-900 text-right">
-                      {variant.name}
-                    </h4>
-                    {variant.media && variant.media.length > 0 && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                        {variant.media.length} تصویر
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                    {variant.sku && <p>SKU: {variant.sku}</p>}
-                    {variant.color && (
-                      <p className="flex items-center gap-2">
-                        رنگ:
-                        <span
-                          className="inline-block w-4 h-4 rounded border"
-                          style={{ background: variant.color }}
-                        />
-                      </p>
-                    )}
-                    {variant.size && <p>سایز: {variant.size}</p>}
-                    {variant.material && <p>جنس: {variant.material}</p>}
-                    <p>تغییر قیمت: {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان</p>
-                    <p>موجودی: {variant.stock}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2 mr-4">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => onEdit(variant)}
-                  >
-                    ویرایش
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    onClick={() => onDelete(variant.id)}
-                  >
-                    حذف
-                  </Button>
-                </div>
+              <div className="space-y-3">
+                {variants.map((variant) => (
+                  <SortableVariantCard
+                    key={variant.id}
+                    variant={variant}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
               </div>
-            </div>
-          ))}
+            </SortableContext>
+          </DndContext>
         </div>
       ) : (
         <p className="text-sm text-gray-500 text-center py-8">

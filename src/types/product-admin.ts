@@ -28,6 +28,7 @@ export interface Variant {
   material?: string;
   priceAdjust: string;
   stock: string;
+  order: number;
   isActive: boolean;
   media?: MediaItem[];
 }
