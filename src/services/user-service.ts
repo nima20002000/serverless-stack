@@ -1,8 +1,30 @@
-import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma/client";
 import { createFirstTimePromoCode } from "./promo-service";
 import { Role } from "@prisma/client";
 import { log } from "@/lib/logger";
+
+// Import utilities from modular structure
+import {
+  queryUser,
+  userSelectWithoutPassword,
+  checkUserExists,
+  type UserInfo,
+} from "./user-service/queries";
+import {
+  validatePassword,
+  hashPassword,
+  updatePassword,
+  verifyCurrentPassword,
+  ensureNoPassword,
+  getUserWithPassword,
+} from "./user-service/password";
+import {
+  validateEmail,
+  validatePhone,
+  detectIdentifierType,
+  validateEmailUniqueness,
+  validatePhoneUniqueness,
+} from "./user-service/validation";
 
 type UserWithoutPassword = Omit<{
   id: string;
@@ -15,49 +37,9 @@ type UserWithoutPassword = Omit<{
   updatedAt: Date;
 }, never>;
 
-type UserInfo = {
-  id: string;
-  email: string | null;
-  phone: string | null;
-  name: string;
-  role: Role;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-/**
- * Validate email format
- */
-export function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Validate password strength
- * Minimum 8 characters
- */
-export function validatePassword(password: string): boolean {
-  return password.length >= 8;
-}
-
-/**
- * Validate Iranian phone number
- * Format: 09xxxxxxxxx (11 digits starting with 09)
- */
-export function validatePhone(phone: string): boolean {
-  const phoneRegex = /^09\d{9}$/;
-  return phoneRegex.test(phone);
-}
-
-/**
- * Detect if input is email or phone
- */
-export function detectIdentifierType(identifier: string): 'email' | 'phone' | 'invalid' {
-  if (validateEmail(identifier)) return 'email';
-  if (validatePhone(identifier)) return 'phone';
-  return 'invalid';
-}
+// Re-export for backward compatibility
+export type { UserInfo };
+export { validateEmail, validatePassword, validatePhone, detectIdentifierType };
 
 /**
  * Generate next available UID for new user
@@ -126,22 +108,14 @@ export async function createUser(data: {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          email ? { email } : { id: undefined },
-          phone ? { phone } : { id: undefined }
-        ].filter(condition => condition.id === undefined ? Object.keys(condition).length > 0 : true)
-      }
-    });
-
-    if (existingUser) {
+    const exists = await checkUserExists({ email, phone });
+    if (exists) {
       log.warn('User already exists', { email, phone });
       throw new Error("کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است");
     }
 
     // Hash password if provided
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : null;
+    const hashedPassword = password ? await hashPassword(password) : null;
 
     // Create user with retry logic for UID conflicts (race condition handling)
     let user;
@@ -284,60 +258,21 @@ export async function createUser(data: {
  * Get user by ID
  */
 export async function getUserById(userId: string): Promise<UserInfo | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return user;
+  return queryUser({ id: userId });
 }
 
 /**
  * Get user by email
  */
 export async function getUserByEmail(email: string): Promise<UserInfo | null> {
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return user;
+  return queryUser({ email });
 }
 
 /**
  * Get user by phone
  */
 export async function getUserByPhone(phone: string): Promise<UserInfo | null> {
-  const user = await prisma.user.findUnique({
-    where: { phone },
-    select: {
-      id: true,
-      email: true,
-      phone: true,
-      name: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  return user as UserInfo | null;
+  return queryUser({ phone });
 }
 
 /**
@@ -396,51 +331,11 @@ export async function updateUserProfile(userId: string, data: {
   log.info('Updating user profile', { userId, fields: Object.keys(data) });
 
   try {
-    // Validate email if provided
-    if (data.email !== undefined) {
-      if (data.email && !validateEmail(data.email)) {
-        log.warn('Invalid email format', { email: data.email });
-        throw new Error("فرمت ایمیل نامعتبر است");
-      }
+    // Validate email uniqueness
+    await validateEmailUniqueness(data.email, userId);
 
-      // Check if email already exists for another user
-      if (data.email) {
-        const existingUser = await prisma.user.findFirst({
-          where: {
-            email: data.email,
-            NOT: { id: userId }
-          }
-        });
-
-        if (existingUser) {
-          log.warn('Email already in use', { email: data.email });
-          throw new Error("این ایمیل قبلاً استفاده شده است");
-        }
-      }
-    }
-
-    // Validate phone if provided
-    if (data.phone !== undefined) {
-      if (data.phone && !validatePhone(data.phone)) {
-        log.warn('Invalid phone format', { phone: data.phone });
-        throw new Error("فرمت شماره تلفن نامعتبر است");
-      }
-
-      // Check if phone already exists for another user
-      if (data.phone) {
-        const existingUser = await prisma.user.findFirst({
-          where: {
-            phone: data.phone,
-            NOT: { id: userId }
-          }
-        });
-
-        if (existingUser) {
-          log.warn('Phone already in use', { phone: data.phone });
-          throw new Error("این شماره تلفن قبلاً استفاده شده است");
-        }
-      }
-    }
+    // Validate phone uniqueness
+    await validatePhoneUniqueness(data.phone, userId);
 
     // Update user
     const updatedUser = await prisma.user.update({
@@ -452,15 +347,7 @@ export async function updateUserProfile(userId: string, data: {
         ...(data.shippingAddress !== undefined && { shippingAddress: data.shippingAddress }),
         ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
       },
-      select: {
-        id: true,
-        email: true,
-        phone: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: userSelectWithoutPassword,
     });
 
     log.info('User profile updated successfully', { userId });
@@ -486,48 +373,11 @@ export async function changeUserPassword(
   log.info('Changing user password', { userId });
 
   try {
-    // Get user with password
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        password: true,
-      },
-    });
-
-    if (!user) {
-      log.warn('User not found', { userId });
-      throw new Error("کاربر یافت نشد");
-    }
-
-    // SECURITY: If user has a password, current password is REQUIRED
-    if (user.password) {
-      if (!currentPassword) {
-        log.warn('Current password required but not provided', { userId });
-        throw new Error("رمز عبور فعلی الزامی است");
-      }
-
-      const isValidPassword = await bcrypt.compare(currentPassword, user.password);
-      if (!isValidPassword) {
-        log.warn('Invalid current password', { userId });
-        throw new Error("رمز عبور فعلی نادرست است");
-      }
-    }
-
-    // Validate new password
-    if (!validatePassword(newPassword)) {
-      log.warn('Invalid new password length', { userId });
-      throw new Error("رمز عبور جدید باید حداقل ۸ کاراکتر باشد");
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    // Verify current password (security check)
+    await verifyCurrentPassword(userId, currentPassword);
 
     // Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    await updatePassword(userId, newPassword);
 
     log.info('User password changed successfully', { userId });
   } catch (error) {
@@ -550,34 +400,15 @@ export async function resetPasswordWithOTP(
   log.info('Resetting password via OTP', { userId });
 
   try {
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        password: true,
-      },
-    });
-
+    // Verify user exists
+    const user = await getUserWithPassword(userId);
     if (!user) {
       log.warn('User not found', { userId });
       throw new Error("کاربر یافت نشد");
     }
 
-    // Validate new password
-    if (!validatePassword(newPassword)) {
-      log.warn('Invalid password length', { userId });
-      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    // Update password (validation happens inside)
+    await updatePassword(userId, newPassword);
 
     log.info('Password reset successfully via OTP', { userId });
   } catch (error) {
@@ -596,40 +427,11 @@ export async function setUserPassword(userId: string, newPassword: string): Prom
   log.info('Setting user password', { userId });
 
   try {
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        password: true,
-      },
-    });
+    // Ensure user doesn't already have a password
+    await ensureNoPassword(userId);
 
-    if (!user) {
-      log.warn('User not found', { userId });
-      throw new Error("کاربر یافت نشد");
-    }
-
-    // Check if user already has a password
-    if (user.password) {
-      log.warn('User already has a password', { userId });
-      throw new Error("این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید");
-    }
-
-    // Validate new password
-    if (!validatePassword(newPassword)) {
-      log.warn('Invalid password length', { userId });
-      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    // Update password (validation happens inside)
+    await updatePassword(userId, newPassword);
 
     log.info('User password set successfully', { userId });
   } catch (error) {
