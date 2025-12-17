@@ -9,6 +9,7 @@ import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import prisma from '@/lib/prisma/client';
 import { log } from '@/lib/logger';
+import { sendAdminOrderConfirmation } from '@/lib/email/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,37 @@ async function getHandler(req: NextRequest) {
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
+
+    // Fetch full transaction data with variants for admin email
+    const fullTransaction = await prisma.transaction.findUnique({
+      where: { id: transaction.id },
+      include: {
+        items: {
+          include: {
+            product: true,
+            variant: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            phone: true
+          }
+        }
+      }
+    });
+
+    // Send admin confirmation email (non-blocking - don't fail if email fails)
+    if (fullTransaction) {
+      sendAdminOrderConfirmation(fullTransaction, verification.refId).catch((error) => {
+        log.error('Failed to send admin confirmation email (non-blocking)', {
+          transactionId: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      });
+    }
 
     // Create user account if requested (for guest checkouts)
     if (!transaction.userId && transaction.createAccount && transaction.phone) {
