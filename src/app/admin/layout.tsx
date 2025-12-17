@@ -34,12 +34,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Admin User Info Bar */}
       <div className="bg-blue-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-sm order-2 sm:order-1">
               <span className="opacity-90">نقش: </span>
               <span className="font-medium">مدیر سیستم</span>
             </div>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-4 text-sm order-1 sm:order-2">
               <div>
                 <span className="opacity-90">خوش آمدید، </span>
                 <span className="font-medium">{session.user?.name || session.user?.email}</span>

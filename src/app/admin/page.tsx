@@ -173,8 +173,8 @@ export default function AdminDashboard() {
               هیچ تراکنشی وجود ندارد
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
@@ -186,7 +186,7 @@ export default function AdminDashboard() {
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       مبلغ
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden sm:table-cell">
                       کاربر
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
@@ -200,13 +200,13 @@ export default function AdminDashboard() {
                       <td className="px-4 py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap">
                         {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className="px-4 py-3 text-right font-medium whitespace-nowrap">
                         {formatPrice(Number(transaction.amount))}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden sm:table-cell">
                         <div className="text-sm">
                           <div className="font-medium text-gray-900">
                             {transaction.user.name}
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                        <code className="text-xs sm:text-sm bg-gray-100 px-2 py-1 rounded break-all">
                           {transaction.transactionCode}
                         </code>
                       </td>

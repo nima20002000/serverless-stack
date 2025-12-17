@@ -199,17 +199,17 @@ export default function TransactionsManagementPage() {
       {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Button type="submit" variant="primary">
-              جستجو
-            </Button>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو بر اساس کد تراکنش، نام کاربر یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
             />
+            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
+              جستجو
+            </Button>
           </form>
         </div>
       </Card>
@@ -217,25 +217,9 @@ export default function TransactionsManagementPage() {
       {/* Date Range Filter */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex gap-2 items-center">
-              <Button
-                variant="secondary"
-                onClick={clearFilters}
-                size="sm"
-              >
-                پاک کردن فیلترها
-              </Button>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => {
-                  setDateTo(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-600">تا</span>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap order-1">بازه تاریخ:</label>
               <input
                 type="date"
                 value={dateFrom}
@@ -243,10 +227,28 @@ export default function TransactionsManagementPage() {
                   setDateFrom(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-2"
               />
-              <label className="text-sm font-medium text-gray-700">بازه تاریخ:</label>
+              <span className="text-sm text-gray-600 text-center order-3">تا</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-4"
+              />
             </div>
+
+            <Button
+              variant="secondary"
+              onClick={clearFilters}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              پاک کردن فیلترها
+            </Button>
           </div>
         </div>
       </Card>
@@ -289,20 +291,20 @@ export default function TransactionsManagementPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full min-w-[900px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
                       محصولات
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
                       درگاه
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       وضعیت
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden sm:table-cell">
                       تاریخ
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
@@ -323,7 +325,7 @@ export default function TransactionsManagementPage() {
                       className="hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => handleTransactionClick(transaction.id)}
                     >
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <div className="text-sm text-gray-600">
                           {transaction.items.length.toLocaleString('fa-IR')} محصول
                           {transaction.items.length > 0 && (
@@ -346,13 +348,13 @@ export default function TransactionsManagementPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden md:table-cell">
                         {getPaymentMethodBadge(transaction.paymentMethod)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap hidden sm:table-cell">
                         {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">

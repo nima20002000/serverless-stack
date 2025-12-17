@@ -145,7 +145,7 @@ function SortableProductRow({
       </td>
 
       {/* Features */}
-      <td className="px-4 py-3 text-right">
+      <td className="px-4 py-3 text-right hidden md:table-cell">
         <div className="flex gap-1 justify-end flex-wrap">
           {product.isFeatured && (
             <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
@@ -475,10 +475,10 @@ export default function AdminProductsPage() {
     <div>
       <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
 
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex gap-2">
-          <Link href="/admin/products/new">
-            <Button variant="primary">افزودن محصول جدید</Button>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
+          <Link href="/admin/products/new" className="w-full sm:w-auto">
+            <Button variant="primary" className="w-full sm:w-auto">افزودن محصول جدید</Button>
           </Link>
           {hasOrderChanges && (
             <>
@@ -486,6 +486,7 @@ export default function AdminProductsPage() {
                 variant="primary"
                 onClick={handleConfirmOrder}
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-none"
               >
                 {isSavingOrder ? 'در حال ذخیره...' : 'تأیید ترتیب'}
               </Button>
@@ -493,13 +494,14 @@ export default function AdminProductsPage() {
                 variant="secondary"
                 onClick={handleCancelOrder}
                 disabled={isSavingOrder}
+                className="flex-1 sm:flex-none"
               >
                 لغو
               </Button>
             </>
           )}
         </div>
-        <h1 className="text-2xl font-bold text-gray-900">مدیریت محصولات</h1>
+        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
       </div>
 
       {error && (
@@ -517,17 +519,17 @@ export default function AdminProductsPage() {
       {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Button type="submit" variant="primary">
-              جستجو
-            </Button>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو بر اساس نام محصول..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
             />
+            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
+              جستجو
+            </Button>
           </form>
         </div>
       </Card>
@@ -535,25 +537,17 @@ export default function AdminProductsPage() {
       {/* Filters */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <Button
-              variant="secondary"
-              onClick={clearFilters}
-              size="sm"
-            >
-              پاک کردن فیلترها
-            </Button>
-
-            <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
               {/* Status Filter */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
                 <select
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
                 >
                   <option value="all">همه</option>
                   <option value="active">فعال</option>
@@ -563,14 +557,14 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Stock Filter */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
                 <select
                   value={stockFilter}
                   onChange={(e) => {
                     setStockFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
                 >
                   <option value="all">همه</option>
                   <option value="in-stock">موجود</option>
@@ -579,6 +573,15 @@ export default function AdminProductsPage() {
                 <label className="text-sm font-medium text-gray-700 whitespace-nowrap">موجودی:</label>
               </div>
             </div>
+
+            <Button
+              variant="secondary"
+              onClick={clearFilters}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              پاک کردن فیلترها
+            </Button>
           </div>
         </div>
       </Card>
@@ -599,13 +602,13 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-6 px-6">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <table className="w-full">
+                <table className="w-full min-w-[800px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-center w-12">
@@ -629,7 +632,7 @@ export default function AdminProductsPage() {
                       </th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">ویژگی‌ها</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">ویژگی‌ها</th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
                       <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>

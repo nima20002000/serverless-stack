@@ -87,7 +87,7 @@ export default function ProductFormFields({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label="قیمت (تومان)"
           name="price"
@@ -141,7 +141,7 @@ export default function ProductFormFields({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           label={formData.hasVariants ? "موجودی (محاسبه خودکار از انواع)" : "موجودی"}
           name="stock"
@@ -155,7 +155,7 @@ export default function ProductFormFields({
         />
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         <div className="flex items-center gap-3">
           <input
             type="checkbox"
