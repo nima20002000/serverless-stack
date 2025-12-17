@@ -9,7 +9,7 @@ import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import prisma from '@/lib/prisma/client';
 import { log } from '@/lib/logger';
-import { sendAdminOrderConfirmation } from '@/lib/email/client';
+import { sendAdminOrderConfirmation, sendBuyerOrderConfirmation } from '@/lib/email/client';
 import { sendOrderConfirmation } from '@/services/sms-service';
 
 export const dynamic = 'force-dynamic';
@@ -201,6 +201,46 @@ async function getHandler(req: NextRequest) {
     } else {
       log.warn('No phone number available for order confirmation SMS', {
         transactionId: transaction.id
+      });
+    }
+
+    // Send order confirmation email to buyer (if email is provided during checkout)
+    if (fullTransaction && fullTransaction.email) {
+      try {
+        log.info('Attempting to send order confirmation email to buyer', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          transactionCode: transaction.transactionCode,
+          refId: verification.refId
+        });
+
+        const emailResult = await sendBuyerOrderConfirmation(fullTransaction, verification.refId);
+
+        if (!emailResult.success) {
+          log.warn('Buyer confirmation email not sent', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Buyer confirmation email sent successfully', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send buyer confirmation email', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } else {
+      log.info('No buyer email provided, skipping buyer confirmation email', {
+        transactionId: transaction.id,
+        hasEmail: !!fullTransaction?.email
       });
     }
 
