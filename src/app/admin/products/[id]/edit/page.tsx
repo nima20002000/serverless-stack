@@ -224,10 +224,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Step 3: Sync variants
       const existingVariantsResponse = await fetch(`/api/products/${params.id}/variants`);
       const existingVariantsData = await existingVariantsResponse.json();
-      const existingVariants = existingVariantsData.variants || [];
+      const existingVariantsFromDB = existingVariantsData.variants || [];
 
       // Delete variants that were removed
-      for (const oldVariant of existingVariants) {
+      for (const oldVariant of existingVariantsFromDB) {
         const stillExists = variantManager.variants.find(v => v.id === oldVariant.id);
         if (!stillExists) {
           await fetch(`/api/products/${params.id}/variants/${oldVariant.id}`, {
@@ -245,12 +245,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Track created variant IDs for reordering later
       const variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
-      for (const variant of variantManager.variants) {
-        const isExisting = !variant.id.startsWith('variant-');
+      // Separate existing and new variants
+      const existingVariants = variantManager.variants.filter(v => !v.id.startsWith('variant-'));
+      const newVariants = variantManager.variants.filter(v => v.id.startsWith('variant-'));
 
-        if (isExisting) {
-          // Update existing variant (without order - will be handled by reorder endpoint)
-          await fetch(`/api/products/${params.id}/variants/${variant.id}`, {
+      // Step 3.1: Update all existing variants in parallel (basic info only, no media yet)
+      await Promise.all(
+        existingVariants.map(variant =>
+          fetch(`/api/products/${params.id}/variants/${variant.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -263,102 +265,110 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               stock: parseInt(variant.stock),
               isActive: variant.isActive,
             }),
-          });
+          })
+        )
+      );
 
-          // Map existing variant ID to itself
-          variantIdMapping[variant.id] = variant.id;
+      // Map existing variant IDs
+      existingVariants.forEach(variant => {
+        variantIdMapping[variant.id] = variant.id;
+      });
 
-          // Sync variant media - use cached media data
-          const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
+      // Step 3.2: Sync media for existing variants
+      for (const variant of existingVariants) {
+        // Sync variant media - use cached media data
+        const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
 
-          // Delete old variant media
-          for (const oldMedia of existingVariantMedia) {
-            const stillExists = variant.media?.find(m => m.id === oldMedia.id);
-            if (!stillExists) {
-              await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
-                method: 'DELETE',
-              });
-            }
+        // Delete old variant media
+        for (const oldMedia of existingVariantMedia) {
+          const stillExists = variant.media?.find(m => m.id === oldMedia.id);
+          if (!stillExists) {
+            await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
+              method: 'DELETE',
+            });
+          }
+        }
+
+        // Add new variant media (temporary IDs starting with 'new-')
+        if (variant.media) {
+          for (const mediaItem of variant.media) {
+            if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
+
+            await fetch(`/api/products/${params.id}/media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                variantId: variant.id,
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              }),
+            });
           }
 
-          // Add new variant media (temporary IDs starting with 'new-')
-          if (variant.media) {
-            for (const mediaItem of variant.media) {
-              if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
+          // Update isDefault for existing variant media (only if changed)
+          for (const mediaItem of variant.media) {
+            if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
-              await fetch(`/api/products/${params.id}/media`, {
-                method: 'POST',
+            // Check if isDefault actually changed
+            const oldMedia = existingVariantMedia.find((m: MediaItem) => m.id === mediaItem.id);
+            if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+              await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  variantId: variant.id,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
                   isDefault: mediaItem.isDefault,
                 }),
               });
             }
-
-            // Update isDefault for existing variant media (only if changed)
-            for (const mediaItem of variant.media) {
-              if (mediaItem.id.startsWith('new-')) continue; // Skip new media
-
-              // Check if isDefault actually changed
-              const oldMedia = existingVariantMedia.find((m: MediaItem) => m.id === mediaItem.id);
-              if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
-                await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    isDefault: mediaItem.isDefault,
-                  }),
-                });
-              }
-            }
           }
-        } else {
-          // Create new variant (including order)
-          const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              order: variant.order,
-              isActive: variant.isActive,
-            }),
-          });
+        }
+      }
 
-          const variantData = await variantResponse.json();
-          const variantId = variantData.variant?.id;
+      // Step 3.3: Create new variants
+      for (const variant of newVariants) {
+        // Create new variant (including order)
+        const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: variant.name,
+            sku: variant.sku || undefined,
+            color: variant.color || undefined,
+            size: variant.size || undefined,
+            material: variant.material || undefined,
+            priceAdjust: parseFloat(variant.priceAdjust),
+            stock: parseInt(variant.stock),
+            order: variant.order,
+            isActive: variant.isActive,
+          }),
+        });
 
-          // Map temporary ID to real database ID
-          if (variantId) {
-            variantIdMapping[variant.id] = variantId;
-          }
+        const variantData = await variantResponse.json();
+        const variantId = variantData.variant?.id;
 
-          // Add variant media
-          if (variantId && variant.media && variant.media.length > 0) {
-            for (const mediaItem of variant.media) {
-              await fetch(`/api/products/${params.id}/media`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  variantId: variantId,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
-                  isDefault: mediaItem.isDefault,
-                }),
-              });
-            }
+        // Map temporary ID to real database ID
+        if (variantId) {
+          variantIdMapping[variant.id] = variantId;
+        }
+
+        // Add variant media
+        if (variantId && variant.media && variant.media.length > 0) {
+          for (const mediaItem of variant.media) {
+            await fetch(`/api/products/${params.id}/media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                variantId: variantId,
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              }),
+            });
           }
         }
       }
