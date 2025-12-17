@@ -226,6 +226,13 @@ export async function sendAdminOrderConfirmation(
   try {
     const adminEmail = process.env.ADMIN_EMAIL;
 
+    log.info('Attempting to send admin order confirmation', {
+      transactionCode: transaction.transactionCode,
+      adminEmailConfigured: !!adminEmail,
+      resendKeyConfigured: !!process.env.RESEND_API_KEY,
+      emailFromConfigured: !!process.env.EMAIL_FROM
+    });
+
     if (!adminEmail) {
       log.warn('ADMIN_EMAIL not configured, skipping admin confirmation email');
       return {
@@ -235,6 +242,11 @@ export async function sendAdminOrderConfirmation(
     }
 
     const transporter = await createTransporter();
+
+    log.info('Email transporter created', {
+      transactionCode: transaction.transactionCode,
+      hasResendKey: !!process.env.RESEND_API_KEY
+    });
 
     // Format order date
     const orderDate = new Date(transaction.createdAt).toLocaleString('fa-IR', {
@@ -494,12 +506,27 @@ ${itemsText}
 کیتیا - سیستم مدیریت فروشگاه
     `;
 
+    log.info('Sending admin order confirmation email', {
+      transactionCode: transaction.transactionCode,
+      to: adminEmail,
+      from: process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>',
+      subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`
+    });
+
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>',
       to: adminEmail,
       subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`,
       text: emailText,
       html: emailHTML
+    });
+
+    log.info('Email sent via transporter', {
+      transactionCode: transaction.transactionCode,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response
     });
 
     // In development with Ethereal, log the preview URL
