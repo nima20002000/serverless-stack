@@ -392,17 +392,41 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
 
 /**
  * Verify stock availability for cart items
+ * Optimized to batch fetch products and variants to avoid N+1 queries
  */
 export async function verifyStockAvailability(
   items: Array<{ productId: string; variantId?: string; quantity: number }>
 ): Promise<StockVerificationResult> {
   const errors: string[] = [];
 
+  // Step 1: Batch fetch all products in one query
+  const productIds = items.map(item => item.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true, stock: true, name: true, isActive: true, hasVariants: true },
+  });
+
+  // Create a product lookup map for O(1) access
+  const productMap = new Map(products.map(p => [p.id, p]));
+
+  // Step 2: Batch fetch all variants in one query (if any items have variantId)
+  const variantIds = items
+    .filter(item => item.variantId)
+    .map(item => item.variantId as string);
+
+  const variants = variantIds.length > 0
+    ? await prisma.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: { id: true, stock: true, name: true, isActive: true },
+      })
+    : [];
+
+  // Create a variant lookup map for O(1) access
+  const variantMap = new Map(variants.map(v => [v.id, v]));
+
+  // Step 3: Validate each item using cached data
   for (const item of items) {
-    const product = await prisma.product.findUnique({
-      where: { id: item.productId },
-      select: { stock: true, name: true, isActive: true, hasVariants: true },
-    });
+    const product = productMap.get(item.productId);
 
     if (!product) {
       errors.push(`محصول یافت نشد`);
@@ -422,10 +446,7 @@ export async function verifyStockAvailability(
 
     // Check variant stock if variantId is provided
     if (item.variantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: item.variantId },
-        select: { stock: true, name: true, isActive: true },
-      });
+      const variant = variantMap.get(item.variantId);
 
       if (!variant) {
         errors.push(`واریانت محصول ${product.name} یافت نشد`);
