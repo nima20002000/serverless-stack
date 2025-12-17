@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
-// Use ISR (Incremental Static Regeneration) instead of SSR for better performance
+// Use ISR (Incremental Static Regeneration) for optimal performance
 // Page will be statically generated and revalidated every 60 seconds
 export const revalidate = 60;
 
