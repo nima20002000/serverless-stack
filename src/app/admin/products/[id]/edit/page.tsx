@@ -35,6 +35,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [originalVariants, setOriginalVariants] = useState<Variant[]>([]);
 
   // Media management (product-level)
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
@@ -92,6 +93,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             media: v.media || [],
           }));
         variantManager.setVariants(formattedVariants);
+        setOriginalVariants(formattedVariants); // Store original state for comparison
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
@@ -249,33 +251,74 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const existingVariants = variantManager.variants.filter(v => !v.id.startsWith('variant-'));
       const newVariants = variantManager.variants.filter(v => v.id.startsWith('variant-'));
 
-      // Step 3.1: Update all existing variants in parallel (basic info only, no media yet)
-      await Promise.all(
-        existingVariants.map(variant =>
-          fetch(`/api/products/${params.id}/variants/${variant.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              isActive: variant.isActive,
-            }),
-          })
-        )
-      );
+      // Helper: Check if variant properties changed
+      const variantPropsChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+        if (!original) return true; // New variant or not found in original
+        return (
+          current.name !== original.name ||
+          current.sku !== original.sku ||
+          current.color !== original.color ||
+          current.size !== original.size ||
+          current.material !== original.material ||
+          current.priceAdjust !== original.priceAdjust ||
+          current.stock !== original.stock ||
+          current.isActive !== original.isActive
+        );
+      };
+
+      // Step 3.1: Update only changed variants in parallel
+      const variantsToUpdate = existingVariants.filter(variant => {
+        const original = originalVariants.find(v => v.id === variant.id);
+        return variantPropsChanged(variant, original);
+      });
+
+      if (variantsToUpdate.length > 0) {
+        await Promise.all(
+          variantsToUpdate.map(variant =>
+            fetch(`/api/products/${params.id}/variants/${variant.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                isActive: variant.isActive,
+              }),
+            })
+          )
+        );
+      }
 
       // Map existing variant IDs
       existingVariants.forEach(variant => {
         variantIdMapping[variant.id] = variant.id;
       });
 
-      // Step 3.2: Sync media for existing variants
+      // Helper: Check if variant media changed
+      const variantMediaChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+        if (!original) return true;
+        const currentMediaIds = (current.media || []).map(m => m.id).sort().join(',');
+        const originalMediaIds = (original.media || []).map(m => m.id).sort().join(',');
+        if (currentMediaIds !== originalMediaIds) return true;
+
+        // Check if isDefault changed for any media
+        return (current.media || []).some(currentMedia => {
+          const originalMedia = (original.media || []).find(m => m.id === currentMedia.id);
+          return originalMedia && originalMedia.isDefault !== currentMedia.isDefault;
+        });
+      };
+
+      // Step 3.2: Sync media only for variants where media changed
       for (const variant of existingVariants) {
+        const original = originalVariants.find(v => v.id === variant.id);
+
+        // Skip if media didn't change
+        if (!variantMediaChanged(variant, original)) continue;
+
         // Sync variant media - use cached media data
         const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
 
@@ -373,9 +416,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
-      // Step 4: Reorder all variants in a single transaction
-      // This ensures the order is persisted correctly
-      if (variantManager.variants.length > 0) {
+      // Step 4: Reorder variants only if order changed
+      const orderChanged = variantManager.variants.some((variant) => {
+        const original = originalVariants.find(v => v.id === variant.id);
+        return !original || original.order !== variant.order;
+      }) || newVariants.length > 0; // Always reorder if there are new variants
+
+      if (orderChanged && variantManager.variants.length > 0) {
         const variantOrders = variantManager.variants.map(v => ({
           id: variantIdMapping[v.id] || v.id, // Use real ID from mapping
           order: v.order,
