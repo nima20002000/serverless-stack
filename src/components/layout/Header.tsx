@@ -61,7 +61,7 @@ export default function Header() {
                   </Link>
                   {session.user && session.user.role === 'ADMIN' && (
                     <Link
-                      href="/admin/products"
+                      href="/admin"
                       className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
                     >
                       پنل ادمین
@@ -176,7 +176,7 @@ export default function Header() {
                     {/* Admin Panel Link */}
                     {session.user && session.user.role === 'ADMIN' && (
                       <Link
-                        href="/admin/products"
+                        href="/admin"
                         className="group relative text-blue-600 hover:text-blue-700 font-medium py-3 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 hover:shadow-md transition-all duration-200 flex items-center justify-between border border-blue-200"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
