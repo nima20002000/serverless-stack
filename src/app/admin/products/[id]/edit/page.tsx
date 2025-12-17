@@ -204,17 +204,21 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         });
       }
 
-      // Update isDefault for existing media
+      // Update isDefault for existing product-level media (only if changed)
       for (const mediaItem of productMedia.media) {
         if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
-        await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            isDefault: mediaItem.isDefault,
-          }),
-        });
+        // Check if isDefault actually changed
+        const oldMedia = existingProductMedia.find((m: MediaItem) => m.id === mediaItem.id);
+        if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+          await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              isDefault: mediaItem.isDefault,
+            }),
+          });
+        }
       }
 
       // Step 3: Sync variants
@@ -296,17 +300,21 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               });
             }
 
-            // Update isDefault for existing variant media
+            // Update isDefault for existing variant media (only if changed)
             for (const mediaItem of variant.media) {
               if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
-              await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  isDefault: mediaItem.isDefault,
-                }),
-              });
+              // Check if isDefault actually changed
+              const oldMedia = existingVariantMedia.find((m: MediaItem) => m.id === mediaItem.id);
+              if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+                await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    isDefault: mediaItem.isDefault,
+                  }),
+                });
+              }
             }
           }
         } else {
