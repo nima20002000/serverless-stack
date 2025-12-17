@@ -252,9 +252,18 @@ Supports passwordless login and registration via OTP codes.
 2. Initiate Zarinpal payment → stores `zarinpalAuthority`
 3. User completes payment on Zarinpal gateway
 4. Callback verification → update status to `COMPLETED`, store `zarinpalRefId`
-5. Auto-generate invoice after successful payment
+5. Reduce product/variant stock
+6. Send admin order confirmation email (if `ADMIN_EMAIL` configured)
+7. Auto-generate invoice after successful payment
 
 Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
+
+**Admin Order Notifications**:
+- Automatic email sent to admin after each successful payment
+- Includes comprehensive order details: buyer info, products with variants, quantities, prices
+- Configured via `ADMIN_EMAIL` environment variable
+- Non-blocking - payment succeeds even if email fails
+- Service: `sendAdminOrderConfirmation()` in `src/lib/email/client.ts`
 
 ### Database Schema Key Points
 - **Products**: Support variants, media, tags, categories

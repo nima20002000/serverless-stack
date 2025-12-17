@@ -135,14 +135,29 @@ async function getHandler(req: NextRequest) {
       }
     });
 
-    // Send admin confirmation email (non-blocking - don't fail if email fails)
+    // Send admin confirmation email (await to ensure it completes in serverless)
     if (fullTransaction) {
-      sendAdminOrderConfirmation(fullTransaction, verification.refId).catch((error) => {
-        log.error('Failed to send admin confirmation email (non-blocking)', {
+      try {
+        const emailResult = await sendAdminOrderConfirmation(fullTransaction, verification.refId);
+
+        if (!emailResult.success) {
+          log.warn('Admin confirmation email not sent', {
+            transactionId: transaction.id,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Admin confirmation email sent successfully', {
+            transactionId: transaction.id,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send admin confirmation email', {
           transactionId: transaction.id,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
-      });
+      }
     }
 
     // Create user account if requested (for guest checkouts)
