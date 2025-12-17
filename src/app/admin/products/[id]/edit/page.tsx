@@ -232,6 +232,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
+      // Fetch all product media once (to avoid N+1 query pattern)
+      const allProductMediaResponse = await fetch(`/api/products/${params.id}/media`);
+      const allProductMediaData = await allProductMediaResponse.json();
+      const allProductMedia = allProductMediaData.media || [];
+
       // Update or create variants
       // Track created variant IDs for reordering later
       const variantIdMapping: Record<string, string> = {}; // tempId -> realId
@@ -259,10 +264,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           // Map existing variant ID to itself
           variantIdMapping[variant.id] = variant.id;
 
-          // Sync variant media
-          const variantMediaResponse = await fetch(`/api/products/${params.id}/media`);
-          const variantMediaData = await variantMediaResponse.json();
-          const existingVariantMedia = variantMediaData.media.filter((m: MediaItem) => m.variantId === variant.id);
+          // Sync variant media - use cached media data
+          const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
 
           // Delete old variant media
           for (const oldMedia of existingVariantMedia) {
