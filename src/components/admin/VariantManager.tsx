@@ -180,16 +180,18 @@ export default function VariantManager({
   const [showVariantMediaBrowser, setShowVariantMediaBrowser] = useState(false);
 
   // Drag and drop sensors - includes TouchSensor for mobile
+  // Mobile/tablet: Requires press-and-hold (500ms) to activate drag, preventing scroll conflicts
+  // Desktop: Only requires 8px movement to start dragging
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Require 8px movement before drag starts (prevents accidental drags)
+        distance: 8, // Desktop: Require 8px movement before drag starts
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200, // 200ms delay before drag starts on touch (prevents scroll interference)
-        tolerance: 5, // Allow 5px of movement during the delay
+        delay: 500, // Mobile/tablet: 500ms press-and-hold before drag activates (prevents scroll interference)
+        tolerance: 8, // Allow 8px of movement during the delay without canceling
       },
     }),
     useSensor(KeyboardSensor, {
