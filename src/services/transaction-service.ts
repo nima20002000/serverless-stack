@@ -308,6 +308,7 @@ export async function getUserTransactions(userId: string, options?: {
 
 /**
  * Reduce product/variant stock after successful payment
+ * Optimized to avoid N+1 queries by tracking which productIds need stock recalculation
  */
 export async function reduceProductStock(transactionId: string): Promise<void> {
   log.info('Reducing product/variant stock for transaction', { transactionId });
@@ -326,6 +327,11 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
     // Update stock for each item in the transaction
     // Use a Prisma transaction to ensure atomicity
     await prisma.$transaction(async (tx) => {
+      // Track which productIds have variants that need stock recalculation
+      // Use Set to avoid duplicate recalculations for same product
+      const productsNeedingRecalc = new Set<string>();
+
+      // Step 1: Reduce stock for all items
       for (const item of transaction.items) {
         if (item.variantId) {
           // Reduce variant stock
@@ -338,25 +344,13 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
             },
           });
 
-          // Get all variants for this product to recalculate total stock
-          const variants = await tx.productVariant.findMany({
-            where: { productId: item.productId },
-            select: { stock: true },
-          });
+          // Mark this product as needing recalculation
+          productsNeedingRecalc.add(item.productId);
 
-          const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
-
-          // Update product stock to sum of all variant stocks
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: totalStock },
-          });
-
-          log.info('Variant stock reduced and product stock recalculated', {
+          log.info('Variant stock reduced', {
             variantId: item.variantId,
             productId: item.productId,
             quantity: item.quantity,
-            newTotalStock: totalStock,
           });
         } else {
           // No variant - reduce product stock directly (backward compatible)
@@ -372,6 +366,38 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
           log.info('Product stock reduced (no variant)', {
             productId: item.productId,
             quantity: item.quantity,
+          });
+        }
+      }
+
+      // Step 2: Batch recalculate product stocks for all products with variants
+      // This happens ONCE per unique productId, not per item
+      if (productsNeedingRecalc.size > 0) {
+        const productIds = Array.from(productsNeedingRecalc);
+
+        // Fetch all variants for all affected products in ONE query
+        const allVariants = await tx.productVariant.findMany({
+          where: { productId: { in: productIds } },
+          select: { productId: true, stock: true },
+        });
+
+        // Group variants by productId and calculate total stock per product
+        const stockByProduct = new Map<string, number>();
+        for (const variant of allVariants) {
+          const currentStock = stockByProduct.get(variant.productId) || 0;
+          stockByProduct.set(variant.productId, currentStock + variant.stock);
+        }
+
+        // Update all product stocks in batch
+        for (const [productId, totalStock] of stockByProduct.entries()) {
+          await tx.product.update({
+            where: { id: productId },
+            data: { stock: totalStock },
+          });
+
+          log.info('Product stock recalculated from variants', {
+            productId,
+            newTotalStock: totalStock,
           });
         }
       }

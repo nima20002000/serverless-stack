@@ -215,16 +215,32 @@ export async function updateCategory(id: string, data: Partial<CategoryFormData>
       }
 
       // Check for circular reference (prevent category from being its own ancestor)
-      let checkParent = parent;
-      while (checkParent.parentId) {
-        if (checkParent.parentId === id) {
-          throw new Error('نمی‌توان دسته‌بندی را به فرزندان خودش منتقل کرد');
-        }
-        const nextParent = await prisma.category.findUnique({
-          where: { id: checkParent.parentId },
+      // Optimized: Fetch all potential ancestors in one query to avoid N+1
+      // Build a set of ancestor IDs to check against
+      const ancestorIds = new Set<string>();
+      let currentParentId: string | null = parent.parentId;
+
+      // Fetch all categories upfront (only if parent has a parentId)
+      if (currentParentId) {
+        // In most e-commerce sites, categories are shallow (2-3 levels max)
+        // We can safely fetch all categories and traverse in-memory
+        const allCategories = await prisma.category.findMany({
+          select: { id: true, parentId: true },
         });
-        if (!nextParent) break;
-        checkParent = nextParent;
+
+        // Create a lookup map for O(1) access
+        const categoryMap = new Map(
+          allCategories.map(c => [c.id, c.parentId])
+        );
+
+        // Traverse the parent chain using the map
+        while (currentParentId) {
+          if (currentParentId === id) {
+            throw new Error('نمی‌توان دسته‌بندی را به فرزندان خودش منتقل کرد');
+          }
+          ancestorIds.add(currentParentId);
+          currentParentId = categoryMap.get(currentParentId) || null;
+        }
       }
     }
   }

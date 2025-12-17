@@ -310,68 +310,79 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
 // ============ Dashboard Statistics ============
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  // Get counts
+  const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  // Optimize: Run all independent queries in parallel
   const [
     totalUsers,
     totalProducts,
     totalTransactions,
     completedTransactions,
+    newUsersThisMonth,
+    activeProducts,
+    pendingTransactions,
+    failedTransactions,
+    // Use database-level aggregation instead of fetching all records
+    totalRevenueResult,
+    monthlyRevenueResult,
+    recentTransactions,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.product.count(),
     prisma.transaction.count(),
     prisma.transaction.count({ where: { status: 'COMPLETED' } }),
-  ]);
-
-  // Calculate revenue
-  const completedTransactionsData = await prisma.transaction.findMany({
-    where: { status: 'COMPLETED' },
-    select: { amount: true, createdAt: true },
-  });
-
-  const totalRevenue = completedTransactionsData.reduce(
-    (sum, t) => sum + Number(t.amount),
-    0
-  );
-
-  const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const monthlyRevenue = completedTransactionsData
-    .filter((t) => t.createdAt >= thisMonth)
-    .reduce((sum, t) => sum + Number(t.amount), 0);
-
-  // Get new users this month
-  const newUsersThisMonth = await prisma.user.count({
-    where: {
-      createdAt: {
-        gte: thisMonth,
-      },
-    },
-  });
-
-  // Get active products
-  const activeProducts = await prisma.product.count({
-    where: { isActive: true },
-  });
-
-  // Get transaction stats by status
-  const [pendingTransactions, failedTransactions] = await Promise.all([
-    prisma.transaction.count({ where: { status: 'PENDING' } }),
-    prisma.transaction.count({ where: { status: 'FAILED' } }),
-  ]);
-
-  // Get recent transactions
-  const recentTransactions = await prisma.transaction.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
+    prisma.user.count({
+      where: {
+        createdAt: {
+          gte: thisMonth,
         },
       },
-    },
-  });
+    }),
+    prisma.product.count({
+      where: { isActive: true },
+    }),
+    prisma.transaction.count({ where: { status: 'PENDING' } }),
+    prisma.transaction.count({ where: { status: 'FAILED' } }),
+    // Database-level aggregation for total revenue
+    prisma.transaction.aggregate({
+      where: { status: 'COMPLETED' },
+      _sum: {
+        amount: true,
+      },
+    }),
+    // Database-level aggregation for monthly revenue
+    prisma.transaction.aggregate({
+      where: {
+        status: 'COMPLETED',
+        createdAt: {
+          gte: thisMonth,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    }),
+    prisma.transaction.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  // Extract revenue sums (handle null case when no completed transactions exist)
+  const totalRevenue = totalRevenueResult._sum.amount
+    ? Number(totalRevenueResult._sum.amount)
+    : 0;
+  const monthlyRevenue = monthlyRevenueResult._sum.amount
+    ? Number(monthlyRevenueResult._sum.amount)
+    : 0;
 
   return {
     users: {
