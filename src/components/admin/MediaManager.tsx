@@ -35,16 +35,16 @@ export default function MediaManager({
 }: MediaManagerProps) {
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {title && (
-          <h2 className="text-lg font-semibold text-gray-900 text-right">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 text-right">
             {title}
           </h2>
         )}
 
         {/* Selected Media Preview Grid */}
         {media.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
             {media.map((item) => (
               <div
                 key={item.id}
@@ -61,15 +61,15 @@ export default function MediaManager({
                       alt={item.alt || 'Product media'}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="flex items-center justify-center h-full text-gray-500 text-xs sm:text-sm">
                       ویدیو
                     </div>
                   )}
                   {item.isDefault && (
-                    <div className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                    <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-blue-600 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium">
                       پیش‌فرض
                     </div>
                   )}
@@ -79,9 +79,9 @@ export default function MediaManager({
                       e.stopPropagation();
                       onRemove(item.id);
                     }}
-                    className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-600 text-white rounded p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   >
-                    <XMarkIcon className="h-4 w-4" />
+                    <XMarkIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
                 </div>
               </div>
@@ -92,8 +92,10 @@ export default function MediaManager({
         <Button
           type="button"
           variant="secondary"
+          size="sm"
           onClick={onOpenBrowser}
           disabled={disabled}
+          className="w-full sm:w-auto text-sm"
         >
           {buttonLabel}
         </Button>

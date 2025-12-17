@@ -27,7 +27,7 @@ export default function ProductFormFields({
   onTagsChange,
 }: ProductFormFieldsProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Input
         label="نام محصول"
         name="name"
@@ -39,7 +39,7 @@ export default function ProductFormFields({
       />
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
           دسته‌بندی
         </label>
         <CategorySelector
@@ -59,7 +59,7 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
           برچسب‌ها
         </label>
         <TagInput
@@ -70,7 +70,7 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
           توضیحات محصول
         </label>
         <textarea
@@ -78,16 +78,16 @@ export default function ProductFormFields({
           value={formData.description}
           onChange={onChange}
           disabled={disabled}
-          rows={5}
-          className="w-full px-4 py-2 border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+          rows={4}
+          className="w-full px-3 py-2 text-sm border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
           placeholder="توضیحات کامل محصول را وارد کنید"
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-red-600 text-right">{errors.description}</p>
+          <p className="mt-1 text-xs sm:text-sm text-red-600 text-right">{errors.description}</p>
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
           label="قیمت (تومان)"
           name="price"
@@ -115,7 +115,7 @@ export default function ProductFormFields({
         />
       </div>
 
-      <div className="flex items-center gap-3 p-4 border border-blue-200 bg-blue-50 rounded-lg">
+      <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border border-blue-200 bg-blue-50 rounded-lg">
         <input
           type="checkbox"
           id="hasVariants"
@@ -123,16 +123,16 @@ export default function ProductFormFields({
           checked={formData.hasVariants}
           onChange={onChange}
           disabled={disabled}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
         />
-        <label htmlFor="hasVariants" className="text-sm font-medium text-gray-700">
+        <label htmlFor="hasVariants" className="text-xs sm:text-sm font-medium text-gray-700">
           این محصول دارای انواع مختلف است (رنگ، سایز، جنس، ...)
         </label>
       </div>
 
       {formData.hasVariants && (
-        <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-          <p className="text-sm text-amber-800">
+        <div className="p-3 sm:p-4 border border-amber-200 bg-amber-50 rounded-lg">
+          <p className="text-xs sm:text-sm text-amber-800">
             <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
             {variants.length > 0
               ? ` موجودی فعلی: ${variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)} عدد`
@@ -141,7 +141,7 @@ export default function ProductFormFields({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
           label={formData.hasVariants ? "موجودی (محاسبه خودکار از انواع)" : "موجودی"}
           name="stock"
@@ -155,8 +155,8 @@ export default function ProductFormFields({
         />
       </div>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-3">
           <input
             type="checkbox"
             id="isFeatured"
@@ -166,12 +166,12 @@ export default function ProductFormFields({
             disabled={disabled}
             className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
           />
-          <label htmlFor="isFeatured" className="text-sm font-medium text-gray-700">
+          <label htmlFor="isFeatured" className="text-xs sm:text-sm font-medium text-gray-700">
             محصول ویژه
           </label>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <input
             type="checkbox"
             id="isActive"
@@ -181,7 +181,7 @@ export default function ProductFormFields({
             disabled={disabled}
             className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
           />
-          <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+          <label htmlFor="isActive" className="text-xs sm:text-sm font-medium text-gray-700">
             محصول فعال باشد
           </label>
         </div>

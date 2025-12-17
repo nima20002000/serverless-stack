@@ -477,8 +477,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         ]}
       />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-right">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-right">
           ویرایش محصول
         </h1>
       </div>
@@ -489,10 +489,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
-        <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-right">
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-right">
             اطلاعات پایه
           </h2>
 
@@ -508,7 +508,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         </Card>
 
         {/* Media */}
-        <Card>
+        <Card padding="sm">
           <MediaManager
             media={productMedia.media}
             onMediaSelect={productMedia.handleMediaSelect}
@@ -523,7 +523,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         </Card>
 
         {/* Variants */}
-        <Card>
+        <Card padding="sm">
           <VariantManager
             variants={variantManager.variants}
             showVariantForm={variantManager.showVariantForm}
@@ -543,17 +543,19 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         </Card>
 
         {/* Submit Buttons */}
-        <Card>
-          <div className="flex gap-4 justify-end">
+        <Card padding="sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
             <Button
               type="button"
               variant="secondary"
+              size="sm"
               onClick={() => router.back()}
               disabled={isSaving}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               انصراف
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSaving}>
+            <Button type="submit" variant="primary" size="sm" isLoading={isSaving} className="w-full sm:w-auto order-1 sm:order-2">
               ذخیره تغییرات
             </Button>
           </div>

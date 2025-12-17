@@ -205,8 +205,8 @@ export default function NewProductPage() {
         ]}
       />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-right">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-right">
           افزودن محصول جدید
         </h1>
       </div>
@@ -217,10 +217,10 @@ export default function NewProductPage() {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
-        <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-right">
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-right">
             اطلاعات پایه
           </h2>
 
@@ -236,7 +236,7 @@ export default function NewProductPage() {
         </Card>
 
         {/* Media */}
-        <Card>
+        <Card padding="sm">
           <MediaManager
             media={productMedia.media}
             onMediaSelect={productMedia.handleMediaSelect}
@@ -252,7 +252,7 @@ export default function NewProductPage() {
 
         {/* Variants - Only show if hasVariants is enabled */}
         {formData.hasVariants && (
-          <Card>
+          <Card padding="sm">
             <VariantManager
               variants={variantManager.variants}
               showVariantForm={variantManager.showVariantForm}
@@ -274,17 +274,19 @@ export default function NewProductPage() {
         )}
 
         {/* Submit Buttons */}
-        <Card>
-          <div className="flex gap-4 justify-end">
+        <Card padding="sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
             <Button
               type="button"
               variant="secondary"
+              size="sm"
               onClick={() => router.back()}
               disabled={isLoading}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               انصراف
             </Button>
-            <Button type="submit" variant="primary" isLoading={isLoading}>
+            <Button type="submit" variant="primary" size="sm" isLoading={isLoading} className="w-full sm:w-auto order-1 sm:order-2">
               ایجاد محصول
             </Button>
           </div>

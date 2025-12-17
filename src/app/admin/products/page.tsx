@@ -82,7 +82,7 @@ function SortableProductRow({
   return (
     <tr ref={setNodeRef} style={style} className="hover:bg-gray-50">
       {/* Drag Handle */}
-      <td className="px-4 py-3 text-center">
+      <td className="px-2 sm:px-4 py-3 text-center">
         <button
           {...attributes}
           {...listeners}
@@ -91,7 +91,7 @@ function SortableProductRow({
           type="button"
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4 sm:w-5 sm:h-5"
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
@@ -103,26 +103,27 @@ function SortableProductRow({
       </td>
 
       {/* Checkbox */}
-      <td className="px-4 py-3 text-center">
+      <td className="px-2 sm:px-4 py-3 text-center">
         <input
           type="checkbox"
           checked={selectedProducts.has(product.id)}
           onChange={() => onToggleSelect(product.id)}
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
         />
       </td>
 
       {/* Actions */}
-      <td className="px-4 py-3 text-right">
-        <div className="flex gap-2 justify-end">
+      <td className="px-2 sm:px-4 py-3 text-right">
+        <div className="flex gap-1 sm:gap-2 justify-end">
           <Link href={`/admin/products/${product.id}/edit`}>
-            <Button variant="secondary" size="sm">
+            <Button variant="secondary" size="sm" className="text-xs sm:text-sm px-2 sm:px-3">
               ویرایش
             </Button>
           </Link>
           <Button
             variant="danger"
             size="sm"
+            className="text-xs sm:text-sm px-2 sm:px-3"
             onClick={() => onDelete(product.id, product.name)}
           >
             حذف
@@ -131,10 +132,10 @@ function SortableProductRow({
       </td>
 
       {/* Status */}
-      <td className="px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-right">
         <button
           onClick={() => onToggleActive(product.id, product.isActive)}
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
+          className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
             product.isActive
               ? 'bg-green-100 text-green-800'
               : 'bg-red-100 text-red-800'
@@ -145,15 +146,15 @@ function SortableProductRow({
       </td>
 
       {/* Features */}
-      <td className="px-4 py-3 text-right hidden md:table-cell">
+      <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
         <div className="flex gap-1 justify-end flex-wrap">
           {product.isFeatured && (
-            <span className="inline-block bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded">
+            <span className="inline-block bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap">
               ویژه
             </span>
           )}
           {product.discountPercent && product.discountPercent > 0 && (
-            <span className="inline-block bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+            <span className="inline-block bg-red-100 text-red-800 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap">
               {product.discountPercent}% تخفیف
             </span>
           )}
@@ -164,35 +165,35 @@ function SortableProductRow({
       </td>
 
       {/* Stock */}
-      <td className="px-4 py-3 text-right">
-        <span className={product.stock === 0 ? 'text-red-600' : 'text-gray-900'}>
+      <td className="px-2 sm:px-4 py-3 text-right">
+        <span className={`text-xs sm:text-sm ${product.stock === 0 ? 'text-red-600' : 'text-gray-900'}`}>
           {product.stock}
         </span>
       </td>
 
       {/* Price */}
-      <td className="px-4 py-3 text-right">
-        <div className="flex flex-col gap-1">
+      <td className="px-2 sm:px-4 py-3 text-right">
+        <div className="flex flex-col gap-0.5 sm:gap-1">
           {product.discountPercent && product.discountPercent > 0 ? (
             <>
-              <span className="text-xs text-gray-500 line-through">
+              <span className="text-[10px] sm:text-xs text-gray-500 line-through">
                 {formatPrice(Number(product.price))}
               </span>
-              <span className="font-semibold text-red-600">
+              <span className="font-semibold text-red-600 text-xs sm:text-sm">
                 {formatPrice(Number(product.price) * (1 - product.discountPercent / 100))}
               </span>
             </>
           ) : (
-            <span>{formatPrice(Number(product.price))}</span>
+            <span className="text-xs sm:text-sm">{formatPrice(Number(product.price))}</span>
           )}
         </div>
       </td>
 
       {/* Name */}
-      <td className="px-4 py-3 text-right font-medium">
+      <td className="px-2 sm:px-4 py-3 text-right font-medium">
         <Link
           href={`/products/${product.id}`}
-          className="text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+          className="text-blue-600 hover:text-blue-800 hover:underline transition-colors text-xs sm:text-sm line-clamp-2"
         >
           {product.name}
         </Link>
@@ -475,33 +476,35 @@ export default function AdminProductsPage() {
     <div>
       <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
           <Link href="/admin/products/new" className="w-full sm:w-auto">
-            <Button variant="primary" className="w-full sm:w-auto">افزودن محصول جدید</Button>
+            <Button variant="primary" size="sm" className="w-full sm:w-auto text-sm">افزودن محصول جدید</Button>
           </Link>
           {hasOrderChanges && (
             <>
               <Button
                 variant="primary"
+                size="sm"
                 onClick={handleConfirmOrder}
                 disabled={isSavingOrder}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none text-sm"
               >
                 {isSavingOrder ? 'در حال ذخیره...' : 'تأیید ترتیب'}
               </Button>
               <Button
                 variant="secondary"
+                size="sm"
                 onClick={handleCancelOrder}
                 disabled={isSavingOrder}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none text-sm"
               >
                 لغو
               </Button>
             </>
           )}
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
       </div>
 
       {error && (
@@ -517,103 +520,99 @@ export default function AdminProductsPage() {
       )}
 
       {/* Search Bar */}
-      <Card className="mb-6">
-        <div className="p-4">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو بر اساس نام محصول..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
-            />
-            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
-              جستجو
-            </Button>
-          </form>
-        </div>
+      <Card className="mb-4 sm:mb-6" padding="sm">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="جستجو بر اساس نام محصول..."
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
+          />
+          <Button type="submit" variant="primary" size="sm" className="w-full sm:w-auto order-1 sm:order-2">
+            جستجو
+          </Button>
+        </form>
       </Card>
 
       {/* Filters */}
-      <Card className="mb-6">
-        <div className="p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-4 w-full">
-              {/* Status Filter */}
-              <div className="flex items-center gap-2 flex-1">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
-                >
-                  <option value="all">همه</option>
-                  <option value="active">فعال</option>
-                  <option value="inactive">غیرفعال</option>
-                </select>
-                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
-              </div>
-
-              {/* Stock Filter */}
-              <div className="flex items-center gap-2 flex-1">
-                <select
-                  value={stockFilter}
-                  onChange={(e) => {
-                    setStockFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
-                >
-                  <option value="all">همه</option>
-                  <option value="in-stock">موجود</option>
-                  <option value="out-of-stock">ناموجود</option>
-                </select>
-                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">موجودی:</label>
-              </div>
+      <Card className="mb-4 sm:mb-6" padding="sm">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            {/* Status Filter */}
+            <div className="flex items-center gap-2 flex-1">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+              >
+                <option value="all">همه</option>
+                <option value="active">فعال</option>
+                <option value="inactive">غیرفعال</option>
+              </select>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
             </div>
 
-            <Button
-              variant="secondary"
-              onClick={clearFilters}
-              size="sm"
-              className="w-full sm:w-auto"
-            >
-              پاک کردن فیلترها
-            </Button>
+            {/* Stock Filter */}
+            <div className="flex items-center gap-2 flex-1">
+              <select
+                value={stockFilter}
+                onChange={(e) => {
+                  setStockFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+              >
+                <option value="all">همه</option>
+                <option value="in-stock">موجود</option>
+                <option value="out-of-stock">ناموجود</option>
+              </select>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">موجودی:</label>
+            </div>
           </div>
+
+          <Button
+            variant="secondary"
+            onClick={clearFilters}
+            size="sm"
+            className="w-full sm:w-auto text-sm"
+          >
+            پاک کردن فیلترها
+          </Button>
         </div>
       </Card>
 
       {data && (
         <>
-          <Card>
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+          <Card padding="sm">
+            <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="text-xs sm:text-sm text-gray-600">
                   نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
                   {data.total.toLocaleString('fa-IR')} محصول
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-xs sm:text-sm text-gray-600">
                   صفحه {data.page.toLocaleString('fa-IR')} از{' '}
                   {data.totalPages.toLocaleString('fa-IR')}
                 </div>
               </div>
             </div>
 
-            <div className="overflow-x-auto -mx-6 px-6">
+            <div className="overflow-x-auto">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <table className="w-full min-w-[800px]">
+                <table className="w-full min-w-[650px]">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-center w-12">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
                         <svg
-                          className="w-5 h-5 text-gray-400 mx-auto"
+                          className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mx-auto"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -622,20 +621,20 @@ export default function AdminProductsPage() {
                           <path strokeLinecap="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
                         </svg>
                       </th>
-                      <th className="px-4 py-3 text-center w-12">
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
                         <input
                           type="checkbox"
                           checked={data.data.length > 0 && selectedProducts.size === data.data.length}
                           onChange={toggleSelectAll}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">ویژگی‌ها</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">موجودی</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">قیمت</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام محصول</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">عملیات</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">وضعیت</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">ویژگی‌ها</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">موجودی</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">قیمت</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">نام محصول</th>
                     </tr>
                   </thead>
                   <SortableContext
