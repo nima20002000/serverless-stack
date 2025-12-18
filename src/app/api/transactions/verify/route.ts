@@ -5,7 +5,7 @@ import {
   reduceProductStock,
   getTransactionWithVariants,
   linkTransactionToUser,
-} from '@/services/transaction-service';
+} from '@/services/transaction-service-supabase';
 import { createUser, getUserByPhone } from '@/services/user-service-supabase';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
@@ -259,7 +259,7 @@ async function getHandler(req: NextRequest) {
           const newUser = await createUser({
             phone: transaction.phone,
             email: transaction.email || undefined,
-            name: transaction.fullName,
+            name: transaction.fullName || 'کاربر',
           });
 
           // Link transaction to newly created user

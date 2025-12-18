@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   createTransaction,
   verifyStockAvailability,
-} from '@/services/transaction-service';
+} from '@/services/transaction-service-supabase';
 import { getProductById } from '@/services/product-service-supabase';
 import { updateUserShippingInfo } from '@/services/user-service-supabase';
 import {

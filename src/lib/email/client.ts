@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import { log } from '@/lib/logger';
-import { Prisma } from '@prisma/client';
 
 export interface SendEmailResult {
   success: boolean;
@@ -8,25 +7,38 @@ export interface SendEmailResult {
   error?: string;
 }
 
-// Type for transaction data used in admin confirmation email
-export type TransactionEmailData = Prisma.TransactionGetPayload<{
-  include: {
-    items: {
-      include: {
-        product: true;
-        variant: true;
-      };
+// Transaction data for email notifications (generic type, works with both Prisma and Supabase)
+export type TransactionEmailData = {
+  id: string;
+  transactionCode: string;
+  amount: string | number;
+  fullName: string | null;
+  phone: string | null;
+  email: string | null;
+  shippingAddress: string | null;
+  postalCode: string | null;
+  createdAt: string | Date;
+  isGuest: boolean;
+  items: Array<{
+    quantity: number;
+    price: string | number;
+    product: {
+      name: string;
+      price: string | number;
     };
-    user: {
-      select: {
-        id: true;
-        email: true;
-        name: true;
-        phone: true;
-      };
-    };
-  };
-}>;
+    variant?: {
+      name: string;
+      color?: string | null;
+      size?: string | null;
+      material?: string | null;
+    } | null;
+  }>;
+  user?: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+};
 
 /**
  * Create email transporter based on environment
