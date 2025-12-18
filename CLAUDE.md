@@ -16,25 +16,6 @@ Keep documentation minimal and only create when specifically asked.
 
 Kitia is a Persian (Farsi) e-commerce platform built with Next.js 14 App Router, featuring RTL support, payment integration, and comprehensive admin capabilities. The application uses a service layer architecture with business logic centralized in service files.
 
-### Migration Status (Prisma → Supabase)
-
-**Branch**: `migration/prisma-to-supabase`
-**Status**: ✅ Phase 6 Complete - All admin routes migrated
-**Database**: Connected to Supabase Preview (gozxjxtnrbuurmstjydo)
-
-**Testing Results (2025-12-18)**:
-- ✅ Admin authentication working
-- ✅ Admin stats endpoint
-- ✅ Product management (CRUD + bulk operations)
-- ✅ Transaction/order management
-- ✅ User management (CRUD + bulk operations)
-- ✅ Category management (CRUD + bulk operations)
-- ✅ Settings management (CRUD)
-- ✅ Build succeeds without errors
-- ✅ All Phase 6 Supabase services functional
-
-**Note**: This branch should NOT be merged to main until production testing is complete.
-
 ## Essential Commands
 
 ### Development
