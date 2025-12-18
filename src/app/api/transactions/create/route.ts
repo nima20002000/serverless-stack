@@ -165,8 +165,22 @@ async function postHandler(req: NextRequest) {
     let totalAmount = 0;
     const transactionItems: Array<{ productId: string; variantId?: string; quantity: number; price: number }> = [];
 
+    log.info('Starting price calculation for transaction items', {
+      userId: session?.user?.id || 'guest',
+      itemCount: items.length,
+      items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+    });
+
     for (const item of items) {
       const product = await getProductById(item.productId);
+
+      log.debug('Product fetched for transaction', {
+        productId: product.id,
+        productName: product.name,
+        isActive: product.isActive,
+        hasVariants: product.hasVariants,
+        itemVariantId: item.variantId,
+      });
 
       if (!product.isActive) {
         return NextResponse.json(
