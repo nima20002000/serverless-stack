@@ -8,7 +8,7 @@ import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
 import Pagination from '@/components/ui/Pagination';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import {
   DndContext,
   closestCenter,

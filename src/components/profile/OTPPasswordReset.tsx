@@ -91,7 +91,7 @@ export default function OTPPasswordReset({
     // Validate password
     const validation = validatePassword(otpResetForm.newPassword, otpResetForm.confirmPassword);
     if (!validation.isValid) {
-      formActions.setError(validation.error!);
+      formActions.setError(validation.error || 'خطا در اعتبارسنجی رمز عبور');
       formActions.setIsSubmitting(false);
       return;
     }

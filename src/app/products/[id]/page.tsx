@@ -2,7 +2,10 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
-import { Product, ProductVariant } from '@prisma/client';
+import { Tables } from '@/lib/supabase/types';
+
+type Product = Tables<'products'>;
+type ProductVariant = Tables<'product_variants'>;
 import { cache } from 'react';
 
 // Use ISR for better performance - revalidate every 60 seconds
@@ -50,17 +53,19 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }>;
   };
 
+  const productWithRelations = product as ProductWithRelations;
   const serializedProduct = {
     ...product,
     price: Number(product.price),
+    images: product.images || [],
     discountPercent: product.discountPercent,
     hasVariants: product.hasVariants,
     isFeatured: product.isFeatured,
-    category: 'category' in product ? (product as ProductWithRelations).category : null,
-    tags: 'tags' in product ? ((product as ProductWithRelations).tags || []) : [],
-    media: 'media' in product ? ((product as ProductWithRelations).media || []) : [],
-    variants: 'variants' in product && (product as ProductWithRelations).variants && Array.isArray((product as ProductWithRelations).variants)
-      ? (product as ProductWithRelations).variants!.map((v) => ({
+    category: 'category' in product ? productWithRelations.category : null,
+    tags: 'tags' in product ? (productWithRelations.tags || []) : [],
+    media: 'media' in product ? (productWithRelations.media || []) : [],
+    variants: 'variants' in product && productWithRelations.variants && Array.isArray(productWithRelations.variants)
+      ? productWithRelations.variants.map((v) => ({
           ...v,
           sku: v.sku || undefined,
           color: v.color || undefined,

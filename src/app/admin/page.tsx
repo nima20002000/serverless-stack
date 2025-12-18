@@ -5,7 +5,7 @@ import StatsCard from '@/components/admin/StatsCard';
 import NavigationCard from '@/components/admin/NavigationCard';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import {
   UsersIcon,
   ShoppingBagIcon,

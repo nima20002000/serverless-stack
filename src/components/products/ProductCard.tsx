@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
 import { useState, useCallback, memo } from 'react';

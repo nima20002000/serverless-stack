@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';
@@ -70,10 +70,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [error, setError] = useState('');
 
   // Auto-select first active variant with media if available
+  // If product has no product-level media but has variants, auto-select first variant
   const getDefaultVariant = (): Variant | null => {
     if (!product.variants || product.variants.length === 0) return null;
 
-    // Prioritize variants with media
+    const hasProductMedia = product.media && product.media.length > 0;
+
+    // If product has no product-level media, always select first active variant
+    // to ensure images are displayed
+    if (!hasProductMedia) {
+      const firstActive = product.variants.find(v => v.isActive);
+      return firstActive || null;
+    }
+
+    // Otherwise, prioritize variants with media
     const variantWithMedia = product.variants.find(v =>
       v.isActive && v.media && v.media.length > 0
     );
@@ -84,7 +94,30 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     return firstActive || null;
   };
 
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(getDefaultVariant());
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => getDefaultVariant());
+
+  // Ensure default variant is set when component mounts or product changes
+  useEffect(() => {
+    if (!product.variants || product.variants.length === 0) return;
+
+    const hasProductMedia = product.media && product.media.length > 0;
+
+    let defaultVariant: Variant | null = null;
+
+    if (!hasProductMedia) {
+      defaultVariant = product.variants.find(v => v.isActive) || null;
+    } else {
+      const variantWithMedia = product.variants.find(v =>
+        v.isActive && v.media && v.media.length > 0
+      );
+      defaultVariant = variantWithMedia || product.variants.find(v => v.isActive) || null;
+    }
+
+    if (defaultVariant && (!selectedVariant || selectedVariant.id !== defaultVariant.id)) {
+      setSelectedVariant(defaultVariant);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, product.variants, product.media]); // Re-run when product data changes
 
   // Calculate discount
   const discountPercent = product.discountPercent || 0;
@@ -180,7 +213,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <>
             <span className="mx-2 text-gray-400">/</span>
             <button
-              onClick={() => router.push(`/products?category=${product.category!.slug}`)}
+              onClick={() => product.category && router.push(`/products?category=${product.category.slug}`)}
               className="text-blue-600 hover:text-blue-700"
             >
               {product.category.name}
@@ -197,6 +230,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           {product.media && product.media.length > 0 ? (
             <ProductGallery
               media={product.media}
+              productName={product.name}
+              selectedVariant={selectedVariant}
+            />
+          ) : selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 ? (
+            <ProductGallery
+              media={product.media || []}
               productName={product.name}
               selectedVariant={selectedVariant}
             />

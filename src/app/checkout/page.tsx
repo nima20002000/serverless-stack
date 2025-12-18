@@ -41,10 +41,9 @@ export default function CheckoutPage() {
       setError('');
       setIsProcessing(true);
 
-      // For logged-in users who haven't verified their phone, require verification
-      if (session && !session.user.phone && !formData.phoneVerified) {
-        throw new Error('لطفاً شماره تلفن خود را تایید کنید');
-      }
+      // Phone verification is NOT required for already logged-in users
+      // They may have registered with email and don't have a phone number
+      // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
 
       const response = await fetch('/api/transactions/create', {
         method: 'POST',
@@ -82,7 +81,7 @@ export default function CheckoutPage() {
       setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
       setIsProcessing(false);
     }
-  }, [items, session]);
+  }, [items]);
 
   if (status === 'loading') {
     return (

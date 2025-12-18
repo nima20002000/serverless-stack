@@ -1,8 +1,21 @@
-import prisma from '@/lib/prisma/client';
-import { CategoryFormData, CategoryWithHierarchy } from '@/types/product';
-import { DeleteResult } from '@/types/api';
-import { clearCachePattern } from '@/lib/redis/client';
+import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
+import { clearCachePattern } from '@/lib/redis/client';
+import { Tables, Inserts, Updates } from '@/lib/supabase/types';
+
+/**
+ * Category Service (Supabase)
+ * Handles category management including bulk operations
+ */
+
+type Category = Tables<'categories'>;
+type CategoryWithRelations = Category & {
+  parent?: Category | null;
+  children?: Category[];
+  _count?: {
+    products: number;
+  };
+};
 
 /**
  * Helper to invalidate all category caches
@@ -13,303 +26,366 @@ async function invalidateCategoryCache(): Promise<void> {
   log.info('Category cache invalidated');
 }
 
-export async function getAllCategories(): Promise<CategoryWithHierarchy[]> {
-  const categories = await prisma.category.findMany({
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
+/**
+ * Bulk delete categories
+ * Only deletes categories that have no products or children
+ */
+export async function bulkDeleteCategories(categoryIds: string[]): Promise<{ count: number }> {
+  const supabase = await createClient();
 
-  return categories;
-}
+  try {
+    // Check if any categories have products
+    const categoriesWithProductNames: string[] = [];
+    for (const catId of categoryIds) {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoryId', catId);
 
-export async function getActiveCategories(): Promise<CategoryWithHierarchy[]> {
-  const categories = await prisma.category.findMany({
-    where: { isActive: true },
-    include: {
-      parent: true,
-      children: {
-        where: { isActive: true },
-      },
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
-
-  return categories;
-}
-
-export async function getCategoryTree(): Promise<CategoryWithHierarchy[]> {
-  // Get all root categories (no parent) with their children
-  const rootCategories = await prisma.category.findMany({
-    where: {
-      parentId: null,
-      isActive: true,
-    },
-    include: {
-      children: {
-        where: { isActive: true },
-        include: {
-          children: {
-            where: { isActive: true },
-          },
-          _count: {
-            select: {
-              products: {
-                where: { isActive: true }
-              }
-            },
-          },
-        },
-      },
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-    orderBy: { name: 'asc' },
-  });
-
-  return rootCategories;
-}
-
-export async function getCategoryById(id: string): Promise<CategoryWithHierarchy | null> {
-  const category = await prisma.category.findUnique({
-    where: { id },
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-  });
-
-  return category;
-}
-
-export async function getCategoryBySlug(slug: string): Promise<CategoryWithHierarchy | null> {
-  const category = await prisma.category.findUnique({
-    where: { slug },
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-  });
-
-  return category;
-}
-
-export async function createCategory(data: CategoryFormData): Promise<CategoryWithHierarchy> {
-  // Check if slug already exists
-  const existing = await prisma.category.findUnique({
-    where: { slug: data.slug },
-  });
-
-  if (existing) {
-    throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
-  }
-
-  // If parentId is provided, validate it exists
-  if (data.parentId) {
-    const parent = await prisma.category.findUnique({
-      where: { id: data.parentId },
-    });
-
-    if (!parent) {
-      throw new Error('دسته‌بندی والد یافت نشد');
-    }
-  }
-
-  const category = await prisma.category.create({
-    data: {
-      name: data.name,
-      slug: data.slug,
-      description: data.description,
-      image: data.image || null,
-      parentId: data.parentId || null,
-      isActive: data.isActive,
-    },
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-  });
-
-  // Invalidate category cache
-  await invalidateCategoryCache();
-
-  return category;
-}
-
-export async function updateCategory(id: string, data: Partial<CategoryFormData>): Promise<CategoryWithHierarchy> {
-  // Check if category exists
-  const existing = await prisma.category.findUnique({
-    where: { id },
-  });
-
-  if (!existing) {
-    throw new Error('دسته‌بندی یافت نشد');
-  }
-
-  // If slug is being updated, check it's not taken
-  if (data.slug && data.slug !== existing.slug) {
-    const slugTaken = await prisma.category.findUnique({
-      where: { slug: data.slug },
-    });
-
-    if (slugTaken) {
-      throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
-    }
-  }
-
-  // If parentId is being updated, validate it
-  if (data.parentId !== undefined) {
-    if (data.parentId === id) {
-      throw new Error('دسته‌بندی نمی‌تواند والد خودش باشد');
-    }
-
-    if (data.parentId) {
-      const parent = await prisma.category.findUnique({
-        where: { id: data.parentId },
-      });
-
-      if (!parent) {
-        throw new Error('دسته‌بندی والد یافت نشد');
-      }
-
-      // Check for circular reference (prevent category from being its own ancestor)
-      // Optimized: Fetch all potential ancestors in one query to avoid N+1
-      // Build a set of ancestor IDs to check against
-      const ancestorIds = new Set<string>();
-      let currentParentId: string | null = parent.parentId;
-
-      // Fetch all categories upfront (only if parent has a parentId)
-      if (currentParentId) {
-        // In most e-commerce sites, categories are shallow (2-3 levels max)
-        // We can safely fetch all categories and traverse in-memory
-        const allCategories = await prisma.category.findMany({
-          select: { id: true, parentId: true },
-        });
-
-        // Create a lookup map for O(1) access
-        const categoryMap = new Map(
-          allCategories.map(c => [c.id, c.parentId])
-        );
-
-        // Traverse the parent chain using the map
-        while (currentParentId) {
-          if (currentParentId === id) {
-            throw new Error('نمی‌توان دسته‌بندی را به فرزندان خودش منتقل کرد');
-          }
-          ancestorIds.add(currentParentId);
-          currentParentId = categoryMap.get(currentParentId) || null;
+      if (count && count > 0) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', catId)
+          .single();
+        if (cat) {
+          categoriesWithProductNames.push(cat.name);
         }
       }
     }
+
+    if (categoriesWithProductNames.length > 0) {
+      throw new Error(
+        `امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: ${categoriesWithProductNames.join('، ')}`
+      );
+    }
+
+    // Check if any categories have children
+    const categoriesWithChildrenNames: string[] = [];
+    for (const catId of categoryIds) {
+      const { count } = await supabase
+        .from('categories')
+        .select('id', { count: 'exact', head: true })
+        .eq('parentId', catId);
+
+      if (count && count > 0) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', catId)
+          .single();
+        if (cat) {
+          categoriesWithChildrenNames.push(cat.name);
+        }
+      }
+    }
+
+    if (categoriesWithChildrenNames.length > 0) {
+      throw new Error(
+        `امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: ${categoriesWithChildrenNames.join('، ')}`
+      );
+    }
+
+    // Delete categories
+    const { error, count } = await supabase
+      .from('categories')
+      .delete({ count: 'exact' })
+      .in('id', categoryIds);
+
+    if (error) {
+      log.error('Error in bulk delete categories', { error });
+      throw new Error('خطا در حذف دسته‌بندی‌ها');
+    }
+
+    // Invalidate category cache
+    await invalidateCategoryCache();
+
+    log.info('Categories bulk deleted', { count });
+    return { count: count || 0 };
+  } catch (error: unknown) {
+    log.error('Error in bulkDeleteCategories', { categoryIds, error });
+    throw error;
   }
-
-  const category = await prisma.category.update({
-    where: { id },
-    data: {
-      ...(data.name && { name: data.name }),
-      ...(data.slug && { slug: data.slug }),
-      ...(data.description !== undefined && { description: data.description }),
-      ...(data.image !== undefined && { image: data.image || null }),
-      ...(data.parentId !== undefined && { parentId: data.parentId || null }),
-      ...(data.isActive !== undefined && { isActive: data.isActive }),
-    },
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-  });
-
-  // Invalidate category cache
-  await invalidateCategoryCache();
-
-  return category;
 }
 
-export async function deleteCategory(id: string): Promise<DeleteResult> {
-  // Check if category exists
-  const category = await prisma.category.findUnique({
-    where: { id },
-    include: {
-      children: true,
-      _count: {
-        select: {
-          products: {
-            where: { isActive: true }
-          }
-        },
-      },
-    },
-  });
+/**
+ * Bulk update categories
+ */
+export async function bulkUpdateCategories(
+  categoryIds: string[],
+  updates: { isActive?: boolean }
+): Promise<{ count: number }> {
+  const supabase = await createClient();
 
-  if (!category) {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .update(updates)
+      .in('id', categoryIds)
+      .select('id');
+
+    if (error) {
+      log.error('Error in bulk update categories', { error });
+      throw new Error('خطا در بروزرسانی دسته‌بندی‌ها');
+    }
+
+    // Invalidate category cache
+    await invalidateCategoryCache();
+
+    const count = data?.length || 0;
+    log.info('Categories bulk updated', { count, updates });
+    return { count };
+  } catch (error: unknown) {
+    log.error('Error in bulkUpdateCategories', { categoryIds, updates, error });
+    throw error;
+  }
+}
+
+/**
+ * Get all categories (admin only)
+ */
+export async function getAllCategories(): Promise<CategoryWithRelations[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*, parent:categories!parentId(*), children:categories!parentId(*)')
+    .order('name', { ascending: true });
+
+  if (error) {
+    log.error('Error fetching all categories', { error });
+    throw new Error('خطا در دریافت دسته‌بندی‌ها');
+  }
+
+  if (!data) {
+    return [];
+  }
+
+  // Fetch product counts for all categories
+  const categoriesWithCounts = await Promise.all(
+    data.map(async (category) => {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoryId', category.id);
+
+      return {
+        ...category,
+        _count: {
+          products: count || 0,
+        },
+      };
+    })
+  );
+
+  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
+  return categoriesWithCounts;
+}
+
+/**
+ * Get active categories only
+ */
+export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*, parent:categories!parentId(*), children:categories!parentId!inner(id, name, slug, isActive)')
+    .eq('isActive', true)
+    .eq('children.isActive', true)
+    .order('name', { ascending: true });
+
+  if (error) {
+    log.error('Error fetching active categories', { error });
+    throw new Error('خطا در دریافت دسته‌بندی‌های فعال');
+  }
+
+  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
+  return data || [];
+}
+
+/**
+ * Get category tree (root categories with children)
+ */
+export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*, children:categories!parentId!inner(*, children:categories!parentId!inner(*))')
+    .is('parentId', null)
+    .eq('isActive', true)
+    .eq('children.isActive', true)
+    .order('name', { ascending: true });
+
+  if (error) {
+    log.error('Error fetching category tree', { error });
+    throw new Error('خطا در دریافت درخت دسته‌بندی‌ها');
+  }
+
+  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
+  return data || [];
+}
+
+/**
+ * Get category by ID
+ */
+export async function getCategoryById(id: string): Promise<CategoryWithRelations> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*, parent:categories!parentId(*), children:categories!parentId(*)')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    log.error('Category not found', { id, error });
     throw new Error('دسته‌بندی یافت نشد');
   }
 
-  // Check if category has children
-  if (category.children.length > 0) {
-    throw new Error('ابتدا باید دسته‌بندی‌های فرزند را حذف کنید');
+  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
+  return data;
+}
+
+/**
+ * Get category by slug
+ */
+export async function getCategoryBySlug(slug: string): Promise<CategoryWithRelations | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*, parent:categories!parentId(*), children:categories!parentId(*)')
+    .eq('slug', slug)
+    .eq('isActive', true)
+    .single();
+
+  if (error) {
+    log.error('Category not found by slug', { slug, error });
+    return null;
   }
+
+  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
+  return data;
+}
+
+/**
+ * Create a new category
+ */
+export async function createCategory(input: {
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  parentId?: string | null;
+  isActive?: boolean;
+}): Promise<Category> {
+  const supabase = await createClient();
+
+  const insertData: Inserts<'categories'> = {
+    name: input.name,
+    slug: input.slug,
+    description: input.description || null,
+    image: input.image || null,
+    parentId: input.parentId || null,
+    isActive: input.isActive !== undefined ? input.isActive : true,
+  };
+
+  const { data, error } = await supabase
+    .from('categories')
+    .insert(insertData)
+    .select()
+    .single();
+
+  if (error || !data) {
+    log.error('Error creating category', { error, input });
+    if (error?.code === '23505') {
+      throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
+    }
+    throw new Error('خطا در ایجاد دسته‌بندی');
+  }
+
+  await invalidateCategoryCache();
+  log.info('Category created', { id: data.id, name: data.name });
+  return data;
+}
+
+/**
+ * Update a category
+ */
+export async function updateCategory(
+  id: string,
+  input: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    image?: string;
+    parentId?: string | null;
+    isActive?: boolean;
+  }
+): Promise<Category> {
+  const supabase = await createClient();
+
+  const updateData: Updates<'categories'> = input;
+
+  const { data, error } = await supabase
+    .from('categories')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !data) {
+    log.error('Error updating category', { id, error });
+    if (error?.code === '23505') {
+      throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
+    }
+    throw new Error('خطا در بروزرسانی دسته‌بندی');
+  }
+
+  await invalidateCategoryCache();
+  log.info('Category updated', { id, updates: input });
+  return data;
+}
+
+/**
+ * Delete a category
+ */
+export async function deleteCategory(id: string): Promise<{ success: boolean }> {
+  const supabase = await createClient();
 
   // Check if category has products
-  if (category._count.products > 0) {
-    throw new Error('این دسته‌بندی دارای محصول است و نمی‌توان آن را حذف کرد');
+  const { count: productCount } = await supabase
+    .from('products')
+    .select('id', { count: 'exact', head: true })
+    .eq('categoryId', id);
+
+  if (productCount && productCount > 0) {
+    throw new Error('امکان حذف دسته‌بندی که محصول دارد وجود ندارد');
   }
 
-  await prisma.category.delete({
-    where: { id },
-  });
+  // Check if category has children
+  const { count: childrenCount } = await supabase
+    .from('categories')
+    .select('id', { count: 'exact', head: true })
+    .eq('parentId', id);
 
-  // Invalidate category cache
+  if (childrenCount && childrenCount > 0) {
+    throw new Error('امکان حذف دسته‌بندی که زیردسته دارد وجود ندارد');
+  }
+
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    log.error('Error deleting category', { id, error });
+    throw new Error('خطا در حذف دسته‌بندی');
+  }
+
   await invalidateCategoryCache();
-
+  log.info('Category deleted', { id });
   return { success: true };
 }

@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 import { sendOTPSMS } from '@/lib/kavenegar/client';
 import { sendOTPEmail } from '@/lib/email/client';
 import { log } from '@/lib/logger';
@@ -11,42 +11,44 @@ function generateOTP(): string {
 }
 
 /**
- * Send OTP to phone number
- * Implements rate limiting (1 OTP per minute per identifier)
+ * Send OTP to phone number or email
+ * Implements rate limiting (1 OTP per 2 minutes per identifier)
  */
 export async function sendOTP(
   identifier: string, // Email or phone
   purpose: 'register' | 'login' | 'checkout' = 'register'
-): Promise<{ success: boolean; expiresAt: number; error?: string }> {
+): Promise<{ success: boolean; expiresAt: number; error?: string; errorCode?: 'RATE_LIMIT' | 'SEND_FAILED' }> {
   try {
     log.info('🔵 sendOTP called', { identifier, purpose, timestamp: new Date().toISOString() });
 
-    // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
-    const deletedExpired = await prisma.oTPVerification.deleteMany({
-      where: {
-        identifier,
-        purpose,
-        expiresAt: {
-          lt: new Date() // Delete if expired
-        }
-      }
-    });
+    const supabase = createClient();
 
-    log.info('🔵 Cleaned up expired OTPs', { identifier, purpose, count: deletedExpired.count });
+    // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
+    const { count: deletedExpiredCount, error: deleteExpiredError } = await supabase
+      .from('otp_verifications')
+      .delete({ count: 'exact' })
+      .eq('identifier', identifier)
+      .eq('purpose', purpose)
+      .lt('expiresAt', new Date().toISOString());
+
+    if (!deleteExpiredError) {
+      log.info('🔵 Cleaned up expired OTPs', { identifier, purpose, count: deletedExpiredCount });
+    }
 
     // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per 2 minutes)
-    const recentOTP = await prisma.oTPVerification.findFirst({
-      where: {
-        identifier,
-        purpose,
-        createdAt: {
-          gte: new Date(Date.now() - 120000) // Last 2 minutes
-        },
-        expiresAt: {
-          gte: new Date() // Only check non-expired OTPs
-        }
-      }
-    });
+    const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
+    const now = new Date().toISOString();
+
+    const { data: recentOTP, error: recentError } = await supabase
+      .from('otp_verifications')
+      .select('*')
+      .eq('identifier', identifier)
+      .eq('purpose', purpose)
+      .gte('createdAt', twoMinutesAgo)
+      .gte('expiresAt', now)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
 
     log.info('🔵 Rate limit check', {
       identifier,
@@ -57,21 +59,28 @@ export async function sendOTP(
       now: new Date().toISOString()
     });
 
-    if (recentOTP) {
-      const waitTime = 120 - Math.floor((Date.now() - recentOTP.createdAt.getTime()) / 1000);
+    if (!recentError && recentOTP) {
+      // Parse timestamp as UTC (Supabase returns timestamp without timezone)
+      const createdAt = new Date(recentOTP.createdAt + 'Z').getTime();
+      const rateLimitExpiresAt = createdAt + 120000; // Rate limit expires 2 minutes after creation
+      const waitTime = Math.ceil((rateLimitExpiresAt - Date.now()) / 1000);
       log.warn('🔴 OTP rate limit hit', { identifier, purpose, waitTime, recentOTPId: recentOTP.id });
       return {
         success: false,
-        expiresAt: recentOTP.expiresAt.getTime(),
-        error: `لطفاً ${waitTime} ثانیه صبر کنید`
+        expiresAt: rateLimitExpiresAt,
+        error: `لطفاً ${waitTime} ثانیه صبر کنید`,
+        errorCode: 'RATE_LIMIT'
       };
     }
 
-    // Delete any remaining old OTPs for this identifier and purpose (shouldn't be any after cleanup above)
-    const deletedRemaining = await prisma.oTPVerification.deleteMany({
-      where: { identifier, purpose }
-    });
-    log.info('🔵 Deleted remaining OTPs', { identifier, purpose, count: deletedRemaining.count });
+    // Delete any remaining old OTPs for this identifier and purpose
+    const { count: deletedRemainingCount } = await supabase
+      .from('otp_verifications')
+      .delete({ count: 'exact' })
+      .eq('identifier', identifier)
+      .eq('purpose', purpose);
+
+    log.info('🔵 Deleted remaining OTPs', { identifier, purpose, count: deletedRemainingCount });
 
     // Generate new OTP
     const code = generateOTP();
@@ -80,18 +89,32 @@ export async function sendOTP(
     log.info('🔵 Creating new OTP record', { identifier, purpose, code, expiresAt: expiresAt.toISOString() });
 
     // Store OTP in database
-    const otpRecord = await prisma.oTPVerification.create({
-      data: {
+    const { data: otpRecord, error: createError } = await supabase
+      .from('otp_verifications')
+      .insert({
+        id: crypto.randomUUID(),
         identifier,
         code,
         purpose,
-        expiresAt,
+        expiresAt: expiresAt.toISOString(),
         attempts: 0,
         maxAttempts: 3
-      }
-    });
+      })
+      .select()
+      .single();
 
-    log.info('🔵 OTP generated and stored', { identifier, purpose, expiresAt: expiresAt.toISOString(), otpRecordId: otpRecord.id, createdAt: otpRecord.createdAt.toISOString() });
+    if (createError || !otpRecord) {
+      log.error('🔴 Failed to create OTP record', { identifier, purpose, error: createError });
+      throw new Error('خطا در ایجاد کد تایید');
+    }
+
+    log.info('🔵 OTP generated and stored', {
+      identifier,
+      purpose,
+      expiresAt: expiresAt.toISOString(),
+      otpRecordId: otpRecord.id,
+      createdAt: otpRecord.createdAt
+    });
 
     // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
@@ -99,12 +122,17 @@ export async function sendOTP(
       const result = await sendOTPSMS(identifier, code);
       if (!result.success) {
         // Delete the OTP record since sending failed
-        await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
+        await supabase
+          .from('otp_verifications')
+          .delete()
+          .eq('id', otpRecord.id);
+
         log.error('Failed to send OTP SMS', { identifier, error: result.error });
         return {
           success: false,
           expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
+          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED'
         };
       }
     } else if (identifier.includes('@')) {
@@ -115,22 +143,32 @@ export async function sendOTP(
 
       if (!result.success) {
         // Delete the OTP record since sending failed
-        await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
+        await supabase
+          .from('otp_verifications')
+          .delete()
+          .eq('id', otpRecord.id);
+
         log.error('🔴 Failed to send OTP email - deleted OTP record', { identifier, error: result.error, otpRecordId: otpRecord.id });
         return {
           success: false,
           expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.'
+          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED'
         };
       }
     } else {
       // Delete the OTP record since format is invalid
-      await prisma.oTPVerification.delete({ where: { id: otpRecord.id } });
+      await supabase
+        .from('otp_verifications')
+        .delete()
+        .eq('id', otpRecord.id);
+
       log.error('Invalid identifier format', { identifier });
       return {
         success: false,
         expiresAt: expiresAt.getTime(),
-        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است'
+        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است',
+        errorCode: 'SEND_FAILED'
       };
     }
 
@@ -153,39 +191,58 @@ export async function verifyOTP(
   purpose: 'register' | 'login' | 'checkout' = 'register'
 ): Promise<{ success: boolean; error?: string; attemptsLeft?: number }> {
   try {
-    const stored = await prisma.oTPVerification.findFirst({
-      where: { identifier, purpose }
-    });
+    const supabase = createClient();
 
-    if (!stored) {
+    const { data: stored, error: fetchError } = await supabase
+      .from('otp_verifications')
+      .select('*')
+      .eq('identifier', identifier)
+      .eq('purpose', purpose)
+      .order('createdAt', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (fetchError || !stored) {
       log.warn('OTP verification failed: not found', { identifier, purpose });
       return { success: false, error: 'کد تایید یافت نشد یا منقضی شده است' };
     }
 
-    // Check expiration
-    if (new Date() > stored.expiresAt) {
-      await prisma.oTPVerification.delete({ where: { id: stored.id } });
+    // Check expiration (parse timestamp as UTC - Supabase returns timestamp without timezone)
+    if (new Date() > new Date(stored.expiresAt + 'Z')) {
+      await supabase
+        .from('otp_verifications')
+        .delete()
+        .eq('id', stored.id);
+
       log.warn('OTP verification failed: expired', { identifier, purpose });
       return { success: false, error: 'کد تایید منقضی شده است. لطفاً کد جدید درخواست کنید' };
     }
 
     // Check max attempts
     if (stored.attempts >= stored.maxAttempts) {
-      await prisma.oTPVerification.delete({ where: { id: stored.id } });
+      await supabase
+        .from('otp_verifications')
+        .delete()
+        .eq('id', stored.id);
+
       log.warn('OTP verification failed: max attempts exceeded', { identifier, purpose, attempts: stored.attempts });
       return { success: false, error: 'تعداد تلاش‌های شما به حداکثر رسیده است. لطفاً کد جدید درخواست کنید' };
     }
 
     // Increment attempts
-    await prisma.oTPVerification.update({
-      where: { id: stored.id },
-      data: { attempts: stored.attempts + 1 }
-    });
+    await supabase
+      .from('otp_verifications')
+      .update({ attempts: stored.attempts + 1 })
+      .eq('id', stored.id);
 
     // Verify code
     if (code === stored.code) {
       // Delete OTP after successful verification
-      await prisma.oTPVerification.delete({ where: { id: stored.id } });
+      await supabase
+        .from('otp_verifications')
+        .delete()
+        .eq('id', stored.id);
+
       log.info('OTP verified successfully', { identifier, purpose });
       return { success: true };
     }

@@ -117,7 +117,7 @@ export default function NewProductPage() {
       // Step 2: Add media
       if (productMedia.media.length > 0) {
         for (const mediaItem of productMedia.media) {
-          await fetch(`/api/products/${productId}/media`, {
+          const mediaResponse = await fetch(`/api/products/${productId}/media`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -128,6 +128,11 @@ export default function NewProductPage() {
               isDefault: mediaItem.isDefault,
             }),
           });
+
+          if (!mediaResponse.ok) {
+            const errorData = await mediaResponse.json();
+            throw new Error(errorData.error || 'خطا در افزودن رسانه محصول');
+          }
         }
       }
 
@@ -156,7 +161,7 @@ export default function NewProductPage() {
           // Step 4: Add variant-specific media
           if (variantId && variant.media && variant.media.length > 0) {
             for (const mediaItem of variant.media) {
-              await fetch(`/api/products/${productId}/media`, {
+              const variantMediaResponse = await fetch(`/api/products/${productId}/media`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -168,6 +173,11 @@ export default function NewProductPage() {
                   isDefault: mediaItem.isDefault,
                 }),
               });
+
+              if (!variantMediaResponse.ok) {
+                const errorData = await variantMediaResponse.json();
+                throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت');
+              }
             }
           }
         }
@@ -250,28 +260,26 @@ export default function NewProductPage() {
           />
         </Card>
 
-        {/* Variants - Only show if hasVariants is enabled */}
-        {formData.hasVariants && (
-          <Card padding="sm">
-            <VariantManager
-              variants={variantManager.variants}
-              showVariantForm={variantManager.showVariantForm}
-              editingVariantId={variantManager.editingVariantId}
-              variantForm={variantManager.variantForm}
-              variantMedia={variantManager.variantMedia}
-              onVariantFormChange={variantManager.handleVariantFormChange}
-              onAddOrUpdate={variantManager.addOrUpdateVariant}
-              onEdit={variantManager.editVariant}
-              onDelete={variantManager.deleteVariant}
-              onCancel={variantManager.cancelVariantEdit}
-              onShowForm={() => variantManager.setShowVariantForm(true)}
-              onSetVariantMedia={variantManager.setVariantMedia}
-              onReorder={variantManager.reorderVariants}
-              disabled={isLoading}
-              hasVariantsError={errors.variants}
-            />
-          </Card>
-        )}
+        {/* Variants */}
+        <Card padding="sm">
+          <VariantManager
+            variants={variantManager.variants}
+            showVariantForm={variantManager.showVariantForm}
+            editingVariantId={variantManager.editingVariantId}
+            variantForm={variantManager.variantForm}
+            variantMedia={variantManager.variantMedia}
+            onVariantFormChange={variantManager.handleVariantFormChange}
+            onAddOrUpdate={variantManager.addOrUpdateVariant}
+            onEdit={variantManager.editVariant}
+            onDelete={variantManager.deleteVariant}
+            onCancel={variantManager.cancelVariantEdit}
+            onShowForm={() => variantManager.setShowVariantForm(true)}
+            onSetVariantMedia={variantManager.setVariantMedia}
+            onReorder={variantManager.reorderVariants}
+            disabled={isLoading}
+            hasVariantsError={errors.variants}
+          />
+        </Card>
 
         {/* Submit Buttons */}
         <Card padding="sm">

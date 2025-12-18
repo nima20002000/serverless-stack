@@ -193,7 +193,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       for (const mediaItem of productMedia.media) {
         if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
-        await fetch(`/api/products/${params.id}/media`, {
+        const mediaResponse = await fetch(`/api/products/${params.id}/media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -204,6 +204,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             isDefault: mediaItem.isDefault,
           }),
         });
+
+        if (!mediaResponse.ok) {
+          const errorData = await mediaResponse.json();
+          throw new Error(errorData.error || 'خطا در افزودن رسانه محصول');
+        }
       }
 
       // Update isDefault for existing product-level media (only if changed)
@@ -337,7 +342,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           for (const mediaItem of variant.media) {
             if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
-            await fetch(`/api/products/${params.id}/media`, {
+            const variantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -349,6 +354,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 isDefault: mediaItem.isDefault,
               }),
             });
+
+            if (!variantMediaResponse.ok) {
+              const errorData = await variantMediaResponse.json();
+              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت');
+            }
           }
 
           // Update isDefault for existing variant media (only if changed)
@@ -400,7 +410,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         // Add variant media
         if (variantId && variant.media && variant.media.length > 0) {
           for (const mediaItem of variant.media) {
-            await fetch(`/api/products/${params.id}/media`, {
+            const newVariantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -412,6 +422,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 isDefault: mediaItem.isDefault,
               }),
             });
+
+            if (!newVariantMediaResponse.ok) {
+              const errorData = await newVariantMediaResponse.json();
+              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت جدید');
+            }
           }
         }
       }

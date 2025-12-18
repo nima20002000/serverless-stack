@@ -34,7 +34,7 @@ export default function PasswordManagementCard({
     // Validate password
     const validation = validatePassword(passwordForm.newPassword, passwordForm.confirmPassword);
     if (!validation.isValid) {
-      formActions.setError(validation.error!);
+      formActions.setError(validation.error || 'خطا در اعتبارسنجی رمز عبور');
       formActions.setIsSubmitting(false);
       return;
     }

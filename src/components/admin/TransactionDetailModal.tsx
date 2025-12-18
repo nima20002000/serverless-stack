@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/Modal';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
 import {
   UserIcon,
@@ -58,7 +58,7 @@ interface Transaction {
   invoice: {
     id: string;
     invoiceNumber: string;
-    createdAt: string;
+    generatedAt: string;
   } | null;
 }
 
@@ -184,7 +184,11 @@ export default function TransactionDetailModal({
                 <span className="text-sm text-gray-600">تاریخ ایجاد:</span>
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
-                  {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                  {transaction.createdAt ? (
+                    format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')
+                  ) : (
+                    <span className="text-gray-400">نامشخص</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -355,9 +359,13 @@ export default function TransactionDetailModal({
                 <div className="text-left">
                   <div className="text-sm text-gray-600">تاریخ صدور:</div>
                   <div className="text-sm">
-                    {format(
-                      new Date(transaction.invoice.createdAt),
-                      'yyyy/MM/dd - HH:mm'
+                    {transaction.invoice.generatedAt ? (
+                      format(
+                        new Date(transaction.invoice.generatedAt),
+                        'yyyy/MM/dd - HH:mm'
+                      )
+                    ) : (
+                      <span className="text-gray-400">نامشخص</span>
                     )}
                   </div>
                 </div>
