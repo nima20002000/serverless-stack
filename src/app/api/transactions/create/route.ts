@@ -147,6 +147,11 @@ async function postHandler(req: NextRequest) {
     // Verify stock availability
     const stockCheck = await verifyStockAvailability(items);
     if (!stockCheck.available) {
+      log.warn('Stock verification failed', {
+        userId: session?.user?.id || 'guest',
+        errors: stockCheck.errors,
+        items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      });
       return NextResponse.json(
         {
           error: 'موجودی کافی نیست',
@@ -179,14 +184,19 @@ async function postHandler(req: NextRequest) {
 
       // If variant is specified, add variant's price adjustment
       if (item.variantId) {
-        const supabase = createClient();
-        const { data: variant, error: variantError } = await supabase
+        const supabaseVariant = createClient();
+        const { data: variant, error: variantError } = await supabaseVariant
           .from('product_variants')
           .select('priceAdjust, isActive')
           .eq('id', item.variantId)
           .single();
 
         if (variantError || !variant) {
+          log.error('Variant not found or error fetching variant', {
+            variantId: item.variantId,
+            productId: product.id,
+            error: variantError,
+          });
           return NextResponse.json(
             { error: `واریانت محصول ${product.name} یافت نشد` },
             { status: 400 }
@@ -194,6 +204,10 @@ async function postHandler(req: NextRequest) {
         }
 
         if (!variant.isActive) {
+          log.warn('Inactive variant attempted in transaction', {
+            variantId: item.variantId,
+            productId: product.id,
+          });
           return NextResponse.json(
             { error: `واریانت محصول ${product.name} غیرفعال است` },
             { status: 400 }
@@ -201,7 +215,7 @@ async function postHandler(req: NextRequest) {
         }
 
         // Add variant price adjustment to the final price
-        finalPrice += Number(variant.priceAdjust);
+        finalPrice += Number(variant.priceAdjust || 0);
       }
 
       const itemTotal = finalPrice * item.quantity;
