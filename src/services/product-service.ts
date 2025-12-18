@@ -157,8 +157,15 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
     }
   }
 
+  // Calculate stock from variants if product has variants
+  let actualStock = product.stock;
+  if (variantsWithMedia.length > 0) {
+    actualStock = variantsWithMedia.reduce((sum, variant) => sum + variant.stock, 0);
+  }
+
   return {
     ...product,
+    stock: actualStock,
     tags,
     media: media || [],
     variants: variantsWithMedia,
