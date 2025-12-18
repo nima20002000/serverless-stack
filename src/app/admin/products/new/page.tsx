@@ -260,28 +260,26 @@ export default function NewProductPage() {
           />
         </Card>
 
-        {/* Variants - Only show if hasVariants is enabled */}
-        {formData.hasVariants && (
-          <Card padding="sm">
-            <VariantManager
-              variants={variantManager.variants}
-              showVariantForm={variantManager.showVariantForm}
-              editingVariantId={variantManager.editingVariantId}
-              variantForm={variantManager.variantForm}
-              variantMedia={variantManager.variantMedia}
-              onVariantFormChange={variantManager.handleVariantFormChange}
-              onAddOrUpdate={variantManager.addOrUpdateVariant}
-              onEdit={variantManager.editVariant}
-              onDelete={variantManager.deleteVariant}
-              onCancel={variantManager.cancelVariantEdit}
-              onShowForm={() => variantManager.setShowVariantForm(true)}
-              onSetVariantMedia={variantManager.setVariantMedia}
-              onReorder={variantManager.reorderVariants}
-              disabled={isLoading}
-              hasVariantsError={errors.variants}
-            />
-          </Card>
-        )}
+        {/* Variants */}
+        <Card padding="sm">
+          <VariantManager
+            variants={variantManager.variants}
+            showVariantForm={variantManager.showVariantForm}
+            editingVariantId={variantManager.editingVariantId}
+            variantForm={variantManager.variantForm}
+            variantMedia={variantManager.variantMedia}
+            onVariantFormChange={variantManager.handleVariantFormChange}
+            onAddOrUpdate={variantManager.addOrUpdateVariant}
+            onEdit={variantManager.editVariant}
+            onDelete={variantManager.deleteVariant}
+            onCancel={variantManager.cancelVariantEdit}
+            onShowForm={() => variantManager.setShowVariantForm(true)}
+            onSetVariantMedia={variantManager.setVariantMedia}
+            onReorder={variantManager.reorderVariants}
+            disabled={isLoading}
+            hasVariantsError={errors.variants}
+          />
+        </Card>
 
         {/* Submit Buttons */}
         <Card padding="sm">
