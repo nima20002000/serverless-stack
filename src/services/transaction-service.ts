@@ -19,6 +19,13 @@ type TransactionWithFull = Prisma.TransactionGetPayload<{
   };
 }>;
 
+type TransactionWithVariants = Prisma.TransactionGetPayload<{
+  include: {
+    items: { include: { product: true; variant: true } };
+    user: { select: { id: true; email: true; name: true; phone: true } };
+  };
+}>;
+
 /**
  * Generate a unique transaction code
  * Format: KT-XXXXXX (e.g., KT-A1B2C3)
@@ -266,6 +273,60 @@ export async function getTransactionByAuthority(authority: string): Promise<Tran
   }
 
   return transaction;
+}
+
+/**
+ * Get transaction by ID with variants (for email confirmations)
+ */
+export async function getTransactionWithVariants(id: string): Promise<TransactionWithVariants> {
+  const transaction = await prisma.transaction.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: {
+          product: true,
+          variant: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  if (!transaction) {
+    throw new Error('تراکنش یافت نشد');
+  }
+
+  return transaction;
+}
+
+/**
+ * Link transaction to user (for guest checkout account creation)
+ */
+export async function linkTransactionToUser(transactionId: string, userId: string): Promise<void> {
+  log.info('Linking transaction to user', { transactionId, userId });
+
+  try {
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { userId },
+    });
+
+    log.info('Transaction linked to user successfully', { transactionId, userId });
+  } catch (error) {
+    log.error('Failed to link transaction to user', {
+      transactionId,
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
 }
 
 /**

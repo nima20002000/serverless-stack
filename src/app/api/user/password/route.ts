@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
-import { changeUserPassword, setUserPassword } from '@/services/user-service';
+import { changeUserPassword, setUserPassword } from '@/services/user-service-supabase';
 
 export const dynamic = 'force-dynamic';
 

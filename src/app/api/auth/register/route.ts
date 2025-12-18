@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser } from "@/services/user-service";
+import { createUser } from "@/services/user-service-supabase";
 import { withLogging } from "@/lib/api/with-logging";
 
 export const dynamic = 'force-dynamic';

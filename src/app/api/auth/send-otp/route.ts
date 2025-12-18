@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendOTP } from '@/services/otp-service';
-import { validatePhone, validateEmail, getUserByIdentifier } from '@/services/user-service';
+import { sendOTP } from '@/services/otp-service-supabase';
+import { validatePhone, validateEmail, getUserByIdentifier } from '@/services/user-service-supabase';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';

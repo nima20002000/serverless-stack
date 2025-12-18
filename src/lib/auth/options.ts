@@ -1,9 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma/client";
-import { Role } from "@prisma/client";
-import { detectIdentifierType } from "@/services/user-service";
+import { createClient } from "@/lib/supabase/server";
+import { detectIdentifierType } from "@/services/user-service-supabase";
 
 // Extend the built-in types
 declare module "next-auth" {
@@ -13,7 +12,7 @@ declare module "next-auth" {
       email: string | null;
       phone: string | null;
       name: string;
-      role: Role;
+      role: 'USER' | 'ADMIN';
       isVerified: boolean;
     }
   }
@@ -23,7 +22,7 @@ declare module "next-auth" {
     email: string | null;
     phone: string | null;
     name: string;
-    role: Role;
+    role: 'USER' | 'ADMIN';
     isVerified: boolean;
   }
 }
@@ -31,7 +30,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    role: Role;
+    role: 'USER' | 'ADMIN';
     email: string | null;
     phone: string | null;
     name: string;
@@ -59,14 +58,16 @@ export const authOptions: NextAuthOptions = {
           throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
         }
 
-        // Find user by email or phone
-        const user = await prisma.user.findFirst({
-          where: identifierType === 'email'
-            ? { email: credentials.identifier }
-            : { phone: credentials.identifier }
-        });
+        const supabase = await createClient();
 
-        if (!user) {
+        // Find user by email or phone
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq(identifierType === 'email' ? 'email' : 'phone', credentials.identifier)
+          .single();
+
+        if (error || !user) {
           throw new Error("کاربری با این مشخصات یافت نشد");
         }
 
@@ -130,7 +131,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as Role;
+        session.user.role = token.role as 'USER' | 'ADMIN';
         session.user.email = token.email as string | null;
         session.user.phone = token.phone as string | null;
         session.user.name = token.name as string;

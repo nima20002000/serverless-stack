@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyOTP } from '@/services/otp-service';
-import { createUser, getUserByIdentifier } from '@/services/user-service';
-import { authenticateUserByPhone } from '@/services/auth-service';
+import { verifyOTP } from '@/services/otp-service-supabase';
+import { createUser, getUserByIdentifier } from '@/services/user-service-supabase';
+import { authenticateUserByPhone } from '@/services/auth-service-supabase';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';

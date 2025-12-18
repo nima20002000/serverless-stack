@@ -3,11 +3,12 @@ import {
   getTransactionByAuthority,
   updateTransactionStatus,
   reduceProductStock,
+  getTransactionWithVariants,
+  linkTransactionToUser,
 } from '@/services/transaction-service';
-import { createUser, getUserByPhone } from '@/services/user-service';
+import { createUser, getUserByPhone } from '@/services/user-service-supabase';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
-import prisma from '@/lib/prisma/client';
 import { log } from '@/lib/logger';
 import { sendAdminOrderConfirmation, sendBuyerOrderConfirmation } from '@/lib/email/client';
 import { sendOrderConfirmation } from '@/services/sms-service';
@@ -116,25 +117,7 @@ async function getHandler(req: NextRequest) {
     await reduceProductStock(transaction.id);
 
     // Fetch full transaction data with variants for admin email
-    const fullTransaction = await prisma.transaction.findUnique({
-      where: { id: transaction.id },
-      include: {
-        items: {
-          include: {
-            product: true,
-            variant: true
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            phone: true
-          }
-        }
-      }
-    });
+    const fullTransaction = await getTransactionWithVariants(transaction.id);
 
     // Send admin confirmation email (await to ensure it completes in serverless)
     if (fullTransaction) {
@@ -265,13 +248,7 @@ async function getHandler(req: NextRequest) {
           });
 
           // Link this transaction to the existing user
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              userId: existingUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+          await linkTransactionToUser(transaction.id, existingUser.id);
         } else {
           // User doesn't exist - create new account
           log.info('Creating new user account after successful payment', {
@@ -287,13 +264,7 @@ async function getHandler(req: NextRequest) {
 
           // Link transaction to newly created user
           // createUser() already links orphaned transactions, but we need to update this specific one
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              userId: newUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+          await linkTransactionToUser(transaction.id, newUser.id);
 
           log.info('User account created and linked to transaction', {
             userId: newUser.id,

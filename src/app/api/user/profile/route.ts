@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 import { withLogging } from '@/lib/api/with-logging';
-import { updateUserProfile } from '@/services/user-service';
+import { updateUserProfile } from '@/services/user-service-supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,24 +19,15 @@ async function getHandler() {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        uid: true,
-        name: true,
-        email: true,
-        phone: true,
-        shippingAddress: true,
-        postalCode: true,
-        isVerified: true,
-        role: true,
-        createdAt: true,
-        password: true, // Check if user has password
-      },
-    });
+    const supabase = await createClient();
 
-    if (!user) {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, uid, name, email, phone, shippingAddress, postalCode, isVerified, role, createdAt, password')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error || !user) {
       return NextResponse.json(
         { error: 'کاربر یافت نشد' },
         { status: 404 }
@@ -48,6 +39,7 @@ async function getHandler() {
     const { password, ...userWithoutPassword } = user;
     return NextResponse.json({
       ...userWithoutPassword,
+      createdAt: new Date(user.createdAt),
       hasPassword: !!password,
     });
   } catch (error) {

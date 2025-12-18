@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 import {
   createTransaction,
   verifyStockAvailability,
 } from '@/services/transaction-service';
 import { getProductById } from '@/services/product-service-supabase';
-import { updateUserShippingInfo } from '@/services/user-service';
+import { updateUserShippingInfo } from '@/services/user-service-supabase';
 import {
   createPaymentRequest,
   getCallbackUrl,
@@ -59,30 +59,14 @@ async function postHandler(req: NextRequest) {
     let shouldUpdateProfile = false;
 
     if (session?.user) {
-      // Fetch fresh user data from database
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-          name: true,
-          phone: true,
-          email: true,
-        },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: 'کاربر یافت نشد' },
-          { status: 404 }
-        );
-      }
-
+      // Use session data (already fresh from NextAuth)
       const { fullName, phone, email } = shippingInfo;
 
-      // For logged-in users: Use profile data if not null, otherwise allow form data
-      // Priority: Profile data > Form data > Error for required fields
-      finalFullName = user.name || fullName || '';
-      finalPhone = user.phone || phone || '';
-      finalEmail = user.email || email || undefined;
+      // For logged-in users: Use session data if available, otherwise allow form data
+      // Priority: Session data > Form data > Error for required fields
+      finalFullName = session.user.name || fullName || '';
+      finalPhone = session.user.phone || phone || '';
+      finalEmail = session.user.email || email || undefined;
 
       // Validate required fields
       if (!finalFullName) {
@@ -100,13 +84,13 @@ async function postHandler(req: NextRequest) {
       }
 
       // Check if we need to update profile with new values from form
-      if (!user.name && fullName) {
+      if (!session.user.name && fullName) {
         shouldUpdateProfile = true;
       }
-      if (!user.phone && phone) {
+      if (!session.user.phone && phone) {
         shouldUpdateProfile = true;
       }
-      if (!user.email && email) {
+      if (!session.user.email && email) {
         shouldUpdateProfile = true;
       }
 
@@ -115,14 +99,14 @@ async function postHandler(req: NextRequest) {
         finalPhone,
         finalEmail,
         fromProfile: {
-          name: !!user.name,
-          phone: !!user.phone,
-          email: !!user.email,
+          name: !!session.user.name,
+          phone: !!session.user.phone,
+          email: !!session.user.email,
         },
         fromForm: {
-          name: !user.name && !!fullName,
-          phone: !user.phone && !!phone,
-          email: !user.email && !!email,
+          name: !session.user.name && !!fullName,
+          phone: !session.user.phone && !!phone,
+          email: !session.user.email && !!email,
         },
         willUpdateProfile: shouldUpdateProfile,
       });
@@ -195,12 +179,14 @@ async function postHandler(req: NextRequest) {
 
       // If variant is specified, add variant's price adjustment
       if (item.variantId) {
-        const variant = await prisma.productVariant.findUnique({
-          where: { id: item.variantId },
-          select: { priceAdjust: true, isActive: true },
-        });
+        const supabase = await createClient();
+        const { data: variant, error: variantError } = await supabase
+          .from('product_variants')
+          .select('priceAdjust, isActive')
+          .eq('id', item.variantId)
+          .single();
 
-        if (!variant) {
+        if (variantError || !variant) {
           return NextResponse.json(
             { error: `واریانت محصول ${product.name} یافت نشد` },
             { status: 400 }
@@ -261,30 +247,28 @@ async function postHandler(req: NextRequest) {
         const { fullName, phone, email } = shippingInfo;
         const updateData: { name?: string; phone?: string; email?: string | null } = {};
 
-        // Only update fields that were null in profile
-        const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { name: true, phone: true, email: true },
-        });
+        // Only update fields that were null in profile (use session data for checking)
+        if (!session.user.name && fullName) {
+          updateData.name = fullName;
+        }
+        if (!session.user.phone && phone) {
+          updateData.phone = phone;
+        }
+        if (!session.user.email && email) {
+          updateData.email = email;
+        }
 
-        if (user) {
-          if (!user.name && fullName) {
-            updateData.name = fullName;
-          }
-          if (!user.phone && phone) {
-            updateData.phone = phone;
-          }
-          if (!user.email && email) {
-            updateData.email = email;
-          }
+        // Only perform update if there are fields to update
+        if (Object.keys(updateData).length > 0) {
+          const supabase = await createClient();
+          const { error: updateError } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', session.user.id);
 
-          // Only perform update if there are fields to update
-          if (Object.keys(updateData).length > 0) {
-            await prisma.user.update({
-              where: { id: session.user.id },
-              data: updateData,
-            });
-
+          if (updateError) {
+            log.error('Failed to update user profile from checkout', { userId: session.user.id, error: updateError });
+          } else {
             log.info('Updated user profile with new contact info from checkout', {
               userId: session.user.id,
               updatedFields: Object.keys(updateData),
@@ -304,10 +288,11 @@ async function postHandler(req: NextRequest) {
     });
 
     // Update transaction with Zarinpal authority
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: { zarinpalAuthority: paymentRequest.authority },
-    });
+    const supabaseTx = await createClient();
+    await supabaseTx
+      .from('transactions')
+      .update({ zarinpalAuthority: paymentRequest.authority })
+      .eq('id', transaction.id);
 
     log.info('Transaction created successfully', {
       transactionId: transaction.id,
