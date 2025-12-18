@@ -60,12 +60,14 @@ export async function sendOTP(
     });
 
     if (!recentError && recentOTP) {
-      const createdAt = new Date(recentOTP.createdAt).getTime();
-      const waitTime = 120 - Math.floor((Date.now() - createdAt) / 1000);
+      // Parse timestamp as UTC (Supabase returns timestamp without timezone)
+      const createdAt = new Date(recentOTP.createdAt + 'Z').getTime();
+      const rateLimitExpiresAt = createdAt + 120000; // Rate limit expires 2 minutes after creation
+      const waitTime = Math.ceil((rateLimitExpiresAt - Date.now()) / 1000);
       log.warn('🔴 OTP rate limit hit', { identifier, purpose, waitTime, recentOTPId: recentOTP.id });
       return {
         success: false,
-        expiresAt: new Date(recentOTP.expiresAt).getTime(),
+        expiresAt: rateLimitExpiresAt,
         error: `لطفاً ${waitTime} ثانیه صبر کنید`
       };
     }
@@ -201,8 +203,8 @@ export async function verifyOTP(
       return { success: false, error: 'کد تایید یافت نشد یا منقضی شده است' };
     }
 
-    // Check expiration
-    if (new Date() > new Date(stored.expiresAt)) {
+    // Check expiration (parse timestamp as UTC - Supabase returns timestamp without timezone)
+    if (new Date() > new Date(stored.expiresAt + 'Z')) {
       await supabase
         .from('otp_verifications')
         .delete()
