@@ -2,7 +2,6 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import GradientColorPicker from '@/components/ui/GradientColorPicker';
 import MediaManager from '@/components/admin/MediaManager';
-import { useMediaManager } from '@/hooks/useMediaManager';
 import { useState } from 'react';
 import type { Variant, VariantFormData, MediaItem } from '@/types/product-admin';
 import {
@@ -210,30 +209,38 @@ export default function VariantManager({
     }
   };
 
-  // Use media manager hook for variant media
-  const variantMediaManager = useMediaManager(variantMedia);
-
-  // Sync variant media changes back to parent
+  // Variant media management - work directly with props to ensure state synchronization
   const handleVariantMediaSelect = (urls: string[]) => {
-    variantMediaManager.handleMediaSelect(urls);
-    // Update parent immediately
-    setTimeout(() => {
-      onSetVariantMedia(variantMediaManager.media);
-    }, 0);
+    const newMedia: MediaItem[] = urls.map((url, index) => ({
+      id: `new-${Date.now()}-${index}`,
+      type: url.includes('/videos/') ? 'VIDEO' : 'IMAGE',
+      url,
+      alt: '',
+      order: variantMedia.length + index,
+      isDefault: variantMedia.length === 0 && index === 0, // First photo is default if no media exists
+      isNew: true,
+    }));
+    onSetVariantMedia([...variantMedia, ...newMedia]);
   };
 
   const handleSetDefaultVariantMedia = (id: string) => {
-    variantMediaManager.setDefaultMedia(id);
-    setTimeout(() => {
-      onSetVariantMedia(variantMediaManager.media);
-    }, 0);
+    const updatedMedia = variantMedia.map(m => ({
+      ...m,
+      isDefault: m.id === id,
+    }));
+    onSetVariantMedia(updatedMedia);
   };
 
   const handleRemoveVariantMedia = (id: string) => {
-    variantMediaManager.removeMedia(id);
-    setTimeout(() => {
-      onSetVariantMedia(variantMediaManager.media);
-    }, 0);
+    const removedItem = variantMedia.find(m => m.id === id);
+    const remaining = variantMedia.filter(m => m.id !== id);
+
+    // If removing the default media and there are remaining items, make the first one default
+    if (removedItem?.isDefault && remaining.length > 0) {
+      remaining[0].isDefault = true;
+    }
+
+    onSetVariantMedia(remaining);
   };
 
   return (
@@ -361,7 +368,7 @@ export default function VariantManager({
             </p>
 
             <MediaManager
-              media={variantMediaManager.media}
+              media={variantMedia}
               onMediaSelect={handleVariantMediaSelect}
               onSetDefault={handleSetDefaultVariantMedia}
               onRemove={handleRemoveVariantMedia}
