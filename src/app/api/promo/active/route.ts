@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getActivePromoCode } from '@/services/promo-service';
+import { getActivePromoCode } from '@/services/promo-service-supabase';
 
 export const dynamic = 'force-dynamic';
 

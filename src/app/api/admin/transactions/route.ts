@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getAllTransactions } from '@/services/admin-service';
-import { TransactionStatus } from '@prisma/client';
+import { getAllTransactions } from '@/services/admin-service-supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const status = searchParams.get('status') as TransactionStatus | null;
+    const status = searchParams.get('status') as 'PENDING' | 'COMPLETED' | 'FAILED' | null;
     const search = searchParams.get('search') || undefined;
     const dateFrom = searchParams.get('dateFrom') || undefined;
     const dateTo = searchParams.get('dateTo') || undefined;

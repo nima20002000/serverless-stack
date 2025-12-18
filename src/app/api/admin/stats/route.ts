@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getDashboardStats } from '@/services/admin-service';
+import { getDashboardStats } from '@/services/admin-service-supabase';
 
 export const dynamic = 'force-dynamic';
 

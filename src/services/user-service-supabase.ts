@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { randomUUID } from "crypto";
-import { createFirstTimePromoCode } from "./promo-service";
+import { createFirstTimePromoCode } from "./promo-service-supabase";
 import { log } from "@/lib/logger";
 
 // Import utilities from modular structure
