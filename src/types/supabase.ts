@@ -418,10 +418,10 @@ export type Database = {
         }
         Insert: {
           createdAt?: string
-          id: string
+          id?: string
           name: string
           slug: string
-          updatedAt: string
+          updatedAt?: string
         }
         Update: {
           createdAt?: string

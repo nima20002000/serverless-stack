@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchTags } from '@/services/tag-service';
+import { searchTags } from '@/services/tag-service-supabase';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getTagById, updateTag, deleteTag } from '@/services/tag-service';
+import { getTagById, updateTag, deleteTag } from '@/services/tag-service-supabase';
 
 export const dynamic = 'force-dynamic';
 
