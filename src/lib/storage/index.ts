@@ -13,8 +13,8 @@ export * from './types';
 export * from './validators';
 
 // Export image optimization utilities
-export { getOptimizedImageUrl, getResponsiveSrcSet, optimizeImage, IMAGE_VARIANTS } from '../cloudflare-images';
-export type { ImageTransformOptions, ImageFormat, ImageFit, ImageGravity } from '../cloudflare-images';
+export { getOptimizedImageUrl, getResponsiveSrcSet, optimizeImage, IMAGE_VARIANTS } from '../cloudflare-images-client';
+export type { ImageTransformOptions, ImageFormat, ImageFit, ImageGravity } from '../cloudflare-images-client';
 
 let storageInstance: StorageAdapter | null = null;
 
