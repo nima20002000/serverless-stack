@@ -472,8 +472,17 @@ export async function getAllTransactions(
 
     const total = count || 0;
 
+    // Process transactions to normalize invoice array (Supabase returns it as array)
+    const processedTransactions = (transactions || []).map((tx) => {
+      const invoiceData = Array.isArray(tx.invoice) ? tx.invoice[0] : tx.invoice;
+      return {
+        ...tx,
+        invoice: invoiceData || null,
+      };
+    });
+
     return {
-      data: (transactions || []) as unknown as TransactionWithDetails[],
+      data: processedTransactions as unknown as TransactionWithDetails[],
       total,
       page,
       perPage: limit,
@@ -511,7 +520,16 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
       throw new Error('تراکنش یافت نشد');
     }
 
-    return data as unknown as TransactionWithDetails;
+    // Supabase returns invoice as array, get first element
+    const rawData = data as Record<string, unknown>;
+    const invoiceData = Array.isArray(rawData.invoice)
+      ? rawData.invoice[0]
+      : rawData.invoice;
+
+    return {
+      ...data,
+      invoice: invoiceData || null,
+    } as unknown as TransactionWithDetails;
   } catch (error) {
     log.error('Error in getTransactionById', { id, error });
     throw error;
