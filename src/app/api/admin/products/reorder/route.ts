@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth/options';
-import { reorderProducts } from '@/services/product-service';
+import { reorderProducts } from '@/services/product-service-supabase';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';

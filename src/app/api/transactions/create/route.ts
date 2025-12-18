@@ -6,7 +6,7 @@ import {
   createTransaction,
   verifyStockAvailability,
 } from '@/services/transaction-service';
-import { getProductById } from '@/services/product-service';
+import { getProductById } from '@/services/product-service-supabase';
 import { updateUserShippingInfo } from '@/services/user-service';
 import {
   createPaymentRequest,
