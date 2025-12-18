@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
@@ -94,7 +94,30 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     return firstActive || null;
   };
 
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(getDefaultVariant());
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => getDefaultVariant());
+
+  // Ensure default variant is set when component mounts or product changes
+  useEffect(() => {
+    if (!product.variants || product.variants.length === 0) return;
+
+    const hasProductMedia = product.media && product.media.length > 0;
+
+    let defaultVariant: Variant | null = null;
+
+    if (!hasProductMedia) {
+      defaultVariant = product.variants.find(v => v.isActive) || null;
+    } else {
+      const variantWithMedia = product.variants.find(v =>
+        v.isActive && v.media && v.media.length > 0
+      );
+      defaultVariant = variantWithMedia || product.variants.find(v => v.isActive) || null;
+    }
+
+    if (defaultVariant && (!selectedVariant || selectedVariant.id !== defaultVariant.id)) {
+      setSelectedVariant(defaultVariant);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id, product.variants, product.media]); // Re-run when product data changes
 
   // Calculate discount
   const discountPercent = product.discountPercent || 0;
@@ -207,6 +230,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           {product.media && product.media.length > 0 ? (
             <ProductGallery
               media={product.media}
+              productName={product.name}
+              selectedVariant={selectedVariant}
+            />
+          ) : selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 ? (
+            <ProductGallery
+              media={product.media || []}
               productName={product.name}
               selectedVariant={selectedVariant}
             />
