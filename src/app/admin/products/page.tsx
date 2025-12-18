@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import ProductTableSkeleton from '@/components/admin/ProductTableSkeleton';
 import Pagination from '@/components/ui/Pagination';
 import { formatPrice } from '@/lib/utils/format';
 import {
@@ -475,8 +476,19 @@ export default function AdminProductsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+      <div>
+        <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
+            <Link href="/admin/products/new" className="w-full sm:w-auto">
+              <Button variant="primary" size="sm" className="w-full sm:w-auto text-sm">افزودن محصول جدید</Button>
+            </Link>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
+        </div>
+        <Card padding="sm">
+          <ProductTableSkeleton rows={20} />
+        </Card>
       </div>
     );
   }

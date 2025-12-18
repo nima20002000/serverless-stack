@@ -12,6 +12,7 @@ import ProfileEditForm from '@/components/profile/ProfileEditForm';
 import PasswordManagementCard from '@/components/profile/PasswordManagementCard';
 import OTPPasswordReset from '@/components/profile/OTPPasswordReset';
 import TransactionHistory from '@/components/profile/TransactionHistory';
+import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
 
 interface PromoCode {
@@ -226,15 +227,11 @@ export default function ProfilePage() {
     }
   }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">در حال بارگذاری...</div>
-      </div>
-    );
+  if (status === 'loading' || !userProfile) {
+    return <ProfileSkeleton />;
   }
 
-  if (!session || !userProfile) {
+  if (!session) {
     return null;
   }
 

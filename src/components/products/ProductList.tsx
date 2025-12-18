@@ -2,6 +2,7 @@
 
 import { useState, useMemo, memo } from 'react';
 import ProductCard from './ProductCard';
+import { ProductCardSkeletonGrid } from './ProductCardSkeleton';
 import Button from '@/components/ui/Button';
 import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
@@ -112,11 +113,7 @@ function ProductList({
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری محصولات...</div>
-      </div>
-    );
+    return <ProductCardSkeletonGrid count={perPage} />;
   }
 
   if (products.length === 0) {
