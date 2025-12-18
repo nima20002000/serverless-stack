@@ -79,12 +79,14 @@ export async function POST(req: NextRequest) {
     const result = await sendOTP(identifier, purpose);
 
     if (!result.success) {
+      // Return 429 for rate limit errors, 500 for send failures
+      const statusCode = result.errorCode === 'RATE_LIMIT' ? 429 : 500;
       return NextResponse.json(
         {
           error: result.error,
           expiresAt: result.expiresAt
         },
-        { status: 429 }
+        { status: statusCode }
       );
     }
 

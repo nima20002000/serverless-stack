@@ -17,7 +17,7 @@ function generateOTP(): string {
 export async function sendOTP(
   identifier: string, // Email or phone
   purpose: 'register' | 'login' | 'checkout' = 'register'
-): Promise<{ success: boolean; expiresAt: number; error?: string }> {
+): Promise<{ success: boolean; expiresAt: number; error?: string; errorCode?: 'RATE_LIMIT' | 'SEND_FAILED' }> {
   try {
     log.info('🔵 sendOTP called', { identifier, purpose, timestamp: new Date().toISOString() });
 
@@ -68,7 +68,8 @@ export async function sendOTP(
       return {
         success: false,
         expiresAt: rateLimitExpiresAt,
-        error: `لطفاً ${waitTime} ثانیه صبر کنید`
+        error: `لطفاً ${waitTime} ثانیه صبر کنید`,
+        errorCode: 'RATE_LIMIT'
       };
     }
 
@@ -130,7 +131,8 @@ export async function sendOTP(
         return {
           success: false,
           expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
+          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED'
         };
       }
     } else if (identifier.includes('@')) {
@@ -150,7 +152,8 @@ export async function sendOTP(
         return {
           success: false,
           expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.'
+          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED'
         };
       }
     } else {
@@ -164,7 +167,8 @@ export async function sendOTP(
       return {
         success: false,
         expiresAt: expiresAt.getTime(),
-        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است'
+        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است',
+        errorCode: 'SEND_FAILED'
       };
     }
 
