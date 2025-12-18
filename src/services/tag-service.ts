@@ -3,24 +3,10 @@ import { TagFormData, TagWithCount } from '@/types/product';
 import { DeleteResult } from '@/types/api';
 import { clearCache } from '@/lib/redis/client';
 import { log } from '@/lib/logger';
-import { Tag } from '@prisma/client';
-import { Tables, Inserts, Updates } from '@/lib/supabase/types';
+import { Inserts, Updates } from '@/lib/supabase/types';
 
-type SupabaseTag = Tables<'tags'>;
 type SupabaseTagInsert = Inserts<'tags'>;
 type SupabaseTagUpdate = Updates<'tags'>;
-
-/**
- * Helper to convert Supabase tag to Prisma Tag type
- * Supabase returns dates as strings, Prisma expects Date objects
- */
-function toTag(supabaseTag: SupabaseTag): Tag {
-  return {
-    ...supabaseTag,
-    createdAt: new Date(supabaseTag.createdAt),
-    updatedAt: new Date(supabaseTag.updatedAt),
-  };
-}
 
 /**
  * Helper to invalidate tag cache
@@ -62,7 +48,7 @@ export async function getAllTags(): Promise<TagWithCount[]> {
     log.error('Error fetching tag product counts', { error: countError });
     // Return tags with 0 count if count query fails
     return tags.map(tag => ({
-      ...toTag(tag),
+      ...tag,
       _count: { products: 0 }
     }));
   }
@@ -76,7 +62,7 @@ export async function getAllTags(): Promise<TagWithCount[]> {
 
   // Merge counts with tags
   return tags.map(tag => ({
-    ...toTag(tag),
+    ...tag,
     _count: {
       products: countMap.get(tag.id) || 0
     }
@@ -116,7 +102,7 @@ export async function searchTags(query: string): Promise<TagWithCount[]> {
   if (countError) {
     log.error('Error fetching tag product counts', { error: countError });
     return tags.map(tag => ({
-      ...toTag(tag),
+      ...tag,
       _count: { products: 0 }
     }));
   }
@@ -130,7 +116,7 @@ export async function searchTags(query: string): Promise<TagWithCount[]> {
 
   // Merge counts with tags
   return tags.map(tag => ({
-    ...toTag(tag),
+    ...tag,
     _count: {
       products: countMap.get(tag.id) || 0
     }
@@ -174,7 +160,7 @@ export async function getTagById(id: string): Promise<TagWithCount | null> {
   }
 
   return {
-    ...toTag(tag),
+    ...tag,
     _count: {
       products: count || 0
     }
@@ -218,7 +204,7 @@ export async function getTagBySlug(slug: string): Promise<TagWithCount | null> {
   }
 
   return {
-    ...toTag(tag),
+    ...tag,
     _count: {
       products: count || 0
     }
@@ -268,7 +254,7 @@ export async function createTag(data: TagFormData): Promise<TagWithCount> {
   await invalidateTagCache();
 
   return {
-    ...toTag(newTag),
+    ...newTag,
     _count: {
       products: 0  // New tag has no products
     }
@@ -346,7 +332,7 @@ export async function updateTag(id: string, data: Partial<TagFormData>): Promise
   await invalidateTagCache();
 
   return {
-    ...toTag(updatedTag),
+    ...updatedTag,
     _count: {
       products: count || 0
     }

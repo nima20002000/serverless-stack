@@ -92,13 +92,13 @@ export type Database = {
         Insert: {
           createdAt?: string
           description?: string | null
-          id: string
+          id?: string
           image?: string | null
           isActive?: boolean
           name: string
           parentId?: string | null
           slug: string
-          updatedAt: string
+          updatedAt?: string
         }
         Update: {
           createdAt?: string
