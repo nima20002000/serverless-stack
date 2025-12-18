@@ -134,7 +134,12 @@ export default function ProfilePage() {
 
   const fetchUserProfile = useCallback(async () => {
     try {
-      const response = await fetch('/api/user/profile');
+      // Ensure minimum skeleton display time (300ms) for better UX
+      const [response] = await Promise.all([
+        fetch('/api/user/profile'),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ]);
+
       if (response.ok) {
         const data = await response.json();
         setUserProfile(data);

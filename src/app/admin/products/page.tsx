@@ -243,7 +243,13 @@ export default function AdminProductsPage() {
       const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const stockParam = stockFilter !== 'all' ? `&stock=${stockFilter}` : '';
-      const response = await fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`);
+
+      // Ensure minimum skeleton display time (300ms) for better UX
+      const [response] = await Promise.all([
+        fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ]);
+
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const result = await response.json();
       setData(result);

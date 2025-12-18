@@ -80,9 +80,13 @@ function ProductList({
     setIsLoading(true);
     setError(null);
     try {
-      const result = await fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
-        () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
-      );
+      // Ensure minimum skeleton display time (300ms) for better UX
+      const [result] = await Promise.all([
+        fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
+          () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
+        ),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ]);
 
       if (result) {
         setProducts(result.data);
