@@ -139,36 +139,20 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
     .eq('productId', productId)
     .order('order', { ascending: true });
 
-  // Fetch media for all variants in a single query (batch)
+  // Fetch media for each variant
   const variantsWithMedia: VariantWithMedia[] = [];
   if (variants && variants.length > 0) {
-    const variantIds = variants.map((v) => v.id);
-    const { data: allVariantMedia } = await supabase
-      .from('product_media')
-      .select('*')
-      .in('variantId', variantIds)
-      .order('isDefault', { ascending: false })
-      .order('order', { ascending: true });
-
-    // Group media by variant ID
-    const mediaByVariantId = new Map<string, ProductMedia[]>();
-    (allVariantMedia || []).forEach((media) => {
-      if (media.variantId) {
-        if (!mediaByVariantId.has(media.variantId)) {
-          mediaByVariantId.set(media.variantId, []);
-        }
-        const mediaList = mediaByVariantId.get(media.variantId);
-        if (mediaList) {
-          mediaList.push(media);
-        }
-      }
-    });
-
-    // Attach media to variants
     for (const variant of variants) {
+      const { data: variantMedia } = await supabase
+        .from('product_media')
+        .select('*')
+        .eq('variantId', variant.id)
+        .order('isDefault', { ascending: false })
+        .order('order', { ascending: true });
+
       variantsWithMedia.push({
         ...variant,
-        media: mediaByVariantId.get(variant.id) || [],
+        media: variantMedia || [],
       });
     }
   }
@@ -192,7 +176,6 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
 
 /**
  * Get all products with pagination
- * Optimized to batch load all relations (categories, tags, media, variants)
  */
 export async function getAllProducts(options?: {
   page?: number;
@@ -242,141 +225,14 @@ export async function getAllProducts(options?: {
     throw new Error('خطا در دریافت محصولات');
   }
 
-  if (!products || products.length === 0) {
-    return {
-      data: [],
-      total: count || 0,
-      page,
-      perPage,
-      totalPages: Math.ceil((count || 0) / perPage),
-    };
+  // Fetch relations for each product
+  const productsWithRelations: ProductWithRelations[] = [];
+  for (const product of products || []) {
+    const fullProduct = await fetchProductWithRelations(product.id);
+    if (fullProduct) {
+      productsWithRelations.push(fullProduct);
+    }
   }
-
-  const productIds = products.map((p) => p.id);
-
-  // Batch fetch all categories
-  const categoryIds = products
-    .map((p) => p.categoryId)
-    .filter((id): id is string => id !== null);
-  const { data: categories } = categoryIds.length > 0
-    ? await supabase.from('categories').select('*').in('id', categoryIds)
-    : { data: [] };
-  const categoryMap = new Map((categories || []).map((c) => [c.id, c]));
-
-  // Batch fetch all tags via junction table
-  const { data: productToTags } = await supabase
-    .from('_ProductToTag')
-    .select('A, B')
-    .in('A', productIds);
-
-  const tagIds = Array.from(new Set((productToTags || []).map((pt) => pt.B)));
-  const { data: tags } = tagIds.length > 0
-    ? await supabase.from('tags').select('*').in('id', tagIds)
-    : { data: [] };
-  const tagMap = new Map((tags || []).map((t) => [t.id, t]));
-
-  // Group tags by product ID
-  const tagsByProductId = new Map<string, Tag[]>();
-  (productToTags || []).forEach((pt) => {
-    if (!tagsByProductId.has(pt.A)) {
-      tagsByProductId.set(pt.A, []);
-    }
-    const tag = tagMap.get(pt.B);
-    if (tag) {
-      const tagList = tagsByProductId.get(pt.A);
-      if (tagList) {
-        tagList.push(tag);
-      }
-    }
-  });
-
-  // Batch fetch all product media (excluding variant-specific)
-  const { data: productMedia } = await supabase
-    .from('product_media')
-    .select('*')
-    .in('productId', productIds)
-    .is('variantId', null)
-    .order('isDefault', { ascending: false })
-    .order('order', { ascending: true });
-
-  // Group media by product ID
-  const mediaByProductId = new Map<string, ProductMedia[]>();
-  (productMedia || []).forEach((media) => {
-    if (!mediaByProductId.has(media.productId)) {
-      mediaByProductId.set(media.productId, []);
-    }
-    const mediaList = mediaByProductId.get(media.productId);
-    if (mediaList) {
-      mediaList.push(media);
-    }
-  });
-
-  // Batch fetch all variants
-  const { data: variants } = await supabase
-    .from('product_variants')
-    .select('*')
-    .in('productId', productIds)
-    .order('order', { ascending: true });
-
-  // Batch fetch all variant media
-  const variantIds = (variants || []).map((v) => v.id);
-  const { data: variantMedia } = variantIds.length > 0
-    ? await supabase
-        .from('product_media')
-        .select('*')
-        .in('variantId', variantIds)
-        .order('isDefault', { ascending: false })
-        .order('order', { ascending: true })
-    : { data: [] };
-
-  // Group variant media by variant ID
-  const mediaByVariantId = new Map<string, ProductMedia[]>();
-  (variantMedia || []).forEach((media) => {
-    if (media.variantId) {
-      if (!mediaByVariantId.has(media.variantId)) {
-        mediaByVariantId.set(media.variantId, []);
-      }
-      const mediaList = mediaByVariantId.get(media.variantId);
-      if (mediaList) {
-        mediaList.push(media);
-      }
-    }
-  });
-
-  // Group variants by product ID
-  const variantsByProductId = new Map<string, VariantWithMedia[]>();
-  (variants || []).forEach((variant) => {
-    if (!variantsByProductId.has(variant.productId)) {
-      variantsByProductId.set(variant.productId, []);
-    }
-    const variantList = variantsByProductId.get(variant.productId);
-    if (variantList) {
-      variantList.push({
-        ...variant,
-        media: mediaByVariantId.get(variant.id) || [],
-      });
-    }
-  });
-
-  // Assemble products with relations
-  const productsWithRelations: ProductWithRelations[] = products.map((product) => {
-    const productVariants = variantsByProductId.get(product.id) || [];
-
-    // Calculate stock from variants if product has variants
-    let actualStock = product.stock;
-    if (productVariants.length > 0) {
-      actualStock = productVariants.reduce((sum, variant) => sum + variant.stock, 0);
-    }
-
-    return {
-      ...product,
-      stock: actualStock,
-      category: product.categoryId ? categoryMap.get(product.categoryId) || null : null,
-      tags: tagsByProductId.get(product.id) || [],
-      media: mediaByProductId.get(product.id) || [],
-      variants: productVariants,
-    };
-  });
 
   return {
     data: populateProductsImages(productsWithRelations),
@@ -1209,7 +1065,6 @@ export async function updateProductStockFromVariants(productId: string): Promise
 
 /**
  * Get all variants for a product (ordered by 'order' field)
- * Optimized to batch load variant media
  */
 export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
   const supabase = createClient();
@@ -1225,38 +1080,21 @@ export async function getProductVariants(productId: string): Promise<VariantWith
     throw new Error('خطا در دریافت واریانت‌ها');
   }
 
-  if (!variants || variants.length === 0) {
-    return [];
+  // Fetch media for each variant
+  const variantsWithMedia: VariantWithMedia[] = [];
+  for (const variant of variants || []) {
+    const { data: media } = await supabase
+      .from('product_media')
+      .select('*')
+      .eq('variantId', variant.id)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
+
+    variantsWithMedia.push({
+      ...variant,
+      media: media || [],
+    });
   }
-
-  // Batch fetch media for all variants
-  const variantIds = variants.map((v) => v.id);
-  const { data: allVariantMedia } = await supabase
-    .from('product_media')
-    .select('*')
-    .in('variantId', variantIds)
-    .order('isDefault', { ascending: false })
-    .order('order', { ascending: true });
-
-  // Group media by variant ID
-  const mediaByVariantId = new Map<string, ProductMedia[]>();
-  (allVariantMedia || []).forEach((media) => {
-    if (media.variantId) {
-      if (!mediaByVariantId.has(media.variantId)) {
-        mediaByVariantId.set(media.variantId, []);
-      }
-      const mediaList = mediaByVariantId.get(media.variantId);
-      if (mediaList) {
-        mediaList.push(media);
-      }
-    }
-  });
-
-  // Attach media to variants
-  const variantsWithMedia: VariantWithMedia[] = variants.map((variant) => ({
-    ...variant,
-    media: mediaByVariantId.get(variant.id) || [],
-  }));
 
   return variantsWithMedia;
 }

@@ -168,52 +168,29 @@ export async function getAllUsers(
       throw new Error('خطا در دریافت کاربران');
     }
 
-    if (!users || users.length === 0) {
-      return {
-        data: [],
-        total: count || 0,
-        page,
-        perPage: limit,
-        totalPages: Math.ceil((count || 0) / limit),
-      };
-    }
+    // Get transaction and promo code counts for each user
+    const usersWithCounts: UserWithCount[] = await Promise.all(
+      (users || []).map(async (user) => {
+        const [transactionCountResult, promoCodeCountResult] = await Promise.all([
+          supabase
+            .from('transactions')
+            .select('id', { count: 'exact', head: true })
+            .eq('userId', user.id),
+          supabase
+            .from('promo_codes')
+            .select('id', { count: 'exact', head: true })
+            .eq('userId', user.id),
+        ]);
 
-    const userIds = users.map((u) => u.id);
-
-    // Batch fetch transaction counts for all users
-    const { data: transactionCounts } = await supabase
-      .from('transactions')
-      .select('userId')
-      .in('userId', userIds);
-
-    // Count transactions per user
-    const transactionCountMap = new Map<string, number>();
-    (transactionCounts || []).forEach((t) => {
-      if (t.userId) {
-        transactionCountMap.set(t.userId, (transactionCountMap.get(t.userId) || 0) + 1);
-      }
-    });
-
-    // Batch fetch promo code counts for all users
-    const { data: promoCounts } = await supabase
-      .from('promo_codes')
-      .select('userId')
-      .in('userId', userIds);
-
-    // Count promo codes per user
-    const promoCountMap = new Map<string, number>();
-    (promoCounts || []).forEach((p) => {
-      promoCountMap.set(p.userId, (promoCountMap.get(p.userId) || 0) + 1);
-    });
-
-    // Assemble users with counts
-    const usersWithCounts: UserWithCount[] = users.map((user) => ({
-      ...user,
-      _count: {
-        transactions: transactionCountMap.get(user.id) || 0,
-        promoCodes: promoCountMap.get(user.id) || 0,
-      },
-    }));
+        return {
+          ...user,
+          _count: {
+            transactions: transactionCountResult.count || 0,
+            promoCodes: promoCodeCountResult.count || 0,
+          },
+        };
+      })
+    );
 
     const total = count || 0;
 

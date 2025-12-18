@@ -443,7 +443,7 @@ export async function getUserTransactions(
 
 /**
  * Reduce product/variant stock after successful payment
- * Optimized to batch fetch and update stocks
+ * Uses sequential updates with error handling (no RPC functions yet)
  */
 export async function reduceProductStock(transactionId: string): Promise<void> {
   const supabase = createClient();
@@ -463,123 +463,91 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
       throw new Error('فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد');
     }
 
-    // Separate items by type (variant vs product)
-    const variantItems = transaction.items.filter((item) => item.variantId);
-    const productItems = transaction.items.filter((item) => !item.variantId);
-
     // Track which products need stock recalculation
     const productsNeedingRecalc = new Set<string>();
 
-    // Batch update variant stocks
-    if (variantItems.length > 0) {
-      const variantIds = variantItems.map((item) => item.variantId as string);
+    // Reduce stock for each item
+    for (const item of transaction.items) {
+      if (item.variantId) {
+        // Reduce variant stock
+        const { data: variant } = await supabase
+          .from('product_variants')
+          .select('stock')
+          .eq('id', item.variantId)
+          .single();
 
-      // Batch fetch all variant stocks
-      const { data: variants } = await supabase
-        .from('product_variants')
-        .select('id, stock, productId')
-        .in('id', variantIds);
+        if (variant) {
+          const newStock = Math.max(0, variant.stock - item.quantity);
+          await supabase
+            .from('product_variants')
+            .update({
+              stock: newStock,
+              updatedAt: now,
+            })
+            .eq('id', item.variantId);
 
-      if (variants && variants.length > 0) {
-        const variantStockMap = new Map(variants.map((v) => [v.id, v]));
+          productsNeedingRecalc.add(item.productId);
 
-        // Update each variant stock
-        for (const item of variantItems) {
-          if (!item.variantId) continue;
+          log.info('Variant stock reduced', {
+            variantId: item.variantId,
+            productId: item.productId,
+            quantity: item.quantity,
+            newStock,
+          });
+        }
+      } else {
+        // No variant - reduce product stock directly
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock')
+          .eq('id', item.productId)
+          .single();
 
-          const variant = variantStockMap.get(item.variantId);
-          if (variant) {
-            const newStock = Math.max(0, variant.stock - item.quantity);
+        if (product) {
+          const newStock = Math.max(0, product.stock - item.quantity);
+          await supabase
+            .from('products')
+            .update({
+              stock: newStock,
+              updatedAt: now,
+            })
+            .eq('id', item.productId);
 
-            await supabase
-              .from('product_variants')
-              .update({
-                stock: newStock,
-                updatedAt: now,
-              })
-              .eq('id', item.variantId);
-
-            productsNeedingRecalc.add(item.productId);
-
-            log.info('Variant stock reduced', {
-              variantId: item.variantId,
-              productId: item.productId,
-              quantity: item.quantity,
-              newStock,
-            });
-          }
+          log.info('Product stock reduced (no variant)', {
+            productId: item.productId,
+            quantity: item.quantity,
+            newStock,
+          });
         }
       }
     }
 
-    // Batch update product stocks (for items without variants)
-    if (productItems.length > 0) {
-      const productIds = productItems.map((item) => item.productId);
-
-      // Batch fetch all product stocks
-      const { data: products } = await supabase
-        .from('products')
-        .select('id, stock')
-        .in('id', productIds);
-
-      if (products && products.length > 0) {
-        const productStockMap = new Map(products.map((p) => [p.id, p.stock]));
-
-        // Update each product stock
-        for (const item of productItems) {
-          const currentStock = productStockMap.get(item.productId);
-          if (currentStock !== undefined) {
-            const newStock = Math.max(0, currentStock - item.quantity);
-
-            await supabase
-              .from('products')
-              .update({
-                stock: newStock,
-                updatedAt: now,
-              })
-              .eq('id', item.productId);
-
-            log.info('Product stock reduced (no variant)', {
-              productId: item.productId,
-              quantity: item.quantity,
-              newStock,
-            });
-          }
-        }
-      }
-    }
-
-    // Recalculate product stocks for products with variants (batch)
+    // Recalculate product stocks for products with variants
     if (productsNeedingRecalc.size > 0) {
       const productIds = Array.from(productsNeedingRecalc);
 
-      // Batch fetch all variants for products needing recalculation
-      const { data: allVariants } = await supabase
-        .from('product_variants')
-        .select('productId, stock')
-        .in('productId', productIds);
+      for (const productId of productIds) {
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select('stock')
+          .eq('productId', productId);
 
-      // Group variants by product ID and calculate totals
-      const stockByProductId = new Map<string, number>();
-      (allVariants || []).forEach((variant) => {
-        const currentTotal = stockByProductId.get(variant.productId) || 0;
-        stockByProductId.set(variant.productId, currentTotal + variant.stock);
-      });
+        if (variants) {
+          const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
 
-      // Batch update product stocks
-      for (const [productId, totalStock] of stockByProductId.entries()) {
-        await supabase
-          .from('products')
-          .update({
-            stock: totalStock,
-            updatedAt: now,
-          })
-          .eq('id', productId);
+          await supabase
+            .from('products')
+            .update({
+              stock: totalStock,
+              updatedAt: now,
+            })
+            .eq('id', productId);
 
-        log.info('Product stock recalculated from variants', {
-          productId,
-          newTotalStock: totalStock,
-        });
+          log.info('Product stock recalculated from variants', {
+            productId,
+            newTotalStock: totalStock,
+          });
+        }
       }
     }
 

@@ -29,57 +29,58 @@ async function invalidateCategoryCache(): Promise<void> {
 /**
  * Bulk delete categories
  * Only deletes categories that have no products or children
- * Optimized to batch check products and children
  */
 export async function bulkDeleteCategories(categoryIds: string[]): Promise<{ count: number }> {
   const supabase = await createClient();
 
   try {
-    // Batch fetch all products for these categories
-    const { data: productsInCategories } = await supabase
-      .from('products')
-      .select('categoryId')
-      .in('categoryId', categoryIds);
+    // Check if any categories have products
+    const categoriesWithProductNames: string[] = [];
+    for (const catId of categoryIds) {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoryId', catId);
 
-    // Find categories with products
-    const categoriesWithProducts = new Set(
-      (productsInCategories || []).map((p) => p.categoryId).filter((id): id is string => id !== null)
-    );
+      if (count && count > 0) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', catId)
+          .single();
+        if (cat) {
+          categoriesWithProductNames.push(cat.name);
+        }
+      }
+    }
 
-    if (categoriesWithProducts.size > 0) {
-      // Batch fetch category names
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('id, name')
-        .in('id', Array.from(categoriesWithProducts));
-
-      const categoriesWithProductNames = (categoriesData || []).map((c) => c.name);
-
+    if (categoriesWithProductNames.length > 0) {
       throw new Error(
         `امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: ${categoriesWithProductNames.join('، ')}`
       );
     }
 
-    // Batch fetch all children for these categories
-    const { data: childrenCategories } = await supabase
-      .from('categories')
-      .select('parentId')
-      .in('parentId', categoryIds);
-
-    // Find categories with children
-    const categoriesWithChildren = new Set(
-      (childrenCategories || []).map((c) => c.parentId).filter((id): id is string => id !== null)
-    );
-
-    if (categoriesWithChildren.size > 0) {
-      // Batch fetch category names
-      const { data: categoriesData } = await supabase
+    // Check if any categories have children
+    const categoriesWithChildrenNames: string[] = [];
+    for (const catId of categoryIds) {
+      const { count } = await supabase
         .from('categories')
-        .select('id, name')
-        .in('id', Array.from(categoriesWithChildren));
+        .select('id', { count: 'exact', head: true })
+        .eq('parentId', catId);
 
-      const categoriesWithChildrenNames = (categoriesData || []).map((c) => c.name);
+      if (count && count > 0) {
+        const { data: cat } = await supabase
+          .from('categories')
+          .select('name')
+          .eq('id', catId)
+          .single();
+        if (cat) {
+          categoriesWithChildrenNames.push(cat.name);
+        }
+      }
+    }
 
+    if (categoriesWithChildrenNames.length > 0) {
       throw new Error(
         `امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: ${categoriesWithChildrenNames.join('، ')}`
       );
@@ -142,7 +143,6 @@ export async function bulkUpdateCategories(
 
 /**
  * Get all categories (admin only)
- * Optimized to batch fetch product counts
  */
 export async function getAllCategories(): Promise<CategoryWithRelations[]> {
   const supabase = await createClient();
@@ -157,33 +157,26 @@ export async function getAllCategories(): Promise<CategoryWithRelations[]> {
     throw new Error('خطا در دریافت دسته‌بندی‌ها');
   }
 
-  if (!data || data.length === 0) {
+  if (!data) {
     return [];
   }
 
-  const categoryIds = data.map((c) => c.id);
+  // Fetch product counts for all categories
+  const categoriesWithCounts = await Promise.all(
+    data.map(async (category) => {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoryId', category.id);
 
-  // Batch fetch product counts for all categories
-  const { data: products } = await supabase
-    .from('products')
-    .select('categoryId')
-    .in('categoryId', categoryIds);
-
-  // Count products per category
-  const productCountMap = new Map<string, number>();
-  (products || []).forEach((product) => {
-    if (product.categoryId) {
-      productCountMap.set(product.categoryId, (productCountMap.get(product.categoryId) || 0) + 1);
-    }
-  });
-
-  // Assemble categories with counts
-  const categoriesWithCounts = data.map((category) => ({
-    ...category,
-    _count: {
-      products: productCountMap.get(category.id) || 0,
-    },
-  }));
+      return {
+        ...category,
+        _count: {
+          products: count || 0,
+        },
+      };
+    })
+  );
 
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
   return categoriesWithCounts;
