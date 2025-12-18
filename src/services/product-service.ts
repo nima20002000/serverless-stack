@@ -1,70 +1,33 @@
-import prisma from '@/lib/prisma/client';
-import { Prisma, Product, ProductMedia } from '@prisma/client';
-import { ProductWithRelations, VariantWithMedia } from '@/types/product';
+import { createClient } from '@/lib/supabase/server';
+import { Tables } from '@/lib/supabase/types';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
 import { log } from '@/lib/logger';
 import { clearCachePattern } from '@/lib/redis/client';
+import { Database } from '@/types/supabase';
+import { randomUUID } from 'crypto';
 
-// ========== PRISMA QUERY PATTERNS ==========
+// ========== TYPE DEFINITIONS ==========
 
-/**
- * Standard ordering for media (default image first, then by order)
- */
-const MEDIA_ORDER_BY: Prisma.ProductMediaOrderByWithRelationInput[] = [
-  { isDefault: 'desc' },
-  { order: 'asc' },
-];
+type Product = Tables<'products'>;
+type ProductMedia = Tables<'product_media'>;
+type ProductVariant = Tables<'product_variants'>;
+type Category = Tables<'categories'>;
+type Tag = Tables<'tags'>;
 
-/**
- * Include pattern for product media (excludes variant-specific media)
- */
-const PRODUCT_MEDIA_INCLUDE: Prisma.ProductMediaFindManyArgs = {
-  where: { variantId: null },
-  orderBy: MEDIA_ORDER_BY,
-};
+type MediaType = Database['public']['Enums']['MediaType'];
 
-/**
- * Include pattern for variant media
- */
-const VARIANT_MEDIA_INCLUDE: Prisma.ProductMediaFindManyArgs = {
-  orderBy: MEDIA_ORDER_BY,
-};
+// Product with all relations (matching Prisma's ProductWithRelations)
+export interface ProductWithRelations extends Product {
+  category?: Category | null;
+  tags?: Tag[];
+  media?: ProductMedia[];
+  variants?: VariantWithMedia[];
+}
 
-/**
- * Standard include pattern for products with all relations
- */
-const PRODUCT_WITH_RELATIONS_INCLUDE: Prisma.ProductInclude = {
-  media: PRODUCT_MEDIA_INCLUDE,
-  variants: {
-    include: {
-      media: VARIANT_MEDIA_INCLUDE,
-    },
-    orderBy: [
-      { order: 'asc' },
-      { createdAt: 'asc' },
-    ],
-  },
-};
-
-/**
- * Full include pattern with category and tags
- */
-const PRODUCT_FULL_INCLUDE: Prisma.ProductInclude = {
-  category: true,
-  tags: true,
-  media: {
-    orderBy: MEDIA_ORDER_BY,
-  },
-  variants: {
-    include: {
-      media: VARIANT_MEDIA_INCLUDE,
-    },
-    orderBy: [
-      { order: 'asc' },
-      { createdAt: 'asc' },
-    ],
-  },
-};
+// Variant with media
+export interface VariantWithMedia extends ProductVariant {
+  media: ProductMedia[];
+}
 
 // ========== HELPER FUNCTIONS ==========
 
@@ -73,7 +36,7 @@ const PRODUCT_FULL_INCLUDE: Prisma.ProductInclude = {
  * Handles fallback logic: product.images → product.media → first variant.media
  */
 function populateProductImages(product: ProductWithRelations): ProductWithRelations {
-  let images = [...product.images];
+  let images = [...(product.images || [])];
 
   // If no images in legacy field, populate from media
   if (images.length === 0 && product.media && product.variants) {
@@ -85,7 +48,7 @@ function populateProductImages(product: ProductWithRelations): ProductWithRelati
     } else {
       // If no product media, get images from first variant that has media
       const variantWithMedia = product.variants.find(
-        (v): v is VariantWithMedia => 'media' in v && Array.isArray(v.media) && v.media.length > 0
+        (v) => v.media && v.media.length > 0
       );
       if (variantWithMedia) {
         images = variantWithMedia.media.map((m) => m.url);
@@ -123,6 +86,87 @@ async function invalidateProductCache(): Promise<void> {
 }
 
 /**
+ * Fetch product with all relations
+ */
+async function fetchProductWithRelations(productId: string): Promise<ProductWithRelations | null> {
+  const supabase = createClient();
+
+  // Get product with category
+  const { data: product, error } = await supabase
+    .from('products')
+    .select(`
+      *,
+      category:categories(*)
+    `)
+    .eq('id', productId)
+    .single();
+
+  if (error || !product) {
+    return null;
+  }
+
+  // Get tags via junction table
+  const { data: productToTags } = await supabase
+    .from('_ProductToTag')
+    .select('B')
+    .eq('A', productId);
+
+  const tagIds = productToTags?.map((pt) => pt.B) || [];
+  let tags: Tag[] = [];
+
+  if (tagIds.length > 0) {
+    const { data: tagsData } = await supabase
+      .from('tags')
+      .select('*')
+      .in('id', tagIds);
+    tags = tagsData || [];
+  }
+
+  // Get product media (excluding variant-specific media)
+  const { data: media } = await supabase
+    .from('product_media')
+    .select('*')
+    .eq('productId', productId)
+    .is('variantId', null)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  // Get variants with their media
+  const { data: variants } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('productId', productId)
+    .order('order', { ascending: true });
+
+  // Fetch media for each variant
+  const variantsWithMedia: VariantWithMedia[] = [];
+  if (variants && variants.length > 0) {
+    for (const variant of variants) {
+      const { data: variantMedia } = await supabase
+        .from('product_media')
+        .select('*')
+        .eq('variantId', variant.id)
+        .order('isDefault', { ascending: false })
+        .order('order', { ascending: true });
+
+      variantsWithMedia.push({
+        ...variant,
+        media: variantMedia || [],
+      });
+    }
+  }
+
+  return {
+    ...product,
+    tags,
+    media: media || [],
+    variants: variantsWithMedia,
+  };
+}
+
+// ========== PRODUCT QUERIES ==========
+
+/**
  * Get all products with pagination
  */
 export async function getAllProducts(options?: {
@@ -135,55 +179,59 @@ export async function getAllProducts(options?: {
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
-  const skip = (page - 1) * perPage;
+  const offset = (page - 1) * perPage;
 
-  const where: Prisma.ProductWhereInput = {};
+  const supabase = createClient();
+  let query = supabase.from('products').select('*', { count: 'exact' });
 
   // Base isActive filter
   if (!options?.includeInactive) {
-    where.isActive = true;
+    query = query.eq('isActive', true);
   } else if (options.status) {
     // Status filter (active/inactive)
-    where.isActive = options.status === 'active';
+    query = query.eq('isActive', options.status === 'active');
   }
 
   // Search filter
   if (options?.search) {
-    where.OR = [
-      { name: { contains: options.search, mode: 'insensitive' } },
-      { description: { contains: options.search, mode: 'insensitive' } },
-    ];
+    query = query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
   }
 
   // Stock filter
   if (options?.stock) {
     if (options.stock === 'in-stock') {
-      where.stock = { gt: 0 };
+      query = query.gt('stock', 0);
     } else if (options.stock === 'out-of-stock') {
-      where.stock = 0;
+      query = query.eq('stock', 0);
     }
   }
 
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      skip,
-      take: perPage,
-      orderBy: [
-        { displayOrder: 'asc' },
-        { createdAt: 'desc' },
-      ],
-      include: PRODUCT_WITH_RELATIONS_INCLUDE,
-    }),
-    prisma.product.count({ where }),
-  ]);
+  // Apply ordering and pagination
+  const { data: products, count, error } = await query
+    .order('displayOrder', { ascending: true })
+    .order('createdAt', { ascending: false })
+    .range(offset, offset + perPage - 1);
+
+  if (error) {
+    log.error('Error fetching products', { error });
+    throw new Error('خطا در دریافت محصولات');
+  }
+
+  // Fetch relations for each product
+  const productsWithRelations: ProductWithRelations[] = [];
+  for (const product of products || []) {
+    const fullProduct = await fetchProductWithRelations(product.id);
+    if (fullProduct) {
+      productsWithRelations.push(fullProduct);
+    }
+  }
 
   return {
-    data: populateProductsImages(products),
-    total,
+    data: populateProductsImages(productsWithRelations),
+    total: count || 0,
     page,
     perPage,
-    totalPages: Math.ceil(total / perPage),
+    totalPages: Math.ceil((count || 0) / perPage),
   };
 }
 
@@ -205,21 +253,32 @@ export async function getFeaturedProducts(options?: {
   limit?: number;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
+  const supabase = createClient();
 
-  const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      isFeatured: true,
-    },
-    take: limit,
-    orderBy: [
-      { displayOrder: 'asc' },
-      { createdAt: 'desc' },
-    ],
-    include: PRODUCT_WITH_RELATIONS_INCLUDE,
-  });
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('isActive', true)
+    .eq('isFeatured', true)
+    .order('displayOrder', { ascending: true })
+    .order('createdAt', { ascending: false })
+    .limit(limit);
 
-  return populateProductsImages(products);
+  if (error) {
+    log.error('Error fetching featured products', { error });
+    throw new Error('خطا در دریافت محصولات ویژه');
+  }
+
+  // Fetch relations for each product
+  const productsWithRelations: ProductWithRelations[] = [];
+  for (const product of products || []) {
+    const fullProduct = await fetchProductWithRelations(product.id);
+    if (fullProduct) {
+      productsWithRelations.push(fullProduct);
+    }
+  }
+
+  return populateProductsImages(productsWithRelations);
 }
 
 /**
@@ -230,24 +289,33 @@ export async function getDiscountedProducts(options?: {
   limit?: number;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
+  const supabase = createClient();
 
-  const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      discountPercent: {
-        gt: 0,
-      },
-    },
-    take: limit,
-    orderBy: [
-      { displayOrder: 'asc' },
-      { discountPercent: 'desc' }, // Secondary sort by highest discount
-      { createdAt: 'desc' },
-    ],
-    include: PRODUCT_WITH_RELATIONS_INCLUDE,
-  });
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('isActive', true)
+    .gt('discountPercent', 0)
+    .order('displayOrder', { ascending: true })
+    .order('discountPercent', { ascending: false })
+    .order('createdAt', { ascending: false })
+    .limit(limit);
 
-  return populateProductsImages(products);
+  if (error) {
+    log.error('Error fetching discounted products', { error });
+    throw new Error('خطا در دریافت محصولات تخفیف‌دار');
+  }
+
+  // Fetch relations for each product
+  const productsWithRelations: ProductWithRelations[] = [];
+  for (const product of products || []) {
+    const fullProduct = await fetchProductWithRelations(product.id);
+    if (fullProduct) {
+      productsWithRelations.push(fullProduct);
+    }
+  }
+
+  return populateProductsImages(productsWithRelations);
 }
 
 /**
@@ -261,12 +329,30 @@ export async function getProductById(
   includeRelations = false,
   includeInactive = false
 ): Promise<Product | ProductWithRelations> {
-  const product = await prisma.product.findUnique({
-    where: { id },
-    ...(includeRelations && {
-      include: PRODUCT_FULL_INCLUDE,
-    }),
-  });
+  const supabase = createClient();
+
+  if (!includeRelations) {
+    // Simple query without relations
+    const { data: product, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !product) {
+      throw new Error('محصول یافت نشد');
+    }
+
+    // Check if product is active (unless explicitly including inactive products)
+    if (!includeInactive && !product.isActive) {
+      throw new Error('محصول یافت نشد');
+    }
+
+    return product;
+  }
+
+  // Fetch with all relations
+  const product = await fetchProductWithRelations(id);
 
   if (!product) {
     throw new Error('محصول یافت نشد');
@@ -289,34 +375,33 @@ export async function searchProducts(query: string, options?: {
 }): Promise<PaginatedResponse<Product>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
-  const skip = (page - 1) * perPage;
+  const offset = (page - 1) * perPage;
 
-  const where: Prisma.ProductWhereInput = {
-    isActive: true,
-    OR: [
-      { name: { contains: query, mode: 'insensitive' } },
-      { description: { contains: query, mode: 'insensitive' } },
-    ],
-  };
+  const supabase = createClient();
 
-  const [products, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      skip,
-      take: perPage,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.product.count({ where }),
-  ]);
+  const { data: products, count, error } = await supabase
+    .from('products')
+    .select('*', { count: 'exact' })
+    .eq('isActive', true)
+    .or(`name.ilike.%${query}%,description.ilike.%${query}%`)
+    .order('createdAt', { ascending: false })
+    .range(offset, offset + perPage - 1);
+
+  if (error) {
+    log.error('Error searching products', { query, error });
+    throw new Error('خطا در جستجوی محصولات');
+  }
 
   return {
-    data: products,
-    total,
+    data: products || [],
+    total: count || 0,
     page,
     perPage,
-    totalPages: Math.ceil(total / perPage),
+    totalPages: Math.ceil((count || 0) / perPage),
   };
 }
+
+// ========== PRODUCT MUTATIONS ==========
 
 /**
  * Create a new product (admin only)
@@ -353,26 +438,51 @@ export async function createProduct(data: {
       throw new Error('موجودی نمی‌تواند منفی باشد');
     }
 
-    const product = await prisma.product.create({
-      data: {
+    const supabase = createClient();
+
+    // Generate UUID for the product
+    const productId = randomUUID();
+
+    // Create product
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert({
+        id: productId,
         name: data.name,
         description: data.description,
         price: data.price,
-        discountPercent: data.discountPercent,
+        discountPercent: data.discountPercent || null,
         stock: data.stock,
         images: data.images || [],
-        categoryId: data.categoryId,
+        categoryId: data.categoryId || null,
         hasVariants: data.hasVariants !== undefined ? data.hasVariants : false,
         isFeatured: data.isFeatured !== undefined ? data.isFeatured : false,
         isActive: data.isActive !== undefined ? data.isActive : true,
-        ...(data.tagIds && data.tagIds.length > 0 && {
-          tags: {
-            connect: data.tagIds.map((id) => ({ id })),
-          },
-        }),
-      },
-      include: PRODUCT_FULL_INCLUDE,
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error || !product) {
+      log.error('Failed to create product', { error });
+      throw new Error('خطا در ایجاد محصول');
+    }
+
+    // Add tags if provided
+    if (data.tagIds && data.tagIds.length > 0) {
+      const tagConnections = data.tagIds.map((tagId) => ({
+        A: productId,
+        B: tagId,
+      }));
+
+      const { error: tagError } = await supabase
+        .from('_ProductToTag')
+        .insert(tagConnections);
+
+      if (tagError) {
+        log.error('Failed to connect tags', { error: tagError });
+      }
+    }
 
     log.info('Product created successfully', {
       productId: product.id,
@@ -383,7 +493,12 @@ export async function createProduct(data: {
     // Invalidate product cache
     await invalidateProductCache();
 
-    return product;
+    // Fetch and return with relations
+    const fullProduct = await fetchProductWithRelations(productId);
+    if (!fullProduct) {
+      throw new Error('خطا در دریافت اطلاعات محصول ایجاد شده');
+    }
+    return fullProduct;
   } catch (error) {
     log.error('Failed to create product', {
       name: data.name,
@@ -412,10 +527,14 @@ export async function updateProduct(
     isActive: boolean;
   }>
 ): Promise<ProductWithRelations> {
+  const supabase = createClient();
+
   // Check if product exists
-  const existingProduct = await prisma.product.findUnique({
-    where: { id },
-  });
+  const { data: existingProduct } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   if (!existingProduct) {
     throw new Error('محصول یافت نشد');
@@ -432,39 +551,54 @@ export async function updateProduct(
 
   // Handle tag updates separately
   const tagIds = data.tagIds;
-  const updateData: Prisma.ProductUpdateInput = { ...data };
+  const updateData = { ...data };
   delete (updateData as Record<string, unknown>).tagIds;
+
+  // Update product
+  const { error } = await supabase
+    .from('products')
+    .update({
+      ...updateData,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    log.error('Failed to update product', { id, error });
+    throw new Error('خطا در بروزرسانی محصول');
+  }
 
   // If tagIds provided, update tag connections
   if (tagIds !== undefined) {
     // First, disconnect all existing tags
-    await prisma.product.update({
-      where: { id },
-      data: {
-        tags: {
-          set: [],
-        },
-      },
-    });
+    await supabase.from('_ProductToTag').delete().eq('A', id);
 
     // Then connect new tags
     if (tagIds.length > 0) {
-      updateData.tags = {
-        connect: tagIds.map((tagId) => ({ id: tagId })),
-      };
+      const tagConnections = tagIds.map((tagId) => ({
+        A: id,
+        B: tagId,
+      }));
+
+      const { error: tagError } = await supabase
+        .from('_ProductToTag')
+        .insert(tagConnections);
+
+      if (tagError) {
+        log.error('Failed to update tags', { error: tagError });
+      }
     }
   }
-
-  const product = await prisma.product.update({
-    where: { id },
-    data: updateData,
-    include: PRODUCT_FULL_INCLUDE,
-  });
 
   // Invalidate product cache
   await invalidateProductCache();
 
-  return product;
+  // Fetch and return with relations
+  const fullProduct = await fetchProductWithRelations(id);
+  if (!fullProduct) {
+    throw new Error('خطا در دریافت اطلاعات محصول بروزرسانی شده');
+  }
+  return fullProduct;
 }
 
 /**
@@ -473,21 +607,26 @@ export async function updateProduct(
  * Use soft delete (isActive = false) instead for products with transaction history.
  */
 export async function deleteProduct(id: string): Promise<DeleteResult> {
+  const supabase = createClient();
+
   // Check if product exists
-  const existingProduct = await prisma.product.findUnique({
-    where: { id },
-  });
+  const { data: existingProduct } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   if (!existingProduct) {
     throw new Error('محصول یافت نشد');
   }
 
   // Check if product has been purchased (has transaction items)
-  const transactionItemsCount = await prisma.transactionItem.count({
-    where: { productId: id },
-  });
+  const { count: transactionItemsCount } = await supabase
+    .from('transaction_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('productId', id);
 
-  if (transactionItemsCount > 0) {
+  if (transactionItemsCount && transactionItemsCount > 0) {
     log.warn('Cannot delete product with transaction history', {
       productId: id,
       transactionItemsCount,
@@ -497,9 +636,12 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
     );
   }
 
-  await prisma.product.delete({
-    where: { id },
-  });
+  const { error } = await supabase.from('products').delete().eq('id', id);
+
+  if (error) {
+    log.error('Failed to delete product', { id, error });
+    throw new Error('خطا در حذف محصول');
+  }
 
   log.info('Product deleted successfully', { productId: id });
 
@@ -510,17 +652,83 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
 }
 
 /**
+ * Bulk delete products
+ */
+export async function bulkDeleteProducts(productIds: string[]): Promise<{ count: number }> {
+  const supabase = createClient();
+
+  try {
+    // Delete products (cascade will handle related records)
+    const { error, count } = await supabase
+      .from('products')
+      .delete({ count: 'exact' })
+      .in('id', productIds);
+
+    if (error) {
+      log.error('Error in bulk delete products', { error });
+      throw new Error('خطا در حذف محصولات');
+    }
+
+    // Invalidate product cache
+    await invalidateProductCache();
+
+    log.info('Products bulk deleted', { count });
+    return { count: count || 0 };
+  } catch (error) {
+    log.error('Error in bulkDeleteProducts', { productIds, error });
+    throw error;
+  }
+}
+
+/**
+ * Bulk update products
+ */
+export async function bulkUpdateProducts(
+  productIds: string[],
+  updates: { isActive?: boolean; stock?: number }
+): Promise<{ count: number }> {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .in('id', productIds)
+      .select('id');
+
+    if (error) {
+      log.error('Error in bulk update products', { error });
+      throw new Error('خطا در بروزرسانی محصولات');
+    }
+
+    // Invalidate product cache
+    await invalidateProductCache();
+
+    const count = data?.length || 0;
+    log.info('Products bulk updated', { count, updates });
+    return { count };
+  } catch (error) {
+    log.error('Error in bulkUpdateProducts', { productIds, updates, error });
+    throw error;
+  }
+}
+
+/**
  * Update product stock
  */
 export async function updateStock(id: string, quantity: number): Promise<Product> {
   log.info('Updating product stock', { productId: id, quantity });
 
   try {
-    const product = await prisma.product.findUnique({
-      where: { id },
-    });
+    const supabase = createClient();
 
-    if (!product) {
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !product) {
       log.warn('Product not found for stock update', { productId: id });
       throw new Error('محصول یافت نشد');
     }
@@ -536,10 +744,19 @@ export async function updateStock(id: string, quantity: number): Promise<Product
       throw new Error('موجودی کافی نیست');
     }
 
-    const updated = await prisma.product.update({
-      where: { id },
-      data: { stock: newStock },
-    });
+    const { data: updated, error } = await supabase
+      .from('products')
+      .update({
+        stock: newStock,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !updated) {
+      throw new Error('خطا در بروزرسانی موجودی');
+    }
 
     log.info('Stock updated successfully', {
       productId: id,
@@ -557,6 +774,8 @@ export async function updateStock(id: string, quantity: number): Promise<Product
     throw error;
   }
 }
+
+// ========== PRICE HELPER FUNCTIONS ==========
 
 /**
  * Format price to Persian/Toman format
@@ -612,48 +831,69 @@ export function getPriceDisplay(
 export async function addProductMedia(data: {
   productId: string;
   variantId?: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: MediaType;
   url: string;
   alt?: string;
   order?: number;
   isDefault?: boolean;
 }): Promise<ProductMedia> {
+  const supabase = createClient();
+
   // Check if there are any existing media for this product/variant
-  const existingMediaCount = await prisma.productMedia.count({
-    where: {
-      productId: data.productId,
-      variantId: data.variantId || null,
-    },
-  });
+  let query = supabase
+    .from('product_media')
+    .select('*', { count: 'exact', head: true })
+    .eq('productId', data.productId);
+
+  if (data.variantId) {
+    query = query.eq('variantId', data.variantId);
+  } else {
+    query = query.is('variantId', null);
+  }
+
+  const { count: existingMediaCount } = await query;
 
   // If this is the first media, make it default automatically (unless explicitly set to false)
   const shouldBeDefault = data.isDefault ?? (existingMediaCount === 0);
 
   // If this is set as default, unset any existing default for the same product/variant
   if (shouldBeDefault) {
-    await prisma.productMedia.updateMany({
-      where: {
-        productId: data.productId,
-        variantId: data.variantId || null,
-        isDefault: true,
-      },
-      data: {
-        isDefault: false,
-      },
-    });
+    let updateQuery = supabase
+      .from('product_media')
+      .update({ isDefault: false })
+      .eq('productId', data.productId)
+      .eq('isDefault', true);
+
+    if (data.variantId) {
+      updateQuery = updateQuery.eq('variantId', data.variantId);
+    } else {
+      updateQuery = updateQuery.is('variantId', null);
+    }
+
+    await updateQuery;
   }
 
-  const media = await prisma.productMedia.create({
-    data: {
+  // Create media
+  const mediaId = randomUUID();
+  const { data: media, error } = await supabase
+    .from('product_media')
+    .insert({
+      id: mediaId,
       productId: data.productId,
-      variantId: data.variantId,
+      variantId: data.variantId || null,
       type: data.type,
       url: data.url,
-      alt: data.alt,
+      alt: data.alt || null,
       order: data.order ?? 0,
       isDefault: shouldBeDefault,
-    },
-  });
+    })
+    .select()
+    .single();
+
+  if (error || !media) {
+    log.error('Failed to add product media', { error });
+    throw new Error('خطا در افزودن رسانه');
+  }
 
   return media;
 }
@@ -662,12 +902,21 @@ export async function addProductMedia(data: {
  * Get all media for a product
  */
 export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
-  const media = await prisma.productMedia.findMany({
-    where: { productId },
-    orderBy: MEDIA_ORDER_BY,
-  });
+  const supabase = createClient();
 
-  return media;
+  const { data: media, error } = await supabase
+    .from('product_media')
+    .select('*')
+    .eq('productId', productId)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  if (error) {
+    log.error('Failed to fetch product media', { productId, error });
+    throw new Error('خطا در دریافت رسانه‌ها');
+  }
+
+  return media || [];
 }
 
 /**
@@ -677,35 +926,48 @@ export async function updateProductMedia(
   id: string,
   data: Partial<{ alt: string; order: number; isDefault: boolean }>
 ): Promise<ProductMedia> {
-  // Get the media to find its productId and variantId
-  const existingMedia = await prisma.productMedia.findUnique({
-    where: { id },
-    select: { productId: true, variantId: true },
-  });
+  const supabase = createClient();
 
-  if (!existingMedia) {
+  // Get the media to find its productId and variantId
+  const { data: existingMedia, error: fetchError } = await supabase
+    .from('product_media')
+    .select('productId, variantId')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingMedia) {
     throw new Error('رسانه یافت نشد');
   }
 
   // If setting as default, unset any existing default for the same product/variant
   if (data.isDefault) {
-    await prisma.productMedia.updateMany({
-      where: {
-        productId: existingMedia.productId,
-        variantId: existingMedia.variantId,
-        isDefault: true,
-        id: { not: id }, // Don't update the current media
-      },
-      data: {
-        isDefault: false,
-      },
-    });
+    let updateQuery = supabase
+      .from('product_media')
+      .update({ isDefault: false })
+      .eq('productId', existingMedia.productId)
+      .eq('isDefault', true)
+      .neq('id', id);
+
+    if (existingMedia.variantId) {
+      updateQuery = updateQuery.eq('variantId', existingMedia.variantId);
+    } else {
+      updateQuery = updateQuery.is('variantId', null);
+    }
+
+    await updateQuery;
   }
 
-  const media = await prisma.productMedia.update({
-    where: { id },
-    data,
-  });
+  const { data: media, error } = await supabase
+    .from('product_media')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !media) {
+    log.error('Failed to update product media', { id, error });
+    throw new Error('خطا در بروزرسانی رسانه');
+  }
 
   return media;
 }
@@ -714,35 +976,50 @@ export async function updateProductMedia(
  * Delete product media
  */
 export async function deleteProductMedia(id: string): Promise<DeleteResult> {
-  // Get the media being deleted to check if it's the default
-  const media = await prisma.productMedia.findUnique({
-    where: { id },
-    select: { productId: true, variantId: true, isDefault: true },
-  });
+  const supabase = createClient();
 
-  if (!media) {
+  // Get the media being deleted to check if it's the default
+  const { data: media, error: fetchError } = await supabase
+    .from('product_media')
+    .select('productId, variantId, isDefault')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !media) {
     throw new Error('رسانه یافت نشد');
   }
 
-  await prisma.productMedia.delete({
-    where: { id },
-  });
+  const { error } = await supabase.from('product_media').delete().eq('id', id);
+
+  if (error) {
+    log.error('Failed to delete product media', { id, error });
+    throw new Error('خطا در حذف رسانه');
+  }
 
   // If the deleted media was the default, set the first remaining media as default
   if (media.isDefault) {
-    const firstRemainingMedia = await prisma.productMedia.findFirst({
-      where: {
-        productId: media.productId,
-        variantId: media.variantId,
-      },
-      orderBy: MEDIA_ORDER_BY,
-    });
+    let selectQuery = supabase
+      .from('product_media')
+      .select('*')
+      .eq('productId', media.productId);
+
+    if (media.variantId) {
+      selectQuery = selectQuery.eq('variantId', media.variantId);
+    } else {
+      selectQuery = selectQuery.is('variantId', null);
+    }
+
+    const { data: firstRemainingMedia } = await selectQuery
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true })
+      .limit(1)
+      .single();
 
     if (firstRemainingMedia) {
-      await prisma.productMedia.update({
-        where: { id: firstRemainingMedia.id },
-        data: { isDefault: true },
-      });
+      await supabase
+        .from('product_media')
+        .update({ isDefault: true })
+        .eq('id', firstRemainingMedia.id);
     }
   }
 
@@ -759,25 +1036,35 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
 export async function updateProductStockFromVariants(productId: string): Promise<void> {
   log.info('Updating product stock from variants', { productId });
 
+  const supabase = createClient();
+
   // Get all variants for this product
-  const variants = await prisma.productVariant.findMany({
-    where: { productId },
-    select: { stock: true },
-  });
+  const { data: variants, error } = await supabase
+    .from('product_variants')
+    .select('stock')
+    .eq('productId', productId);
+
+  if (error) {
+    log.error('Failed to fetch variants for stock calculation', { productId, error });
+    return;
+  }
 
   // Only update if product has variants
-  if (variants.length > 0) {
+  if (variants && variants.length > 0) {
     const totalStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
 
-    await prisma.product.update({
-      where: { id: productId },
-      data: { stock: totalStock },
-    });
+    await supabase
+      .from('products')
+      .update({
+        stock: totalStock,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', productId);
 
     log.info('Product stock updated from variants', {
       productId,
       variantCount: variants.length,
-      totalStock
+      totalStock,
     });
   }
 }
@@ -786,18 +1073,36 @@ export async function updateProductStockFromVariants(productId: string): Promise
  * Get all variants for a product (ordered by 'order' field)
  */
 export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
-  const variants = await prisma.productVariant.findMany({
-    where: { productId },
-    include: {
-      media: VARIANT_MEDIA_INCLUDE,
-    },
-    orderBy: [
-      { order: 'asc' },
-      { createdAt: 'asc' },
-    ],
-  });
+  const supabase = createClient();
 
-  return variants;
+  const { data: variants, error } = await supabase
+    .from('product_variants')
+    .select('*')
+    .eq('productId', productId)
+    .order('order', { ascending: true });
+
+  if (error) {
+    log.error('Failed to fetch product variants', { productId, error });
+    throw new Error('خطا در دریافت واریانت‌ها');
+  }
+
+  // Fetch media for each variant
+  const variantsWithMedia: VariantWithMedia[] = [];
+  for (const variant of variants || []) {
+    const { data: media } = await supabase
+      .from('product_media')
+      .select('*')
+      .eq('variantId', variant.id)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
+
+    variantsWithMedia.push({
+      ...variant,
+      media: media || [],
+    });
+  }
+
+  return variantsWithMedia;
 }
 
 /**
@@ -817,11 +1122,15 @@ export async function createProductVariant(data: {
 }): Promise<VariantWithMedia> {
   log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
 
+  const supabase = createClient();
+
   // Validate SKU uniqueness if provided
   if (data.sku) {
-    const existing = await prisma.productVariant.findUnique({
-      where: { sku: data.sku },
-    });
+    const { data: existing } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('sku', data.sku)
+      .single();
 
     if (existing) {
       throw new Error('SKU قبلاً ثبت شده است');
@@ -831,38 +1140,52 @@ export async function createProductVariant(data: {
   // Auto-assign order if not provided (append to end)
   let order = data.order;
   if (order === undefined) {
-    const maxOrder = await prisma.productVariant.findFirst({
-      where: { productId: data.productId },
-      orderBy: { order: 'desc' },
-      select: { order: true },
-    });
-    order = (maxOrder?.order ?? -1) + 1;
+    const { data: maxOrderVariant } = await supabase
+      .from('product_variants')
+      .select('order')
+      .eq('productId', data.productId)
+      .order('order', { ascending: false })
+      .limit(1)
+      .single();
+
+    order = (maxOrderVariant?.order ?? -1) + 1;
   }
 
-  const variant = await prisma.productVariant.create({
-    data: {
+  // Create variant
+  const variantId = randomUUID();
+  const { data: variant, error } = await supabase
+    .from('product_variants')
+    .insert({
+      id: variantId,
       productId: data.productId,
       name: data.name,
-      sku: data.sku,
-      color: data.color,
-      size: data.size,
-      material: data.material,
+      sku: data.sku || null,
+      color: data.color || null,
+      size: data.size || null,
+      material: data.material || null,
       priceAdjust: data.priceAdjust || 0,
       stock: data.stock,
       order,
       isActive: data.isActive !== undefined ? data.isActive : true,
-    },
-    include: {
-      media: VARIANT_MEDIA_INCLUDE,
-    },
-  });
+      updatedAt: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error || !variant) {
+    log.error('Failed to create product variant', { error });
+    throw new Error('خطا در ایجاد واریانت');
+  }
 
   // Update parent product stock
   await updateProductStockFromVariants(data.productId);
 
   log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId, order });
 
-  return variant;
+  return {
+    ...variant,
+    media: [],
+  };
 }
 
 /**
@@ -883,34 +1206,46 @@ export async function updateProductVariant(
 ): Promise<VariantWithMedia> {
   log.info('Updating product variant', { variantId: id, data });
 
-  // Get the variant first to know which product to update
-  const existingVariant = await prisma.productVariant.findUnique({
-    where: { id },
-    select: { productId: true },
-  });
+  const supabase = createClient();
 
-  if (!existingVariant) {
+  // Get the variant first to know which product to update
+  const { data: existingVariant, error: fetchError } = await supabase
+    .from('product_variants')
+    .select('productId')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingVariant) {
     throw new Error('واریانت محصول یافت نشد');
   }
 
   // Validate SKU uniqueness if being updated
   if (data.sku) {
-    const existing = await prisma.productVariant.findUnique({
-      where: { sku: data.sku },
-    });
+    const { data: existing } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('sku', data.sku)
+      .single();
 
     if (existing && existing.id !== id) {
       throw new Error('SKU قبلاً ثبت شده است');
     }
   }
 
-  const variant = await prisma.productVariant.update({
-    where: { id },
-    data,
-    include: {
-      media: VARIANT_MEDIA_INCLUDE,
-    },
-  });
+  const { data: variant, error } = await supabase
+    .from('product_variants')
+    .update({
+      ...data,
+      updatedAt: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !variant) {
+    log.error('Failed to update product variant', { id, error });
+    throw new Error('خطا در بروزرسانی واریانت');
+  }
 
   // Update parent product stock if variant stock was changed
   if (data.stock !== undefined) {
@@ -919,7 +1254,18 @@ export async function updateProductVariant(
 
   log.info('Product variant updated successfully', { variantId: id, productId: existingVariant.productId });
 
-  return variant;
+  // Fetch media for the variant
+  const { data: media } = await supabase
+    .from('product_media')
+    .select('*')
+    .eq('variantId', id)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  return {
+    ...variant,
+    media: media || [],
+  };
 }
 
 /**
@@ -928,33 +1274,45 @@ export async function updateProductVariant(
 export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   log.info('Deleting product variant', { variantId: id });
 
-  // Get the variant first to know which product to update
-  const existingVariant = await prisma.productVariant.findUnique({
-    where: { id },
-    select: { productId: true, order: true },
-  });
+  const supabase = createClient();
 
-  if (!existingVariant) {
+  // Get the variant first to know which product to update
+  const { data: existingVariant, error: fetchError } = await supabase
+    .from('product_variants')
+    .select('productId, order')
+    .eq('id', id)
+    .single();
+
+  if (fetchError || !existingVariant) {
     throw new Error('واریانت محصول یافت نشد');
   }
 
   // Delete the variant
-  await prisma.productVariant.delete({
-    where: { id },
-  });
+  const { error } = await supabase.from('product_variants').delete().eq('id', id);
+
+  if (error) {
+    log.error('Failed to delete product variant', { id, error });
+    throw new Error('خطا در حذف واریانت');
+  }
 
   // Renumber remaining variants to fill the gap
-  await prisma.productVariant.updateMany({
-    where: {
-      productId: existingVariant.productId,
-      order: { gt: existingVariant.order },
-    },
-    data: {
-      order: {
-        decrement: 1,
-      },
-    },
-  });
+  const { data: remainingVariants } = await supabase
+    .from('product_variants')
+    .select('id, order')
+    .eq('productId', existingVariant.productId)
+    .gt('order', existingVariant.order);
+
+  if (remainingVariants && remainingVariants.length > 0) {
+    for (const variant of remainingVariants) {
+      await supabase
+        .from('product_variants')
+        .update({
+          order: variant.order - 1,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', variant.id);
+    }
+  }
 
   // Update parent product stock after deletion
   await updateProductStockFromVariants(existingVariant.productId);
@@ -974,15 +1332,18 @@ export async function reorderProductVariants(
 ): Promise<void> {
   log.info('Reordering product variants', { productId, count: variantOrders.length });
 
-  // Use transaction to ensure atomicity
-  await prisma.$transaction(
-    variantOrders.map(({ id, order }) =>
-      prisma.productVariant.update({
-        where: { id },
-        data: { order },
+  const supabase = createClient();
+
+  // Update each variant's order
+  for (const { id, order } of variantOrders) {
+    await supabase
+      .from('product_variants')
+      .update({
+        order,
+        updatedAt: new Date().toISOString(),
       })
-    )
-  );
+      .eq('id', id);
+  }
 
   log.info('Product variants reordered successfully', { productId });
 }
@@ -997,15 +1358,18 @@ export async function reorderProducts(
 ): Promise<void> {
   log.info('Reordering products', { count: productOrders.length });
 
-  // Use transaction to ensure atomicity
-  await prisma.$transaction(
-    productOrders.map(({ id, displayOrder }) =>
-      prisma.product.update({
-        where: { id },
-        data: { displayOrder },
+  const supabase = createClient();
+
+  // Update each product's displayOrder
+  for (const { id, displayOrder } of productOrders) {
+    await supabase
+      .from('products')
+      .update({
+        displayOrder,
+        updatedAt: new Date().toISOString(),
       })
-    )
-  );
+      .eq('id', id);
+  }
 
   // Invalidate product cache after reordering
   await invalidateProductCache();

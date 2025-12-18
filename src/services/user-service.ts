@@ -1,12 +1,11 @@
-import prisma from "@/lib/prisma/client";
+import { createClient } from "@/lib/supabase/server";
+import { randomUUID } from "crypto";
 import { createFirstTimePromoCode } from "./promo-service";
-import { Role } from "@prisma/client";
 import { log } from "@/lib/logger";
 
 // Import utilities from modular structure
 import {
   queryUser,
-  userSelectWithoutPassword,
   checkUserExists,
   type UserInfo,
 } from "./user-service/queries";
@@ -28,10 +27,11 @@ import {
 
 type UserWithoutPassword = Omit<{
   id: string;
+  uid: string;
   email: string | null;
   phone: string | null;
   name: string;
-  role: Role;
+  role: 'USER' | 'ADMIN';
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -49,17 +49,21 @@ export { validateEmail, validatePassword, validatePhone, detectIdentifierType };
  * where users created at similar times could get duplicate UIDs
  */
 export async function generateNextUID(): Promise<string> {
+  const supabase = createClient();
+
   // Get the user with the highest UID number (ordered DESC by uid field)
-  const lastUser = await prisma.user.findFirst({
-    orderBy: { uid: 'desc' },
-    select: { uid: true },
-  });
+  const { data, error } = await supabase
+    .from('users')
+    .select('uid')
+    .order('uid', { ascending: false })
+    .limit(1)
+    .single();
 
   let nextNumber = 1;
 
-  if (lastUser?.uid) {
+  if (!error && data?.uid) {
     // Extract number from UID (e.g., "U-000123" -> 123)
-    const match = lastUser.uid.match(/^U-(\d+)$/);
+    const match = data.uid.match(/^U-(\d+)$/);
     if (match) {
       nextNumber = parseInt(match[1], 10) + 1;
     }
@@ -117,6 +121,8 @@ export async function createUser(data: {
     // Hash password if provided
     const hashedPassword = password ? await hashPassword(password) : null;
 
+    const supabase = createClient();
+
     // Create user with retry logic for UID conflicts (race condition handling)
     let user;
     let retries = 0;
@@ -128,8 +134,11 @@ export async function createUser(data: {
         const uid = await generateNextUID();
 
         // Attempt to create user
-        user = await prisma.user.create({
-          data: {
+        const now = new Date().toISOString();
+        const { data: createdUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: randomUUID(),
             uid,
             email: email || null,
             phone: phone || null,
@@ -137,38 +146,40 @@ export async function createUser(data: {
             name,
             role: "USER",
             isVerified: !!phone, // Phone users are verified via OTP
-          },
-        });
+            updatedAt: now,
+          })
+          .select()
+          .single();
 
+        if (createError) {
+          // Check if error is due to unique constraint violation on UID
+          if (createError.code === '23505' && createError.message?.includes('uid')) {
+            // UID conflict - retry with new UID
+            retries++;
+            log.warn('UID conflict detected, retrying', { retries, email, phone });
+
+            if (retries >= maxRetries) {
+              log.error('Max retries reached for UID generation', { email, phone });
+              throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
+            }
+
+            // Wait a bit before retrying to reduce collision probability
+            await new Promise(resolve => setTimeout(resolve, 100 * retries));
+            continue;
+          }
+
+          // Other error - throw
+          throw createError;
+        }
+
+        user = createdUser;
         // Success - break out of retry loop
         break;
       } catch (error) {
-        // Check if error is due to unique constraint violation on UID
-        if (error instanceof Error &&
-            'code' in error &&
-            error.code === 'P2002' &&
-            'meta' in error &&
-            typeof error.meta === 'object' &&
-            error.meta !== null &&
-            'target' in error.meta &&
-            Array.isArray(error.meta.target) &&
-            error.meta.target.includes('uid')) {
-          // UID conflict - retry with new UID
-          retries++;
-          log.warn('UID conflict detected, retrying', { retries, email, phone });
-
-          if (retries >= maxRetries) {
-            log.error('Max retries reached for UID generation', { email, phone });
-            throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
-          }
-
-          // Wait a bit before retrying to reduce collision probability
-          await new Promise(resolve => setTimeout(resolve, 100 * retries));
-          continue;
+        // If it's not a UID conflict error, rethrow
+        if (retries >= maxRetries || !(error instanceof Error && error.message?.includes('uid'))) {
+          throw error;
         }
-
-        // Other error - rethrow
-        throw error;
       }
     }
 
@@ -188,14 +199,16 @@ export async function createUser(data: {
     const identifier = phone || email;
     if (identifier) {
       try {
-        const deletedCount = await prisma.oTPVerification.deleteMany({
-          where: { identifier }
-        });
-        if (deletedCount.count > 0) {
+        const { count, error: deleteError } = await supabase
+          .from('otp_verifications')
+          .delete({ count: 'exact' })
+          .eq('identifier', identifier);
+
+        if (!deleteError && count && count > 0) {
           log.info('Cleaned up OTP records after user creation', {
             userId: user.id,
             identifier,
-            count: deletedCount.count,
+            count,
           });
         }
       } catch (error) {
@@ -240,10 +253,18 @@ export async function createUser(data: {
       // Don't fail user creation if promo code fails
     }
 
-    // Return user without password - destructure to exclude it
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    // Return user without password - convert dates to Date objects
+    return {
+      id: user.id,
+      uid: user.uid,
+      email: user.email,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: new Date(user.createdAt),
+      updatedAt: new Date(user.updatedAt),
+    };
   } catch (error) {
     log.error('Failed to create user', {
       email,
@@ -300,13 +321,21 @@ export async function updateUserShippingInfo(userId: string, data: {
   log.info('Updating user shipping info', { userId });
 
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
+    const supabase = createClient();
+
+    const { error } = await supabase
+      .from('users')
+      .update({
         shippingAddress: data.shippingAddress,
         postalCode: data.postalCode,
-      },
-    });
+      })
+      .eq('id', userId);
+
+    if (error) {
+      log.error('Failed to update user shipping info', { userId, error });
+      // Don't throw error - this is a non-critical update
+      return;
+    }
 
     log.info('User shipping info updated successfully', { userId });
   } catch (error) {
@@ -337,21 +366,37 @@ export async function updateUserProfile(userId: string, data: {
     // Validate phone uniqueness
     await validatePhoneUniqueness(data.phone, userId);
 
+    const supabase = createClient();
+
+    // Build update object
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress;
+    if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
+
     // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.email !== undefined && { email: data.email || null }),
-        ...(data.phone !== undefined && { phone: data.phone || null }),
-        ...(data.shippingAddress !== undefined && { shippingAddress: data.shippingAddress }),
-        ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
-      },
-      select: userSelectWithoutPassword,
-    });
+    const { data: updatedUser, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select('id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt')
+      .single();
+
+    if (error || !updatedUser) {
+      log.error('Failed to update user profile', { userId, error });
+      throw new Error('خطا در بروزرسانی پروفایل کاربر');
+    }
 
     log.info('User profile updated successfully', { userId });
-    return updatedUser;
+
+    // Convert dates
+    return {
+      ...updatedUser,
+      createdAt: new Date(updatedUser.createdAt),
+      updatedAt: new Date(updatedUser.updatedAt),
+    };
   } catch (error) {
     log.error('Failed to update user profile', {
       userId,
@@ -452,34 +497,39 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
   log.info('Linking orphaned guest transactions to user', { userId, phone });
 
   try {
-    // Find all guest transactions with this phone that don't have a userId
-    const orphanedTransactions = await prisma.transaction.findMany({
-      where: {
-        phone,
-        userId: null, // Orphaned transactions
-        isGuest: true,
-      },
-      select: { id: true, transactionCode: true },
-    });
+    const supabase = createClient();
 
-    if (orphanedTransactions.length === 0) {
+    // Find all guest transactions with this phone that don't have a userId
+    const { data: orphanedTransactions, error: fetchError } = await supabase
+      .from('transactions')
+      .select('id, transactionCode')
+      .eq('phone', phone)
+      .is('userId', null)
+      .eq('isGuest', true);
+
+    if (fetchError) {
+      log.error('Failed to fetch orphaned transactions', { userId, phone, error: fetchError });
+      return 0;
+    }
+
+    if (!orphanedTransactions || orphanedTransactions.length === 0) {
       log.info('No orphaned transactions found for user', { userId, phone });
       return 0;
     }
 
     // Update all orphaned transactions to link them to the user
     // Keep isGuest=true to indicate these were originally guest transactions
-    await prisma.transaction.updateMany({
-      where: {
-        phone,
-        userId: null,
-        isGuest: true,
-      },
-      data: {
-        userId,
-        // isGuest stays true to preserve history that this was a guest transaction
-      },
-    });
+    const { error: updateError } = await supabase
+      .from('transactions')
+      .update({ userId })
+      .eq('phone', phone)
+      .is('userId', null)
+      .eq('isGuest', true);
+
+    if (updateError) {
+      log.error('Failed to update orphaned transactions', { userId, phone, error: updateError });
+      return 0;
+    }
 
     log.info('Orphaned transactions linked successfully', {
       userId,
@@ -513,69 +563,101 @@ export async function getUserTransactions(userId: string, options?: {
   try {
     const { limit = 10, offset = 0, status } = options || {};
 
-    const where = {
-      userId,
-      ...(status && { status }),
-    };
+    const supabase = createClient();
 
-    const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
-        where,
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                  media: {
-                    where: { type: 'IMAGE' },
-                    orderBy: { order: 'asc' },
-                    take: 1,
-                    select: {
-                      url: true,
-                      alt: true,
-                    },
-                  },
-                },
-              },
-              variant: {
-                select: {
-                  id: true,
-                  name: true,
-                  color: true,
-                  size: true,
-                  material: true,
-                },
-              },
-            },
-          },
-          invoice: {
-            select: {
-              invoiceNumber: true,
-              generatedAt: true,
-              pdfUrl: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.transaction.count({ where }),
+    // Build query for count
+    let countQuery = supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('userId', userId);
+
+    if (status) {
+      countQuery = countQuery.eq('status', status);
+    }
+
+    // Build query for data with relations
+    let dataQuery = supabase
+      .from('transactions')
+      .select(`
+        *,
+        items:transaction_items(
+          *,
+          product:products(
+            id,
+            name,
+            price,
+            media:product_media(url, alt, type, order)
+          ),
+          variant:product_variants(
+            id,
+            name,
+            color,
+            size,
+            material
+          )
+        ),
+        invoice:invoices(
+          invoiceNumber,
+          generatedAt,
+          pdfUrl
+        )
+      `)
+      .eq('userId', userId)
+      .order('createdAt', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (status) {
+      dataQuery = dataQuery.eq('status', status);
+    }
+
+    const [{ count }, { data: transactions, error }] = await Promise.all([
+      countQuery,
+      dataQuery,
     ]);
+
+    if (error) {
+      log.error('Failed to fetch user transactions', { userId, error });
+      throw new Error('خطا در دریافت تراکنش‌های کاربر');
+    }
+
+    // Process transactions to include only first image for each product
+    const processedTransactions = (transactions || []).map(transaction => {
+      // Supabase returns invoice as an array due to the join, get first element
+      const invoiceData = Array.isArray(transaction.invoice) ? transaction.invoice[0] : transaction.invoice;
+
+      return {
+        ...transaction,
+        createdAt: new Date(transaction.createdAt),
+        updatedAt: new Date(transaction.updatedAt),
+        items: transaction.items?.map(item => ({
+          ...item,
+          product: item.product ? {
+            ...item.product,
+            media: item.product.media
+              ?.filter((m: { type: string }) => m.type === 'IMAGE')
+              .sort((a: { order: number }, b: { order: number }) => a.order - b.order)
+              .slice(0, 1) || []
+          } : null
+        })) || [],
+        invoice: invoiceData ? {
+          ...invoiceData,
+          generatedAt: new Date(invoiceData.generatedAt),
+        } : null,
+      };
+    });
+
+    const total = count || 0;
 
     log.info('User transactions fetched successfully', {
       userId,
-      count: transactions.length,
+      count: processedTransactions.length,
       total,
     });
 
     return {
-      transactions,
+      transactions: processedTransactions,
       total,
-      hasMore: offset + transactions.length < total,
+      hasMore: offset + processedTransactions.length < total,
     };
   } catch (error) {
     log.error('Failed to fetch user transactions', {

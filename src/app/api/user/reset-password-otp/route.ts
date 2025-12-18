@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
-import { verifyOTP } from '@/services/otp-service-supabase';
-import { resetPasswordWithOTP } from '@/services/user-service-supabase';
+import { verifyOTP } from '@/services/otp-service';
+import { resetPasswordWithOTP } from '@/services/user-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +32,7 @@ async function postHandler(req: Request) {
 
     // Get user's phone or email for OTP verification
     // We need to fetch from database to get the identifier
-    const { getUserById } = await import('@/services/user-service-supabase');
+    const { getUserById } = await import('@/services/user-service');
     const user = await getUserById(session.user.id);
 
     if (!user) {

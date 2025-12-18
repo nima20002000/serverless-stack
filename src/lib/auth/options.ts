@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { createClient } from "@/lib/supabase/server";
-import { detectIdentifierType } from "@/services/user-service-supabase";
+import { detectIdentifierType } from "@/services/user-service";
 
 // Extend the built-in types
 declare module "next-auth" {

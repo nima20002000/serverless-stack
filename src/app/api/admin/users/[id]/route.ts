@@ -5,7 +5,7 @@ import {
   getUserById,
   updateUserRole,
   deleteUser,
-} from '@/services/admin-service-supabase';
+} from '@/services/admin-service';
 
 export const dynamic = 'force-dynamic';
 

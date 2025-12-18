@@ -5,8 +5,8 @@ import {
   reduceProductStock,
   getTransactionWithVariants,
   linkTransactionToUser,
-} from '@/services/transaction-service-supabase';
-import { createUser, getUserByPhone } from '@/services/user-service-supabase';
+} from '@/services/transaction-service';
+import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { log } from '@/lib/logger';

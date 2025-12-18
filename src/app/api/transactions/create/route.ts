@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server';
 import {
   createTransaction,
   verifyStockAvailability,
-} from '@/services/transaction-service-supabase';
-import { getProductById } from '@/services/product-service-supabase';
-import { updateUserShippingInfo } from '@/services/user-service-supabase';
+} from '@/services/transaction-service';
+import { getProductById } from '@/services/product-service';
+import { updateUserShippingInfo } from '@/services/user-service';
 import {
   createPaymentRequest,
   getCallbackUrl,

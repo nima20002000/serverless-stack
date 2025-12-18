@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { createClient } from '@/lib/supabase/server';
 import { withLogging } from '@/lib/api/with-logging';
-import { updateUserProfile } from '@/services/user-service-supabase';
+import { updateUserProfile } from '@/services/user-service';
 
 export const dynamic = 'force-dynamic';
 

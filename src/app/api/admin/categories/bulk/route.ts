@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { bulkDeleteCategories, bulkUpdateCategories } from '@/services/category-service-supabase';
+import { bulkDeleteCategories, bulkUpdateCategories } from '@/services/category-service';
 
 export const dynamic = 'force-dynamic';
 

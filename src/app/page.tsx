@@ -25,14 +25,17 @@ export default async function Home() {
   ]);
 
   // Convert price and variant priceAdjust to number for display
+  // Also ensure images is always an array (not null)
   const featuredProducts = featuredProductsRaw.map(p => ({
     ...p,
     price: Number(p.price),
+    images: p.images || [],
     variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
   }));
   const discountedProducts = discountedProductsRaw.map(p => ({
     ...p,
     price: Number(p.price),
+    images: p.images || [],
     variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
   }));
 
@@ -173,7 +176,7 @@ export default async function Home() {
                       </p>
                     )}
                     <div className="text-sm text-purple-600 font-medium">
-                      {category._count?.products || 0} محصول
+                      محصولات
                     </div>
                   </div>
                 </Card>

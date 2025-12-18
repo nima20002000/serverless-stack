@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma/client";
+import { createClient } from "@/lib/supabase/server";
 import { log } from "@/lib/logger";
 
 /**
@@ -31,15 +31,19 @@ export async function verifyPassword(
  * Fetch user with password field (for password operations)
  */
 export async function getUserWithPassword(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      password: true,
-    },
-  });
+  const supabase = createClient();
 
-  return user;
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, password')
+    .eq('id', userId)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data;
 }
 
 /**
@@ -58,11 +62,18 @@ export async function updatePassword(
   // Hash password
   const hashedPassword = await hashPassword(newPassword);
 
+  const supabase = createClient();
+
   // Update in database
-  await prisma.user.update({
-    where: { id: userId },
-    data: { password: hashedPassword },
-  });
+  const { error } = await supabase
+    .from('users')
+    .update({ password: hashedPassword })
+    .eq('id', userId);
+
+  if (error) {
+    log.error('Failed to update password', { userId, error });
+    throw new Error('خطا در بروزرسانی رمز عبور');
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import prisma from "@/lib/prisma/client";
-import { Role } from "@prisma/client";
+import { randomUUID } from "crypto";
+import { createClient } from "@/lib/supabase/server";
 import { log } from "@/lib/logger";
 import { detectIdentifierType, generateNextUID, linkOrphanedTransactions } from "./user-service";
 
@@ -9,7 +9,7 @@ export interface AuthUser {
   email: string | null;
   phone: string | null;
   name: string;
-  role: Role;
+  role: 'USER' | 'ADMIN';
 }
 
 /**
@@ -34,14 +34,16 @@ export async function authenticateUser(
       throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
     }
 
-    // Find user by email or phone
-    const user = await prisma.user.findFirst({
-      where: identifierType === 'email'
-        ? { email: identifier }
-        : { phone: identifier }
-    });
+    const supabase = createClient();
 
-    if (!user) {
+    // Find user by email or phone
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq(identifierType === 'email' ? 'email' : 'phone', identifier)
+      .single();
+
+    if (error || !user) {
       log.warn("Login attempt with non-existent identifier", { identifier, identifierType });
       throw new Error("کاربری با این مشخصات یافت نشد");
     }
@@ -90,11 +92,15 @@ export async function authenticateUserByPhone(phone: string): Promise<AuthUser> 
   }
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { phone },
-    });
+    const supabase = createClient();
 
-    if (!user) {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('phone', phone)
+      .single();
+
+    if (error || !user) {
       log.warn("Login attempt with non-existent phone", { phone });
       throw new Error("کاربری با این شماره تلفن یافت نشد");
     }
@@ -137,6 +143,50 @@ export async function authenticateUserByPhone(phone: string): Promise<AuthUser> 
 }
 
 /**
+ * Authenticate user by email (OTP-verified, no password)
+ * This is called after OTP verification for email-based OTP login
+ * @param email User email address
+ * @returns Authenticated user data
+ * @throws Error if authentication fails
+ */
+export async function authenticateUserByEmail(email: string): Promise<AuthUser> {
+  if (!email) {
+    throw new Error("ایمیل الزامی است");
+  }
+
+  try {
+    const supabase = createClient();
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !user) {
+      log.warn("Login attempt with non-existent email", { email });
+      throw new Error("کاربری با این ایمیل یافت نشد");
+    }
+
+    log.info("User authenticated successfully via email", { email, userId: user.id });
+
+    return {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      name: user.name,
+      role: user.role,
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    log.error("Email authentication error", { email, error });
+    throw new Error("خطا در احراز هویت");
+  }
+}
+
+/**
  * Register a new user
  * @param name User name
  * @param email User email
@@ -154,10 +204,14 @@ export async function registerUser(
   }
 
   try {
+    const supabase = createClient();
+
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
 
     if (existingUser) {
       throw new Error("کاربری با این ایمیل قبلاً ثبت‌نام کرده است");
@@ -177,45 +231,50 @@ export async function registerUser(
         const uid = await generateNextUID();
 
         // Attempt to create user
-        user = await prisma.user.create({
-          data: {
+        const now = new Date().toISOString();
+        const { data: createdUser, error: createError } = await supabase
+          .from('users')
+          .insert({
+            id: randomUUID(),
             uid,
             name,
             email,
             password: hashedPassword,
-            role: Role.USER, // Default role
-          },
-        });
+            role: 'USER', // Default role
+            updatedAt: now,
+          })
+          .select()
+          .single();
 
+        if (createError) {
+          // Check if error is due to unique constraint violation on UID
+          if (createError.code === '23505' && createError.message?.includes('uid')) {
+            // UID conflict - retry with new UID
+            retries++;
+            log.warn('UID conflict detected during registration, retrying', { retries, email });
+
+            if (retries >= maxRetries) {
+              log.error('Max retries reached for UID generation during registration', { email });
+              throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
+            }
+
+            // Wait a bit before retrying to reduce collision probability
+            await new Promise(resolve => setTimeout(resolve, 100 * retries));
+            continue;
+          }
+
+          // Other error - throw
+          throw createError;
+        }
+
+        user = createdUser;
         // Success - break out of retry loop
         break;
       } catch (error) {
-        // Check if error is due to unique constraint violation on UID
-        if (error instanceof Error &&
-            'code' in error &&
-            error.code === 'P2002' &&
-            'meta' in error &&
-            typeof error.meta === 'object' &&
-            error.meta !== null &&
-            'target' in error.meta &&
-            Array.isArray(error.meta.target) &&
-            error.meta.target.includes('uid')) {
-          // UID conflict - retry with new UID
-          retries++;
-          log.warn('UID conflict detected during registration, retrying', { retries, email });
-
-          if (retries >= maxRetries) {
-            log.error('Max retries reached for UID generation during registration', { email });
-            throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
-          }
-
-          // Wait a bit before retrying to reduce collision probability
-          await new Promise(resolve => setTimeout(resolve, 100 * retries));
-          continue;
+        // If it's not a UID conflict error and we haven't exceeded retries, rethrow
+        if (retries >= maxRetries || !(error instanceof Error && error.message?.includes('uid'))) {
+          throw error;
         }
-
-        // Other error - rethrow
-        throw error;
       }
     }
 

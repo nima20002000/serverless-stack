@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveProducts, createProduct } from '@/services/product-service-supabase';
+import { getActiveProducts, createProduct } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';

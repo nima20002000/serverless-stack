@@ -8,9 +8,11 @@ export default async function ProductsPage() {
   const result = await getActiveProducts({ page: 1, perPage: 20 });
 
   // Serialize Decimal prices to numbers for client components
+  // Also ensure images is always an array (not null)
   const products = result.data.map((product) => ({
     ...product,
     price: Number(product.price),
+    images: product.images || [],
     discountPercent: product.discountPercent,
     isFeatured: product.isFeatured,
     variants: product.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),

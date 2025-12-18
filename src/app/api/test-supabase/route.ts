@@ -91,7 +91,7 @@ export async function GET() {
       userCount: count,
     });
   } catch (error) {
-    log.error('Unexpected error in test-supabase', { error });
+    log.error('Unexpected error in test', { error });
     return NextResponse.json(
       { success: false, error: String(error), stack: error instanceof Error ? error.stack : undefined },
       { status: 500 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getTransactionById } from '@/services/transaction-service-supabase';
+import { getTransactionById } from '@/services/transaction-service';
 
 export const dynamic = 'force-dynamic';
 

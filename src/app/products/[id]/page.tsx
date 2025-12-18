@@ -2,7 +2,10 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
-import { Product, ProductVariant } from '@prisma/client';
+import { Tables } from '@/lib/supabase/types';
+
+type Product = Tables<'products'>;
+type ProductVariant = Tables<'product_variants'>;
 import { cache } from 'react';
 
 // Use ISR for better performance - revalidate every 60 seconds
@@ -54,6 +57,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const serializedProduct = {
     ...product,
     price: Number(product.price),
+    images: product.images || [],
     discountPercent: product.discountPercent,
     hasVariants: product.hasVariants,
     isFeatured: product.isFeatured,

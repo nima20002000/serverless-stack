@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAllTags } from '@/services/tag-service-supabase';
+import { getAllTags } from '@/services/tag-service';
 import { withLogging } from '@/lib/api/with-logging';
 import { withCache } from '@/lib/api/with-cache';
 

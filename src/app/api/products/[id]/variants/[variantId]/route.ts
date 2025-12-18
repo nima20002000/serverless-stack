@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import {
   updateProductVariant,
   deleteProductVariant,
-} from '@/services/product-service-supabase';
+} from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
 
