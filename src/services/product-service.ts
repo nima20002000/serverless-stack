@@ -5,6 +5,7 @@ import { log } from '@/lib/logger';
 import { clearCachePattern } from '@/lib/redis/client';
 import { Database } from '@/types/supabase';
 import { randomUUID } from 'crypto';
+import { calculateDiscountedPrice } from '@/lib/utils/format';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -779,23 +780,9 @@ export async function updateStock(id: string, quantity: number): Promise<Product
 
 /**
  * Format price to Persian/Toman format
+ * Re-exported from utils for server component compatibility
  */
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
-}
-
-/**
- * Calculate discounted price
- */
-export function calculateDiscountedPrice(
-  basePrice: number,
-  discountPercent: number | null | undefined
-): number {
-  if (!discountPercent || discountPercent <= 0) {
-    return basePrice;
-  }
-  return basePrice * (1 - discountPercent / 100);
-}
+export { formatPrice, calculateDiscountedPrice } from '@/lib/utils/format';
 
 /**
  * Get price display info with discount

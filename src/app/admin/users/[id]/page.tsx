@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
 
 interface UserDetailPageProps {

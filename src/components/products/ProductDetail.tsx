@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';

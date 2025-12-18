@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/Modal';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
 import {
   UserIcon,
