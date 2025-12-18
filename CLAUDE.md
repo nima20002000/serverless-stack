@@ -355,6 +355,8 @@ This checks that all API routes and dynamic Server Component pages have the requ
 4. **Using LTR layout patterns** - Use RTL-aware Tailwind classes
 5. **Direct Prisma client imports** - Always use `@/lib/prisma/client` (singleton)
 6. **Upstash pattern limitations** - Can't use `KEYS *` pattern matching; clear specific keys
+7. **Supabase date handling** - Supabase returns dates as strings; convert to `Date` objects for Prisma type compatibility
+8. **Database schema defaults** - Database schema defaults are critical for proper Prisma type generation and runtime behavior
 
 ## Prisma Client Usage
 

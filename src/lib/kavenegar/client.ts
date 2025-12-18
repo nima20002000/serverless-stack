@@ -1,8 +1,13 @@
 import Kavenegar from 'kavenegar';
 import { log } from '@/lib/logger';
 
+const apiKey = process.env.KAVENEGAR_API_KEY;
+if (!apiKey) {
+  throw new Error('KAVENEGAR_API_KEY environment variable is required');
+}
+
 const api = Kavenegar.KavenegarApi({
-  apikey: process.env.KAVENEGAR_API_KEY!
+  apikey: apiKey
 });
 
 export interface SendOTPResult {

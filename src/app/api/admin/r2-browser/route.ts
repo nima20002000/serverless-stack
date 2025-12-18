@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(req.url);
     const prefix = searchParams.get('prefix') || undefined;
-    const maxKeys = searchParams.get('maxKeys') ? parseInt(searchParams.get('maxKeys')!) : 100;
+    const maxKeysParam = searchParams.get('maxKeys');
+    const maxKeys = maxKeysParam ? parseInt(maxKeysParam) : 100;
     const continuationToken = searchParams.get('continuationToken') || undefined;
 
     // List objects from R2

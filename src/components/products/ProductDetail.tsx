@@ -180,7 +180,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <>
             <span className="mx-2 text-gray-400">/</span>
             <button
-              onClick={() => router.push(`/products?category=${product.category!.slug}`)}
+              onClick={() => product.category && router.push(`/products?category=${product.category.slug}`)}
               className="text-blue-600 hover:text-blue-700"
             >
               {product.category.name}
