@@ -25,7 +25,8 @@ const getDatasourceUrl = () => {
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    // Disable query logging since we're migrating to Supabase
+    log: ["error"],
     datasources: {
       db: {
         url: getDatasourceUrl(),
