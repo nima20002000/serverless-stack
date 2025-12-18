@@ -79,7 +79,7 @@ type TransactionWithDetails = {
     id: string;
     transactionId: string;
     invoiceNumber: string;
-    createdAt: string;
+    generatedAt: string;
   } | null;
 };
 
@@ -356,7 +356,7 @@ export async function getAllTransactions(
           product:products(id, name),
           variant:product_variants(id, name, color, size, material)
         ),
-        invoice:invoices(id, transactionId, invoiceNumber, createdAt)
+        invoice:invoices(id, transactionId, invoiceNumber, generatedAt)
       `,
         { count: 'exact' }
       );
@@ -426,7 +426,7 @@ export async function getTransactionById(id: string): Promise<TransactionWithDet
           product:products(*),
           variant:product_variants(id, name, color, size, material)
         ),
-        invoice:invoices(id, transactionId, invoiceNumber, createdAt)
+        invoice:invoices(id, transactionId, invoiceNumber, generatedAt)
       `
       )
       .eq('id', id)
