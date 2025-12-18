@@ -51,7 +51,7 @@ interface Transaction {
   invoice: {
     id: string;
     invoiceNumber: string;
-    createdAt: string;
+    generatedAt: string;
   } | null;
 }
 

@@ -58,7 +58,7 @@ interface Transaction {
   invoice: {
     id: string;
     invoiceNumber: string;
-    createdAt: string;
+    generatedAt: string;
   } | null;
 }
 
@@ -356,7 +356,7 @@ export default function TransactionDetailModal({
                   <div className="text-sm text-gray-600">تاریخ صدور:</div>
                   <div className="text-sm">
                     {format(
-                      new Date(transaction.invoice.createdAt),
+                      new Date(transaction.invoice.generatedAt),
                       'yyyy/MM/dd - HH:mm'
                     )}
                   </div>
