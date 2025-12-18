@@ -2,9 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Policy
+
+**NEVER create extensive documentation in this project unless explicitly requested by the user.** This includes:
+- Detailed README files
+- API documentation
+- Architecture documents
+- Inline code documentation (unless replacing existing docs)
+
+Keep documentation minimal and only create when specifically asked.
+
 ## Project Overview
 
 Kitia is a Persian (Farsi) e-commerce platform built with Next.js 14 App Router, featuring RTL support, payment integration, and comprehensive admin capabilities. The application uses a service layer architecture with business logic centralized in service files.
+
+### Migration Status (Prisma → Supabase)
+
+**Branch**: `migration/prisma-to-supabase`
+**Status**: ✅ Phase 6 Complete - All admin routes migrated
+**Database**: Connected to Supabase Preview (gozxjxtnrbuurmstjydo)
+
+**Testing Results (2025-12-18)**:
+- ✅ Admin authentication working
+- ✅ Admin stats endpoint
+- ✅ Product management (CRUD + bulk operations)
+- ✅ Transaction/order management
+- ✅ User management (CRUD + bulk operations)
+- ✅ Category management (CRUD + bulk operations)
+- ✅ Settings management (CRUD)
+- ✅ Build succeeds without errors
+- ✅ All Phase 6 Supabase services functional
+
+**Note**: This branch should NOT be merged to main until production testing is complete.
 
 ## Essential Commands
 
