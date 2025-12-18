@@ -89,7 +89,7 @@ async function invalidateProductCache(): Promise<void> {
  * Fetch product with all relations
  */
 async function fetchProductWithRelations(productId: string): Promise<ProductWithRelations | null> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get product with category
   const { data: product, error } = await supabase
@@ -181,7 +181,7 @@ export async function getAllProducts(options?: {
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
 
-  const supabase = await createClient();
+  const supabase = createClient();
   let query = supabase.from('products').select('*', { count: 'exact' });
 
   // Base isActive filter
@@ -253,7 +253,7 @@ export async function getFeaturedProducts(options?: {
   limit?: number;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: products, error } = await supabase
     .from('products')
@@ -289,7 +289,7 @@ export async function getDiscountedProducts(options?: {
   limit?: number;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: products, error } = await supabase
     .from('products')
@@ -329,7 +329,7 @@ export async function getProductById(
   includeRelations = false,
   includeInactive = false
 ): Promise<Product | ProductWithRelations> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   if (!includeRelations) {
     // Simple query without relations
@@ -377,7 +377,7 @@ export async function searchProducts(query: string, options?: {
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: products, count, error } = await supabase
     .from('products')
@@ -438,7 +438,7 @@ export async function createProduct(data: {
       throw new Error('موجودی نمی‌تواند منفی باشد');
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Generate UUID for the product
     const productId = randomUUID();
@@ -527,7 +527,7 @@ export async function updateProduct(
     isActive: boolean;
   }>
 ): Promise<ProductWithRelations> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Check if product exists
   const { data: existingProduct } = await supabase
@@ -607,7 +607,7 @@ export async function updateProduct(
  * Use soft delete (isActive = false) instead for products with transaction history.
  */
 export async function deleteProduct(id: string): Promise<DeleteResult> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Check if product exists
   const { data: existingProduct } = await supabase
@@ -658,7 +658,7 @@ export async function updateStock(id: string, quantity: number): Promise<Product
   log.info('Updating product stock', { productId: id, quantity });
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: product, error: fetchError } = await supabase
       .from('products')
@@ -775,7 +775,7 @@ export async function addProductMedia(data: {
   order?: number;
   isDefault?: boolean;
 }): Promise<ProductMedia> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Check if there are any existing media for this product/variant
   let query = supabase
@@ -840,7 +840,7 @@ export async function addProductMedia(data: {
  * Get all media for a product
  */
 export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: media, error } = await supabase
     .from('product_media')
@@ -864,7 +864,7 @@ export async function updateProductMedia(
   id: string,
   data: Partial<{ alt: string; order: number; isDefault: boolean }>
 ): Promise<ProductMedia> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get the media to find its productId and variantId
   const { data: existingMedia, error: fetchError } = await supabase
@@ -914,7 +914,7 @@ export async function updateProductMedia(
  * Delete product media
  */
 export async function deleteProductMedia(id: string): Promise<DeleteResult> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get the media being deleted to check if it's the default
   const { data: media, error: fetchError } = await supabase
@@ -974,7 +974,7 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
 export async function updateProductStockFromVariants(productId: string): Promise<void> {
   log.info('Updating product stock from variants', { productId });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get all variants for this product
   const { data: variants, error } = await supabase
@@ -1011,7 +1011,7 @@ export async function updateProductStockFromVariants(productId: string): Promise
  * Get all variants for a product (ordered by 'order' field)
  */
 export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: variants, error } = await supabase
     .from('product_variants')
@@ -1060,7 +1060,7 @@ export async function createProductVariant(data: {
 }): Promise<VariantWithMedia> {
   log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Validate SKU uniqueness if provided
   if (data.sku) {
@@ -1144,7 +1144,7 @@ export async function updateProductVariant(
 ): Promise<VariantWithMedia> {
   log.info('Updating product variant', { variantId: id, data });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get the variant first to know which product to update
   const { data: existingVariant, error: fetchError } = await supabase
@@ -1212,7 +1212,7 @@ export async function updateProductVariant(
 export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   log.info('Deleting product variant', { variantId: id });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get the variant first to know which product to update
   const { data: existingVariant, error: fetchError } = await supabase
@@ -1270,7 +1270,7 @@ export async function reorderProductVariants(
 ): Promise<void> {
   log.info('Reordering product variants', { productId, count: variantOrders.length });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Update each variant's order
   for (const { id, order } of variantOrders) {
@@ -1296,7 +1296,7 @@ export async function reorderProducts(
 ): Promise<void> {
   log.info('Reordering products', { count: productOrders.length });
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Update each product's displayOrder
   for (const { id, displayOrder } of productOrders) {

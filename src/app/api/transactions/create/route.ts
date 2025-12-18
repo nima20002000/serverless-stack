@@ -179,7 +179,7 @@ async function postHandler(req: NextRequest) {
 
       // If variant is specified, add variant's price adjustment
       if (item.variantId) {
-        const supabase = await createClient();
+        const supabase = createClient();
         const { data: variant, error: variantError } = await supabase
           .from('product_variants')
           .select('priceAdjust, isActive')
@@ -260,7 +260,7 @@ async function postHandler(req: NextRequest) {
 
         // Only perform update if there are fields to update
         if (Object.keys(updateData).length > 0) {
-          const supabase = await createClient();
+          const supabase = createClient();
           const { error: updateError } = await supabase
             .from('users')
             .update(updateData)
@@ -288,7 +288,7 @@ async function postHandler(req: NextRequest) {
     });
 
     // Update transaction with Zarinpal authority
-    const supabaseTx = await createClient();
+    const supabaseTx = createClient();
     await supabaseTx
       .from('transactions')
       .update({ zarinpalAuthority: paymentRequest.authority })

@@ -49,7 +49,7 @@ export { validateEmail, validatePassword, validatePhone, detectIdentifierType };
  * where users created at similar times could get duplicate UIDs
  */
 export async function generateNextUID(): Promise<string> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get the user with the highest UID number (ordered DESC by uid field)
   const { data, error } = await supabase
@@ -121,7 +121,7 @@ export async function createUser(data: {
     // Hash password if provided
     const hashedPassword = password ? await hashPassword(password) : null;
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Create user with retry logic for UID conflicts (race condition handling)
     let user;
@@ -321,7 +321,7 @@ export async function updateUserShippingInfo(userId: string, data: {
   log.info('Updating user shipping info', { userId });
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { error } = await supabase
       .from('users')
@@ -366,7 +366,7 @@ export async function updateUserProfile(userId: string, data: {
     // Validate phone uniqueness
     await validatePhoneUniqueness(data.phone, userId);
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Build update object
     const updateData: Record<string, unknown> = {};
@@ -497,7 +497,7 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
   log.info('Linking orphaned guest transactions to user', { userId, phone });
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Find all guest transactions with this phone that don't have a userId
     const { data: orphanedTransactions, error: fetchError } = await supabase
@@ -563,7 +563,7 @@ export async function getUserTransactions(userId: string, options?: {
   try {
     const { limit = 10, offset = 0, status } = options || {};
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Build query for count
     let countQuery = supabase

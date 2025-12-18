@@ -31,7 +31,7 @@ export async function verifyPassword(
  * Fetch user with password field (for password operations)
  */
 export async function getUserWithPassword(userId: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('users')
@@ -62,7 +62,7 @@ export async function updatePassword(
   // Hash password
   const hashedPassword = await hashPassword(newPassword);
 
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Update in database
   const { error } = await supabase

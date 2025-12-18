@@ -41,7 +41,7 @@ export async function createTransaction(data: {
   };
 }) {
   const transactionCode = generateTransactionCode();
-  const supabase = await createClient();
+  const supabase = createClient();
   const now = new Date().toISOString();
 
   log.info('Creating transaction', {
@@ -146,7 +146,7 @@ export async function updateTransactionStatus(
   zarinpalAuthority?: string,
   refId?: number
 ) {
-  const supabase = await createClient();
+  const supabase = createClient();
   const now = new Date().toISOString();
 
   log.info('Updating transaction status', {
@@ -207,7 +207,7 @@ export async function updateTransactionStatus(
  * Get transaction by ID
  */
 export async function getTransactionById(id: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: transaction, error } = await supabase
     .from('transactions')
@@ -244,7 +244,7 @@ export async function getTransactionById(id: string) {
  * Get transaction by transaction code
  */
 export async function getTransactionByCode(code: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: transaction, error } = await supabase
     .from('transactions')
@@ -281,7 +281,7 @@ export async function getTransactionByCode(code: string) {
  * Get transaction by Zarinpal authority
  */
 export async function getTransactionByAuthority(authority: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: transaction, error } = await supabase
     .from('transactions')
@@ -308,7 +308,7 @@ export async function getTransactionByAuthority(authority: string) {
  * Get transaction by ID with variants (for email confirmations)
  */
 export async function getTransactionWithVariants(id: string) {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data: transaction, error } = await supabase
     .from('transactions')
@@ -347,7 +347,7 @@ export async function getTransactionWithVariants(id: string) {
  * Link transaction to user (for guest checkout account creation)
  */
 export async function linkTransactionToUser(transactionId: string, userId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const now = new Date().toISOString();
 
   log.info('Linking transaction to user', { transactionId, userId });
@@ -387,7 +387,7 @@ export async function getUserTransactions(
     perPage?: number;
   }
 ): Promise<PaginatedResponse<Record<string, unknown>>> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
@@ -446,7 +446,7 @@ export async function getUserTransactions(
  * Uses sequential updates with error handling (no RPC functions yet)
  */
 export async function reduceProductStock(transactionId: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const now = new Date().toISOString();
 
   log.info('Reducing product/variant stock for transaction', { transactionId });
@@ -570,7 +570,7 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
 export async function verifyStockAvailability(
   items: Array<{ productId: string; variantId?: string; quantity: number }>
 ): Promise<StockVerificationResult> {
-  const supabase = await createClient();
+  const supabase = createClient();
   const errors: string[] = [];
 
   // Batch fetch all products

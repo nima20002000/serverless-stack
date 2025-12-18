@@ -21,7 +21,7 @@ export async function sendOTP(
   try {
     log.info('🔵 sendOTP called', { identifier, purpose, timestamp: new Date().toISOString() });
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
     const { count: deletedExpiredCount, error: deleteExpiredError } = await supabase
@@ -191,7 +191,7 @@ export async function verifyOTP(
   purpose: 'register' | 'login' | 'checkout' = 'register'
 ): Promise<{ success: boolean; error?: string; attemptsLeft?: number }> {
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: stored, error: fetchError } = await supabase
       .from('otp_verifications')

@@ -34,7 +34,7 @@ export async function authenticateUser(
       throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
     }
 
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Find user by email or phone
     const { data: user, error } = await supabase
@@ -92,7 +92,7 @@ export async function authenticateUserByPhone(phone: string): Promise<AuthUser> 
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: user, error } = await supabase
       .from('users')
@@ -155,7 +155,7 @@ export async function authenticateUserByEmail(email: string): Promise<AuthUser> 
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     const { data: user, error } = await supabase
       .from('users')
@@ -204,7 +204,7 @@ export async function registerUser(
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = createClient();
 
     // Check if user already exists
     const { data: existingUser } = await supabase

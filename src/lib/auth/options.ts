@@ -58,7 +58,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
         }
 
-        const supabase = await createClient();
+        const supabase = createClient();
 
         // Find user by email or phone
         const { data: user, error } = await supabase

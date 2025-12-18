@@ -24,7 +24,7 @@ export type UserInfo = {
 export async function queryUser(
   where: { id?: string; email?: string; phone?: string }
 ): Promise<UserInfo | null> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   let query = supabase
     .from('users')
@@ -63,7 +63,7 @@ export async function checkUserExists(
   identifier: { email?: string; phone?: string },
   excludeUserId?: string
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Build OR conditions
   const conditions = [];
