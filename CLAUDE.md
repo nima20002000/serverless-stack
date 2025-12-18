@@ -316,8 +316,8 @@ Development mode uses `pino-pretty` for colorized output. Production uses JSON l
 
 Required variables (see `.env.example`):
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon/public API key
-- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (for server-side operations)
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - Supabase publishable key (replaces legacy anon key)
+- `SUPABASE_SECRET_KEY` - Supabase secret key (replaces legacy service_role key, for server-side operations)
 - `NEXTAUTH_URL` - App URL (http://localhost:3000 in dev)
 - `NEXTAUTH_SECRET` - Secret for JWT signing (generate with `openssl rand -base64 32`)
 - `ZARINPAL_MERCHANT_ID` - Zarinpal gateway merchant ID

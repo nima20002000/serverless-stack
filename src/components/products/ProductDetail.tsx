@@ -70,10 +70,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [error, setError] = useState('');
 
   // Auto-select first active variant with media if available
+  // If product has no product-level media but has variants, auto-select first variant
   const getDefaultVariant = (): Variant | null => {
     if (!product.variants || product.variants.length === 0) return null;
 
-    // Prioritize variants with media
+    const hasProductMedia = product.media && product.media.length > 0;
+
+    // If product has no product-level media, always select first active variant
+    // to ensure images are displayed
+    if (!hasProductMedia) {
+      const firstActive = product.variants.find(v => v.isActive);
+      return firstActive || null;
+    }
+
+    // Otherwise, prioritize variants with media
     const variantWithMedia = product.variants.find(v =>
       v.isActive && v.media && v.media.length > 0
     );
