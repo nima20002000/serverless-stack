@@ -652,6 +652,68 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
 }
 
 /**
+ * Bulk delete products
+ */
+export async function bulkDeleteProducts(productIds: string[]): Promise<{ count: number }> {
+  const supabase = createClient();
+
+  try {
+    // Delete products (cascade will handle related records)
+    const { error, count } = await supabase
+      .from('products')
+      .delete({ count: 'exact' })
+      .in('id', productIds);
+
+    if (error) {
+      log.error('Error in bulk delete products', { error });
+      throw new Error('خطا در حذف محصولات');
+    }
+
+    // Invalidate product cache
+    await invalidateProductCache();
+
+    log.info('Products bulk deleted', { count });
+    return { count: count || 0 };
+  } catch (error) {
+    log.error('Error in bulkDeleteProducts', { productIds, error });
+    throw error;
+  }
+}
+
+/**
+ * Bulk update products
+ */
+export async function bulkUpdateProducts(
+  productIds: string[],
+  updates: { isActive?: boolean; stock?: number }
+): Promise<{ count: number }> {
+  const supabase = createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .in('id', productIds)
+      .select('id');
+
+    if (error) {
+      log.error('Error in bulk update products', { error });
+      throw new Error('خطا در بروزرسانی محصولات');
+    }
+
+    // Invalidate product cache
+    await invalidateProductCache();
+
+    const count = data?.length || 0;
+    log.info('Products bulk updated', { count, updates });
+    return { count };
+  } catch (error) {
+    log.error('Error in bulkUpdateProducts', { productIds, updates, error });
+    throw error;
+  }
+}
+
+/**
  * Update product stock
  */
 export async function updateStock(id: string, quantity: number): Promise<Product> {

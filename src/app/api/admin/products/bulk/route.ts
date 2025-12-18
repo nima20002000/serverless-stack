@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { bulkDeleteProducts, bulkUpdateProducts } from '@/services/product-service-supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,19 +62,20 @@ async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> 
     );
   }
 
-  // Delete products and their related data (media, variants, etc. will cascade)
-  const result = await prisma.product.deleteMany({
-    where: {
-      id: {
-        in: productIds,
-      },
-    },
-  });
+  try {
+    const result = await bulkDeleteProducts(productIds);
 
-  return NextResponse.json({
-    message: `${result.count} محصول با موفقیت حذف شد`,
-    count: result.count,
-  });
+    return NextResponse.json({
+      message: `${result.count} محصول با موفقیت حذف شد`,
+      count: result.count,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف محصولات';
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 400 }
+    );
+  }
 }
 
 async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> {
@@ -94,17 +95,18 @@ async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> 
     );
   }
 
-  const result = await prisma.product.updateMany({
-    where: {
-      id: {
-        in: productIds,
-      },
-    },
-    data: updates,
-  });
+  try {
+    const result = await bulkUpdateProducts(productIds, updates);
 
-  return NextResponse.json({
-    message: `${result.count} محصول با موفقیت به‌روزرسانی شد`,
-    count: result.count,
-  });
+    return NextResponse.json({
+      message: `${result.count} محصول با موفقیت به‌روزرسانی شد`,
+      count: result.count,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطا در بروزرسانی محصولات';
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 400 }
+    );
+  }
 }

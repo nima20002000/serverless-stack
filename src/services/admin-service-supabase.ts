@@ -330,6 +330,80 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
   }
 }
 
+/**
+ * Bulk delete users (only non-admin users)
+ */
+export async function bulkDeleteUsers(userIds: string[]): Promise<{ count: number }> {
+  const supabase = await createClient();
+
+  try {
+    // First, get users to delete (only USER role, not ADMIN)
+    const { data: usersToDelete, error: fetchError } = await supabase
+      .from('users')
+      .select('id')
+      .in('id', userIds)
+      .eq('role', 'USER');
+
+    if (fetchError) {
+      log.error('Error fetching users for bulk delete', { error: fetchError });
+      throw new Error('خطا در بررسی کاربران');
+    }
+
+    if (!usersToDelete || usersToDelete.length === 0) {
+      return { count: 0 };
+    }
+
+    const idsToDelete = usersToDelete.map((u) => u.id);
+
+    // Delete users (cascade will handle related records)
+    const { error: deleteError, count } = await supabase
+      .from('users')
+      .delete({ count: 'exact' })
+      .in('id', idsToDelete);
+
+    if (deleteError) {
+      log.error('Error in bulk delete users', { error: deleteError });
+      throw new Error('خطا در حذف کاربران');
+    }
+
+    log.info('Users bulk deleted', { count });
+    return { count: count || 0 };
+  } catch (error) {
+    log.error('Error in bulkDeleteUsers', { userIds, error });
+    throw error;
+  }
+}
+
+/**
+ * Bulk update users
+ */
+export async function bulkUpdateUsers(
+  userIds: string[],
+  updates: { role?: 'USER' | 'ADMIN' }
+): Promise<{ count: number }> {
+  const supabase = await createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .in('id', userIds)
+      .select('id');
+
+    if (error) {
+      log.error('Error in bulk update users', { error });
+      throw new Error('خطا در بروزرسانی کاربران');
+    }
+
+    const count = data?.length || 0;
+    log.info('Users bulk updated', { count, updates });
+    return { count };
+  } catch (error) {
+    log.error('Error in bulkUpdateUsers', { userIds, updates, error });
+    throw error;
+  }
+}
+
 // ============ Transaction Management ============
 
 export async function getAllTransactions(

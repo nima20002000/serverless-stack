@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { bulkDeleteCategories, bulkUpdateCategories } from '@/services/category-service-supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,67 +61,20 @@ async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> 
     );
   }
 
-  // Check if any categories have products
-  const categoriesWithProducts = await prisma.category.findMany({
-    where: {
-      id: {
-        in: categoryIds,
-      },
-      products: {
-        some: {},
-      },
-    },
-    select: {
-      name: true,
-    },
-  });
+  try {
+    const result = await bulkDeleteCategories(categoryIds);
 
-  if (categoriesWithProducts.length > 0) {
+    return NextResponse.json({
+      message: `${result.count} دسته‌بندی با موفقیت حذف شد`,
+      count: result.count,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی‌ها';
     return NextResponse.json(
-      {
-        error: `امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: ${categoriesWithProducts.map(c => c.name).join('، ')}`
-      },
+      { error: errorMessage },
       { status: 400 }
     );
   }
-
-  // Check if any categories have children
-  const categoriesWithChildren = await prisma.category.findMany({
-    where: {
-      id: {
-        in: categoryIds,
-      },
-      children: {
-        some: {},
-      },
-    },
-    select: {
-      name: true,
-    },
-  });
-
-  if (categoriesWithChildren.length > 0) {
-    return NextResponse.json(
-      {
-        error: `امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: ${categoriesWithChildren.map(c => c.name).join('، ')}`
-      },
-      { status: 400 }
-    );
-  }
-
-  // Delete categories
-  const result = await prisma.category.deleteMany({
-    where: {
-      id: {
-        in: categoryIds,
-      },
-    },
-  });
-
-  return NextResponse.json({
-    message: `${result.count} دسته‌بندی با موفقیت حذف شد`,
-    count: result.count,
-  });
 }
 
 async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> {
@@ -141,17 +94,18 @@ async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> 
     );
   }
 
-  const result = await prisma.category.updateMany({
-    where: {
-      id: {
-        in: categoryIds,
-      },
-    },
-    data: updates,
-  });
+  try {
+    const result = await bulkUpdateCategories(categoryIds, updates);
 
-  return NextResponse.json({
-    message: `${result.count} دسته‌بندی با موفقیت به‌روزرسانی شد`,
-    count: result.count,
-  });
+    return NextResponse.json({
+      message: `${result.count} دسته‌بندی با موفقیت به‌روزرسانی شد`,
+      count: result.count,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'خطا در بروزرسانی دسته‌بندی‌ها';
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 400 }
+    );
+  }
 }
