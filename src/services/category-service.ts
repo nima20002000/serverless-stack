@@ -12,6 +12,9 @@ type Category = Tables<'categories'>;
 type CategoryWithRelations = Category & {
   parent?: Category | null;
   children?: Category[];
+  _count?: {
+    products: number;
+  };
 };
 
 /**
@@ -154,8 +157,29 @@ export async function getAllCategories(): Promise<CategoryWithRelations[]> {
     throw new Error('خطا در دریافت دسته‌بندی‌ها');
   }
 
+  if (!data) {
+    return [];
+  }
+
+  // Fetch product counts for all categories
+  const categoriesWithCounts = await Promise.all(
+    data.map(async (category) => {
+      const { count } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('categoryId', category.id);
+
+      return {
+        ...category,
+        _count: {
+          products: count || 0,
+        },
+      };
+    })
+  );
+
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
-  return data || [];
+  return categoriesWithCounts;
 }
 
 /**
