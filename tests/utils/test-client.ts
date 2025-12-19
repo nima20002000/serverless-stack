@@ -60,7 +60,7 @@ export async function verifySupabaseConnection() {
   const supabase = createTestSupabaseClient();
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('users')
       .select('id')
       .limit(1);
