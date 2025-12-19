@@ -78,6 +78,7 @@ export default function ProfilePage() {
   const [promoCode, setPromoCode] = useState<PromoCode | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
 
@@ -133,6 +134,7 @@ export default function ProfilePage() {
   }, []);
 
   const fetchUserProfile = useCallback(async () => {
+    setProfileLoading(true);
     try {
       // Ensure minimum skeleton display time (300ms) for better UX
       const [response] = await Promise.all([
@@ -146,6 +148,8 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+    } finally {
+      setProfileLoading(false);
     }
   }, []);
 
@@ -232,7 +236,7 @@ export default function ProfilePage() {
     }
   }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
 
-  if (status === 'loading' || !userProfile) {
+  if (status === 'loading' || profileLoading || !userProfile) {
     return <ProfileSkeleton />;
   }
 

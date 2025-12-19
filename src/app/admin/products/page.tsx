@@ -480,25 +480,6 @@ export default function AdminProductsPage() {
     },
   ];
 
-  if (isLoading) {
-    return (
-      <div>
-        <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
-          <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
-            <Link href="/admin/products/new" className="w-full sm:w-auto">
-              <Button variant="primary" size="sm" className="w-full sm:w-auto text-sm">افزودن محصول جدید</Button>
-            </Link>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
-        </div>
-        <Card padding="sm">
-          <ProductTableSkeleton rows={20} />
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div>
       <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
@@ -612,7 +593,11 @@ export default function AdminProductsPage() {
         </div>
       </Card>
 
-      {data && (
+      {isLoading ? (
+        <Card padding="sm">
+          <ProductTableSkeleton rows={20} />
+        </Card>
+      ) : data && (
         <>
           <Card padding="sm">
             <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
