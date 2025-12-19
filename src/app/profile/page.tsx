@@ -79,6 +79,7 @@ export default function ProfilePage() {
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
 
@@ -88,6 +89,15 @@ export default function ProfilePage() {
 
   // Password management states
   const [isResettingWithOTP, setIsResettingWithOTP] = useState(false);
+
+  // Ensure minimum skeleton display time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadTimeElapsed(true);
+    }, 500); // Minimum 500ms skeleton display
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -136,11 +146,7 @@ export default function ProfilePage() {
   const fetchUserProfile = useCallback(async () => {
     setProfileLoading(true);
     try {
-      // Ensure minimum skeleton display time (300ms) for better UX
-      const [response] = await Promise.all([
-        fetch('/api/user/profile'),
-        new Promise(resolve => setTimeout(resolve, 300))
-      ]);
+      const response = await fetch('/api/user/profile');
 
       if (response.ok) {
         const data = await response.json();
@@ -236,7 +242,8 @@ export default function ProfilePage() {
     }
   }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
 
-  if (status === 'loading' || profileLoading || !userProfile) {
+  // Show skeleton until minimum time elapsed AND data loaded
+  if (status === 'loading' || !minLoadTimeElapsed || profileLoading || !userProfile) {
     return <ProfileSkeleton />;
   }
 

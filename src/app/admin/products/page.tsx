@@ -207,6 +207,7 @@ function SortableProductRow({
 export default function AdminProductsPage() {
   const [data, setData] = useState<ProductsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,6 +217,15 @@ export default function AdminProductsPage() {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Ensure minimum skeleton display time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinLoadTimeElapsed(true);
+    }, 500); // Minimum 500ms skeleton display
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Drag and drop sensors - includes TouchSensor for mobile
   // Mobile/tablet: Requires press-and-hold (500ms) to activate drag, preventing scroll conflicts
@@ -244,11 +254,7 @@ export default function AdminProductsPage() {
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const stockParam = stockFilter !== 'all' ? `&stock=${stockFilter}` : '';
 
-      // Ensure minimum skeleton display time (300ms) for better UX
-      const [response] = await Promise.all([
-        fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`),
-        new Promise(resolve => setTimeout(resolve, 300))
-      ]);
+      const response = await fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`);
 
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const result = await response.json();
@@ -593,7 +599,7 @@ export default function AdminProductsPage() {
         </div>
       </Card>
 
-      {isLoading ? (
+      {(isLoading || !minLoadTimeElapsed) ? (
         <Card padding="sm">
           <ProductTableSkeleton rows={20} />
         </Card>
