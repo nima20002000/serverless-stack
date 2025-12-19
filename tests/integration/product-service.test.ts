@@ -32,18 +32,26 @@ const supabase = createTestSupabaseClient();
 describe('Product Service Integration Tests', () => {
   beforeEach(async () => {
     // Clean up before each test to ensure isolation
+    console.log('🧹 Starting beforeEach cleanup...');
+    console.log('  - Cleaning products...');
     await cleanupTestProducts();
+    console.log('  - Cleaning categories...');
     await cleanupTestCategories();
+    console.log('  - Cleaning tags...');
     await cleanupTestTags();
+    console.log('  - Cleaning cache...');
     await cleanupTestCache();
+    console.log('✅ beforeEach cleanup complete');
   });
 
   afterEach(async () => {
     // Clean up after each test
+    console.log('🧹 Starting afterEach cleanup...');
     await cleanupTestProducts();
     await cleanupTestCategories();
     await cleanupTestTags();
     await cleanupTestCache();
+    console.log('✅ afterEach cleanup complete');
   });
 
   describe('Product CRUD Operations', () => {
@@ -270,19 +278,24 @@ describe('Product Service Integration Tests', () => {
 
       // Create transaction
       const transactionId = randomUUID();
-      await supabase
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
           id: transactionId,
           userId: userId,
           transactionCode: `TEST-${Date.now()}`,
           status: 'COMPLETED',
-          totalAmount: productData.price,
+          amount: productData.price,  // Fixed: changed from totalAmount to amount
           updatedAt: new Date().toISOString(),
         });
 
+      if (transactionError) {
+        console.error('Transaction insert failed:', transactionError);
+        throw transactionError;
+      }
+
       // Create transaction item
-      await supabase
+      const { error: itemError } = await supabase
         .from('transaction_items')
         .insert({
           id: randomUUID(),
@@ -291,6 +304,11 @@ describe('Product Service Integration Tests', () => {
           quantity: 1,
           price: productData.price,
         });
+
+      if (itemError) {
+        console.error('Transaction item insert failed:', itemError);
+        throw itemError;
+      }
 
       // Check transaction items count
       const { count } = await supabase

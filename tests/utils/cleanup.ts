@@ -35,29 +35,50 @@ export async function cleanupTestUsers() {
 export async function cleanupTestProducts() {
   const supabase = createTestSupabaseClient();
 
-  // First delete product media (cascade should handle this, but explicit is safer)
+  console.log('    [cleanup] Querying test products...');
+  // First, get all test product IDs
+  const { data: testProducts } = await supabase
+    .from('products')
+    .select('id')
+    .or(`name.like.${TEST_PREFIX}%,name.like.${INTEGRATION_PREFIX}%`);
+
+  console.log(`    [cleanup] Found ${testProducts?.length || 0} test products`);
+
+  if (!testProducts || testProducts.length === 0) {
+    return; // No test products to clean up
+  }
+
+  const productIds = testProducts.map(p => p.id);
+
+  console.log('    [cleanup] Deleting product media...');
+  // Delete product media
   await supabase
     .from('product_media')
     .delete()
-    .or(`product_id.in.(select id from products where name like '${TEST_PREFIX}%' or name like '${INTEGRATION_PREFIX}%')`);
+    .in('productId', productIds);
 
+  console.log('    [cleanup] Deleting product variants...');
   // Delete product variants
   await supabase
     .from('product_variants')
     .delete()
-    .or(`product_id.in.(select id from products where name like '${TEST_PREFIX}%' or name like '${INTEGRATION_PREFIX}%')`);
+    .in('productId', productIds);
 
+  console.log('    [cleanup] Deleting product-tag relationships...');
   // Delete product-tag relationships
   await supabase
     .from('_ProductToTag')
     .delete()
-    .or(`A.in.(select id from products where name like '${TEST_PREFIX}%' or name like '${INTEGRATION_PREFIX}%')`);
+    .in('A', productIds);
 
+  console.log('    [cleanup] Deleting products...');
   // Finally delete products
   const { error } = await supabase
     .from('products')
     .delete()
-    .or(`name.like.${TEST_PREFIX}%,name.like.${INTEGRATION_PREFIX}%`);
+    .in('id', productIds);
+
+  console.log('    [cleanup] Products cleanup complete');
 
   if (error && error.code !== 'PGRST116') {
     console.warn('Failed to cleanup test products:', error);
@@ -71,23 +92,35 @@ export async function cleanupTestProducts() {
 export async function cleanupTestTransactions() {
   const supabase = createTestSupabaseClient();
 
-  // First delete transaction items
+  // First, get all test transaction IDs
+  const { data: testTransactions } = await supabase
+    .from('transactions')
+    .select('id')
+    .or(`transactionCode.like.TEST-%,transactionCode.like.KT-TEST%`);
+
+  if (!testTransactions || testTransactions.length === 0) {
+    return; // No test transactions to clean up
+  }
+
+  const transactionIds = testTransactions.map(t => t.id);
+
+  // Delete transaction items
   await supabase
     .from('transaction_items')
     .delete()
-    .or(`transaction_id.in.(select id from transactions where "transactionCode" like 'TEST-%' or "transactionCode" like 'KT-TEST%')`);
+    .in('transactionId', transactionIds);
 
   // Delete invoices
   await supabase
     .from('invoices')
     .delete()
-    .or(`transaction_id.in.(select id from transactions where "transactionCode" like 'TEST-%' or "transactionCode" like 'KT-TEST%')`);
+    .in('transactionId', transactionIds);
 
   // Delete transactions
   const { error } = await supabase
     .from('transactions')
     .delete()
-    .or(`transactionCode.like.TEST-%,transactionCode.like.KT-TEST%`);
+    .in('id', transactionIds);
 
   if (error && error.code !== 'PGRST116') {
     console.warn('Failed to cleanup test transactions:', error);
@@ -118,16 +151,29 @@ export async function cleanupTestCategories() {
 export async function cleanupTestTags() {
   const supabase = createTestSupabaseClient();
 
-  // First delete tag relationships
+  // First, get all test tag IDs
+  const { data: testTags } = await supabase
+    .from('tags')
+    .select('id')
+    .or(`slug.like.test-%,slug.like.integration-%`);
+
+  if (!testTags || testTags.length === 0) {
+    return; // No test tags to clean up
+  }
+
+  const tagIds = testTags.map(t => t.id);
+
+  // Delete tag relationships
   await supabase
     .from('_ProductToTag')
     .delete()
-    .or(`B.in.(select id from tags where slug like 'test-%' or slug like 'integration-%')`);
+    .in('B', tagIds);
 
+  // Delete tags
   const { error } = await supabase
     .from('tags')
     .delete()
-    .or(`slug.like.test-%,slug.like.integration-%`);
+    .in('id', tagIds);
 
   if (error && error.code !== 'PGRST116') {
     console.warn('Failed to cleanup test tags:', error);
@@ -176,10 +222,12 @@ export async function cleanupTestCache() {
   const redis = createTestRedisClient();
 
   if (!redis) {
+    console.log('    [cleanup] Redis not configured, skipping cache cleanup');
     return;
   }
 
   try {
+    console.log('    [cleanup] Starting Redis cleanup...');
     // Clear common product cache keys (pages 1-10)
     const productCacheKeys = [];
     for (let page = 1; page <= 10; page++) {
@@ -199,9 +247,19 @@ export async function cleanupTestCache() {
 
     const allKeys = [...productCacheKeys, ...testCacheKeys];
 
-    for (const key of allKeys) {
-      await redis.del(key);
+    console.log(`    [cleanup] Deleting ${allKeys.length} cache keys...`);
+
+    // Delete in batches for better performance
+    const batchSize = 10;
+    for (let i = 0; i < allKeys.length; i += batchSize) {
+      const batch = allKeys.slice(i, i + batchSize);
+      console.log(`    [cleanup] Deleting batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allKeys.length / batchSize)}...`);
+      await Promise.all(batch.map(key => redis.del(key).catch((err) => {
+        console.log(`    [cleanup] Failed to delete ${key}:`, err.message);
+      })));
     }
+
+    console.log('    [cleanup] Redis cleanup complete');
   } catch (error) {
     console.warn('Failed to cleanup Redis cache:', error);
   }
@@ -265,13 +323,13 @@ export async function deleteTestProductById(id: string) {
   await supabase
     .from('product_media')
     .delete()
-    .eq('product_id', id);
+    .eq('productId', id);
 
   // Delete variants
   await supabase
     .from('product_variants')
     .delete()
-    .eq('product_id', id);
+    .eq('productId', id);
 
   // Delete tag relationships
   await supabase
