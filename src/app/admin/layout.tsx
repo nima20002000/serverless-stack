@@ -17,6 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [status, session, router]);
 
+  // Show generic loading only during initial session check
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,10 +26,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Redirect cases - don't render anything
   if (!session || session.user.role !== 'ADMIN') {
     return null;
   }
 
+  // Authenticated admin - render layout and let pages handle their own loading states
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin User Info Bar */}
