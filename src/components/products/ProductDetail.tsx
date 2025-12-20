@@ -232,12 +232,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               media={product.media}
               productName={product.name}
               selectedVariant={selectedVariant}
+              allVariants={product.variants}
             />
           ) : selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 ? (
             <ProductGallery
               media={product.media || []}
               productName={product.name}
               selectedVariant={selectedVariant}
+              allVariants={product.variants}
             />
           ) : (
             <Card>
