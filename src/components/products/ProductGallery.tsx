@@ -101,27 +101,30 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
   const goToPrevious = () => {
     setIsTransitioning(true);
+    setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
+    // Brief transition effect, then reset
     setTimeout(() => {
-      setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
       setIsTransitioning(false);
-    }, 150);
+    }, 100);
   };
 
   const goToNext = () => {
     setIsTransitioning(true);
+    setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
+    // Brief transition effect, then reset
     setTimeout(() => {
-      setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
       setIsTransitioning(false);
-    }, 150);
+    }, 100);
   };
 
   const handleThumbnailClick = (index: number) => {
     if (index !== selectedIndex) {
       setIsTransitioning(true);
+      setSelectedIndex(index);
+      // Brief transition effect, then reset
       setTimeout(() => {
-        setSelectedIndex(index);
         setIsTransitioning(false);
-      }, 150);
+      }, 100);
     }
     setIsZoomed(false);
   };
@@ -188,6 +191,22 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
   return (
     <div className="space-y-4">
+      {/* Preload adjacent images for instant switching */}
+      <div className="hidden">
+        {sortedMedia.slice(0, 5).map((item, index) => (
+          item.type === 'IMAGE' && index !== selectedIndex && (
+            <Image
+              key={`preload-${item.id}`}
+              src={optimizeImage.large(item.url)}
+              alt=""
+              width={1200}
+              height={1500}
+              priority={index <= 2}
+            />
+          )
+        ))}
+      </div>
+
       {/* Main Display */}
       <div
         className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden group"
@@ -201,11 +220,12 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
-              className={`object-contain object-center transition-all duration-300 ${
+              className={`object-contain object-center transition-opacity duration-150 ${
                 isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
               } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
               onClick={() => setIsZoomed(!isZoomed)}
               priority={selectedIndex === 0}
+              loading={selectedIndex <= 2 ? 'eager' : 'lazy'}
             />
           </>
         ) : (
@@ -363,10 +383,11 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
-              className={`object-contain transition-opacity duration-300 ${
+              className={`object-contain transition-opacity duration-150 ${
                 isTransitioning ? 'opacity-0' : 'opacity-100'
               }`}
               onClick={(e) => e.stopPropagation()}
+              priority
             />
           </div>
         </div>
