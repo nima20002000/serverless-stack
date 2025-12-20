@@ -61,6 +61,17 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
     return [...displayMedia].sort((a, b) => a.order - b.order);
   }, [media, selectedVariant]);
 
+  // Preload optimized image URLs to browser cache
+  useEffect(() => {
+    // Preload first 5 images for instant switching
+    sortedMedia.slice(0, 5).forEach((item) => {
+      if (item.type === 'IMAGE') {
+        const img = new window.Image();
+        img.src = optimizeImage.large(item.url);
+      }
+    });
+  }, [sortedMedia]);
+
   // Reset selectedIndex when variant changes or media changes
   useEffect(() => {
     setSelectedIndex(0);
@@ -191,22 +202,6 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
   return (
     <div className="space-y-4">
-      {/* Preload adjacent images for instant switching */}
-      <div className="hidden">
-        {sortedMedia.slice(0, 5).map((item, index) => (
-          item.type === 'IMAGE' && index !== selectedIndex && (
-            <Image
-              key={`preload-${item.id}`}
-              src={optimizeImage.large(item.url)}
-              alt=""
-              width={1200}
-              height={1500}
-              priority={index <= 2}
-            />
-          )
-        ))}
-      </div>
-
       {/* Main Display */}
       <div
         className="relative w-full aspect-square bg-gray-100 rounded-lg overflow-hidden group"
@@ -215,19 +210,19 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         onTouchEnd={onTouchEnd}
       >
         {currentMedia.type === 'IMAGE' ? (
-          <>
-            <Image
-              src={optimizeImage.large(currentMedia.url)}
-              alt={currentMedia.alt || productName}
-              fill
-              className={`object-contain object-center transition-opacity duration-150 ${
-                isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
-              } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
-              onClick={() => setIsZoomed(!isZoomed)}
-              priority={selectedIndex === 0}
-              loading={selectedIndex <= 2 ? 'eager' : 'lazy'}
-            />
-          </>
+          <Image
+            key={currentMedia.id}
+            src={optimizeImage.large(currentMedia.url)}
+            alt={currentMedia.alt || productName}
+            fill
+            className={`object-contain object-center transition-opacity duration-150 ${
+              isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
+            } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
+            onClick={() => setIsZoomed(!isZoomed)}
+            priority={selectedIndex === 0}
+            loading={selectedIndex <= 2 ? 'eager' : 'lazy'}
+            unoptimized={false}
+          />
         ) : (
           <video
             src={currentMedia.url}
@@ -380,6 +375,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
           <div className="relative w-full h-full max-w-7xl max-h-screen pointer-events-none">
             <Image
+              key={currentMedia.id}
               src={optimizeImage.large(currentMedia.url)}
               alt={currentMedia.alt || productName}
               fill
@@ -388,6 +384,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               }`}
               onClick={(e) => e.stopPropagation()}
               priority
+              unoptimized={false}
             />
           </div>
         </div>
