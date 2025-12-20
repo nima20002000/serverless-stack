@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useMemo } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface Variant {
@@ -77,6 +77,50 @@ function ProductCard({ product }: ProductCardProps) {
 
   const [currentImage, setCurrentImage] = useState(getInitialImage());
 
+  // Get color variants for image swapping
+  const colorVariants = useMemo(() => {
+    return activeVariants.filter(v => v.color && v.media && v.media.length > 0);
+  }, [activeVariants]);
+
+  const hasColorVariants = colorVariants.length > 1;
+
+  // Current variant index for carousel
+  const [currentVariantIndex, setCurrentVariantIndex] = useState(() => {
+    if (!hasColorVariants) return 0;
+    const index = colorVariants.findIndex(v => v.id === selectedVariant?.id);
+    return index >= 0 ? index : 0;
+  });
+
+  // Navigate to next color variant image
+  const handleNextVariant = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!hasColorVariants) return;
+
+    const nextIndex = (currentVariantIndex + 1) % colorVariants.length;
+    setCurrentVariantIndex(nextIndex);
+    const nextVariant = colorVariants[nextIndex];
+    setSelectedVariant(nextVariant);
+    if (nextVariant.media && nextVariant.media.length > 0) {
+      setCurrentImage(nextVariant.media[0].url);
+    }
+  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+
+  // Navigate to previous color variant image
+  const handlePrevVariant = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!hasColorVariants) return;
+
+    const prevIndex = currentVariantIndex === 0 ? colorVariants.length - 1 : currentVariantIndex - 1;
+    setCurrentVariantIndex(prevIndex);
+    const prevVariant = colorVariants[prevIndex];
+    setSelectedVariant(prevVariant);
+    if (prevVariant.media && prevVariant.media.length > 0) {
+      setCurrentImage(prevVariant.media[0].url);
+    }
+  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
   const basePrice = Number(product.price);
@@ -100,6 +144,14 @@ function ProductCard({ product }: ProductCardProps) {
     } else {
       // Fallback to product's first image
       setCurrentImage(product.images[0] || '');
+    }
+
+    // Update carousel index if this is a color variant
+    if (hasColorVariants && variant.color) {
+      const variantIndex = colorVariants.findIndex(v => v.id === variant.id);
+      if (variantIndex >= 0) {
+        setCurrentVariantIndex(variantIndex);
+      }
     }
   };
 
@@ -136,7 +188,7 @@ function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
-        <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
+        <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden group">
           {currentImage ? (
             <Image
               src={optimizeImage.thumbnail(currentImage)}
@@ -168,6 +220,48 @@ function ProductCard({ product }: ProductCardProps) {
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <span className="text-white font-bold text-lg">ناموجود</span>
             </div>
+          )}
+
+          {/* Color Variant Navigation Arrows - Only show if there are multiple color variants */}
+          {hasColorVariants && (
+            <>
+              {/* Previous Arrow (Right side in RTL) */}
+              <button
+                onClick={handlePrevVariant}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                aria-label="رنگ قبلی"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Next Arrow (Left side in RTL) */}
+              <button
+                onClick={handleNextVariant}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+                aria-label="رنگ بعدی"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Variant Indicators (dots) */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                {colorVariants.map((variant, index) => (
+                  <div
+                    key={variant.id}
+                    className={`transition-all duration-200 ${
+                      index === currentVariantIndex
+                        ? 'w-6 h-2 bg-white rounded-full'
+                        : 'w-2 h-2 bg-white/60 rounded-full'
+                    }`}
+                    title={variant.name}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </Link>
