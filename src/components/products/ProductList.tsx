@@ -8,6 +8,8 @@ import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
 
+export type ProductSortOption = 'price-asc' | 'price-desc' | 'featured' | 'discount' | 'newest';
+
 interface Variant {
   id: string;
   name: string;
@@ -56,6 +58,7 @@ function ProductList({
   const [total, setTotal] = useState(initialTotal);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<ProductSortOption>('newest');
   const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
   const perPage = 20;
   const totalPages = Math.ceil(total / perPage);
@@ -76,14 +79,15 @@ function ProductList({
     });
   }, [totalPages, page]);
 
-  const fetchProducts = async (pageNum: number) => {
+  const fetchProducts = async (pageNum: number, sort?: ProductSortOption) => {
     setIsLoading(true);
     setError(null);
+    const currentSort = sort || sortBy;
     try {
       // Ensure minimum skeleton display time (300ms) for better UX
       const [result] = await Promise.all([
         fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
-          () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
+          () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}&sortBy=${currentSort}`)
         ),
         new Promise(resolve => setTimeout(resolve, 300))
       ]);
@@ -113,6 +117,14 @@ function ProductList({
     }
 
     fetchProducts(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSortChange = (newSort: ProductSortOption) => {
+    if (newSort === sortBy) return;
+    setSortBy(newSort);
+    setPage(1); // Reset to first page when sorting changes
+    fetchProducts(1, newSort);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -146,6 +158,27 @@ function ProductList({
           {error}
         </Alert>
       )}
+
+      {/* Sort Controls */}
+      <div className="mb-6 flex justify-end">
+        <div className="flex items-center gap-2">
+          <label htmlFor="sort-select" className="text-sm text-gray-700 font-medium">
+            مرتب‌سازی:
+          </label>
+          <select
+            id="sort-select"
+            value={sortBy}
+            onChange={(e) => handleSortChange(e.target.value as ProductSortOption)}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          >
+            <option value="newest">جدیدترین</option>
+            <option value="price-asc">قیمت: کم به زیاد</option>
+            <option value="price-desc">قیمت: زیاد به کم</option>
+            <option value="featured">محصولات ویژه</option>
+            <option value="discount">بیشترین تخفیف</option>
+          </select>
+        </div>
+      </div>
 
       {/* Products Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">

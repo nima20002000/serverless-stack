@@ -73,15 +73,25 @@ function populateProductsImages(products: ProductWithRelations[]): ProductWithRe
 /**
  * Helper to invalidate all product caches
  * Since Upstash doesn't support pattern matching, we clear common cache keys
+ * Now includes all sort options to ensure cache consistency
  */
 async function invalidateProductCache(): Promise<void> {
   // Clear common pagination keys (pages 1-10, which covers most traffic)
-  const cacheKeys = [];
+  // Include all sort options to ensure cache consistency
+  const cacheKeys: string[] = [];
+  const sortOptions = ['newest', 'price-asc', 'price-desc', 'featured', 'discount'];
+  const perPageOptions = [10, 20, 50];
+
   for (let page = 1; page <= 10; page++) {
-    cacheKeys.push(`products:active:page:${page}:limit:20`);
-    cacheKeys.push(`products:active:page:${page}:limit:10`);
-    cacheKeys.push(`products:active:page:${page}:limit:50`);
+    for (const perPage of perPageOptions) {
+      for (const sort of sortOptions) {
+        cacheKeys.push(`products:active:page:${page}:limit:${perPage}:sort:${sort}`);
+      }
+      // Also clear old cache keys without sort parameter for backward compatibility
+      cacheKeys.push(`products:active:page:${page}:limit:${perPage}`);
+    }
   }
+
   await clearCachePattern(cacheKeys);
   log.info('Product cache invalidated', { keysCleared: cacheKeys.length });
 }
@@ -290,13 +300,92 @@ export async function getAllProducts(options?: {
 }
 
 /**
+ * Sorting options for product listing
+ */
+export type ProductSortOption =
+  | 'price-asc'       // قیمت: کم به زیاد
+  | 'price-desc'      // قیمت: زیاد به کم
+  | 'featured'        // محصولات ویژه
+  | 'discount'        // بیشترین تخفیف
+  | 'newest';         // جدیدترین
+
+/**
  * Get active products only (for public listing)
+ * Supports multiple sorting options with optimized database queries
  */
 export async function getActiveProducts(options?: {
   page?: number;
   perPage?: number;
+  sortBy?: ProductSortOption;
 }): Promise<PaginatedResponse<ProductWithRelations>> {
-  return getAllProducts({ ...options, includeInactive: false });
+  const page = options?.page || 1;
+  const perPage = options?.perPage || 20;
+  const offset = (page - 1) * perPage;
+  const sortBy = options?.sortBy || 'newest';
+
+  const supabase = createClient();
+
+  // Base query for active products only
+  let query = supabase.from('products').select('*', { count: 'exact' }).eq('isActive', true);
+
+  // Apply sorting based on selected option
+  // All sorting is done at the database level for optimal performance
+  switch (sortBy) {
+    case 'price-asc':
+      // Price: Low to High
+      query = query.order('price', { ascending: true });
+      break;
+
+    case 'price-desc':
+      // Price: High to Low
+      query = query.order('price', { ascending: false });
+      break;
+
+    case 'featured':
+      // Featured products first, then by display order
+      query = query.order('isFeatured', { ascending: false }).order('displayOrder', { ascending: true });
+      break;
+
+    case 'discount':
+      // Highest discount percentage first (products with discount > 0)
+      query = query.gt('discountPercent', 0).order('discountPercent', { ascending: false });
+      break;
+
+    case 'newest':
+    default:
+      // Newest first (default)
+      query = query.order('createdAt', { ascending: false });
+      break;
+  }
+
+  // Apply pagination
+  const { data: products, count, error } = await query.range(offset, offset + perPage - 1);
+
+  if (error) {
+    log.error('Error fetching active products', { error, sortBy });
+    throw new Error('خطا در دریافت محصولات');
+  }
+
+  // Fetch relations for all products in parallel (OPTIMIZATION)
+  const productsWithRelations: ProductWithRelations[] = [];
+  if (products && products.length > 0) {
+    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
+    }
+  }
+
+  return {
+    data: populateProductsImages(productsWithRelations),
+    total: count || 0,
+    page,
+    perPage,
+    totalPages: Math.ceil((count || 0) / perPage),
+  };
 }
 
 /**

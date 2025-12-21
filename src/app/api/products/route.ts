@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveProducts, createProduct } from '@/services/product-service';
+import { getActiveProducts, createProduct, ProductSortOption } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
@@ -7,14 +7,24 @@ import { withCache } from '@/lib/api/with-cache';
 
 export const dynamic = 'force-dynamic';
 
+// Valid sort options for validation
+const VALID_SORT_OPTIONS: ProductSortOption[] = ['price-asc', 'price-desc', 'featured', 'discount', 'newest'];
+
 // GET /api/products - List active products (public)
 async function getHandler(req: NextRequest) {
   try {
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
+    const sortByParam = searchParams.get('sortBy');
 
-    const result = await getActiveProducts({ page, perPage });
+    // Validate sortBy parameter
+    let sortBy: ProductSortOption = 'newest';
+    if (sortByParam && VALID_SORT_OPTIONS.includes(sortByParam as ProductSortOption)) {
+      sortBy = sortByParam as ProductSortOption;
+    }
+
+    const result = await getActiveProducts({ page, perPage, sortBy });
 
     // Serialize Decimal prices to numbers and ensure discount fields are included
     const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
@@ -97,7 +107,8 @@ export const GET = withLogging(
     (req) => {
       const page = req.nextUrl.searchParams.get('page') || '1';
       const perPage = req.nextUrl.searchParams.get('perPage') || '20';
-      return `products:active:page:${page}:limit:${perPage}`;
+      const sortBy = req.nextUrl.searchParams.get('sortBy') || 'newest';
+      return `products:active:page:${page}:limit:${perPage}:sort:${sortBy}`;
     },
     3600 // 60 minutes (1 hour)
   ),
