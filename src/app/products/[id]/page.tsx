@@ -10,6 +10,7 @@ import {
   renderJsonLd,
 } from '@/lib/seo/structured-data';
 import { getProductOgImage } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -82,7 +83,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         images: ogImage ? [ogImage] : undefined,
       },
       alternates: {
-        canonical: `/products/${id}`,
+        canonical: getAbsoluteUrl(`/products/${id}`),
       },
       other: {
         'og:type': 'product',

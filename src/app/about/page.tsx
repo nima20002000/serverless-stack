@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { HeartIcon, SparklesIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
   title: "درباره ما - کیتیا",
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     title: "درباره ما - کیتیا",
     description: "کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد.",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/about'),
   },
 };
 

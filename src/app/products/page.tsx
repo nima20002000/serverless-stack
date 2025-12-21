@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import ProductList from '@/components/products/ProductList';
 import { getActiveProducts } from '@/services/product-service';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60;
@@ -37,6 +38,31 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
     title = `${title} - صفحه ${page}`;
   }
 
+  // Build canonical URL with filters
+  // For pagination, use page=1 as canonical (avoid duplicate content)
+  // For filtered pages (category, tag, search), include those in canonical
+  const canonicalPath = '/products';
+  const queryParams: string[] = [];
+
+  if (category) {
+    queryParams.push(`category=${category}`);
+  }
+  if (tag) {
+    queryParams.push(`tag=${tag}`);
+  }
+  if (search) {
+    queryParams.push(`search=${encodeURIComponent(search)}`);
+  }
+
+  // Only add page to canonical if page > 1
+  if (page && parseInt(page) > 1) {
+    queryParams.push(`page=${page}`);
+  }
+
+  const canonicalUrl = queryParams.length > 0
+    ? `${canonicalPath}?${queryParams.join('&')}`
+    : canonicalPath;
+
   return {
     title,
     description,
@@ -62,7 +88,7 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
       images: [DEFAULT_OG_IMAGE],
     },
     alternates: {
-      canonical: `/products${page && parseInt(page) > 1 ? `?page=${page}` : ''}`,
+      canonical: getAbsoluteUrl(canonicalUrl),
     },
   };
 }

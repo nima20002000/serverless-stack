@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 // Use ISR (Incremental Static Regeneration) for optimal performance
 // Page will be statically generated and revalidated every 60 seconds
@@ -40,6 +41,9 @@ export const metadata: Metadata = {
     title: "کیتیا - فروشگاه آنلاین لیوان سفری و ماگ",
     description: "خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، کمک به گربه‌های خیابانی.",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/'),
   },
 };
 

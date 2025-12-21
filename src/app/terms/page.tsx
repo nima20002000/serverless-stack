@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
   title: "قوانین و مقررات - کیتیا",
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     title: "قوانین و مقررات - کیتیا",
     description: "شرایط استفاده از خدمات فروشگاه کیتیا",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/terms'),
   },
 };
 

@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { TruckIcon, ClockIcon, MapPinIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
   title: "اطلاعات ارسال - کیتیا",
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     title: "اطلاعات ارسال - کیتیا",
     description: "راهنمای ارسال و تحویل سفارشات کیتیا",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/shipping'),
   },
 };
 

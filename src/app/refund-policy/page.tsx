@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { ArrowPathIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
   title: "قوانین مرجوعی و بازگشت وجه - کیتیا",
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     title: "قوانین مرجوعی - کیتیا",
     description: "شرایط مرجوعی کالا و بازگشت وجه در کیتیا",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/refund-policy'),
   },
 };
 

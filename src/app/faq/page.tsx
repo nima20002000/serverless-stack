@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import FAQList from '@/components/faq/FAQList';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
   title: "سوالات متداول - کیتیا",
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
     title: "سوالات متداول - کیتیا",
     description: "پاسخ سوالات رایج درباره خرید و خدمات کیتیا",
     images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/faq'),
   },
 };
 
