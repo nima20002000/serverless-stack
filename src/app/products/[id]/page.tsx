@@ -3,6 +3,12 @@ import { notFound } from 'next/navigation';
 import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
 import { Tables } from '@/lib/supabase/types';
+import {
+  generateProductSchema,
+  generateBreadcrumbSchema,
+  generateProductBreadcrumbs,
+  renderJsonLd,
+} from '@/lib/seo/structured-data';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -132,11 +138,28 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       : [],
   };
 
+  // Generate JSON-LD structured data
+  const productSchema = generateProductSchema(productWithRelations);
+  const breadcrumbItems = generateProductBreadcrumbs(productWithRelations);
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProductDetail product={serializedProduct} />
-      </main>
-    </div>
+    <>
+      {/* Product JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: renderJsonLd(productSchema) }}
+      />
+      {/* Breadcrumb JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: renderJsonLd(breadcrumbSchema) }}
+      />
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ProductDetail product={serializedProduct} />
+        </main>
+      </div>
+    </>
   );
 }
