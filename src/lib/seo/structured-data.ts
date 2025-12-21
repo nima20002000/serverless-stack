@@ -51,18 +51,28 @@ export function generateProductSchema(
 
   if (selectedVariant?.media && selectedVariant.media.length > 0) {
     // Use selected variant's media
-    images.push(...selectedVariant.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
+    const variantImages = selectedVariant.media
+      .filter((m) => m.type === 'IMAGE' || !m.type)
+      .map((m) => m.url);
+    images.push(...variantImages);
   } else if (product.media && product.media.length > 0) {
     // Use product-level media
-    images.push(...product.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
+    const productImages = product.media
+      .filter((m) => m.type === 'IMAGE' || !m.type)
+      .map((m) => m.url);
+    images.push(...productImages);
   } else if (product.images && product.images.length > 0) {
     // Use legacy images field
     images.push(...product.images);
   } else if (product.variants && product.variants.length > 0) {
-    // Fallback: use first variant's media if product has no direct media
-    const firstVariantWithMedia = product.variants.find((v) => v.media && v.media.length > 0);
-    if (firstVariantWithMedia?.media) {
-      images.push(...firstVariantWithMedia.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
+    // Fallback: collect images from all variants if product has no direct media
+    for (const variant of product.variants) {
+      if (variant.media && variant.media.length > 0) {
+        const variantImages = variant.media
+          .filter((m) => m.type === 'IMAGE' || !m.type)
+          .map((m) => m.url);
+        images.push(...variantImages);
+      }
     }
   }
 
@@ -87,12 +97,15 @@ export function generateProductSchema(
     ? 'https://schema.org/InStock'
     : 'https://schema.org/OutOfStock';
 
+  // Schema.org requires at least one image - use logo as absolute last resort
+  const schemaImages = images.length > 0 ? images : [`${baseUrl}/logo.png`];
+
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
     description: product.description || `${product.name} - خرید آنلاین از کیتیا`,
-    image: images.length > 0 ? images : `${baseUrl}/logo.png`,
+    image: schemaImages,
     ...(product.sku && { sku: product.sku }),
     brand: {
       '@type': 'Brand',
