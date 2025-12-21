@@ -79,7 +79,7 @@ async function invalidateProductCache(): Promise<void> {
   // Clear common pagination keys (pages 1-10, which covers most traffic)
   // Include all sort options to ensure cache consistency
   const cacheKeys: string[] = [];
-  const sortOptions = ['newest', 'price-asc', 'price-desc', 'featured', 'discount'];
+  const sortOptions = ['popular', 'newest', 'price-asc', 'price-desc', 'featured', 'discount'];
   const perPageOptions = [10, 20, 50];
 
   for (let page = 1; page <= 10; page++) {
@@ -303,6 +303,7 @@ export async function getAllProducts(options?: {
  * Sorting options for product listing
  */
 export type ProductSortOption =
+  | 'popular'         // محبوب‌ترین‌ها (displayOrder)
   | 'price-asc'       // قیمت: کم به زیاد
   | 'price-desc'      // قیمت: زیاد به کم
   | 'featured'        // محصولات ویژه
@@ -476,7 +477,7 @@ export async function getActiveProducts(options?: {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
-  const sortBy = options?.sortBy || 'newest';
+  const sortBy = options?.sortBy || 'popular';
 
   const supabase = createClient();
 
@@ -486,6 +487,11 @@ export async function getActiveProducts(options?: {
   // Apply sorting based on selected option
   // All sorting is done at the database level for optimal performance
   switch (sortBy) {
+    case 'popular':
+      // Popular (Original order based on displayOrder set by admin)
+      query = query.order('displayOrder', { ascending: true }).order('createdAt', { ascending: false });
+      break;
+
     case 'price-asc':
       // Price: Low to High
       query = query.order('price', { ascending: true });
@@ -507,9 +513,13 @@ export async function getActiveProducts(options?: {
       break;
 
     case 'newest':
-    default:
-      // Newest first (default)
+      // Newest first
       query = query.order('createdAt', { ascending: false });
+      break;
+
+    default:
+      // Fallback to popular
+      query = query.order('displayOrder', { ascending: true }).order('createdAt', { ascending: false });
       break;
   }
 

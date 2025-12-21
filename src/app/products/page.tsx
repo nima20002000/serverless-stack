@@ -95,17 +95,18 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
 }
 
 export default async function ProductsPage() {
-  const result = await getActiveProducts({ page: 1, perPage: 20 });
+  const result = await getActiveProducts({ page: 1, perPage: 20, sortBy: 'popular' });
 
   // Serialize Decimal prices to numbers for client components
-  // Also ensure images is always an array (not null) and include createdAt for client-side sorting
+  // Also ensure images is always an array (not null) and include createdAt, displayOrder for client-side sorting
   const products = result.data.map((product) => ({
     ...product,
     price: Number(product.price),
     images: product.images || [],
     discountPercent: product.discountPercent,
     isFeatured: product.isFeatured,
-    createdAt: product.createdAt, // Include createdAt for client-side "newest" sorting
+    createdAt: product.createdAt, // Include createdAt for client-side sorting
+    displayOrder: product.displayOrder, // Include displayOrder for "popular" sorting
     variants: product.variants?.map(v => ({
       ...v,
       priceAdjust: Number(v.priceAdjust),

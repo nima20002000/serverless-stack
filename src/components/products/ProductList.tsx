@@ -9,7 +9,7 @@ import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
 
-export type ProductSortOption = 'price-asc' | 'price-desc' | 'featured' | 'discount' | 'newest';
+export type ProductSortOption = 'popular' | 'price-asc' | 'price-desc' | 'featured' | 'discount' | 'newest';
 
 interface Variant {
   id: string;
@@ -43,6 +43,7 @@ interface Product {
   hasVariants?: boolean;
   variants?: Variant[];
   createdAt?: string;
+  displayOrder: number;
 }
 
 interface ProductListProps {
@@ -60,6 +61,16 @@ function sortProducts(products: Product[], sortBy: ProductSortOption): Product[]
   const sorted = [...products];
 
   switch (sortBy) {
+    case 'popular':
+      // Popular: Sort by displayOrder (ascending), then by createdAt (newest first)
+      return sorted.sort((a, b) => {
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
     case 'price-asc':
       return sorted.sort((a, b) => a.price - b.price);
 
@@ -82,8 +93,17 @@ function sortProducts(products: Product[], sortBy: ProductSortOption): Product[]
       });
 
     case 'newest':
-    default:
       return sorted.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+
+    default:
+      // Fallback to popular
+      return sorted.sort((a, b) => {
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
         if (!a.createdAt || !b.createdAt) return 0;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
@@ -102,7 +122,7 @@ function ProductList({
   const [total] = useState(initialTotal); // Only used for initial fetch calculation
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<ProductSortOption>('newest');
+  const [sortBy, setSortBy] = useState<ProductSortOption>('popular');
   const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
   const perPage = 20;
 
@@ -120,7 +140,7 @@ function ProductList({
           for (let i = 2; i <= totalPages; i++) {
             pagePromises.push(
               fetchWithRateLimit<{ data: Product[]; total: number }>(
-                () => fetch(`/api/products?page=${i}&perPage=${perPage}&sortBy=newest`)
+                () => fetch(`/api/products?page=${i}&perPage=${perPage}&sortBy=popular`)
               )
             );
           }
@@ -236,6 +256,7 @@ function ProductList({
             onChange={(value) => handleSortChange(value as ProductSortOption)}
             label="مرتب‌سازی:"
             options={[
+              { value: 'popular', label: 'محبوب‌ترین‌ها' },
               { value: 'newest', label: 'جدیدترین' },
               { value: 'price-asc', label: 'قیمت: کم به زیاد' },
               { value: 'price-desc', label: 'قیمت: زیاد به کم' },
