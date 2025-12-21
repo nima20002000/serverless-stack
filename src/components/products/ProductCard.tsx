@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
-import { useState, useCallback, memo, useMemo } from 'react';
+import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface Variant {
@@ -91,10 +91,56 @@ function ProductCard({ product }: ProductCardProps) {
     return index >= 0 ? index : 0;
   });
 
+  // Touch swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const minSwipeDistance = 50; // Minimum swipe distance in pixels
+
+  // Track preloaded variant images
+  const preloadedVariants = useRef<Set<string>>(new Set());
+
+  // PRELOADING STRATEGY: Aggressively preload all color variant images on mount
+  // This ensures instant switching when user swipes between variants
+  useEffect(() => {
+    if (!hasColorVariants || colorVariants.length === 0) return;
+
+    // Preload all color variant images
+    colorVariants.forEach((variant, index) => {
+      if (preloadedVariants.current.has(variant.id)) return; // Skip if already preloaded
+
+      const isFirstVariant = index === 0;
+      const variantImages = variant.media?.filter(m => m.type === 'IMAGE') || [];
+
+      variantImages.forEach((media, mediaIndex) => {
+        const isFirstImage = mediaIndex === 0;
+        const priority = isFirstVariant && isFirstImage ? 1 : (isFirstImage ? 2 : 3);
+
+        const preloadFn = () => {
+          const img = new window.Image();
+          img.src = optimizeImage.thumbnail(media.url);
+          if (priority <= 2) {
+            img.fetchPriority = 'high';
+          }
+        };
+
+        // High-priority images load immediately, low-priority during idle time
+        if (priority <= 2) {
+          preloadFn();
+        } else {
+          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            window.requestIdleCallback(preloadFn);
+          } else {
+            setTimeout(preloadFn, 100);
+          }
+        }
+      });
+
+      preloadedVariants.current.add(variant.id);
+    });
+  }, [hasColorVariants, colorVariants]);
+
   // Navigate to next color variant image
-  const handleNextVariant = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const goToNextVariant = useCallback(() => {
     if (!hasColorVariants) return;
 
     const nextIndex = (currentVariantIndex + 1) % colorVariants.length;
@@ -107,9 +153,7 @@ function ProductCard({ product }: ProductCardProps) {
   }, [hasColorVariants, currentVariantIndex, colorVariants]);
 
   // Navigate to previous color variant image
-  const handlePrevVariant = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const goToPrevVariant = useCallback(() => {
     if (!hasColorVariants) return;
 
     const prevIndex = currentVariantIndex === 0 ? colorVariants.length - 1 : currentVariantIndex - 1;
@@ -120,6 +164,42 @@ function ProductCard({ product }: ProductCardProps) {
       setCurrentImage(prevVariant.media[0].url);
     }
   }, [hasColorVariants, currentVariantIndex, colorVariants]);
+
+  // Touch swipe handlers
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (!hasColorVariants) return;
+    touchEndX.current = 0; // Reset
+    touchStartX.current = e.targetTouches[0].clientX;
+  }, [hasColorVariants]);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!hasColorVariants) return;
+    touchEndX.current = e.targetTouches[0].clientX;
+  }, [hasColorVariants]);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!hasColorVariants) return;
+    if (!touchStartX.current || !touchEndX.current) return;
+
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    // In RTL, left swipe = next, right swipe = previous
+    if (isLeftSwipe) {
+      e.preventDefault();
+      e.stopPropagation();
+      goToNextVariant();
+    } else if (isRightSwipe) {
+      e.preventDefault();
+      e.stopPropagation();
+      goToPrevVariant();
+    }
+
+    // Reset
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  }, [hasColorVariants, goToNextVariant, goToPrevVariant]);
 
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
@@ -188,7 +268,12 @@ function ProductCard({ product }: ProductCardProps) {
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
-        <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden group">
+        <div
+          className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden group"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           {currentImage ? (
             <Image
               src={optimizeImage.thumbnail(currentImage)}
@@ -222,46 +307,21 @@ function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
 
-          {/* Color Variant Navigation Arrows - Only show if there are multiple color variants */}
+          {/* Color Variant Indicators (dots) - Only show if there are multiple color variants */}
           {hasColorVariants && (
-            <>
-              {/* Previous Arrow (Right side in RTL) */}
-              <button
-                onClick={handlePrevVariant}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-                aria-label="رنگ قبلی"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-
-              {/* Next Arrow (Left side in RTL) */}
-              <button
-                onClick={handleNextVariant}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
-                aria-label="رنگ بعدی"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-
-              {/* Variant Indicators (dots) */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                {colorVariants.map((variant, index) => (
-                  <div
-                    key={variant.id}
-                    className={`transition-all duration-200 ${
-                      index === currentVariantIndex
-                        ? 'w-6 h-2 bg-white rounded-full'
-                        : 'w-2 h-2 bg-white/60 rounded-full'
-                    }`}
-                    title={variant.name}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {colorVariants.map((variant, index) => (
+                <div
+                  key={variant.id}
+                  className={`transition-all duration-200 ${
+                    index === currentVariantIndex
+                      ? 'w-6 h-2 bg-white rounded-full shadow-md'
+                      : 'w-2 h-2 bg-white/60 rounded-full'
+                  }`}
+                  title={variant.name}
+                />
+              ))}
+            </div>
           )}
         </div>
       </Link>
