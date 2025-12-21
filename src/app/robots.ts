@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin', '/api', '/profile'],
       },
     ],
-    sitemap: 'https://kitia.ir/sitemap.xml',
+    sitemap: getAbsoluteUrl('/sitemap.xml'),
   };
 }

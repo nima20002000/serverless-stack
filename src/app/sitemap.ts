@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getAllProducts } from '@/services/product-service';
 import { getAllCategories } from '@/services/category-service';
+import { getBaseUrl } from '@/lib/seo/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
  * Includes all static pages, active products, and categories
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = 'https://kitia.ir';
+  const baseUrl = getBaseUrl();
 
   // Static pages with their priorities and change frequencies
   const staticPages: MetadataRoute.Sitemap = [
