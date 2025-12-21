@@ -12,6 +12,7 @@ export type TransactionEmailData = {
   id: string;
   transactionCode: string;
   amount: string | number;
+  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
   fullName: string | null;
   phone: string | null;
   email: string | null;
@@ -314,6 +315,9 @@ export async function sendBuyerOrderConfirmation(
     const buyerName = transaction.user?.name || transaction.fullName;
     const buyerPhone = transaction.user?.phone || transaction.phone;
 
+    // Payment method label
+    const paymentMethodLabel = transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+
     const emailHTML = `
 <!DOCTYPE html>
 <html dir="rtl" lang="fa">
@@ -433,6 +437,7 @@ export async function sendBuyerOrderConfirmation(
     <div class="highlight">
       <strong>📦 تعداد کل اقلام:</strong> ${totalItems} عدد<br/>
       <strong>💰 مبلغ پرداختی:</strong> ${Number(transaction.amount).toLocaleString('fa-IR')} تومان<br/>
+      <strong>💳 روش پرداخت:</strong> ${paymentMethodLabel}<br/>
       ${refId ? `<strong>🔢 شناسه پرداخت:</strong> ${refId}<br/>` : ''}
       <strong>📅 تاریخ ثبت سفارش:</strong> ${orderDate}
     </div>
@@ -506,6 +511,7 @@ ${buyerName} عزیز،
 ────────────────────────────────
 تعداد کل اقلام: ${totalItems} عدد
 مبلغ پرداختی: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
+روش پرداخت: ${paymentMethodLabel}
 ${refId ? `شناسه پرداخت: ${refId}` : ''}
 تاریخ ثبت: ${orderDate}
 
@@ -683,6 +689,9 @@ export async function sendAdminOrderConfirmation(
     const buyerEmail = transaction.user?.email || transaction.email || 'ندارد';
     const accountType = transaction.isGuest ? 'مهمان (بدون ثبت‌نام)' : 'کاربر ثبت‌نام شده';
 
+    // Payment method label
+    const paymentMethodLabel = transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+
     const emailHTML = `
 <!DOCTYPE html>
 <html dir="rtl" lang="fa">
@@ -789,6 +798,7 @@ export async function sendAdminOrderConfirmation(
     <div class="highlight">
       <strong>📦 تعداد کل اقلام:</strong> ${totalItems} عدد<br/>
       <strong>💰 مبلغ کل:</strong> ${Number(transaction.amount).toLocaleString('fa-IR')} تومان<br/>
+      <strong>💳 روش پرداخت:</strong> ${paymentMethodLabel}<br/>
       ${refId ? `<strong>🔢 شناسه پرداخت:</strong> ${refId}<br/>` : ''}
       <strong>📅 تاریخ ثبت سفارش:</strong> ${orderDate}
     </div>
@@ -859,25 +869,15 @@ export async function sendAdminOrderConfirmation(
 
 کد سفارش: ${transaction.transactionCode}
 تاریخ: ${orderDate}
+مبلغ: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
+روش پرداخت: ${paymentMethodLabel}
 ${refId ? `شناسه پرداخت: ${refId}` : ''}
 
-────────────────────────────────
-👤 اطلاعات خریدار
-────────────────────────────────
-نام: ${buyerName}
-تلفن: ${buyerPhone}
-ایمیل: ${buyerEmail}
-نوع حساب: ${accountType}
+👤 خریدار: ${buyerName} | تلفن: ${buyerPhone} | ایمیل: ${buyerEmail} | حساب: ${accountType}
 
-────────────────────────────────
-📍 اطلاعات ارسال
-────────────────────────────────
-آدرس: ${transaction.shippingAddress}
-${transaction.postalCode ? `کد پستی: ${transaction.postalCode}` : ''}
+📍 آدرس: ${transaction.shippingAddress}${transaction.postalCode ? ` | کد پستی: ${transaction.postalCode}` : ''}
 
-────────────────────────────────
-🛒 جزئیات سفارش (${totalItems} قلم)
-────────────────────────────────
+🛒 محصولات (${totalItems} قلم):
 
 ${itemsText}
 

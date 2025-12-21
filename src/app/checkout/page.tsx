@@ -161,67 +161,11 @@ export default function CheckoutPage() {
               onSubmit={handleCheckout}
               isProcessing={isProcessing}
             />
-
-            {/* Payment Method */}
-            <Card className="mt-6">
-              <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
-                روش پرداخت
-              </h2>
-              <div className="space-y-3">
-                <label
-                  className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'zarinpal'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="zarinpal"
-                    checked={paymentMethod === 'zarinpal'}
-                    onChange={() => setPaymentMethod('zarinpal')}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <div className="flex-1 text-right">
-                    <div className="font-medium text-gray-900">زرین‌پال</div>
-                    <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <ZarinpalBadge />
-                  </div>
-                </label>
-
-                <label
-                  className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'digipay'
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="digipay"
-                    checked={paymentMethod === 'digipay'}
-                    onChange={() => setPaymentMethod('digipay')}
-                    className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                  />
-                  <div className="flex-1 text-right">
-                    <div className="font-medium text-gray-900">دیجی‌پی</div>
-                    <div className="text-sm text-gray-600">پرداخت با کیف پول یا کارت بانکی</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <DigipayBadge />
-                  </div>
-                </label>
-              </div>
-            </Card>
           </div>
 
-          {/* Payment Summary */}
+          {/* Payment Summary and Payment Method */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4">
+            <div className="sticky top-4 space-y-6">
               <Card>
                 <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
                   اطلاعات پرداخت
@@ -246,6 +190,62 @@ export default function CheckoutPage() {
                     </span>
                     <span className="text-gray-900">مبلغ قابل پرداخت</span>
                   </div>
+                </div>
+              </Card>
+
+              {/* Payment Method Selection */}
+              <Card>
+                <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
+                  روش پرداخت
+                </h2>
+                <div className="space-y-3">
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'zarinpal'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="zarinpal"
+                      checked={paymentMethod === 'zarinpal'}
+                      onChange={() => setPaymentMethod('zarinpal')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-900">زرین‌پال</div>
+                      <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ZarinpalBadge />
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'digipay'
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="digipay"
+                      checked={paymentMethod === 'digipay'}
+                      onChange={() => setPaymentMethod('digipay')}
+                      className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                    />
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-900">دیجی‌پی</div>
+                      <div className="text-sm text-gray-600">پرداخت با کیف پول یا کارت بانکی</div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <DigipayBadge />
+                    </div>
+                  </label>
 
                   <div
                     className={`${
