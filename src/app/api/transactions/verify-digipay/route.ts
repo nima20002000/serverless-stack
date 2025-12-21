@@ -144,11 +144,14 @@ async function getHandler(req: NextRequest) {
         })
         .eq('id', transaction.id);
 
+      // Use 303 (See Other) to force browser to use GET for the redirect
+      // 307 preserves POST method which causes 405 on page routes
       return NextResponse.redirect(
         new URL(
           `/payment/failure?code=${transaction.transactionCode}`,
           req.url
-        )
+        ),
+        303
       );
     }
 
@@ -160,11 +163,13 @@ async function getHandler(req: NextRequest) {
         elapsedMs: Date.now() - startTime,
       });
 
+      // Use 303 (See Other) to force browser to use GET for the redirect
       return NextResponse.redirect(
         new URL(
           `/payment/success?code=${transaction.transactionCode}`,
           req.url
-        )
+        ),
+        303
       );
     }
 
@@ -376,11 +381,13 @@ async function getHandler(req: NextRequest) {
     }
 
     // Redirect to success page
+    // Use 303 (See Other) to force browser to use GET for the redirect
     return NextResponse.redirect(
       new URL(
         `/payment/success?code=${transaction.transactionCode}&trackingCode=${verification.trackingCode}`,
         req.url
-      )
+      ),
+      303
     );
   } catch (error) {
     const elapsedMs = Date.now() - startTime;
@@ -423,11 +430,13 @@ async function getHandler(req: NextRequest) {
           })
           .eq('id', transaction.id);
 
+        // Use 303 (See Other) to force browser to use GET for the redirect
         return NextResponse.redirect(
           new URL(
             `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`,
             req.url
-          )
+          ),
+          303
         );
       }
     } catch (nestedError) {
@@ -437,11 +446,13 @@ async function getHandler(req: NextRequest) {
       });
     }
 
+    // Use 303 (See Other) to force browser to use GET for the redirect
     return NextResponse.redirect(
       new URL(
         `/payment/failure?error=${encodeURIComponent(errorMessage)}`,
         req.url
-      )
+      ),
+      303
     );
   }
 }
