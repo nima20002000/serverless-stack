@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
       page,
       perPage,
       includeInactive: true,
+      includeRelations: false, // Admin list view doesn't need relations - major performance boost
       search,
       status,
       stock

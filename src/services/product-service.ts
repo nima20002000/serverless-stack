@@ -193,7 +193,9 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
 // ========== PRODUCT QUERIES ==========
 
 /**
- * Get all products with pagination
+ * Get all products with pagination (lightweight for admin list view)
+ * For admin product list, we don't need full relations - just basic product info
+ * Use getProductById with includeRelations=true for detail views
  */
 export async function getAllProducts(options?: {
   page?: number;
@@ -202,10 +204,12 @@ export async function getAllProducts(options?: {
   search?: string;
   status?: string;
   stock?: string;
+  includeRelations?: boolean; // NEW: Control whether to fetch relations
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
+  const includeRelations = options?.includeRelations ?? true; // Default true for backward compatibility
 
   const supabase = createClient();
   let query = supabase.from('products').select('*', { count: 'exact' });
@@ -241,6 +245,26 @@ export async function getAllProducts(options?: {
   if (error) {
     log.error('Error fetching products', { error });
     throw new Error('خطا در دریافت محصولات');
+  }
+
+  // If includeRelations is false, return products without fetching relations
+  // This is much faster for admin list views that don't need full product data
+  if (!includeRelations) {
+    const productsWithEmptyRelations: ProductWithRelations[] = (products || []).map(product => ({
+      ...product,
+      category: null,
+      tags: [],
+      media: [],
+      variants: [],
+    }));
+
+    return {
+      data: populateProductsImages(productsWithEmptyRelations),
+      total: count || 0,
+      page,
+      perPage,
+      totalPages: Math.ceil((count || 0) / perPage),
+    };
   }
 
   // Fetch relations for all products in parallel (OPTIMIZATION)
