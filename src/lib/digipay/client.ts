@@ -50,6 +50,7 @@ export interface PaymentRequest {
   description: string;
   cellNumber: string;
   callbackUrl: string;
+  providerId: string; // Unique transaction identifier (e.g., transactionCode)
   preferredGateway?: 'IPG' | 'WALLET'; // IPG (card) or WALLET (Digipay balance)
 }
 
@@ -68,6 +69,7 @@ export interface PaymentRequestResponse {
 export interface PaymentVerification {
   trackingCode: string;
   amount: number; // Original amount in Tomans
+  providerId: string; // Must match the providerId from payment request
 }
 
 /**
@@ -82,18 +84,6 @@ export interface PaymentVerificationResponse {
   status: number;
 }
 
-/**
- * Get provider ID from environment
- */
-function getProviderId(): string {
-  const providerId = process.env.DIGIPAY_PROVIDER_ID;
-
-  if (!providerId) {
-    throw new Error('DIGIPAY_PROVIDER_ID not configured');
-  }
-
-  return providerId;
-}
 
 /**
  * Create a payment request and get payment URL
@@ -120,6 +110,7 @@ export async function createPaymentRequest(
     amountInRials: amountInRials,
     cellNumber: request.cellNumber,
     callbackUrl: request.callbackUrl,
+    providerId: request.providerId,
     preferredGateway: request.preferredGateway,
     gatewayCode,
     sandbox: isSandboxMode(),
@@ -133,7 +124,7 @@ export async function createPaymentRequest(
     const ticketResponse = await createDigipayTicket(accessToken, {
       cellNumber: request.cellNumber,
       amount: amountInRials,
-      providerId: getProviderId(),
+      providerId: request.providerId,
       callbackUrl: request.callbackUrl,
       preferredGateway: gatewayCode,
     });
@@ -164,13 +155,11 @@ export async function createPaymentRequest(
 
 /**
  * Verify a payment after user returns from Digipay
- * @param trackingCode - Digipay tracking code from callback
- * @param amount - Amount in Tomans (for validation)
  */
 export async function verifyPayment(
-  trackingCode: string,
-  amount: number
+  verification: PaymentVerification
 ): Promise<PaymentVerificationResponse> {
+  const { trackingCode, amount, providerId } = verification;
   const startTime = Date.now();
 
   // Convert Tomans to Rials for validation
@@ -178,6 +167,7 @@ export async function verifyPayment(
 
   log.info('Verifying Digipay payment', {
     trackingCode,
+    providerId,
     amountInTomans: amount,
     amountInRials: amountInRials,
     sandbox: isSandboxMode(),
@@ -190,7 +180,7 @@ export async function verifyPayment(
     // Verify purchase
     const verificationResponse = await verifyDigipayPurchase(accessToken, {
       trackingCode,
-      providerId: getProviderId(),
+      providerId,
     });
 
     // Validate amount matches
@@ -202,6 +192,17 @@ export async function verifyPayment(
       });
 
       throw new Error('مبلغ پرداخت شده با مبلغ تراکنش مطابقت ندارد');
+    }
+
+    // Validate providerId matches (security check as per Digipay documentation)
+    if (verificationResponse.providerId !== providerId) {
+      log.error('Digipay verification providerId mismatch', {
+        expected: providerId,
+        received: verificationResponse.providerId,
+        trackingCode,
+      });
+
+      throw new Error('شناسه تراکنش مطابقت ندارد');
     }
 
     log.info('Digipay payment verified successfully', {
@@ -236,12 +237,14 @@ export async function verifyPayment(
 /**
  * Reverse/refund a payment
  * @param trackingCode - Digipay tracking code of the purchase to reverse
+ * @param providerId - Original providerId used in payment request
  */
-export async function reversePayment(trackingCode: string): Promise<void> {
+export async function reversePayment(trackingCode: string, providerId: string): Promise<void> {
   const startTime = Date.now();
 
   log.info('Reversing Digipay payment', {
     trackingCode,
+    providerId,
     sandbox: isSandboxMode(),
   });
 
@@ -252,7 +255,7 @@ export async function reversePayment(trackingCode: string): Promise<void> {
     // Reverse purchase
     await reverseDigipayPurchase(accessToken, {
       purchaseTrackingCode: trackingCode,
-      providerId: getProviderId(),
+      providerId,
     });
 
     log.info('Digipay payment reversed successfully', {

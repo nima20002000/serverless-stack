@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "verify:routes": "bash scripts/verify-api-routes.sh",
-    "prebuild": "npm run verify:routes"
+    "prebuild": "npm run verify:routes",
+    "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
+    "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
+    "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -26,6 +29,7 @@
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.6.0",
     "date-fns-jalali": "^3.6.0-1",
+    "dotenv": "^17.2.3",
     "kavenegar": "^1.1.4",
     "libphonenumber-js": "^1.12.30",
     "next": "^14.2.0",

@@ -280,6 +280,7 @@ async function postHandler(req: NextRequest) {
         amount: totalAmount, // In Tomans
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         cellNumber: finalPhone,
+        providerId: transaction.transactionCode, // Use transactionCode as unique providerId
         callbackUrl: `${digipayClient.getCallbackUrl(req.url)}?ticket=${transaction.id}`,
         // Optional: Allow user to select preferred gateway in UI
         // preferredGateway: 'IPG' | 'WALLET'

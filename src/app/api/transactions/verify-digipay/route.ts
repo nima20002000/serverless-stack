@@ -102,14 +102,16 @@ async function getHandler(req: NextRequest) {
     // Verify payment with Digipay
     log.info('Calling Digipay verification API', {
       trackingCode,
+      providerId: transaction.transactionCode,
       amount: transaction.amount,
       transactionId: transaction.id,
     });
 
-    const verification = await verifyPayment(
+    const verification = await verifyPayment({
       trackingCode,
-      Number(transaction.amount)
-    );
+      amount: Number(transaction.amount),
+      providerId: transaction.transactionCode,
+    });
 
     log.info('Digipay verification successful', {
       trackingCode: verification.trackingCode,

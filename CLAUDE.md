@@ -322,13 +322,14 @@ Required variables (see `.env.example`):
 - `R2_BUCKET_NAME` - R2 bucket name (default: kitia-products)
 - `R2_PUBLIC_URL` - Public URL for R2 files (R2.dev or custom domain)
 - `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED` - "true" to enable Cloudflare Image Resizing, "false" to use raw images (default: "true")
-- `DIGIPAY_BASE_URL` - Digipay API base URL (https://uat.mydigipay.info for testing)
+- `DIGIPAY_BASE_URL` - Digipay API base URL (https://api.mydigipay.com - works for both testing and production)
 - `DIGIPAY_CLIENT_ID` - Digipay OAuth client ID
 - `DIGIPAY_CLIENT_SECRET` - Digipay OAuth client secret
 - `DIGIPAY_USERNAME` - Digipay API username
 - `DIGIPAY_PASSWORD` - Digipay API password
-- `DIGIPAY_PROVIDER_ID` - Digipay provider/merchant ID
 - `DIGIPAY_SANDBOX` - "true" for sandbox/UAT mode
+
+**Note**: Digipay's UAT server (`uat.mydigipay.info`) is often unreachable. Use `https://api.mydigipay.com` for both testing and production. The `providerId` is dynamically set to the `transactionCode` for each payment request (not a static environment variable).
 
 ## RTL and Internationalization
 
