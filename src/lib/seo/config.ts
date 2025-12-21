@@ -12,20 +12,32 @@ export function getBaseUrl(): string {
   if (typeof window === 'undefined') {
     // Server-side: use environment variable or production URL
 
-    // Vercel automatically sets VERCEL_URL for production/preview deployments
-    // Use it if available and not localhost
+    // Priority 1: Use NEXT_PUBLIC_SITE_URL if set (allows dynamic configuration in Vercel)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (siteUrl) {
+      return siteUrl;
+    }
+
+    // Priority 2: In production, use the production domain
+    // VERCEL_ENV is 'production' for production deployments
+    if (process.env.VERCEL_ENV === 'production') {
+      return 'https://kitia.ir';
+    }
+
+    // Priority 3: For preview deployments, use VERCEL_URL
+    // Note: VERCEL_URL contains deployment URL (like kitia-xxx.vercel.app), not custom domain
     const vercelUrl = process.env.VERCEL_URL;
     if (vercelUrl && !vercelUrl.includes('localhost')) {
       return `https://${vercelUrl}`;
     }
 
-    // Use NEXT_PUBLIC_APP_URL if set and not localhost
+    // Priority 4: Use NEXT_PUBLIC_APP_URL if set and not localhost (for local dev)
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl && !appUrl.includes('localhost')) {
       return appUrl;
     }
 
-    // Fallback to production URL (for sitemap generation in production)
+    // Fallback to production URL
     return 'https://kitia.ir';
   }
 
