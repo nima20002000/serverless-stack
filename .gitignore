@@ -57,3 +57,4 @@ next-env.d.ts
 
 # Prevent routing conflicts - products route is at /src/app/products, not (public)/products
 /src/app/(public)/products/
+tests/node_modules/
