@@ -54,7 +54,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, description, price, discountPercent, stock, images, isFeatured, isActive, categoryId, tagIds } = body;
+    const { name, description, price, discountPercent, stock, images, hasVariants, isFeatured, isActive, categoryId, tagIds } = body;
 
     type UpdateData = {
       name?: string;
@@ -63,6 +63,7 @@ export async function PUT(
       discountPercent?: number | null;
       stock?: number;
       images?: string[];
+      hasVariants?: boolean;
       isFeatured?: boolean;
       isActive?: boolean;
       categoryId?: string | null;
@@ -76,6 +77,7 @@ export async function PUT(
     if (discountPercent !== undefined) updateData.discountPercent = discountPercent !== null ? parseInt(discountPercent) : null;
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (images !== undefined) updateData.images = images;
+    if (hasVariants !== undefined) updateData.hasVariants = hasVariants;
     if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (categoryId !== undefined) updateData.categoryId = categoryId;
@@ -99,7 +101,7 @@ export async function PUT(
 
 // DELETE /api/products/[id] - Delete product (admin only)
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

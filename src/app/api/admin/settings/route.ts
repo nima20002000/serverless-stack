@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { getAllSettings, updateSettings } from '@/services/settings-service';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -15,12 +15,7 @@ export async function GET() {
       return NextResponse.json({ error: 'غیرمجاز' }, { status: 403 });
     }
 
-    const settings = await prisma.siteSettings.findMany({
-      select: {
-        key: true,
-        value: true,
-      },
-    });
+    const settings = await getAllSettings();
 
     return NextResponse.json({ settings });
   } catch (error) {
@@ -50,16 +45,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Update or create settings
-    const updates = Object.entries(settings).map(([key, value]) =>
-      prisma.siteSettings.upsert({
-        where: { key },
-        update: { value: value as string },
-        create: { key, value: value as string },
-      })
-    );
-
-    await Promise.all(updates);
+    await updateSettings(settings);
 
     log.info('Site settings updated', { admin: session.user.email, keys: Object.keys(settings) });
 

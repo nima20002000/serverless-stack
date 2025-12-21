@@ -1,7 +1,7 @@
 'use client';
 
 import Modal from '@/components/ui/Modal';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
 import {
   UserIcon,
@@ -46,13 +46,19 @@ interface Transaction {
     product: {
       id: string;
       name: string;
-      slug: string;
     };
+    variant: {
+      id: string;
+      name: string;
+      color: string | null;
+      size: string | null;
+      material: string | null;
+    } | null;
   }>;
   invoice: {
     id: string;
     invoiceNumber: string;
-    createdAt: string;
+    generatedAt: string;
   } | null;
 }
 
@@ -178,7 +184,11 @@ export default function TransactionDetailModal({
                 <span className="text-sm text-gray-600">تاریخ ایجاد:</span>
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
-                  {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                  {transaction.createdAt ? (
+                    format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')
+                  ) : (
+                    <span className="text-gray-400">نامشخص</span>
+                  )}
                 </span>
               </div>
             </div>
@@ -291,9 +301,14 @@ export default function TransactionDetailModal({
                       <div className="font-medium text-gray-900">
                         {item.product.name}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {item.product.slug}
-                      </div>
+                      {item.variant && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          {item.variant.name}
+                          {item.variant.color && ` - رنگ: ${item.variant.color}`}
+                          {item.variant.size && ` - سایز: ${item.variant.size}`}
+                          {item.variant.material && ` - جنس: ${item.variant.material}`}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-medium">
@@ -344,9 +359,13 @@ export default function TransactionDetailModal({
                 <div className="text-left">
                   <div className="text-sm text-gray-600">تاریخ صدور:</div>
                   <div className="text-sm">
-                    {format(
-                      new Date(transaction.invoice.createdAt),
-                      'yyyy/MM/dd - HH:mm'
+                    {transaction.invoice.generatedAt ? (
+                      format(
+                        new Date(transaction.invoice.generatedAt),
+                        'yyyy/MM/dd - HH:mm'
+                      )
+                    ) : (
+                      <span className="text-gray-400">نامشخص</span>
                     )}
                   </div>
                 </div>

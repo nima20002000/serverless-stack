@@ -6,12 +6,11 @@ import {
   updateUserRole,
   deleteUser,
 } from '@/services/admin-service';
-import { Role } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -29,7 +28,6 @@ export async function GET(
     // Serialize the response to ensure proper format
     const user = {
       ...userData,
-      createdAt: userData.createdAt.toISOString(),
       _count: {
         transactions: userData.transactions.length,
         promoCodes: userData.promoCodes.length,
@@ -39,12 +37,12 @@ export async function GET(
         transactionCode: t.transactionCode,
         amount: Number(t.amount),
         status: t.status,
-        createdAt: t.createdAt.toISOString(),
+        createdAt: t.createdAt,
       })),
       promoCodes: userData.promoCodes.map(p => ({
         id: p.id,
         code: p.code,
-        expiresAt: p.expiresAt.toISOString(),
+        expiresAt: p.expiresAt,
         isUsed: p.isUsed,
       })),
     };
@@ -92,7 +90,7 @@ export async function PUT(
       );
     }
 
-    const user = await updateUserRole(params.id, role as Role);
+    const user = await updateUserRole(params.id, role as 'USER' | 'ADMIN');
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error updating user:', error);
@@ -105,7 +103,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {

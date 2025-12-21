@@ -277,17 +277,17 @@ export default function UsersManagementPage() {
       {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <Button type="submit" variant="primary">
-              جستجو
-            </Button>
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو بر اساس نام یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
             />
+            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
+              جستجو
+            </Button>
           </form>
         </div>
       </Card>
@@ -295,23 +295,15 @@ export default function UsersManagementPage() {
       {/* Role Filter */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <Button
-              variant="secondary"
-              onClick={clearFilters}
-              size="sm"
-            >
-              پاک کردن فیلترها
-            </Button>
-
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2 w-full">
               <select
                 value={roleFilter}
                 onChange={(e) => {
                   setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
               >
                 <option value="all">همه</option>
                 <option value="USER">کاربران</option>
@@ -319,6 +311,15 @@ export default function UsersManagementPage() {
               </select>
               <label className="text-sm font-medium text-gray-700 whitespace-nowrap">نقش:</label>
             </div>
+
+            <Button
+              variant="secondary"
+              onClick={clearFilters}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              پاک کردن فیلترها
+            </Button>
           </div>
         </div>
       </Card>
@@ -339,8 +340,8 @@ export default function UsersManagementPage() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full min-w-[800px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-center w-12">
@@ -354,19 +355,19 @@ export default function UsersManagementPage() {
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       عملیات
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
                       تراکنش‌ها
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       نقش
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
                       ایمیل / شماره تلفن
                     </th>
                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
                       نام کاربر
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden sm:table-cell">
                       شناسه
                     </th>
                   </tr>
@@ -411,7 +412,7 @@ export default function UsersManagementPage() {
                           </Button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <Link
                           href={`/admin/users/${user.id}`}
                           className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
@@ -422,7 +423,7 @@ export default function UsersManagementPage() {
                       <td className="px-4 py-3 text-right">
                         {getRoleBadge(user.role)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-900">
+                      <td className="px-4 py-3 text-right text-sm text-gray-900 hidden md:table-cell">
                         {user.email || user.phone || 'ندارد'}
                       </td>
                       <td className="px-4 py-3 text-right font-medium text-gray-900">
@@ -433,7 +434,7 @@ export default function UsersManagementPage() {
                           {user.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden sm:table-cell">
                         <code className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded font-medium">
                           {user.uid}
                         </code>

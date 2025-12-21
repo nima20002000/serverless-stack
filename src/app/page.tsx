@@ -1,36 +1,45 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getActiveProducts } from '@/services/product-service';
+import { getFeaturedProducts, getDiscountedProducts } from '@/services/product-service';
 import { getCategoryTree } from '@/services/category-service';
 import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
-// Use ISR (Incremental Static Regeneration) instead of SSR for better performance
+// Use ISR (Incremental Static Regeneration) for optimal performance
 // Page will be statically generated and revalidated every 60 seconds
 export const revalidate = 60;
 
 // Optimized hero image URL (640x640, WebP, 85% quality)
 // Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
-const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg";
+const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg";
 
 export default async function Home() {
-  // Fetch featured products
-  const featuredProductsResult = await getActiveProducts({ page: 1, perPage: 4 });
-  const featuredProducts = featuredProductsResult.data
-    .filter(p => p.isFeatured)
-    .slice(0, 4)
-    .map(p => ({ ...p, price: Number(p.price) }));
+  // Fetch featured and discounted products directly from database
+  // Using database-level filtering for optimal performance
+  const [featuredProductsRaw, discountedProductsRaw, categories] = await Promise.all([
+    getFeaturedProducts({ limit: 4 }),
+    getDiscountedProducts({ limit: 4 }),
+    getCategoryTree(),
+  ]);
 
-  // Fetch discounted products
-  const discountedProducts = featuredProductsResult.data
-    .filter(p => p.discountPercent && p.discountPercent > 0)
-    .slice(0, 4)
-    .map(p => ({ ...p, price: Number(p.price) }));
+  // Convert price and variant priceAdjust to number for display
+  // Also ensure images is always an array (not null)
+  const featuredProducts = featuredProductsRaw.map(p => ({
+    ...p,
+    price: Number(p.price),
+    images: p.images || [],
+    variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
+  }));
+  const discountedProducts = discountedProductsRaw.map(p => ({
+    ...p,
+    price: Number(p.price),
+    images: p.images || [],
+    variants: p.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
+  }));
 
-  // Fetch categories (top 3)
-  const categories = await getCategoryTree();
+  // Get top 3 categories
   const topCategories = categories.slice(0, 3);
 
   return (
@@ -145,7 +154,7 @@ export default async function Home() {
                 <Card className="hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer h-full">
                   <div className="text-center">
                     {/* Category Image */}
-                    <div className="w-full aspect-[4/5] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
+                    <div className="w-full aspect-[4/5] rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
                       {category.image ? (
                         <Image
                           src={optimizeImage.categoryCard(category.image)}
@@ -167,7 +176,7 @@ export default async function Home() {
                       </p>
                     )}
                     <div className="text-sm text-purple-600 font-medium">
-                      {category._count?.products || 0} محصول
+                      محصولات
                     </div>
                   </div>
                 </Card>

@@ -3,12 +3,15 @@ import {
   getTransactionByAuthority,
   updateTransactionStatus,
   reduceProductStock,
+  getTransactionWithVariants,
+  linkTransactionToUser,
 } from '@/services/transaction-service';
 import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
-import prisma from '@/lib/prisma/client';
 import { log } from '@/lib/logger';
+import { sendAdminOrderConfirmation, sendBuyerOrderConfirmation } from '@/lib/email/client';
+import { sendOrderConfirmation } from '@/services/sms-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -113,6 +116,117 @@ async function getHandler(req: NextRequest) {
     // Reduce product stock
     await reduceProductStock(transaction.id);
 
+    // Fetch full transaction data with variants for admin email
+    const fullTransaction = await getTransactionWithVariants(transaction.id);
+
+    // Send admin confirmation email (await to ensure it completes in serverless)
+    if (fullTransaction) {
+      try {
+        const emailResult = await sendAdminOrderConfirmation(fullTransaction, verification.refId);
+
+        if (!emailResult.success) {
+          log.warn('Admin confirmation email not sent', {
+            transactionId: transaction.id,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Admin confirmation email sent successfully', {
+            transactionId: transaction.id,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send admin confirmation email', {
+          transactionId: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+
+    // Send order confirmation SMS to buyer (await to ensure it completes in serverless)
+    if (transaction.phone) {
+      try {
+        log.info('Attempting to send order confirmation SMS to buyer', {
+          transactionId: transaction.id,
+          phone: transaction.phone,
+          transactionCode: transaction.transactionCode,
+          refId: verification.refId
+        });
+
+        const smsResult = await sendOrderConfirmation(
+          transaction.phone,
+          transaction.transactionCode,
+          verification.refId
+        );
+
+        if (!smsResult.success) {
+          log.warn('Order confirmation SMS not sent', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            error: smsResult.error
+          });
+        } else {
+          log.info('Order confirmation SMS sent successfully', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            messageId: smsResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if SMS fails
+        log.error('Failed to send order confirmation SMS', {
+          transactionId: transaction.id,
+          phone: transaction.phone,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } else {
+      log.warn('No phone number available for order confirmation SMS', {
+        transactionId: transaction.id
+      });
+    }
+
+    // Send order confirmation email to buyer (if email is provided during checkout)
+    if (fullTransaction && fullTransaction.email) {
+      try {
+        log.info('Attempting to send order confirmation email to buyer', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          transactionCode: transaction.transactionCode,
+          refId: verification.refId
+        });
+
+        const emailResult = await sendBuyerOrderConfirmation(fullTransaction, verification.refId);
+
+        if (!emailResult.success) {
+          log.warn('Buyer confirmation email not sent', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Buyer confirmation email sent successfully', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send buyer confirmation email', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } else {
+      log.info('No buyer email provided, skipping buyer confirmation email', {
+        transactionId: transaction.id,
+        hasEmail: !!fullTransaction?.email
+      });
+    }
+
     // Create user account if requested (for guest checkouts)
     if (!transaction.userId && transaction.createAccount && transaction.phone) {
       try {
@@ -134,13 +248,7 @@ async function getHandler(req: NextRequest) {
           });
 
           // Link this transaction to the existing user
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              userId: existingUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+          await linkTransactionToUser(transaction.id, existingUser.id);
         } else {
           // User doesn't exist - create new account
           log.info('Creating new user account after successful payment', {
@@ -151,18 +259,12 @@ async function getHandler(req: NextRequest) {
           const newUser = await createUser({
             phone: transaction.phone,
             email: transaction.email || undefined,
-            name: transaction.fullName,
+            name: transaction.fullName || 'کاربر',
           });
 
           // Link transaction to newly created user
           // createUser() already links orphaned transactions, but we need to update this specific one
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
-              userId: newUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+          await linkTransactionToUser(transaction.id, newUser.id);
 
           log.info('User account created and linked to transaction', {
             userId: newUser.id,

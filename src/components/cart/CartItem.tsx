@@ -7,20 +7,20 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface CartItemProps {
   item: CartItemType;
-  onUpdateQuantity: (productId: string, quantity: number) => void;
-  onRemove: (productId: string) => void;
+  onUpdateQuantity: (productId: string, quantity: number, variantId?: string) => void;
+  onRemove: (productId: string, variantId?: string) => void;
 }
 
 export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   const handleIncrement = () => {
     if (item.quantity < item.stock) {
-      onUpdateQuantity(item.productId, item.quantity + 1);
+      onUpdateQuantity(item.productId, item.quantity + 1, item.variantId);
     }
   };
 
   const handleDecrement = () => {
     if (item.quantity > 1) {
-      onUpdateQuantity(item.productId, item.quantity - 1);
+      onUpdateQuantity(item.productId, item.quantity - 1, item.variantId);
     }
   };
 
@@ -51,6 +51,11 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
           <h3 className="text-sm font-medium text-gray-900 text-right mb-1">
             {item.name}
           </h3>
+          {item.variantName && (
+            <p className="text-xs text-gray-500 text-right mb-1">
+              {item.variantName}
+            </p>
+          )}
           <p className="text-sm text-gray-600 text-right">
             {formatPrice(item.price)}
           </p>
@@ -91,7 +96,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
       {/* Price and Remove */}
       <div className="flex flex-col items-end justify-between">
         <button
-          onClick={() => onRemove(item.productId)}
+          onClick={() => onRemove(item.productId, item.variantId)}
           className="p-1 text-red-600 hover:bg-red-50 rounded-md transition-colors"
           aria-label="حذف از سبد"
         >

@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Policy
+
+**NEVER create extensive documentation in this project unless explicitly requested by the user.** This includes:
+- Detailed README files
+- API documentation
+- Architecture documents
+- Inline code documentation (unless replacing existing docs)
+
+Keep documentation minimal and only create when specifically asked.
+
 ## Project Overview
 
 Kitia is a Persian (Farsi) e-commerce platform built with Next.js 14 App Router, featuring RTL support, payment integration, and comprehensive admin capabilities. The application uses a service layer architecture with business logic centralized in service files.
@@ -11,34 +21,36 @@ Kitia is a Persian (Farsi) e-commerce platform built with Next.js 14 App Router,
 ### Development
 ```bash
 npm run dev              # Start dev server (clears .next cache first)
-npm run build            # Build for production (runs Prisma generate + Next.js build)
+npm run build            # Build for production
 npm start                # Start production server
 npm run lint             # Run ESLint
 npm run verify:routes    # Verify all API routes have 'export const dynamic' (runs pre-build)
 ```
 
-### Database (Prisma)
+### Database (Supabase)
 ```bash
-npx prisma generate                        # Generate Prisma Client after schema changes
-npx prisma migrate dev --name <name>       # Create and apply migration
-npx prisma db push                         # Push schema changes without migration (dev only)
-npx prisma studio                          # Open Prisma Studio UI
+# Generate TypeScript types from Supabase schema
+npx supabase gen types typescript --project-id gozxjxtnrbuurmstjydo > src/types/supabase.ts
+
+# Apply schema changes via psql (see examples below)
+# Or use Supabase dashboard SQL Editor
 ```
 
 ### Database Environments
-The project uses **three separate databases**:
-1. **Local PostgreSQL** (Development) - `localhost:5432/kitia`
-2. **Supabase Production** - `aws-1-ap-southeast-1.pooler.supabase.com` (project_ref: `tanqgnztclrucfldxhuk`)
-3. **Supabase Preview/Preproduction** - `aws-1-ap-northeast-2.pooler.supabase.com` (project_ref: `gozxjxtnrbuurmstjydo`)
+The project uses **Supabase** for database management:
+1. **Supabase Production** - `aws-1-ap-southeast-1.pooler.supabase.com` (project_ref: `tanqgnztclrucfldxhuk`)
+2. **Supabase Preview/Preproduction** - `aws-1-ap-northeast-2.pooler.supabase.com` (project_ref: `gozxjxtnrbuurmstjydo`)
+
+Currently using **Preview database** on the `migration/prisma-to-supabase` branch.
 
 **Database Connection Strings**:
 - **Production**: `postgresql://postgres.tanqgnztclrucfldxhuk:BHZnE4rPyZO4lSmA@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
 - **Preview**: `postgresql://postgres.gozxjxtnrbuurmstjydo:PawK0YK7sYbCzzMi@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true`
 
-**Important**: When applying schema changes, you must apply migrations to **all three databases**:
-- Local: `npx prisma db push`
-- Supabase Production: Use Supabase MCP `apply_migration` tool OR `psql` command
-- Supabase Preview: Use `psql` command
+**Important**: When applying schema changes, use:
+- Supabase Dashboard SQL Editor (recommended)
+- Supabase MCP `apply_migration` tool
+- `psql` command (see examples below)
 
 **Examples - Apply migrations**:
 
@@ -66,7 +78,8 @@ Example:
 ```typescript
 // ❌ BAD - Logic in API route
 export async function POST(req: Request) {
-  const product = await prisma.product.create({ ... });
+  const supabase = await createClient();
+  const { data: product } = await supabase.from('products').insert({ ... });
   await invalidateCache();
   return NextResponse.json(product);
 }
@@ -248,32 +261,31 @@ Supports passwordless login and registration via OTP codes.
 - `POST /api/auth/verify-otp` - Verify OTP code
 
 ### Transaction & Payment Flow
-
-The application supports two payment gateways: **Zarinpal** (default) and **Digipay**.
-
-#### Zarinpal Flow
 1. User creates transaction → generates unique `transactionCode` (8-char alphanumeric)
 2. Initiate Zarinpal payment → stores `zarinpalAuthority`
 3. User completes payment on Zarinpal gateway
-4. Callback verification (`/api/transactions/verify`) → update status to `COMPLETED`, store `zarinpalRefId`
-5. Auto-generate invoice after successful payment
-
-#### Digipay Flow
-1. User creates transaction → generates unique `transactionCode`
-2. Initiate Digipay payment → stores `digipayTicket`
-3. User completes payment on Digipay gateway (IPG or Wallet)
-4. Callback verification (`/api/transactions/verify-digipay`) → update status to `COMPLETED`, store `digipayTrackingCode`
-5. Auto-generate invoice after successful payment
-
-**Payment Method Selection**: Users can choose their preferred payment gateway on the checkout page.
+4. Callback verification → update status to `COMPLETED`, store `zarinpalRefId`
+5. Reduce product/variant stock
+6. Send admin order confirmation email (if `ADMIN_EMAIL` configured)
+7. Auto-generate invoice after successful payment
 
 Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
+
+**Admin Order Notifications**:
+- Automatic email sent to admin after each successful payment
+- Includes comprehensive order details: buyer info, products with variants, quantities, prices
+- Configured via `ADMIN_EMAIL` environment variable
+- Non-blocking - payment succeeds even if email fails
+- Service: `sendAdminOrderConfirmation()` in `src/lib/email/client.ts`
 
 ### Database Schema Key Points
 - **Products**: Support variants, media, tags, categories
   - `images` field is deprecated (kept for backward compatibility)
   - Use `ProductMedia` relation for new media
   - Variants can have separate media and pricing adjustments
+  - **Automatic stock calculation**: When a product has variants, its `stock` field is automatically calculated as the sum of all variant stocks
+    - Creating/updating/deleting variants automatically updates parent product stock
+    - Use `updateProductStockFromVariants(productId)` to manually recalculate if needed
 - **Categories**: Hierarchical (self-referencing with `parentId`)
 - **Transactions**: Linked to `TransactionItem[]` for cart contents
 - **PromoCodes**: One per user, 24-hour expiry, one-time use
@@ -283,7 +295,7 @@ Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
 Use `@/` to reference `/src`:
 ```typescript
 import { getAllProducts } from '@/services/product-service';
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 ```
 
 ## Logging
@@ -303,8 +315,9 @@ Development mode uses `pino-pretty` for colorized output. Production uses JSON l
 ## Environment Variables
 
 Required variables (see `.env.example`):
-- `DATABASE_URL` - PostgreSQL connection string (with `?schema=public`)
-- `DIRECT_URL` - Direct database URL (for Prisma migrations)
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - Supabase publishable key (replaces legacy anon key)
+- `SUPABASE_SECRET_KEY` - Supabase secret key (replaces legacy service_role key, for server-side operations)
 - `NEXTAUTH_URL` - App URL (http://localhost:3000 in dev)
 - `NEXTAUTH_SECRET` - Secret for JWT signing (generate with `openssl rand -base64 32`)
 - `ZARINPAL_MERCHANT_ID` - Zarinpal gateway merchant ID
@@ -322,14 +335,6 @@ Required variables (see `.env.example`):
 - `R2_BUCKET_NAME` - R2 bucket name (default: kitia-products)
 - `R2_PUBLIC_URL` - Public URL for R2 files (R2.dev or custom domain)
 - `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED` - "true" to enable Cloudflare Image Resizing, "false" to use raw images (default: "true")
-- `DIGIPAY_BASE_URL` - Digipay API base URL (https://api.mydigipay.com - works for both testing and production)
-- `DIGIPAY_CLIENT_ID` - Digipay OAuth client ID
-- `DIGIPAY_CLIENT_SECRET` - Digipay OAuth client secret
-- `DIGIPAY_USERNAME` - Digipay API username
-- `DIGIPAY_PASSWORD` - Digipay API password
-- `DIGIPAY_SANDBOX` - "true" for sandbox/UAT mode
-
-**Note**: Digipay's UAT server (`uat.mydigipay.info`) is often unreachable. Use `https://api.mydigipay.com` for both testing and production. The `providerId` is dynamically set to the `transactionCode` for each payment request (not a static environment variable).
 
 ## RTL and Internationalization
 
@@ -341,7 +346,11 @@ The entire application is RTL (Right-to-Left) for Persian/Farsi:
 
 ## Type Safety
 
-- Prisma-generated types are in `@prisma/client`
+- Supabase-generated types are in `@/types/supabase`
+- Type helpers in `@/lib/supabase/types`:
+  - `Tables<'table_name'>` - Table row types
+  - `Inserts<'table_name'>` - Insert types
+  - `Updates<'table_name'>` - Update types
 - Custom types in `/src/types`:
   - `ProductWithRelations` - Product with media, variants, tags
   - `PaginatedResponse<T>` - Standard pagination wrapper
@@ -362,17 +371,35 @@ This checks that all API routes and dynamic Server Component pages have the requ
 2. **Putting business logic in API routes** - Always use services
 3. **Not invalidating cache after mutations** - Products/data won't update
 4. **Using LTR layout patterns** - Use RTL-aware Tailwind classes
-5. **Direct Prisma client imports** - Always use `@/lib/prisma/client` (singleton)
+5. **Supabase client usage** - Use `createClient()` from `@/lib/supabase/server` for server-side operations
 6. **Upstash pattern limitations** - Can't use `KEYS *` pattern matching; clear specific keys
+7. **Supabase date handling** - Supabase returns dates as ISO strings; convert to `Date` objects when needed
+8. **Many-to-many relations** - Explicitly query junction tables and flatten results
 
-## Prisma Client Usage
+## Supabase Client Usage
 
-Always import from the singleton:
+Always use the appropriate client for your context:
+
+**Server-side (API routes, Server Components, Server Actions)**:
 ```typescript
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
+
+export async function GET() {
+  const supabase = await createClient();
+  const { data } = await supabase.from('products').select('*');
+  return NextResponse.json({ data });
+}
 ```
 
-This prevents "too many Prisma clients" errors in development hot reload.
+**Client-side (Client Components)**:
+```typescript
+import { createClient } from '@/lib/supabase/client';
+
+const supabase = createClient();
+const { data } = await supabase.from('products').select('*');
+```
+
+**Important**: Server-side client uses service role key for full access. Client-side uses anon key with RLS policies.
 
 ## Admin Operations
 

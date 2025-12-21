@@ -77,7 +77,7 @@ function VariantSelector({
             ? 'border-blue-600 ring-2 ring-blue-200'
             : 'border-gray-300 hover:border-gray-400'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-        style={{ backgroundColor: variant.color || '#ddd' }}
+        style={{ background: variant.color || '#ddd' }}
         title={`${variant.name}${outOfStock ? ' (ناموجود)' : ''}`}
         aria-label={variant.name}
       >

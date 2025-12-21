@@ -17,6 +17,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [status, session, router]);
 
+  // Show generic loading only during initial session check
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,34 +26,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Redirect cases - don't render anything
   if (!session || session.user.role !== 'ADMIN') {
     return null;
   }
 
+  // Authenticated admin - render layout and let pages handle their own loading states
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin User Info Bar */}
       <div className="bg-blue-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
+            <div className="text-xs sm:text-sm order-2 sm:order-1">
               <span className="opacity-90">نقش: </span>
               <span className="font-medium">مدیر سیستم</span>
             </div>
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm order-1 sm:order-2">
               <div>
                 <span className="opacity-90">خوش آمدید، </span>
-                <span className="font-medium">{session.user?.name || session.user?.email}</span>
+                <span className="font-medium truncate max-w-[150px] sm:max-w-none inline-block">{session.user?.name || session.user?.email}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-8">
+        <div className="flex gap-4 lg:gap-8">
           <AdminSidebar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 min-w-0">{children}</main>
         </div>
       </div>
     </div>

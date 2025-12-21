@@ -3,43 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
-import CategorySelector from '@/components/admin/CategorySelector';
-import TagInput from '@/components/admin/TagInput';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
-
-interface MediaItem {
-  id: string;
-  type: 'IMAGE' | 'VIDEO';
-  url: string;
-  alt?: string;
-  order: number;
-  variantId?: string | null;
-}
-
-interface Tag {
-  id: string;
-  name: string;
-  slug: string;
-}
-
-interface Variant {
-  id: string;
-  name: string;
-  sku?: string;
-  color?: string;
-  size?: string;
-  material?: string;
-  priceAdjust: string;
-  stock: string;
-  isActive: boolean;
-  media?: MediaItem[];
-}
+import ProductFormFields from '@/components/admin/ProductFormFields';
+import MediaManager from '@/components/admin/MediaManager';
+import VariantManager from '@/components/admin/VariantManager';
+import { useMediaManager } from '@/hooks/useMediaManager';
+import { useVariantManager } from '@/hooks/useVariantManager';
+import type { ProductFormData, Tag, MediaItem, Variant } from '@/types/product-admin';
 
 interface EditProductPageProps {
   params: { id: string };
@@ -47,41 +19,30 @@ interface EditProductPageProps {
 
 export default function EditProductPage({ params }: EditProductPageProps) {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
     price: '',
     discountPercent: '',
     stock: '',
+    hasVariants: false,
     isFeatured: false,
     isActive: true,
-    categoryId: null as string | null,
+    categoryId: null,
   });
-  const [media, setMedia] = useState<MediaItem[]>([]);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [variants, setVariants] = useState<Variant[]>([]);
-  const [showVariantForm, setShowVariantForm] = useState(false);
-  const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
-  const [variantForm, setVariantForm] = useState({
-    name: '',
-    sku: '',
-    color: '',
-    size: '',
-    material: '',
-    priceAdjust: '0',
-    stock: '0',
-    isActive: true,
-  });
-  const [variantMedia, setVariantMedia] = useState<MediaItem[]>([]);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [originalVariants, setOriginalVariants] = useState<Variant[]>([]);
 
-  // R2MediaBrowser states
+  // Media management (product-level)
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
-  const [showVariantMediaBrowser, setShowVariantMediaBrowser] = useState(false);
+  const productMedia = useMediaManager();
+
+  // Variant management
+  const variantManager = useVariantManager();
 
   const fetchProduct = async () => {
     try {
@@ -97,6 +58,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         price: product.price.toString(),
         discountPercent: product.discountPercent?.toString() || '',
         stock: product.stock.toString(),
+        hasVariants: product.hasVariants || false,
         isFeatured: product.isFeatured || false,
         isActive: product.isActive,
         categoryId: product.categoryId || null,
@@ -104,8 +66,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Load existing media (product-level only, not variant media)
       if (product.media) {
-        const productMedia = product.media.filter((m: MediaItem) => !m.variantId);
-        setMedia(productMedia);
+        const productMediaItems = product.media.filter((m: MediaItem) => !m.variantId);
+        productMedia.setMedia(productMediaItems);
       }
 
       // Load existing tags
@@ -113,21 +75,25 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         setSelectedTags(product.tags);
       }
 
-      // Load existing variants with their media
+      // Load existing variants with their media (sorted by order)
       if (product.variants) {
-        const formattedVariants = product.variants.map((v: Variant) => ({
-          id: v.id,
-          name: v.name,
-          sku: v.sku || '',
-          color: v.color || '',
-          size: v.size || '',
-          material: v.material || '',
-          priceAdjust: v.priceAdjust.toString(),
-          stock: v.stock.toString(),
-          isActive: v.isActive,
-          media: v.media || [],
-        }));
-        setVariants(formattedVariants);
+        const formattedVariants = product.variants
+          .sort((a: Variant, b: Variant) => (a.order ?? 0) - (b.order ?? 0))
+          .map((v: Variant) => ({
+            id: v.id,
+            name: v.name,
+            sku: v.sku || '',
+            color: v.color || '',
+            size: v.size || '',
+            material: v.material || '',
+            priceAdjust: v.priceAdjust.toString(),
+            stock: v.stock.toString(),
+            order: v.order ?? 0,
+            isActive: v.isActive,
+            media: v.media || [],
+          }));
+        variantManager.setVariants(formattedVariants);
+        setOriginalVariants(formattedVariants); // Store original state for comparison
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
@@ -192,7 +158,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           description: formData.description,
           price: parseFloat(formData.price),
           discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : null,
-          stock: parseInt(formData.stock),
+          stock: formData.hasVariants ? 0 : parseInt(formData.stock),
+          hasVariants: formData.hasVariants,
           isFeatured: formData.isFeatured,
           isActive: formData.isActive,
           categoryId: formData.categoryId,
@@ -214,7 +181,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Delete old product-level media that are not in current media state
       for (const oldMedia of existingProductMedia) {
-        const stillExists = media.find(m => m.id === oldMedia.id);
+        const stillExists = productMedia.media.find(m => m.id === oldMedia.id);
         if (!stillExists) {
           await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
             method: 'DELETE',
@@ -223,10 +190,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Add new product-level media (those with temporary IDs starting with 'new-')
-      for (const mediaItem of media) {
+      for (const mediaItem of productMedia.media) {
         if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
-        await fetch(`/api/products/${params.id}/media`, {
+        const mediaResponse = await fetch(`/api/products/${params.id}/media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -234,18 +201,41 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             url: mediaItem.url,
             alt: mediaItem.alt,
             order: mediaItem.order,
+            isDefault: mediaItem.isDefault,
           }),
         });
+
+        if (!mediaResponse.ok) {
+          const errorData = await mediaResponse.json();
+          throw new Error(errorData.error || 'خطا در افزودن رسانه محصول');
+        }
+      }
+
+      // Update isDefault for existing product-level media (only if changed)
+      for (const mediaItem of productMedia.media) {
+        if (mediaItem.id.startsWith('new-')) continue; // Skip new media
+
+        // Check if isDefault actually changed
+        const oldMedia = existingProductMedia.find((m: MediaItem) => m.id === mediaItem.id);
+        if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+          await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              isDefault: mediaItem.isDefault,
+            }),
+          });
+        }
       }
 
       // Step 3: Sync variants
       const existingVariantsResponse = await fetch(`/api/products/${params.id}/variants`);
       const existingVariantsData = await existingVariantsResponse.json();
-      const existingVariants = existingVariantsData.variants || [];
+      const existingVariantsFromDB = existingVariantsData.variants || [];
 
       // Delete variants that were removed
-      for (const oldVariant of existingVariants) {
-        const stillExists = variants.find(v => v.id === oldVariant.id);
+      for (const oldVariant of existingVariantsFromDB) {
+        const stillExists = variantManager.variants.find(v => v.id === oldVariant.id);
         if (!stillExists) {
           await fetch(`/api/products/${params.id}/variants/${oldVariant.id}`, {
             method: 'DELETE',
@@ -253,97 +243,213 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
+      // Fetch all product media once (to avoid N+1 query pattern)
+      const allProductMediaResponse = await fetch(`/api/products/${params.id}/media`);
+      const allProductMediaData = await allProductMediaResponse.json();
+      const allProductMedia = allProductMediaData.media || [];
+
       // Update or create variants
-      for (const variant of variants) {
-        const isExisting = !variant.id.startsWith('variant-');
+      // Track created variant IDs for reordering later
+      const variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
-        if (isExisting) {
-          // Update existing variant
-          await fetch(`/api/products/${params.id}/variants/${variant.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              isActive: variant.isActive,
-            }),
-          });
+      // Separate existing and new variants
+      const existingVariants = variantManager.variants.filter(v => !v.id.startsWith('variant-'));
+      const newVariants = variantManager.variants.filter(v => v.id.startsWith('variant-'));
 
-          // Sync variant media
-          const variantMediaResponse = await fetch(`/api/products/${params.id}/media`);
-          const variantMediaData = await variantMediaResponse.json();
-          const existingVariantMedia = variantMediaData.media.filter((m: MediaItem) => m.variantId === variant.id);
+      // Helper: Check if variant properties changed
+      const variantPropsChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+        if (!original) return true; // New variant or not found in original
+        return (
+          current.name !== original.name ||
+          current.sku !== original.sku ||
+          current.color !== original.color ||
+          current.size !== original.size ||
+          current.material !== original.material ||
+          current.priceAdjust !== original.priceAdjust ||
+          current.stock !== original.stock ||
+          current.isActive !== original.isActive
+        );
+      };
 
-          // Delete old variant media
-          for (const oldMedia of existingVariantMedia) {
-            const stillExists = variant.media?.find(m => m.id === oldMedia.id);
-            if (!stillExists) {
-              await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
-                method: 'DELETE',
-              });
+      // Step 3.1: Update only changed variants in parallel
+      const variantsToUpdate = existingVariants.filter(variant => {
+        const original = originalVariants.find(v => v.id === variant.id);
+        return variantPropsChanged(variant, original);
+      });
+
+      if (variantsToUpdate.length > 0) {
+        await Promise.all(
+          variantsToUpdate.map(variant =>
+            fetch(`/api/products/${params.id}/variants/${variant.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                isActive: variant.isActive,
+              }),
+            })
+          )
+        );
+      }
+
+      // Map existing variant IDs
+      existingVariants.forEach(variant => {
+        variantIdMapping[variant.id] = variant.id;
+      });
+
+      // Helper: Check if variant media changed
+      const variantMediaChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+        if (!original) return true;
+        const currentMediaIds = (current.media || []).map(m => m.id).sort().join(',');
+        const originalMediaIds = (original.media || []).map(m => m.id).sort().join(',');
+        if (currentMediaIds !== originalMediaIds) return true;
+
+        // Check if isDefault changed for any media
+        return (current.media || []).some(currentMedia => {
+          const originalMedia = (original.media || []).find(m => m.id === currentMedia.id);
+          return originalMedia && originalMedia.isDefault !== currentMedia.isDefault;
+        });
+      };
+
+      // Step 3.2: Sync media only for variants where media changed
+      for (const variant of existingVariants) {
+        const original = originalVariants.find(v => v.id === variant.id);
+
+        // Skip if media didn't change
+        if (!variantMediaChanged(variant, original)) continue;
+
+        // Sync variant media - use cached media data
+        const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
+
+        // Delete old variant media
+        for (const oldMedia of existingVariantMedia) {
+          const stillExists = variant.media?.find(m => m.id === oldMedia.id);
+          if (!stillExists) {
+            await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
+              method: 'DELETE',
+            });
+          }
+        }
+
+        // Add new variant media (temporary IDs starting with 'new-')
+        if (variant.media) {
+          for (const mediaItem of variant.media) {
+            if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
+
+            const variantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                variantId: variant.id,
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              }),
+            });
+
+            if (!variantMediaResponse.ok) {
+              const errorData = await variantMediaResponse.json();
+              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت');
             }
           }
 
-          // Add new variant media (temporary IDs starting with 'new-')
-          if (variant.media) {
-            for (const mediaItem of variant.media) {
-              if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
+          // Update isDefault for existing variant media (only if changed)
+          for (const mediaItem of variant.media) {
+            if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
-              await fetch(`/api/products/${params.id}/media`, {
-                method: 'POST',
+            // Check if isDefault actually changed
+            const oldMedia = existingVariantMedia.find((m: MediaItem) => m.id === mediaItem.id);
+            if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+              await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  variantId: variant.id,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
-                }),
-              });
-            }
-          }
-        } else {
-          // Create new variant
-          const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              isActive: variant.isActive,
-            }),
-          });
-
-          const variantData = await variantResponse.json();
-          const variantId = variantData.variant?.id;
-
-          // Add variant media
-          if (variantId && variant.media && variant.media.length > 0) {
-            for (const mediaItem of variant.media) {
-              await fetch(`/api/products/${params.id}/media`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  variantId: variantId,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
+                  isDefault: mediaItem.isDefault,
                 }),
               });
             }
           }
         }
+      }
+
+      // Step 3.3: Create new variants
+      for (const variant of newVariants) {
+        // Create new variant (including order)
+        const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: variant.name,
+            sku: variant.sku || undefined,
+            color: variant.color || undefined,
+            size: variant.size || undefined,
+            material: variant.material || undefined,
+            priceAdjust: parseFloat(variant.priceAdjust),
+            stock: parseInt(variant.stock),
+            order: variant.order,
+            isActive: variant.isActive,
+          }),
+        });
+
+        const variantData = await variantResponse.json();
+        const variantId = variantData.variant?.id;
+
+        // Map temporary ID to real database ID
+        if (variantId) {
+          variantIdMapping[variant.id] = variantId;
+        }
+
+        // Add variant media
+        if (variantId && variant.media && variant.media.length > 0) {
+          for (const mediaItem of variant.media) {
+            const newVariantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                variantId: variantId,
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              }),
+            });
+
+            if (!newVariantMediaResponse.ok) {
+              const errorData = await newVariantMediaResponse.json();
+              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت جدید');
+            }
+          }
+        }
+      }
+
+      // Step 4: Reorder variants only if order changed
+      const orderChanged = variantManager.variants.some((variant) => {
+        const original = originalVariants.find(v => v.id === variant.id);
+        return !original || original.order !== variant.order;
+      }) || newVariants.length > 0; // Always reorder if there are new variants
+
+      if (orderChanged && variantManager.variants.length > 0) {
+        const variantOrders = variantManager.variants.map(v => ({
+          id: variantIdMapping[v.id] || v.id, // Use real ID from mapping
+          order: v.order,
+        }));
+
+        await fetch(`/api/products/${params.id}/variants/reorder`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            variantOrders,
+          }),
+        });
       }
 
       router.push('/admin/products');
@@ -369,124 +475,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     }
   };
 
-  const handleVariantFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setVariantForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const addOrUpdateVariant = () => {
-    if (!variantForm.name.trim()) {
-      alert('نام نوع محصول الزامی است');
-      return;
-    }
-
-    if (editingVariantId) {
-      // Update existing variant
-      setVariants(variants.map(v =>
-        v.id === editingVariantId
-          ? { ...variantForm, id: editingVariantId, media: variantMedia }
-          : v
-      ));
-      setEditingVariantId(null);
-    } else {
-      // Add new variant
-      const newVariant: Variant = {
-        ...variantForm,
-        id: `variant-${Date.now()}`,
-        media: variantMedia,
-      };
-      setVariants([...variants, newVariant]);
-    }
-
-    // Reset form
-    setVariantForm({
-      name: '',
-      sku: '',
-      color: '',
-      size: '',
-      material: '',
-      priceAdjust: '0',
-      stock: '0',
-      isActive: true,
-    });
-    setVariantMedia([]);
-    setShowVariantForm(false);
-  };
-
-  const editVariant = (variant: Variant) => {
-    setVariantForm({
-      name: variant.name,
-      sku: variant.sku || '',
-      color: variant.color || '',
-      size: variant.size || '',
-      material: variant.material || '',
-      priceAdjust: variant.priceAdjust,
-      stock: variant.stock,
-      isActive: variant.isActive,
-    });
-    setVariantMedia(variant.media || []);
-    setEditingVariantId(variant.id);
-    setShowVariantForm(true);
-  };
-
-  const deleteVariant = (variantId: string) => {
-    if (confirm('آیا از حذف این نوع محصول اطمینان دارید؟')) {
-      setVariants(variants.filter(v => v.id !== variantId));
-    }
-  };
-
-  const cancelVariantEdit = () => {
-    setVariantForm({
-      name: '',
-      sku: '',
-      color: '',
-      size: '',
-      material: '',
-      priceAdjust: '0',
-      stock: '0',
-      isActive: true,
-    });
-    setVariantMedia([]);
-    setEditingVariantId(null);
-    setShowVariantForm(false);
-  };
-
-  // R2MediaBrowser handlers
-  const handleMediaSelect = (urls: string[]) => {
-    const newMedia: MediaItem[] = urls.map((url, index) => ({
-      id: `new-${Date.now()}-${index}`,
-      type: url.includes('/videos/') ? 'VIDEO' : 'IMAGE',
-      url,
-      alt: '',
-      order: media.length + index,
-    }));
-    setMedia([...media, ...newMedia]);
-  };
-
-  const handleVariantMediaSelect = (urls: string[]) => {
-    const newMedia: MediaItem[] = urls.map((url, index) => ({
-      id: `new-${Date.now()}-${index}`,
-      type: url.includes('/videos/') ? 'VIDEO' : 'IMAGE',
-      url,
-      alt: '',
-      order: variantMedia.length + index,
-    }));
-    setVariantMedia([...variantMedia, ...newMedia]);
-  };
-
-  const removeMedia = (id: string) => {
-    setMedia(media.filter(m => m.id !== id));
-  };
-
-  const removeVariantMedia = (id: string) => {
-    setVariantMedia(variantMedia.filter(m => m.id !== id));
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -504,8 +492,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         ]}
       />
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-right">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-right">
           ویرایش محصول
         </h1>
       </div>
@@ -516,457 +504,78 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
-        <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-right">
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-right">
             اطلاعات پایه
           </h2>
 
-          <div className="space-y-6">
-            <Input
-              label="نام محصول"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              error={errors.name}
-              disabled={isSaving}
-              placeholder="مثال: لپ‌تاپ ایسوس"
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                دسته‌بندی
-              </label>
-              <CategorySelector
-                value={formData.categoryId}
-                onChange={(categoryId) => setFormData(prev => ({ ...prev, categoryId }))}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                برچسب‌ها
-              </label>
-              <TagInput
-                selectedTags={selectedTags}
-                onChange={setSelectedTags}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
-                توضیحات محصول
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                disabled={isSaving}
-                rows={5}
-                className="w-full px-4 py-2 border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                placeholder="توضیحات کامل محصول را وارد کنید"
-              />
-              {errors.description && (
-                <p className="mt-1 text-sm text-red-600 text-right">{errors.description}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="قیمت (تومان)"
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleChange}
-                error={errors.price}
-                disabled={isSaving}
-                placeholder="1500000"
-                dir="ltr"
-              />
-
-              <Input
-                label="تخفیف (درصد)"
-                name="discountPercent"
-                type="number"
-                value={formData.discountPercent}
-                onChange={handleChange}
-                error={errors.discountPercent}
-                disabled={isSaving}
-                placeholder="0"
-                min="0"
-                max="100"
-                dir="ltr"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="موجودی"
-                name="stock"
-                type="number"
-                value={formData.stock}
-                onChange={handleChange}
-                error={errors.stock}
-                disabled={isSaving}
-                placeholder="10"
-                dir="ltr"
-              />
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="isFeatured"
-                  name="isFeatured"
-                  checked={formData.isFeatured}
-                  onChange={handleChange}
-                  disabled={isSaving}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
-                <label htmlFor="isFeatured" className="text-sm font-medium text-gray-700">
-                  محصول ویژه
-                </label>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  name="isActive"
-                  checked={formData.isActive}
-                  onChange={handleChange}
-                  disabled={isSaving}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                  محصول فعال باشد
-                </label>
-              </div>
-            </div>
-          </div>
+          <ProductFormFields
+            formData={formData}
+            selectedTags={selectedTags}
+            variants={variantManager.variants}
+            errors={errors}
+            disabled={isSaving}
+            onChange={handleChange}
+            onTagsChange={setSelectedTags}
+          />
         </Card>
 
         {/* Media */}
-        <Card>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-right">
-            تصاویر و ویدیو محصول
-          </h2>
-
-          {/* Selected Media Preview */}
-          {media.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {media.map((item) => (
-                <div key={item.id} className="relative group border rounded-lg overflow-hidden">
-                  <div className="aspect-square relative bg-gray-200">
-                    {item.type === 'IMAGE' ? (
-                      <Image
-                        src={item.url}
-                        alt={item.alt || 'Product media'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        ویدیو
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeMedia(item.id)}
-                      className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <XMarkIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setShowMediaBrowser(true)}
+        <Card padding="sm">
+          <MediaManager
+            media={productMedia.media}
+            onMediaSelect={productMedia.handleMediaSelect}
+            onSetDefault={productMedia.setDefaultMedia}
+            onRemove={productMedia.removeMedia}
+            showBrowser={showMediaBrowser}
+            onOpenBrowser={() => setShowMediaBrowser(true)}
+            onCloseBrowser={() => setShowMediaBrowser(false)}
             disabled={isSaving}
-          >
-            + انتخاب رسانه از R2
-          </Button>
+            title="تصاویر و ویدیو محصول"
+          />
         </Card>
 
         {/* Variants */}
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 text-right">
-              انواع محصول (رنگ، سایز، ...)
-            </h2>
-            {!showVariantForm && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setShowVariantForm(true)}
-                disabled={isSaving}
-              >
-                + افزودن نوع جدید
-              </Button>
-            )}
-          </div>
-
-          {showVariantForm && (
-            <div className="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg space-y-4">
-              <h3 className="font-medium text-right">
-                {editingVariantId && !editingVariantId.startsWith('variant-') ? 'ویرایش نوع محصول' : 'افزودن نوع جدید'}
-              </h3>
-
-              <Input
-                label="نام نوع (مثال: قرمز - بزرگ)"
-                name="name"
-                value={variantForm.name}
-                onChange={handleVariantFormChange}
-                placeholder="قرمز - بزرگ"
-              />
-
-              <Input
-                label="SKU (اختیاری)"
-                name="sku"
-                value={variantForm.sku}
-                onChange={handleVariantFormChange}
-                placeholder="PRD-RED-L"
-              />
-
-              <div className="grid grid-cols-3 gap-4">
-                <Input
-                  label="رنگ"
-                  name="color"
-                  type="color"
-                  value={variantForm.color}
-                  onChange={handleVariantFormChange}
-                />
-
-                <Input
-                  label="سایز"
-                  name="size"
-                  value={variantForm.size}
-                  onChange={handleVariantFormChange}
-                  placeholder="L, XL, ..."
-                />
-
-                <Input
-                  label="جنس"
-                  name="material"
-                  value={variantForm.material}
-                  onChange={handleVariantFormChange}
-                  placeholder="پنبه، پشم، ..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="تغییر قیمت (تومان)"
-                  name="priceAdjust"
-                  type="number"
-                  value={variantForm.priceAdjust}
-                  onChange={handleVariantFormChange}
-                  placeholder="0"
-                  dir="ltr"
-                />
-
-                <Input
-                  label="موجودی"
-                  name="stock"
-                  type="number"
-                  value={variantForm.stock}
-                  onChange={handleVariantFormChange}
-                  placeholder="10"
-                  dir="ltr"
-                />
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="variantIsActive"
-                  name="isActive"
-                  checked={variantForm.isActive}
-                  onChange={handleVariantFormChange}
-                  className="w-4 h-4 text-blue-600 rounded"
-                />
-                <label htmlFor="variantIsActive" className="text-sm font-medium text-gray-700">
-                  فعال
-                </label>
-              </div>
-
-              <div className="border-t border-blue-200 pt-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2 text-right">
-                  تصاویر این نوع محصول (اختیاری)
-                </h4>
-                <p className="text-xs text-gray-600 mb-3 text-right">
-                  تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده می‌شوند
-                </p>
-
-                {/* Variant Media Preview */}
-                {variantMedia.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    {variantMedia.map((item) => (
-                      <div key={item.id} className="relative group border rounded-lg overflow-hidden">
-                        <div className="aspect-square relative bg-gray-200">
-                          {item.type === 'IMAGE' ? (
-                            <Image
-                              src={item.url}
-                              alt={item.alt || 'Variant media'}
-                              fill
-                              className="object-cover"
-                              sizes="(max-width: 768px) 50vw, 25vw"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500">
-                              ویدیو
-                            </div>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeVariantMedia(item.id)}
-                            className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <XMarkIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setShowVariantMediaBrowser(true)}
-                >
-                  + انتخاب رسانه از R2
-                </Button>
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={cancelVariantEdit}
-                >
-                  انصراف
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={addOrUpdateVariant}
-                >
-                  {editingVariantId ? 'بروزرسانی' : 'افزودن'}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {variants.length > 0 ? (
-            <div className="space-y-3">
-              {variants.map((variant) => (
-                <div
-                  key={variant.id}
-                  className="p-4 border border-gray-200 rounded-lg bg-gray-50"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-gray-900 text-right">
-                          {variant.name}
-                        </h4>
-                        {variant.media && variant.media.length > 0 && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                            {variant.media.length} تصویر
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-600">
-                        {variant.sku && <p>SKU: {variant.sku}</p>}
-                        {variant.color && (
-                          <p className="flex items-center gap-2">
-                            رنگ:
-                            <span
-                              className="inline-block w-4 h-4 rounded border"
-                              style={{ backgroundColor: variant.color }}
-                            />
-                          </p>
-                        )}
-                        {variant.size && <p>سایز: {variant.size}</p>}
-                        {variant.material && <p>جنس: {variant.material}</p>}
-                        <p>تغییر قیمت: {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان</p>
-                        <p>موجودی: {variant.stock}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mr-4">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => editVariant(variant)}
-                      >
-                        ویرایش
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        onClick={() => deleteVariant(variant.id)}
-                      >
-                        حذف
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-8">
-              هیچ نوع محصولی اضافه نشده است
-            </p>
-          )}
+        <Card padding="sm">
+          <VariantManager
+            variants={variantManager.variants}
+            showVariantForm={variantManager.showVariantForm}
+            editingVariantId={variantManager.editingVariantId}
+            variantForm={variantManager.variantForm}
+            variantMedia={variantManager.variantMedia}
+            onVariantFormChange={variantManager.handleVariantFormChange}
+            onAddOrUpdate={variantManager.addOrUpdateVariant}
+            onEdit={variantManager.editVariant}
+            onDelete={variantManager.deleteVariant}
+            onCancel={variantManager.cancelVariantEdit}
+            onShowForm={() => variantManager.setShowVariantForm(true)}
+            onSetVariantMedia={variantManager.setVariantMedia}
+            onReorder={variantManager.reorderVariants}
+            disabled={isSaving}
+          />
         </Card>
 
         {/* Submit Buttons */}
-        <Card>
-          <div className="flex gap-4 justify-end">
+        <Card padding="sm">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
             <Button
               type="button"
               variant="secondary"
+              size="sm"
               onClick={() => router.back()}
               disabled={isSaving}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               انصراف
             </Button>
-            <Button type="submit" variant="primary" isLoading={isSaving}>
+            <Button type="submit" variant="primary" size="sm" isLoading={isSaving} className="w-full sm:w-auto order-1 sm:order-2">
               ذخیره تغییرات
             </Button>
           </div>
         </Card>
       </form>
-
-      {/* R2MediaBrowser Modals */}
-      <R2MediaBrowser
-        isOpen={showMediaBrowser}
-        onClose={() => setShowMediaBrowser(false)}
-        onSelect={handleMediaSelect}
-        multiSelect={true}
-        initialFolder="products/images"
-        allowUpload={true}
-      />
-
-      <R2MediaBrowser
-        isOpen={showVariantMediaBrowser}
-        onClose={() => setShowVariantMediaBrowser(false)}
-        onSelect={handleVariantMediaSelect}
-        multiSelect={true}
-        initialFolder="products/images"
-        allowUpload={true}
-      />
     </div>
   );
 }

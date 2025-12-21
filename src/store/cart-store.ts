@@ -16,8 +16,8 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[];
   addItem: (product: Omit<CartItem, 'quantity'>, quantity: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (productId: string, variantId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -70,16 +70,21 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
-      removeItem: (productId) => {
-        const newItems = get().items.filter((item) => item.productId !== productId);
+      removeItem: (productId, variantId) => {
+        const newItems = get().items.filter(
+          (item) =>
+            !(item.productId === productId && item.variantId === variantId)
+        );
         set({
           items: newItems,
         });
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (productId, quantity, variantId) => {
         const { items } = get();
-        const item = items.find((i) => i.productId === productId);
+        const item = items.find(
+          (i) => i.productId === productId && i.variantId === variantId
+        );
 
         if (!item) {
           throw new Error('محصول در سبد خرید یافت نشد');
@@ -88,7 +93,7 @@ export const useCartStore = create<CartStore>()(
         // Validate quantity
         if (quantity <= 0) {
           // Remove item if quantity is 0 or negative
-          get().removeItem(productId);
+          get().removeItem(productId, variantId);
           return;
         }
 
@@ -97,7 +102,9 @@ export const useCartStore = create<CartStore>()(
         }
 
         const newItems = items.map((i) =>
-          i.productId === productId ? { ...i, quantity } : i
+          i.productId === productId && i.variantId === variantId
+            ? { ...i, quantity }
+            : i
         );
 
         set({

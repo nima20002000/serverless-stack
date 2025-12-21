@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
     "dev:plain": "rm -rf .next && next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "verify:routes": "bash scripts/verify-api-routes.sh",
@@ -14,16 +14,17 @@
     "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
     "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh"
   },
-  "prisma": {
-    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
-  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",
     "@aws-sdk/lib-storage": "^3.943.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.1.0",
-    "@prisma/client": "^5.14.0",
     "@smithy/node-http-handler": "^4.4.5",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
     "@upstash/ratelimit": "^2.0.7",
     "@upstash/redis": "^1.35.7",
     "bcryptjs": "^2.4.3",
@@ -39,6 +40,7 @@
     "pino": "^10.1.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "server-only": "^0.0.1",
     "uuid": "^9.0.1",
     "zarinpal-node-sdk": "^2.2.0",
     "zustand": "^4.5.0"
@@ -59,7 +61,7 @@
     "eslint-config-next": "^14.2.0",
     "pino-pretty": "^13.1.2",
     "postcss": "^8.4.0",
-    "prisma": "^5.14.0",
+    "supabase": "^2.67.2",
     "tailwindcss": "^3.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0"

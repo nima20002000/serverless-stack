@@ -309,14 +309,15 @@ export default function CategoriesManagementPage() {
     <div>
       <Breadcrumbs items={[{ label: 'مدیریت دسته‌بندی‌ها' }]} />
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <Button
           variant="primary"
           onClick={() => setShowForm(!showForm)}
+          className="w-full sm:w-auto order-2 sm:order-1"
         >
           {showForm ? 'انصراف' : 'افزودن دسته‌بندی جدید'}
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">مدیریت دسته‌بندی‌ها</h1>
+        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت دسته‌بندی‌ها</h1>
       </div>
 
       {error && (
@@ -462,8 +463,8 @@ export default function CategoriesManagementPage() {
 
       {/* Categories List */}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-6 px-6">
+          <table className="w-full min-w-[700px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-center w-12">
@@ -476,8 +477,8 @@ export default function CategoriesManagementPage() {
                 </th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">تعداد محصولات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">توضیحات</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">تعداد محصولات</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">توضیحات</th>
                 <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام دسته‌بندی</th>
               </tr>
             </thead>
@@ -523,12 +524,12 @@ export default function CategoriesManagementPage() {
                         {category.isActive ? 'فعال' : 'غیرفعال'}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right hidden md:table-cell">
                       <span className="text-gray-900">
                         {category._count.products.toLocaleString('fa-IR')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-600">
+                    <td className="px-4 py-3 text-right text-sm text-gray-600 hidden lg:table-cell">
                       {category.description || '-'}
                     </td>
                     <td className="px-4 py-3 text-right font-medium">
@@ -577,12 +578,12 @@ export default function CategoriesManagementPage() {
                           {child.isActive ? 'فعال' : 'غیرفعال'}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right hidden md:table-cell">
                         <span className="text-gray-900">
                           {child._count.products.toLocaleString('fa-IR')}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 hidden lg:table-cell">
                         {child.description || '-'}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">

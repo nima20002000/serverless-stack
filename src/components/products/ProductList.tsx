@@ -2,10 +2,29 @@
 
 import { useState, useMemo, memo } from 'react';
 import ProductCard from './ProductCard';
+import { ProductCardSkeletonGrid } from './ProductCardSkeleton';
 import Button from '@/components/ui/Button';
 import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
+
+interface Variant {
+  id: string;
+  name: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
+  priceAdjust: number;
+  stock: number;
+  isActive: boolean;
+  media?: Array<{
+    id: string;
+    type: 'IMAGE' | 'VIDEO';
+    url: string;
+    alt?: string | null;
+    order: number;
+  }>;
+}
 
 interface Product {
   id: string;
@@ -17,6 +36,8 @@ interface Product {
   images: string[];
   isActive: boolean;
   isFeatured?: boolean;
+  hasVariants?: boolean;
+  variants?: Variant[];
 }
 
 interface ProductListProps {
@@ -59,14 +80,18 @@ function ProductList({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchWithRateLimit<{ products: Product[]; total: number; page: number }>(
-        () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
-      );
+      // Ensure minimum skeleton display time (300ms) for better UX
+      const [result] = await Promise.all([
+        fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
+          () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
+        ),
+        new Promise(resolve => setTimeout(resolve, 300))
+      ]);
 
-      if (data) {
-        setProducts(data.products);
-        setTotal(data.total);
-        setPage(data.page);
+      if (result) {
+        setProducts(result.data);
+        setTotal(result.total);
+        setPage(result.page);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -77,16 +102,22 @@ function ProductList({
   };
 
   const handlePageChange = (newPage: number) => {
+    // Validate page number
+    if (newPage < 1 || newPage > totalPages) {
+      return;
+    }
+
+    // Don't fetch if already on that page
+    if (newPage === page) {
+      return;
+    }
+
     fetchProducts(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری محصولات...</div>
-      </div>
-    );
+    return <ProductCardSkeletonGrid count={perPage} />;
   }
 
   if (products.length === 0) {

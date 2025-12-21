@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 import {
   createTransaction,
   verifyStockAvailability,
@@ -59,30 +59,14 @@ async function postHandler(req: NextRequest) {
     let shouldUpdateProfile = false;
 
     if (session?.user) {
-      // Fetch fresh user data from database
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: {
-          name: true,
-          phone: true,
-          email: true,
-        },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: 'کاربر یافت نشد' },
-          { status: 404 }
-        );
-      }
-
+      // Use session data (already fresh from NextAuth)
       const { fullName, phone, email } = shippingInfo;
 
-      // For logged-in users: Use profile data if not null, otherwise allow form data
-      // Priority: Profile data > Form data > Error for required fields
-      finalFullName = user.name || fullName || '';
-      finalPhone = user.phone || phone || '';
-      finalEmail = user.email || email || undefined;
+      // For logged-in users: Use session data if available, otherwise allow form data
+      // Priority: Session data > Form data > Error for required fields
+      finalFullName = session.user.name || fullName || '';
+      finalPhone = session.user.phone || phone || '';
+      finalEmail = session.user.email || email || undefined;
 
       // Validate required fields
       if (!finalFullName) {
@@ -100,13 +84,13 @@ async function postHandler(req: NextRequest) {
       }
 
       // Check if we need to update profile with new values from form
-      if (!user.name && fullName) {
+      if (!session.user.name && fullName) {
         shouldUpdateProfile = true;
       }
-      if (!user.phone && phone) {
+      if (!session.user.phone && phone) {
         shouldUpdateProfile = true;
       }
-      if (!user.email && email) {
+      if (!session.user.email && email) {
         shouldUpdateProfile = true;
       }
 
@@ -115,14 +99,14 @@ async function postHandler(req: NextRequest) {
         finalPhone,
         finalEmail,
         fromProfile: {
-          name: !!user.name,
-          phone: !!user.phone,
-          email: !!user.email,
+          name: !!session.user.name,
+          phone: !!session.user.phone,
+          email: !!session.user.email,
         },
         fromForm: {
-          name: !user.name && !!fullName,
-          phone: !user.phone && !!phone,
-          email: !user.email && !!email,
+          name: !session.user.name && !!fullName,
+          phone: !session.user.phone && !!phone,
+          email: !session.user.email && !!email,
         },
         willUpdateProfile: shouldUpdateProfile,
       });
@@ -163,6 +147,11 @@ async function postHandler(req: NextRequest) {
     // Verify stock availability
     const stockCheck = await verifyStockAvailability(items);
     if (!stockCheck.available) {
+      log.warn('Stock verification failed', {
+        userId: session?.user?.id || 'guest',
+        errors: stockCheck.errors,
+        items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      });
       return NextResponse.json(
         {
           error: 'موجودی کافی نیست',
@@ -174,10 +163,24 @@ async function postHandler(req: NextRequest) {
 
     // Calculate total and prepare transaction items
     let totalAmount = 0;
-    const transactionItems: Array<{ productId: string; quantity: number; price: number }> = [];
+    const transactionItems: Array<{ productId: string; variantId?: string; quantity: number; price: number }> = [];
+
+    log.info('Starting price calculation for transaction items', {
+      userId: session?.user?.id || 'guest',
+      itemCount: items.length,
+      items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+    });
 
     for (const item of items) {
       const product = await getProductById(item.productId);
+
+      log.debug('Product fetched for transaction', {
+        productId: product.id,
+        productName: product.name,
+        isActive: product.isActive,
+        hasVariants: product.hasVariants,
+        itemVariantId: item.variantId,
+      });
 
       if (!product.isActive) {
         return NextResponse.json(
@@ -186,18 +189,55 @@ async function postHandler(req: NextRequest) {
         );
       }
 
-      // Calculate price with discount if applicable
+      // Calculate base price with discount if applicable
       const basePrice = Number(product.price);
       const discountPercent = product.discountPercent || 0;
-      const finalPrice = discountPercent > 0
+      let finalPrice = discountPercent > 0
         ? basePrice * (1 - discountPercent / 100)
         : basePrice;
+
+      // If variant is specified, add variant's price adjustment
+      if (item.variantId) {
+        const supabaseVariant = createClient();
+        const { data: variant, error: variantError } = await supabaseVariant
+          .from('product_variants')
+          .select('priceAdjust, isActive')
+          .eq('id', item.variantId)
+          .single();
+
+        if (variantError || !variant) {
+          log.error('Variant not found or error fetching variant', {
+            variantId: item.variantId,
+            productId: product.id,
+            error: variantError,
+          });
+          return NextResponse.json(
+            { error: `واریانت محصول ${product.name} یافت نشد` },
+            { status: 400 }
+          );
+        }
+
+        if (!variant.isActive) {
+          log.warn('Inactive variant attempted in transaction', {
+            variantId: item.variantId,
+            productId: product.id,
+          });
+          return NextResponse.json(
+            { error: `واریانت محصول ${product.name} غیرفعال است` },
+            { status: 400 }
+          );
+        }
+
+        // Add variant price adjustment to the final price
+        finalPrice += Number(variant.priceAdjust || 0);
+      }
 
       const itemTotal = finalPrice * item.quantity;
       totalAmount += itemTotal;
 
       transactionItems.push({
         productId: product.id,
+        variantId: item.variantId, // Pass variant ID if present
         quantity: item.quantity,
         price: finalPrice,
       });
@@ -235,30 +275,28 @@ async function postHandler(req: NextRequest) {
         const { fullName, phone, email } = shippingInfo;
         const updateData: { name?: string; phone?: string; email?: string | null } = {};
 
-        // Only update fields that were null in profile
-        const user = await prisma.user.findUnique({
-          where: { id: session.user.id },
-          select: { name: true, phone: true, email: true },
-        });
+        // Only update fields that were null in profile (use session data for checking)
+        if (!session.user.name && fullName) {
+          updateData.name = fullName;
+        }
+        if (!session.user.phone && phone) {
+          updateData.phone = phone;
+        }
+        if (!session.user.email && email) {
+          updateData.email = email;
+        }
 
-        if (user) {
-          if (!user.name && fullName) {
-            updateData.name = fullName;
-          }
-          if (!user.phone && phone) {
-            updateData.phone = phone;
-          }
-          if (!user.email && email) {
-            updateData.email = email;
-          }
+        // Only perform update if there are fields to update
+        if (Object.keys(updateData).length > 0) {
+          const supabase = createClient();
+          const { error: updateError } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('id', session.user.id);
 
-          // Only perform update if there are fields to update
-          if (Object.keys(updateData).length > 0) {
-            await prisma.user.update({
-              where: { id: session.user.id },
-              data: updateData,
-            });
-
+          if (updateError) {
+            log.error('Failed to update user profile from checkout', { userId: session.user.id, error: updateError });
+          } else {
             log.info('Updated user profile with new contact info from checkout', {
               userId: session.user.id,
               updatedFields: Object.keys(updateData),
@@ -287,10 +325,11 @@ async function postHandler(req: NextRequest) {
       });
 
       // Update transaction with Digipay ticket
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: { digipayTicket: digipayRequest.ticket },
-      });
+      const supabaseTx = createClient();
+      await supabaseTx
+        .from('transactions')
+        .update({ digipayTicket: digipayRequest.ticket })
+        .eq('id', transaction.id);
 
       paymentUrl = digipayRequest.redirectUrl;
       paymentIdentifier = digipayRequest.ticket;
@@ -314,10 +353,11 @@ async function postHandler(req: NextRequest) {
       });
 
       // Update transaction with Zarinpal authority
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: { zarinpalAuthority: paymentRequest.authority },
-      });
+      const supabaseTx = createClient();
+      await supabaseTx
+        .from('transactions')
+        .update({ zarinpalAuthority: paymentRequest.authority })
+        .eq('id', transaction.id);
 
       paymentUrl = paymentRequest.url;
       paymentIdentifier = paymentRequest.authority;

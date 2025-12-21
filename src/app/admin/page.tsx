@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import StatsCard from '@/components/admin/StatsCard';
+import NavigationCard from '@/components/admin/NavigationCard';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { formatPrice } from '@/services/product-service';
+import { formatPrice } from '@/lib/utils/format';
 import {
   UsersIcon,
   ShoppingBagIcon,
   CreditCardIcon,
   BanknotesIcon,
+  FolderIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns-jalali';
 
@@ -111,15 +114,60 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">داشبورد مدیریت</h1>
-        <p className="text-gray-600 text-right mt-2">
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-right">داشبورد مدیریت</h1>
+        <p className="text-sm sm:text-base text-gray-600 text-right mt-1 sm:mt-2">
           خلاصه آمار و فعالیت‌های سیستم
         </p>
       </div>
 
+      {/* Quick Navigation Cards - Mobile First */}
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">دسترسی سریع</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <NavigationCard
+            title="محصولات"
+            description="مدیریت محصولات، افزودن و ویرایش"
+            href="/admin/products"
+            icon={<ShoppingBagIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="blue"
+          />
+          <NavigationCard
+            title="کاربران"
+            description="مشاهده و مدیریت کاربران سیستم"
+            href="/admin/users"
+            icon={<UsersIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="green"
+          />
+          <NavigationCard
+            title="تراکنش‌ها"
+            description="مشاهده و پیگیری تراکنش‌های مالی"
+            href="/admin/transactions"
+            icon={<CreditCardIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="purple"
+          />
+          <NavigationCard
+            title="دسته‌بندی‌ها"
+            description="مدیریت دسته‌بندی محصولات"
+            href="/admin/categories"
+            icon={<FolderIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="orange"
+          />
+          <NavigationCard
+            title="تنظیمات سایت"
+            description="تنظیمات عمومی و پیکربندی"
+            href="/admin/settings"
+            icon={<Cog6ToothIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="indigo"
+          />
+        </div>
+      </div>
+
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">آمار کلی</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
           title="کل کاربران"
           value={stats.users.total.toLocaleString('fa-IR')}
@@ -147,7 +195,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Additional Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
           title="تراکنش‌های در انتظار"
           value={stats.transactions.pending.toLocaleString('fa-IR')}
@@ -163,33 +211,33 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Transactions */}
-      <Card>
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
+      <Card padding="sm">
+        <div className="sm:p-2">
+          <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
             آخرین تراکنش‌ها
           </h2>
           {stats.recentTransactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
               هیچ تراکنشی وجود ندارد
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
                       وضعیت
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
                       تاریخ
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
                       مبلغ
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">
                       کاربر
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
                       کد تراکنش
                     </th>
                   </tr>
@@ -197,17 +245,17 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-gray-200">
                   {stats.recentTransactions.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                         {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-medium whitespace-nowrap">
                         {formatPrice(Number(transaction.amount))}
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="text-sm">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden sm:table-cell">
+                        <div className="text-xs sm:text-sm">
                           <div className="font-medium text-gray-900">
                             {transaction.user.name}
                           </div>
@@ -216,8 +264,8 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                        <code className="text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded break-all">
                           {transaction.transactionCode}
                         </code>
                       </td>

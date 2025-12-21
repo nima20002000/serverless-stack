@@ -22,6 +22,7 @@ async function getHandler(req: NextRequest) {
       price: Number(product.price),
       discountPercent: product.discountPercent,
       isFeatured: product.isFeatured,
+      variants: product.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
     }));
 
     return NextResponse.json({
@@ -50,7 +51,7 @@ async function postHandler(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, price, discountPercent, stock, images, isFeatured, isActive } = body;
+    const { name, description, price, discountPercent, stock, images, categoryId, tagIds, hasVariants, isFeatured, isActive } = body;
 
     if (!name || !description || price === undefined || stock === undefined) {
       return NextResponse.json(
@@ -66,6 +67,9 @@ async function postHandler(req: NextRequest) {
       discountPercent: discountPercent !== undefined && discountPercent !== null ? parseInt(discountPercent) : null,
       stock: parseInt(stock),
       images: images || [],
+      categoryId: categoryId || undefined,
+      tagIds: Array.isArray(tagIds) ? tagIds : undefined,
+      hasVariants: hasVariants !== undefined ? hasVariants : false,
       isFeatured: isFeatured !== undefined ? isFeatured : false,
       isActive: isActive !== undefined ? isActive : true,
     });

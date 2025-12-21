@@ -1,4 +1,11 @@
-import { Product, Category, Tag, ProductMedia, ProductVariant, MediaType } from '@prisma/client';
+import { Tables } from '@/lib/supabase/types';
+
+type Product = Tables<'products'>;
+type Category = Tables<'categories'>;
+type Tag = Tables<'tags'>;
+type ProductMedia = Tables<'product_media'>;
+type ProductVariant = Tables<'product_variants'>;
+type MediaType = Tables<'product_media'>['type'];
 
 // Product with all relations
 export type ProductWithRelations = Product & {
