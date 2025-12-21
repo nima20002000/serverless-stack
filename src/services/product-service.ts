@@ -139,20 +139,38 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
     .eq('productId', productId)
     .order('order', { ascending: true });
 
-  // Fetch media for each variant
+  // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
   if (variants && variants.length > 0) {
-    for (const variant of variants) {
-      const { data: variantMedia } = await supabase
-        .from('product_media')
-        .select('*')
-        .eq('variantId', variant.id)
-        .order('isDefault', { ascending: false })
-        .order('order', { ascending: true });
+    const variantIds = variants.map(v => v.id);
+    const { data: allVariantMedia } = await supabase
+      .from('product_media')
+      .select('*')
+      .in('variantId', variantIds)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
 
+    // Group media by variantId
+    const mediaByVariantId = new Map<string, ProductMedia[]>();
+    if (allVariantMedia) {
+      for (const media of allVariantMedia) {
+        if (media.variantId) {
+          if (!mediaByVariantId.has(media.variantId)) {
+            mediaByVariantId.set(media.variantId, []);
+          }
+          const variantMediaArray = mediaByVariantId.get(media.variantId);
+          if (variantMediaArray) {
+            variantMediaArray.push(media);
+          }
+        }
+      }
+    }
+
+    // Attach media to each variant
+    for (const variant of variants) {
       variantsWithMedia.push({
         ...variant,
-        media: variantMedia || [],
+        media: mediaByVariantId.get(variant.id) || [],
       });
     }
   }
@@ -225,12 +243,16 @@ export async function getAllProducts(options?: {
     throw new Error('خطا در دریافت محصولات');
   }
 
-  // Fetch relations for each product
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
@@ -277,12 +299,16 @@ export async function getFeaturedProducts(options?: {
     throw new Error('خطا در دریافت محصولات ویژه');
   }
 
-  // Fetch relations for each product
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
@@ -314,12 +340,16 @@ export async function getDiscountedProducts(options?: {
     throw new Error('خطا در دریافت محصولات تخفیف‌دار');
   }
 
-  // Fetch relations for each product
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
