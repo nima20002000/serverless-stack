@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTransactionByDigipayTicket,
+  getTransactionById,
   reduceProductStock,
   getTransactionWithVariants,
   linkTransactionToUser,
@@ -102,8 +102,8 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Find transaction by Digipay ticket
-    const transaction = await getTransactionByDigipayTicket(ticket);
+    // Find transaction by ID (ticket param = transaction.id from callback URL)
+    const transaction = await getTransactionById(ticket);
 
     log.info('Transaction found', {
       transactionId: transaction.id,
@@ -394,7 +394,7 @@ async function getHandler(req: NextRequest) {
 
     try {
       if (ticket) {
-        const transaction = await getTransactionByDigipayTicket(ticket);
+        const transaction = await getTransactionById(ticket);
 
         log.warn('Marking transaction as failed', {
           transactionId: transaction.id,
@@ -404,11 +404,13 @@ async function getHandler(req: NextRequest) {
         });
 
         const supabaseFail = createClient();
+        const now = new Date().toISOString();
         await supabaseFail
           .from('transactions')
           .update({
             status: 'FAILED',
             digipayTrackingCode: trackingCode || undefined,
+            updatedAt: now,
           })
           .eq('id', transaction.id);
 
