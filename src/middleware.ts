@@ -33,6 +33,10 @@ export async function middleware(req: NextRequest) {
       // Don't rate limit - this is an external callback from Zarinpal payment gateway
       // Users cannot trigger this directly; requires valid authority from database
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/transactions/verify-digipay') {
+      // Don't rate limit - this is an external callback from Digipay payment gateway
+      // Digipay POSTs payment result via browser redirect; requires valid ticket from database
+      shouldRateLimit = false;
     } else if (req.nextUrl.pathname.startsWith('/api/auth/')) {
       // Don't rate limit other NextAuth endpoints (session, CSRF, providers, etc.)
       shouldRateLimit = false;

@@ -16,7 +16,8 @@ import { sendOrderConfirmation } from '@/services/sms-service';
 export const dynamic = 'force-dynamic';
 
 // GET/POST /api/transactions/verify-digipay - Verify payment callback from Digipay
-// Digipay sends POST requests with form-encoded data (application/x-www-form-urlencoded)
+// Digipay redirects user's browser via POST with form-encoded data (application/x-www-form-urlencoded)
+// Format: result=SUCCESS&trackingCode=xxx&providerId=xxx&amount=xxx
 async function getHandler(req: NextRequest) {
   const startTime = Date.now();
 
@@ -36,13 +37,21 @@ async function getHandler(req: NextRequest) {
       let body: Record<string, string> = {};
 
       if (contentType.includes('application/x-www-form-urlencoded')) {
-        // Parse form data
+        // Parse URL-encoded form data
+        // For application/x-www-form-urlencoded, we need to read as text and parse with URLSearchParams
+        const text = await req.text();
+        const params = new URLSearchParams(text);
+        params.forEach((value, key) => {
+          body[key] = value;
+        });
+      } else if (contentType.includes('multipart/form-data')) {
+        // Parse multipart form data (unlikely for Digipay, but handle it anyway)
         const formData = await req.formData();
         formData.forEach((value, key) => {
           body[key] = value.toString();
         });
       } else if (contentType.includes('application/json')) {
-        // Fallback: try JSON parsing (in case Digipay changes format)
+        // Parse JSON (fallback if Digipay changes format)
         body = await req.json();
       } else {
         // Unknown content type - try to read as text and parse as form data
