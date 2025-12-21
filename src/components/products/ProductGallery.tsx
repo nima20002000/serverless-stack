@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { generateProductAltText } from '@/lib/seo/alt-text';
 
 interface MediaItem {
   id: string;
@@ -17,6 +18,10 @@ interface MediaItem {
 
 interface Variant {
   id: string;
+  name?: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   media?: MediaItem[];
 }
 
@@ -305,7 +310,15 @@ export default function ProductGallery({ media, productName, selectedVariant, al
           <Image
             key={currentMedia.id}
             src={optimizeImage.large(currentMedia.url)}
-            alt={currentMedia.alt || productName}
+            alt={currentMedia.alt || generateProductAltText({
+              productName,
+              variantName: selectedVariant?.name,
+              color: selectedVariant?.color,
+              size: selectedVariant?.size,
+              material: selectedVariant?.material,
+              imageIndex: selectedIndex,
+              totalImages: sortedMedia.length,
+            })}
             fill
             className={`object-contain object-center transition-opacity duration-150 ${
               isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
@@ -387,7 +400,15 @@ export default function ProductGallery({ media, productName, selectedVariant, al
               {item.type === 'IMAGE' ? (
                 <Image
                   src={optimizeImage.adminThumb(item.url)}
-                  alt={item.alt || `${productName} - ${index + 1}`}
+                  alt={item.alt || generateProductAltText({
+                    productName,
+                    variantName: selectedVariant?.name,
+                    color: selectedVariant?.color,
+                    size: selectedVariant?.size,
+                    material: selectedVariant?.material,
+                    imageIndex: index,
+                    totalImages: sortedMedia.length,
+                  })}
                   fill
                   className="object-cover object-center"
                   sizes="80px"
@@ -469,7 +490,15 @@ export default function ProductGallery({ media, productName, selectedVariant, al
             <Image
               key={currentMedia.id}
               src={optimizeImage.large(currentMedia.url)}
-              alt={currentMedia.alt || productName}
+              alt={currentMedia.alt || generateProductAltText({
+                productName,
+                variantName: selectedVariant?.name,
+                color: selectedVariant?.color,
+                size: selectedVariant?.size,
+                material: selectedVariant?.material,
+                imageIndex: selectedIndex,
+                totalImages: sortedMedia.length,
+              })}
               fill
               className={`object-contain transition-opacity duration-150 ${
                 isTransitioning ? 'opacity-0' : 'opacity-100'

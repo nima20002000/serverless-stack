@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { generateCategoryAltText } from '@/lib/seo/alt-text';
 
 // Use ISR (Incremental Static Regeneration) for optimal performance
 // Page will be statically generated and revalidated every 60 seconds
@@ -190,7 +191,7 @@ export default async function Home() {
                       {category.image ? (
                         <Image
                           src={optimizeImage.categoryCard(category.image)}
-                          alt={category.name}
+                          alt={generateCategoryAltText({ categoryName: category.name })}
                           fill
                           className="object-cover object-center"
                           sizes="(max-width: 768px) 100vw, 33vw"
