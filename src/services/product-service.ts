@@ -310,8 +310,163 @@ export type ProductSortOption =
   | 'newest';         // جدیدترین
 
 /**
+ * Batch fetch all relations for multiple products (OPTIMIZED - eliminates N+1 queries)
+ * This function fetches all relations in just 4 queries instead of N*5 queries
+ */
+async function batchFetchProductRelations(
+  products: Product[]
+): Promise<{
+  categoriesMap: Map<string, Category>;
+  tagsMap: Map<string, Tag[]>;
+  mediaMap: Map<string, ProductMedia[]>;
+  variantsMap: Map<string, VariantWithMedia[]>;
+}> {
+  if (products.length === 0) {
+    return {
+      categoriesMap: new Map(),
+      tagsMap: new Map(),
+      mediaMap: new Map(),
+      variantsMap: new Map(),
+    };
+  }
+
+  const supabase = createClient();
+  const productIds = products.map(p => p.id);
+
+  // Query 1: Get all categories (single query using categoryIds from already-fetched products)
+  const categoriesMap = new Map<string, Category>();
+  const uniqueCategoryIds = [...new Set(
+    products
+      .map(p => p.categoryId)
+      .filter(Boolean)
+  )] as string[];
+
+  if (uniqueCategoryIds.length > 0) {
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('*')
+      .in('id', uniqueCategoryIds);
+
+    if (categories) {
+      for (const cat of categories) {
+        categoriesMap.set(cat.id, cat);
+      }
+    }
+  }
+
+  // Query 2: Get all tags via junction table (2 queries total: junction + tags)
+  const tagsMap = new Map<string, Tag[]>();
+  const { data: productToTags } = await supabase
+    .from('_ProductToTag')
+    .select('A, B')
+    .in('A', productIds);
+
+  if (productToTags && productToTags.length > 0) {
+    const uniqueTagIds = [...new Set(productToTags.map(pt => pt.B))];
+    const { data: allTags } = await supabase
+      .from('tags')
+      .select('*')
+      .in('id', uniqueTagIds);
+
+    // Group tags by productId
+    const tagsById = new Map<string, Tag>();
+    if (allTags) {
+      for (const tag of allTags) {
+        tagsById.set(tag.id, tag);
+      }
+    }
+
+    for (const pt of productToTags) {
+      if (!tagsMap.has(pt.A)) {
+        tagsMap.set(pt.A, []);
+      }
+      const tag = tagsById.get(pt.B);
+      if (tag) {
+        const productTags = tagsMap.get(pt.A);
+        if (productTags) {
+          productTags.push(tag);
+        }
+      }
+    }
+  }
+
+  // Query 3: Get all product media (single query)
+  const mediaMap = new Map<string, ProductMedia[]>();
+  const { data: allMedia } = await supabase
+    .from('product_media')
+    .select('*')
+    .in('productId', productIds)
+    .is('variantId', null)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  if (allMedia) {
+    for (const media of allMedia) {
+      if (!mediaMap.has(media.productId)) {
+        mediaMap.set(media.productId, []);
+      }
+      const productMediaArray = mediaMap.get(media.productId);
+      if (productMediaArray) {
+        productMediaArray.push(media);
+      }
+    }
+  }
+
+  // Query 4 & 5: Get all variants + their media (2 queries total)
+  const variantsMap = new Map<string, VariantWithMedia[]>();
+  const { data: allVariants } = await supabase
+    .from('product_variants')
+    .select('*')
+    .in('productId', productIds)
+    .order('order', { ascending: true });
+
+  if (allVariants && allVariants.length > 0) {
+    const variantIds = allVariants.map(v => v.id);
+    const { data: allVariantMedia } = await supabase
+      .from('product_media')
+      .select('*')
+      .in('variantId', variantIds)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
+
+    // Group media by variantId
+    const variantMediaMap = new Map<string, ProductMedia[]>();
+    if (allVariantMedia) {
+      for (const media of allVariantMedia) {
+        if (media.variantId) {
+          if (!variantMediaMap.has(media.variantId)) {
+            variantMediaMap.set(media.variantId, []);
+          }
+          const variantMediaArray = variantMediaMap.get(media.variantId);
+          if (variantMediaArray) {
+            variantMediaArray.push(media);
+          }
+        }
+      }
+    }
+
+    // Group variants by productId
+    for (const variant of allVariants) {
+      if (!variantsMap.has(variant.productId)) {
+        variantsMap.set(variant.productId, []);
+      }
+      const productVariantsArray = variantsMap.get(variant.productId);
+      if (productVariantsArray) {
+        productVariantsArray.push({
+          ...variant,
+          media: variantMediaMap.get(variant.id) || [],
+        });
+      }
+    }
+  }
+
+  return { categoriesMap, tagsMap, mediaMap, variantsMap };
+}
+
+/**
  * Get active products only (for public listing)
  * Supports multiple sorting options with optimized database queries
+ * OPTIMIZED: Uses batch fetching to eliminate N+1 queries (5 queries total instead of N*5)
  */
 export async function getActiveProducts(options?: {
   page?: number;
@@ -366,18 +521,44 @@ export async function getActiveProducts(options?: {
     throw new Error('خطا در دریافت محصولات');
   }
 
-  // Fetch relations for all products in parallel (OPTIMIZATION)
-  const productsWithRelations: ProductWithRelations[] = [];
-  if (products && products.length > 0) {
-    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
-    const results = await Promise.all(fetchPromises);
-
-    for (const fullProduct of results) {
-      if (fullProduct) {
-        productsWithRelations.push(fullProduct);
-      }
-    }
+  if (!products || products.length === 0) {
+    return {
+      data: [],
+      total: count || 0,
+      page,
+      perPage,
+      totalPages: Math.ceil((count || 0) / perPage),
+    };
   }
+
+  // OPTIMIZED: Batch fetch all relations in just 4 queries instead of N*5 queries
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } = await batchFetchProductRelations(products);
+
+  // Combine products with their relations
+  const productsWithRelations: ProductWithRelations[] = products.map((product) => {
+    const variants = variantsMap.get(product.id) || [];
+
+    // Calculate actual stock from variants if they exist
+    let actualStock = product.stock;
+    if (variants.length > 0) {
+      actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+    }
+
+    // Get category from map
+    let category: Category | null = null;
+    if (product.categoryId) {
+      category = categoriesMap.get(product.categoryId) || null;
+    }
+
+    return {
+      ...product,
+      stock: actualStock,
+      category,
+      tags: tagsMap.get(product.id) || [],
+      media: mediaMap.get(product.id) || [],
+      variants,
+    };
+  });
 
   return {
     data: populateProductsImages(productsWithRelations),
