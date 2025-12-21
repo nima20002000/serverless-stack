@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getFeaturedProducts, getDiscountedProducts } from '@/services/product-service';
@@ -6,6 +7,9 @@ import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+import { generateCategoryAltText } from '@/lib/seo/alt-text';
 
 // Use ISR (Incremental Static Regeneration) for optimal performance
 // Page will be statically generated and revalidated every 60 seconds
@@ -14,6 +18,35 @@ export const revalidate = 60;
 // Optimized hero image URL (640x640, WebP, 85% quality)
 // Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
 const HERO_IMAGE_OPTIMIZED = "https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg";
+
+export const metadata: Metadata = {
+  title: "کیتیا - فروشگاه آنلاین لیوان سفری و ماگ",
+  description: "خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع به سراسر کشور، کمک به گربه‌های خیابانی با هر خرید.",
+  openGraph: {
+    title: "کیتیا - فروشگاه آنلاین لیوان سفری و ماگ",
+    description: "دنیایی از محصولات زیبا و با کیفیت برای شما. خرید آنلاین لیوان‌های سفری و ماگ با ارسال سریع و کمک به حیوانات خیابانی.",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "کیتیا - فروشگاه آنلاین لیوان سفری و ماگ",
+    description: "خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، کمک به گربه‌های خیابانی.",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/'),
+  },
+};
 
 export default async function Home() {
   // Fetch featured and discounted products directly from database
@@ -158,7 +191,7 @@ export default async function Home() {
                       {category.image ? (
                         <Image
                           src={optimizeImage.categoryCard(category.image)}
-                          alt={category.name}
+                          alt={generateCategoryAltText({ categoryName: category.name })}
                           fill
                           className="object-cover object-center"
                           sizes="(max-width: 768px) 100vw, 33vw"

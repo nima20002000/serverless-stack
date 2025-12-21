@@ -3,6 +3,14 @@ import { notFound } from 'next/navigation';
 import ProductDetail from '@/components/products/ProductDetail';
 import { getProductById } from '@/services/product-service';
 import { Tables } from '@/lib/supabase/types';
+import {
+  generateProductSchema,
+  generateBreadcrumbSchema,
+  generateProductBreadcrumbs,
+  renderJsonLd,
+} from '@/lib/seo/structured-data';
+import { getProductOgImage } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -24,13 +32,71 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const { id } = await params;
   try {
     const product = await getCachedProduct(id);
+
+    // Get first image from media or fallback to legacy images
+    const productWithRelations = product as Product & {
+      media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }>;
+      category?: { id: string; name: string; slug: string } | null;
+    };
+
+    const firstImage = productWithRelations.media && productWithRelations.media.length > 0
+      ? productWithRelations.media.find(m => m.type === 'IMAGE')?.url
+      : product.images && product.images.length > 0
+        ? product.images[0]
+        : undefined;
+
+    // Optimize image for Open Graph (1200x630)
+    const ogImage = firstImage ? getProductOgImage(firstImage) : undefined;
+
+    // Calculate final price
+    const finalPrice = product.discountPercent
+      ? Number(product.price) * (1 - product.discountPercent / 100)
+      : Number(product.price);
+
+    // Build description
+    const categoryName = productWithRelations.category?.name || '';
+    const stockStatus = product.stock > 0 ? 'موجود' : 'ناموجود';
+    const priceText = `قیمت: ${finalPrice.toLocaleString('fa-IR')} تومان`;
+    const fullDescription = `${product.description} | ${categoryName ? `دسته: ${categoryName} | ` : ''}${priceText} | وضعیت: ${stockStatus}`;
+
     return {
       title: `${product.name} - کیتیا`,
-      description: product.description,
+      description: fullDescription.substring(0, 160),
+      openGraph: {
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        locale: "fa_IR",
+        siteName: "کیتیا",
+        images: ogImage ? [
+          {
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: product.name,
+          }
+        ] : undefined,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        images: ogImage ? [ogImage] : undefined,
+      },
+      alternates: {
+        canonical: getAbsoluteUrl(`/products/${id}`),
+      },
+      other: {
+        'og:type': 'product',
+        'product:price:amount': finalPrice.toString(),
+        'product:price:currency': 'IRR',
+        'product:availability': product.stock > 0 ? 'in stock' : 'out of stock',
+        'product:condition': 'new',
+      },
     };
   } catch {
     return {
       title: 'محصول یافت نشد - کیتیا',
+      description: 'این محصول در حال حاضر در دسترس نیست.',
     };
   }
 }
@@ -77,11 +143,28 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       : [],
   };
 
+  // Generate JSON-LD structured data
+  const productSchema = generateProductSchema(productWithRelations);
+  const breadcrumbItems = generateProductBreadcrumbs(productWithRelations);
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProductDetail product={serializedProduct} />
-      </main>
-    </div>
+    <>
+      {/* Product JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: renderJsonLd(productSchema) }}
+      />
+      {/* Breadcrumb JSON-LD structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: renderJsonLd(breadcrumbSchema) }}
+      />
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <ProductDetail product={serializedProduct} />
+        </main>
+      </div>
+    </>
   );
 }

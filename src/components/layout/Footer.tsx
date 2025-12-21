@@ -15,7 +15,7 @@ export default function Footer() {
             </p>
             <div className="mt-4 space-y-2">
               <p className="text-gray-600 text-sm">
-                <span className="font-bold">تلفن:</span> 09912218463
+                <span className="font-bold">تلفن:</span> 09912218463 - 09910258259
               </p>
               <p className="text-gray-600 text-sm">
                 <span className="font-bold">آدرس:</span> تهران - خیابان اردستانی

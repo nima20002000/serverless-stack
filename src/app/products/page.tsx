@@ -1,8 +1,97 @@
+import { Metadata } from 'next';
 import ProductList from '@/components/products/ProductList';
 import { getActiveProducts } from '@/services/product-service';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60;
+
+interface ProductsPageProps {
+  searchParams: Promise<{
+    page?: string;
+    category?: string;
+    tag?: string;
+    search?: string;
+  }>;
+}
+
+export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const { category, tag, search, page } = params;
+
+  let title = "محصولات - کیتیا";
+  let description = "مشاهده و خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، قیمت مناسب و کمک به گربه‌های خیابانی.";
+
+  if (category) {
+    title = `محصولات ${category} - کیتیا`;
+    description = `مشاهده همه محصولات در دسته ${category}. لیوان‌های سفری و ماگ‌های باکیفیت با ارسال سریع.`;
+  } else if (tag) {
+    title = `محصولات با برچسب ${tag} - کیتیا`;
+    description = `مشاهده محصولات با برچسب ${tag}. انتخاب از بین بهترین لیوان‌های سفری و ماگ‌ها.`;
+  } else if (search) {
+    title = `جستجو: ${search} - کیتیا`;
+    description = `نتایج جستجو برای "${search}" در فروشگاه کیتیا.`;
+  }
+
+  if (page && parseInt(page) > 1) {
+    title = `${title} - صفحه ${page}`;
+  }
+
+  // Build canonical URL with filters
+  // For pagination, use page=1 as canonical (avoid duplicate content)
+  // For filtered pages (category, tag, search), include those in canonical
+  const canonicalPath = '/products';
+  const queryParams: string[] = [];
+
+  if (category) {
+    queryParams.push(`category=${category}`);
+  }
+  if (tag) {
+    queryParams.push(`tag=${tag}`);
+  }
+  if (search) {
+    queryParams.push(`search=${encodeURIComponent(search)}`);
+  }
+
+  // Only add page to canonical if page > 1
+  if (page && parseInt(page) > 1) {
+    queryParams.push(`page=${page}`);
+  }
+
+  const canonicalUrl = queryParams.length > 0
+    ? `${canonicalPath}?${queryParams.join('&')}`
+    : canonicalPath;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      locale: "fa_IR",
+      siteName: "کیتیا",
+      images: [
+        {
+          url: DEFAULT_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: "کیتیا - فروشگاه آنلاین",
+        }
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [DEFAULT_OG_IMAGE],
+    },
+    alternates: {
+      canonical: getAbsoluteUrl(canonicalUrl),
+    },
+  };
+}
 
 export default async function ProductsPage() {
   const result = await getActiveProducts({ page: 1, perPage: 20 });

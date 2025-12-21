@@ -1,4 +1,36 @@
+import { Metadata } from 'next';
 import { ArrowPathIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+
+export const metadata: Metadata = {
+  title: "قوانین مرجوعی و بازگشت وجه - کیتیا",
+  description: "شرایط مرجوعی کالا در کیتیا. مهلت ۷ روز، بازگشت وجه ظرف ۷ روز کاری، روند ساده مرجوعی. رضایت شما برای ما مهم است.",
+  openGraph: {
+    title: "قوانین مرجوعی و بازگشت وجه - کیتیا",
+    description: "شرایط مرجوعی کالا، مهلت ۷ روز، بازگشت وجه ظرف ۷ روز کاری",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "قوانین مرجوعی - کیتیا",
+    description: "شرایط مرجوعی کالا و بازگشت وجه در کیتیا",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/refund-policy'),
+  },
+};
 
 export default function RefundPolicyPage() {
   return (
@@ -207,7 +239,7 @@ export default function RefundPolicyPage() {
                 برای ثبت درخواست مرجوعی یا سوالات مربوط به آن، با ما تماس بگیرید:
               </p>
               <div className="space-y-2">
-                <p className="font-bold">تلفن و واتساپ: 09912218463</p>
+                <p className="font-bold">تلفن و واتساپ: 09912218463 - 09910258259</p>
                 <p className="text-sm text-gray-600">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>

@@ -1,4 +1,36 @@
+import { Metadata } from 'next';
 import { TruckIcon, ClockIcon, MapPinIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+
+export const metadata: Metadata = {
+  title: "اطلاعات ارسال - کیتیا",
+  description: "راهنمای ارسال و تحویل سفارشات کیتیا. ارسال با تیپاکس، زمان تحویل ۱-۳ روز کاری، هزینه ارسال ۲۰۰ هزار تومان. پیگیری آنلاین سفارشات.",
+  openGraph: {
+    title: "اطلاعات ارسال - کیتیا",
+    description: "ارسال سریع با تیپاکس، تحویل ۱-۳ روز کاری، امکان پیگیری آنلاین",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "اطلاعات ارسال - کیتیا",
+    description: "راهنمای ارسال و تحویل سفارشات کیتیا",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/shipping'),
+  },
+};
 
 export default function ShippingPage() {
   return (
@@ -176,7 +208,7 @@ export default function ShippingPage() {
             <div className="text-center space-y-3">
               <p className="text-gray-700">تیم پشتیبانی ما آماده پاسخگویی به سوالات شماست</p>
               <div>
-                <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463</p>
+                <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463 - 09910258259</p>
                 <p className="text-sm text-gray-600 mt-1">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>

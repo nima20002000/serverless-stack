@@ -3,6 +3,11 @@ import "./globals.css";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import {
+  generateOrganizationSchema,
+  generateWebSiteSchema,
+  renderJsonLd,
+} from "@/lib/seo/structured-data";
 
 export const metadata: Metadata = {
   title: "Kitia - فروشگاه آنلاین",
@@ -17,6 +22,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Generate site-wide JSON-LD structured data
+  const organizationSchema = generateOrganizationSchema();
+  const webSiteSchema = generateWebSiteSchema();
+
   return (
     <html lang="fa" dir="rtl">
       <head>
@@ -40,6 +49,16 @@ export default function RootLayout({
           href="https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg"
           as="image"
           fetchPriority="high"
+        />
+        {/* Organization JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: renderJsonLd(organizationSchema) }}
+        />
+        {/* WebSite JSON-LD structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: renderJsonLd(webSiteSchema) }}
         />
       </head>
       <body className="antialiased flex flex-col min-h-screen">

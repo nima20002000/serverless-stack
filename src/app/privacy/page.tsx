@@ -1,4 +1,36 @@
+import { Metadata } from 'next';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+
+export const metadata: Metadata = {
+  title: "حریم خصوصی - کیتیا",
+  description: "سیاست حفظ حریم خصوصی کیتیا. نحوه جمع‌آوری، استفاده و حفاظت از اطلاعات شخصی کاربران. رعایت امنیت و محرمانگی داده‌ها.",
+  openGraph: {
+    title: "حریم خصوصی - کیتیا",
+    description: "سیاست حفظ حریم خصوصی و امنیت اطلاعات کاربران در کیتیا",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "حریم خصوصی - کیتیا",
+    description: "سیاست حفظ حریم خصوصی کیتیا",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/privacy'),
+  },
+};
 
 export default function PrivacyPage() {
   return (
@@ -129,7 +161,7 @@ export default function PrivacyPage() {
               <p className="mb-2">
                 در صورت داشتن هرگونه سوال یا نگرانی در مورد حریم خصوصی، با ما تماس بگیرید:
               </p>
-              <p className="font-bold">تلفن: 09912218463</p>
+              <p className="font-bold">تلفن: 09912218463 - 09910258259</p>
             </div>
           </section>
         </div>

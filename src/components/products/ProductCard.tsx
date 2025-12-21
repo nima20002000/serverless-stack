@@ -7,6 +7,7 @@ import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
 import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { generateProductAltText } from '@/lib/seo/alt-text';
 
 interface Variant {
   id: string;
@@ -277,7 +278,13 @@ function ProductCard({ product }: ProductCardProps) {
           {currentImage ? (
             <Image
               src={optimizeImage.thumbnail(currentImage)}
-              alt={product.name}
+              alt={generateProductAltText({
+                productName: product.name,
+                variantName: selectedVariant?.name,
+                color: selectedVariant?.color,
+                size: selectedVariant?.size,
+                material: selectedVariant?.material,
+              })}
               fill
               loading="lazy"
               className="object-cover object-center hover:scale-105 transition-transform duration-300"

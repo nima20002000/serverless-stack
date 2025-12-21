@@ -1,4 +1,36 @@
+import { Metadata } from 'next';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+
+export const metadata: Metadata = {
+  title: "قوانین و مقررات - کیتیا",
+  description: "شرایط استفاده از خدمات فروشگاه کیتیا، قوانین ثبت نام، سفارش، پرداخت، ارسال و مرجوعی محصولات. آشنایی با حقوق و تعهدات خریداران.",
+  openGraph: {
+    title: "قوانین و مقررات - کیتیا",
+    description: "شرایط استفاده از خدمات فروشگاه کیتیا و قوانین خرید",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "قوانین و مقررات - کیتیا",
+    description: "شرایط استفاده از خدمات فروشگاه کیتیا",
+    images: [DEFAULT_OG_IMAGE],
+  },
+  alternates: {
+    canonical: getAbsoluteUrl('/terms'),
+  },
+};
 
 export default function TermsPage() {
   return (
@@ -147,7 +179,7 @@ export default function TermsPage() {
               <p className="mb-2">
                 برای سوالات در مورد قوانین و مقررات، با ما تماس بگیرید:
               </p>
-              <p className="font-bold">تلفن: 09912218463</p>
+              <p className="font-bold">تلفن: 09912218463 - 09910258259</p>
               <p className="text-sm text-gray-600 mt-2">
                 آخرین بروزرسانی: آذر ۱۴۰۴
               </p>
