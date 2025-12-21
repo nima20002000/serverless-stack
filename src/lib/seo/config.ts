@@ -11,7 +11,22 @@ export function getBaseUrl(): string {
   // Check if we're on the server side
   if (typeof window === 'undefined') {
     // Server-side: use environment variable or production URL
-    return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://kitia.ir';
+
+    // Vercel automatically sets VERCEL_URL for production/preview deployments
+    // Use it if available and not localhost
+    const vercelUrl = process.env.VERCEL_URL;
+    if (vercelUrl && !vercelUrl.includes('localhost')) {
+      return `https://${vercelUrl}`;
+    }
+
+    // Use NEXT_PUBLIC_APP_URL if set and not localhost
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl && !appUrl.includes('localhost')) {
+      return appUrl;
+    }
+
+    // Fallback to production URL (for sitemap generation in production)
+    return 'https://kitia.ir';
   }
 
   // Client-side: use window.location.origin
