@@ -17,6 +17,7 @@ interface SchemaProduct {
   images?: string[] | null;
   category?: { name: string; slug: string } | null;
   media?: Array<{ url: string; type?: string }>;
+  variants?: Array<{ media?: Array<{ url: string; type?: string }> }>;
 }
 
 // Minimal variant interface for schema generation
@@ -24,7 +25,7 @@ interface SchemaVariant {
   name: string;
   stock: number;
   priceAdjust: number;
-  media?: Array<{ url: string }>;
+  media?: Array<{ url: string; type?: string }>;
 }
 
 // Get base URL from environment or default
@@ -49,11 +50,20 @@ export function generateProductSchema(
   const images: string[] = [];
 
   if (selectedVariant?.media && selectedVariant.media.length > 0) {
-    images.push(...selectedVariant.media.map((m) => m.url));
+    // Use selected variant's media
+    images.push(...selectedVariant.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
   } else if (product.media && product.media.length > 0) {
-    images.push(...product.media.map((m) => m.url));
+    // Use product-level media
+    images.push(...product.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
   } else if (product.images && product.images.length > 0) {
+    // Use legacy images field
     images.push(...product.images);
+  } else if (product.variants && product.variants.length > 0) {
+    // Fallback: use first variant's media if product has no direct media
+    const firstVariantWithMedia = product.variants.find((v) => v.media && v.media.length > 0);
+    if (firstVariantWithMedia?.media) {
+      images.push(...firstVariantWithMedia.media.filter((m) => m.type === 'IMAGE' || !m.type).map((m) => m.url));
+    }
   }
 
   // Calculate final price (with variant adjustment if applicable)
@@ -82,7 +92,7 @@ export function generateProductSchema(
     '@type': 'Product',
     name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
     description: product.description || `${product.name} - خرید آنلاین از کیتیا`,
-    ...(images.length > 0 && { image: images }),
+    image: images.length > 0 ? images : `${baseUrl}/logo.png`,
     ...(product.sku && { sku: product.sku }),
     brand: {
       '@type': 'Brand',
