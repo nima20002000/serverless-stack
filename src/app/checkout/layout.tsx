@@ -1,5 +1,4 @@
 import { SessionProvider } from "@/components/providers/SessionProvider";
-import Footer from "@/components/layout/Footer";
 
 export default function CheckoutLayout({
   children,
@@ -9,7 +8,6 @@ export default function CheckoutLayout({
   return (
     <SessionProvider>
       {children}
-      <Footer />
     </SessionProvider>
   );
 }
