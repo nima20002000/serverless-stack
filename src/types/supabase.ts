@@ -605,7 +605,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_monthly_revenue: { Args: { month_start: string }; Returns: number }
+      get_total_revenue: { Args: never; Returns: number }
     }
     Enums: {
       MediaType: "IMAGE" | "VIDEO"

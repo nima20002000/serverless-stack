@@ -598,18 +598,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'FAILED'),
 
-      // Total revenue (sum of completed transactions)
-      supabase
-        .from('transactions')
-        .select('amount')
-        .eq('status', 'COMPLETED'),
+      // Total revenue (sum of completed transactions) - Using RPC for aggregation
+      supabase.rpc('get_total_revenue'),
 
-      // Monthly revenue (sum of completed transactions this month)
-      supabase
-        .from('transactions')
-        .select('amount')
-        .eq('status', 'COMPLETED')
-        .gte('createdAt', thisMonthISO),
+      // Monthly revenue (sum of completed transactions this month) - Using RPC for aggregation
+      supabase.rpc('get_monthly_revenue', { month_start: thisMonthISO }),
 
       // Recent transactions
       supabase
@@ -630,13 +623,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .limit(5),
     ]);
 
-    // Calculate total revenue
-    const totalRevenue =
-      totalRevenueResult.data?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
-
-    // Calculate monthly revenue
-    const monthlyRevenue =
-      monthlyRevenueResult.data?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+    // Extract revenue from RPC results (database-side aggregation)
+    const totalRevenue = Number(totalRevenueResult.data) || 0;
+    const monthlyRevenue = Number(monthlyRevenueResult.data) || 0;
 
     return {
       users: {
