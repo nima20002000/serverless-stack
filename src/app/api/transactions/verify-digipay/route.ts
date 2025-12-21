@@ -2,24 +2,57 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   getTransactionByDigipayTicket,
   reduceProductStock,
+  getTransactionWithVariants,
+  linkTransactionToUser,
 } from '@/services/transaction-service';
 import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/digipay/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
+import { sendAdminOrderConfirmation, sendBuyerOrderConfirmation } from '@/lib/email/client';
+import { sendOrderConfirmation } from '@/services/sms-service';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/transactions/verify-digipay - Verify payment callback from Digipay
+// GET/POST /api/transactions/verify-digipay - Verify payment callback from Digipay
+// Digipay sends POST requests with JSON payload according to their documentation
 async function getHandler(req: NextRequest) {
   const startTime = Date.now();
 
   try {
-    const searchParams = req.nextUrl.searchParams;
-    const trackingCode = searchParams.get('trackingCode');
-    const status = searchParams.get('status'); // Optional: Digipay may send status
-    const ticket = searchParams.get('ticket'); // Ticket ID from our system
+    // Digipay sends POST with JSON body: { amount, providerId, trackingCode, result, etc }
+    // Also support GET with query params for manual testing
+    let trackingCode: string | null = null;
+    let status: string | null = null;
+    let ticket: string | null = null;
+    let providerId: string | null = null;
+
+    if (req.method === 'POST') {
+      // Parse POST body from Digipay
+      const body = await req.json();
+      trackingCode = body.trackingCode || null;
+      providerId = body.providerId || null;
+      status = body.result || null; // 'SUCCESS' or 'FAILURE'
+
+      // Ticket is our transaction ID, passed in callback URL query param
+      ticket = req.nextUrl.searchParams.get('ticket');
+
+      log.info('Digipay POST callback received', {
+        trackingCode,
+        providerId,
+        status,
+        ticket,
+        bodyKeys: Object.keys(body),
+      });
+    } else {
+      // GET fallback (for manual testing or if Digipay changes behavior)
+      const searchParams = req.nextUrl.searchParams;
+      trackingCode = searchParams.get('trackingCode');
+      status = searchParams.get('status');
+      ticket = searchParams.get('ticket');
+      providerId = searchParams.get('providerId');
+    }
 
     log.info('Digipay verification attempt started', {
       trackingCode,
@@ -58,9 +91,10 @@ async function getHandler(req: NextRequest) {
       ticket,
     });
 
-    // Check if payment was cancelled by user (if status is provided)
-    if (status && status !== 'success' && status !== 'OK') {
-      log.warn('Digipay payment cancelled by user', {
+    // Check if payment was cancelled/failed by user
+    // Digipay sends result='SUCCESS' or result='FAILURE'
+    if (status && status.toUpperCase() !== 'SUCCESS') {
+      log.warn('Digipay payment failed or cancelled by user', {
         ticket,
         transactionId: transaction.id,
         status,
@@ -68,11 +102,13 @@ async function getHandler(req: NextRequest) {
 
       // Update transaction with tracking code but mark as failed
       const supabase = createClient();
+      const now = new Date().toISOString();
       await supabase
         .from('transactions')
         .update({
           status: 'FAILED',
-          digipayTrackingCode: trackingCode,
+          digipayTrackingCode: trackingCode || undefined,
+          updatedAt: now,
         })
         .eq('id', transaction.id);
 
@@ -123,16 +159,136 @@ async function getHandler(req: NextRequest) {
 
     // Update transaction status with Digipay tracking code
     const supabase = createClient();
+    const now = new Date().toISOString();
     await supabase
       .from('transactions')
       .update({
         status: 'COMPLETED',
         digipayTrackingCode: verification.trackingCode,
+        updatedAt: now,
       })
       .eq('id', transaction.id);
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
+
+    // Fetch full transaction data with variants for email notifications
+    const fullTransaction = await getTransactionWithVariants(transaction.id);
+
+    // Send admin confirmation email (await to ensure it completes in serverless)
+    // Note: Digipay trackingCode is a string, so we don't pass it as refId (which expects number)
+    if (fullTransaction) {
+      try {
+        const emailResult = await sendAdminOrderConfirmation(fullTransaction);
+
+        if (!emailResult.success) {
+          log.warn('Admin confirmation email not sent', {
+            transactionId: transaction.id,
+            trackingCode: verification.trackingCode,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Admin confirmation email sent successfully', {
+            transactionId: transaction.id,
+            trackingCode: verification.trackingCode,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send admin confirmation email', {
+          transactionId: transaction.id,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+
+    // Send order confirmation SMS to buyer (await to ensure it completes in serverless)
+    if (transaction.phone) {
+      try {
+        log.info('Attempting to send order confirmation SMS to buyer', {
+          transactionId: transaction.id,
+          phone: transaction.phone,
+          transactionCode: transaction.transactionCode,
+          trackingCode: verification.trackingCode
+        });
+
+        // Digipay trackingCode is a string, but SMS service expects number
+        // Try to parse it, fallback to 0 if not numeric
+        const trackingCodeNum = parseInt(verification.trackingCode, 10) || 0;
+
+        const smsResult = await sendOrderConfirmation(
+          transaction.phone,
+          transaction.transactionCode,
+          trackingCodeNum
+        );
+
+        if (!smsResult.success) {
+          log.warn('Order confirmation SMS not sent', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            error: smsResult.error
+          });
+        } else {
+          log.info('Order confirmation SMS sent successfully', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            messageId: smsResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if SMS fails
+        log.error('Failed to send order confirmation SMS', {
+          transactionId: transaction.id,
+          phone: transaction.phone,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } else {
+      log.warn('No phone number available for order confirmation SMS', {
+        transactionId: transaction.id
+      });
+    }
+
+    // Send order confirmation email to buyer (if email is provided during checkout)
+    if (fullTransaction && fullTransaction.email) {
+      try {
+        log.info('Attempting to send order confirmation email to buyer', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          transactionCode: transaction.transactionCode,
+          trackingCode: verification.trackingCode
+        });
+
+        const emailResult = await sendBuyerOrderConfirmation(fullTransaction);
+
+        if (!emailResult.success) {
+          log.warn('Buyer confirmation email not sent', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            error: emailResult.error
+          });
+        } else {
+          log.info('Buyer confirmation email sent successfully', {
+            transactionId: transaction.id,
+            email: fullTransaction.email,
+            messageId: emailResult.messageId
+          });
+        }
+      } catch (error) {
+        // Don't fail the payment if email fails
+        log.error('Failed to send buyer confirmation email', {
+          transactionId: transaction.id,
+          email: fullTransaction.email,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    } else {
+      log.info('No buyer email provided, skipping buyer confirmation email', {
+        transactionId: transaction.id,
+        hasEmail: !!fullTransaction?.email
+      });
+    }
 
     // Create user account if requested (for guest checkouts)
     if (!transaction.userId && transaction.createAccount && transaction.phone) {
@@ -155,14 +311,7 @@ async function getHandler(req: NextRequest) {
           });
 
           // Link this transaction to the existing user
-          const supabaseLink = createClient();
-          await supabaseLink
-            .from('transactions')
-            .update({
-              userId: existingUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            })
-            .eq('id', transaction.id);
+          await linkTransactionToUser(transaction.id, existingUser.id);
         } else {
           // User doesn't exist - create new account
           log.info('Creating new user account after successful payment', {
@@ -177,14 +326,8 @@ async function getHandler(req: NextRequest) {
           });
 
           // Link transaction to newly created user
-          const supabaseNewUser = createClient();
-          await supabaseNewUser
-            .from('transactions')
-            .update({
-              userId: newUser.id,
-              // Keep isGuest=true to preserve history that this was a guest transaction
-            })
-            .eq('id', transaction.id);
+          // createUser() already links orphaned transactions, but we need to update this specific one
+          await linkTransactionToUser(transaction.id, newUser.id);
 
           log.info('User account created and linked to transaction', {
             userId: newUser.id,
@@ -270,3 +413,11 @@ async function getHandler(req: NextRequest) {
 }
 
 export const GET = withLogging(getHandler, 'GET /api/transactions/verify-digipay');
+
+// POST handler for Digipay callback (Digipay may use POST instead of GET for callbacks)
+// Use the same handler logic as GET since both handle the callback flow
+async function postHandler(req: NextRequest) {
+  return getHandler(req);
+}
+
+export const POST = withLogging(postHandler, 'POST /api/transactions/verify-digipay');
