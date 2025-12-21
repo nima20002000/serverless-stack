@@ -6,7 +6,7 @@ import {
 import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/digipay/client';
 import { withLogging } from '@/lib/api/with-logging';
-import prisma from '@/lib/prisma/client';
+import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -67,13 +67,14 @@ async function getHandler(req: NextRequest) {
       });
 
       // Update transaction with tracking code but mark as failed
-      await prisma.transaction.update({
-        where: { id: transaction.id },
-        data: {
+      const supabase = createClient();
+      await supabase
+        .from('transactions')
+        .update({
           status: 'FAILED',
           digipayTrackingCode: trackingCode,
-        },
-      });
+        })
+        .eq('id', transaction.id);
 
       return NextResponse.redirect(
         new URL(
@@ -121,13 +122,14 @@ async function getHandler(req: NextRequest) {
     });
 
     // Update transaction status with Digipay tracking code
-    await prisma.transaction.update({
-      where: { id: transaction.id },
-      data: {
+    const supabase = createClient();
+    await supabase
+      .from('transactions')
+      .update({
         status: 'COMPLETED',
         digipayTrackingCode: verification.trackingCode,
-      },
-    });
+      })
+      .eq('id', transaction.id);
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
@@ -153,13 +155,14 @@ async function getHandler(req: NextRequest) {
           });
 
           // Link this transaction to the existing user
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
+          const supabaseLink = createClient();
+          await supabaseLink
+            .from('transactions')
+            .update({
               userId: existingUser.id,
               // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+            })
+            .eq('id', transaction.id);
         } else {
           // User doesn't exist - create new account
           log.info('Creating new user account after successful payment', {
@@ -170,17 +173,18 @@ async function getHandler(req: NextRequest) {
           const newUser = await createUser({
             phone: transaction.phone,
             email: transaction.email || undefined,
-            name: transaction.fullName,
+            name: transaction.fullName || 'کاربر',
           });
 
           // Link transaction to newly created user
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: {
+          const supabaseNewUser = createClient();
+          await supabaseNewUser
+            .from('transactions')
+            .update({
               userId: newUser.id,
               // Keep isGuest=true to preserve history that this was a guest transaction
-            },
-          });
+            })
+            .eq('id', transaction.id);
 
           log.info('User account created and linked to transaction', {
             userId: newUser.id,
@@ -233,13 +237,14 @@ async function getHandler(req: NextRequest) {
           error: errorMessage,
         });
 
-        await prisma.transaction.update({
-          where: { id: transaction.id },
-          data: {
+        const supabaseFail = createClient();
+        await supabaseFail
+          .from('transactions')
+          .update({
             status: 'FAILED',
             digipayTrackingCode: trackingCode || undefined,
-          },
-        });
+          })
+          .eq('id', transaction.id);
 
         return NextResponse.redirect(
           new URL(
