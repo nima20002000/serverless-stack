@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "حریم خصوصی - کیتیا",
+  description: "سیاست حفظ حریم خصوصی کیتیا. نحوه جمع‌آوری، استفاده و حفاظت از اطلاعات شخصی کاربران. رعایت امنیت و محرمانگی داده‌ها.",
+  openGraph: {
+    title: "حریم خصوصی - کیتیا",
+    description: "سیاست حفظ حریم خصوصی و امنیت اطلاعات کاربران در کیتیا",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "حریم خصوصی - کیتیا",
+    description: "سیاست حفظ حریم خصوصی کیتیا",
+  },
+};
 
 export default function PrivacyPage() {
   return (

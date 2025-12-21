@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { TruckIcon, ClockIcon, MapPinIcon, CreditCardIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "اطلاعات ارسال - کیتیا",
+  description: "راهنمای ارسال و تحویل سفارشات کیتیا. ارسال با تیپاکس، زمان تحویل ۱-۳ روز کاری، هزینه ارسال ۲۰۰ هزار تومان. پیگیری آنلاین سفارشات.",
+  openGraph: {
+    title: "اطلاعات ارسال - کیتیا",
+    description: "ارسال سریع با تیپاکس، تحویل ۱-۳ روز کاری، امکان پیگیری آنلاین",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "اطلاعات ارسال - کیتیا",
+    description: "راهنمای ارسال و تحویل سفارشات کیتیا",
+  },
+};
 
 export default function ShippingPage() {
   return (

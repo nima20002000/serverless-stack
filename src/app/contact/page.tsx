@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { PhoneIcon, MapPinIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "تماس با ما - کیتیا",
+  description: "راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳، آدرس تهران - خیابان اردستانی - مجتمع مهسان. پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب.",
+  openGraph: {
+    title: "تماس با ما - کیتیا",
+    description: "با تیم پشتیبانی کیتیا در ارتباط باشید. تلفن و واتساپ: ۰۹۹۱۲۲۱۸۴۶۳",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "تماس با ما - کیتیا",
+    description: "راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳",
+  },
+};
 
 export default function ContactPage() {
   return (

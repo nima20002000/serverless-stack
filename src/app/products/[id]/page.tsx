@@ -24,13 +24,68 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const { id } = await params;
   try {
     const product = await getCachedProduct(id);
+
+    // Get first image from media or fallback to legacy images
+    const productWithRelations = product as Product & {
+      media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }>;
+      category?: { id: string; name: string; slug: string } | null;
+    };
+
+    const firstImage = productWithRelations.media && productWithRelations.media.length > 0
+      ? productWithRelations.media.find(m => m.type === 'IMAGE')?.url
+      : product.images && product.images.length > 0
+        ? product.images[0]
+        : undefined;
+
+    // Calculate final price
+    const finalPrice = product.discountPercent
+      ? Number(product.price) * (1 - product.discountPercent / 100)
+      : Number(product.price);
+
+    // Build description
+    const categoryName = productWithRelations.category?.name || '';
+    const stockStatus = product.stock > 0 ? 'موجود' : 'ناموجود';
+    const priceText = `قیمت: ${finalPrice.toLocaleString('fa-IR')} تومان`;
+    const fullDescription = `${product.description} | ${categoryName ? `دسته: ${categoryName} | ` : ''}${priceText} | وضعیت: ${stockStatus}`;
+
     return {
       title: `${product.name} - کیتیا`,
-      description: product.description,
+      description: fullDescription.substring(0, 160),
+      openGraph: {
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        type: "website",
+        locale: "fa_IR",
+        siteName: "کیتیا",
+        images: firstImage ? [
+          {
+            url: firstImage,
+            width: 800,
+            height: 800,
+            alt: product.name,
+          }
+        ] : undefined,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        images: firstImage ? [firstImage] : undefined,
+      },
+      alternates: {
+        canonical: `/products/${id}`,
+      },
+      other: {
+        'product:price:amount': finalPrice.toString(),
+        'product:price:currency': 'IRR',
+        'product:availability': product.stock > 0 ? 'in stock' : 'out of stock',
+        'product:condition': 'new',
+      },
     };
   } catch {
     return {
       title: 'محصول یافت نشد - کیتیا',
+      description: 'این محصول در حال حاضر در دسترس نیست.',
     };
   }
 }

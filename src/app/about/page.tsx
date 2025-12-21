@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { HeartIcon, SparklesIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "درباره ما - کیتیا",
+  description: "کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد. کیفیت برتر، مسئولیت اجتماعی و قیمت مناسب.",
+  openGraph: {
+    title: "درباره ما - کیتیا",
+    description: "کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. با هر خرید از کیتیا، قدمی کوچک برای یک دنیای بهتر برمی‌داریم.",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "درباره ما - کیتیا",
+    description: "کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد.",
+  },
+};
 
 export default function AboutPage() {
   return (

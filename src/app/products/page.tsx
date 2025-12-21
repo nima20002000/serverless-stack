@@ -1,8 +1,61 @@
+import { Metadata } from 'next';
 import ProductList from '@/components/products/ProductList';
 import { getActiveProducts } from '@/services/product-service';
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60;
+
+interface ProductsPageProps {
+  searchParams: Promise<{
+    page?: string;
+    category?: string;
+    tag?: string;
+    search?: string;
+  }>;
+}
+
+export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+  const params = await searchParams;
+  const { category, tag, search, page } = params;
+
+  let title = "محصولات - کیتیا";
+  let description = "مشاهده و خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، قیمت مناسب و کمک به گربه‌های خیابانی.";
+
+  if (category) {
+    title = `محصولات ${category} - کیتیا`;
+    description = `مشاهده همه محصولات در دسته ${category}. لیوان‌های سفری و ماگ‌های باکیفیت با ارسال سریع.`;
+  } else if (tag) {
+    title = `محصولات با برچسب ${tag} - کیتیا`;
+    description = `مشاهده محصولات با برچسب ${tag}. انتخاب از بین بهترین لیوان‌های سفری و ماگ‌ها.`;
+  } else if (search) {
+    title = `جستجو: ${search} - کیتیا`;
+    description = `نتایج جستجو برای "${search}" در فروشگاه کیتیا.`;
+  }
+
+  if (page && parseInt(page) > 1) {
+    title = `${title} - صفحه ${page}`;
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      locale: "fa_IR",
+      siteName: "کیتیا",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    alternates: {
+      canonical: `/products${page && parseInt(page) > 1 ? `?page=${page}` : ''}`,
+    },
+  };
+}
 
 export default async function ProductsPage() {
   const result = await getActiveProducts({ page: 1, perPage: 20 });

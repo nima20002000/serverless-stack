@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { ArrowPathIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "قوانین مرجوعی و بازگشت وجه - کیتیا",
+  description: "شرایط مرجوعی کالا در کیتیا. مهلت ۷ روز، بازگشت وجه ظرف ۷ روز کاری، روند ساده مرجوعی. رضایت شما برای ما مهم است.",
+  openGraph: {
+    title: "قوانین مرجوعی و بازگشت وجه - کیتیا",
+    description: "شرایط مرجوعی کالا، مهلت ۷ روز، بازگشت وجه ظرف ۷ روز کاری",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "قوانین مرجوعی - کیتیا",
+    description: "شرایط مرجوعی کالا و بازگشت وجه در کیتیا",
+  },
+};
 
 export default function RefundPolicyPage() {
   return (

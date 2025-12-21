@@ -1,4 +1,22 @@
+import { Metadata } from 'next';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
+
+export const metadata: Metadata = {
+  title: "قوانین و مقررات - کیتیا",
+  description: "شرایط استفاده از خدمات فروشگاه کیتیا، قوانین ثبت نام، سفارش، پرداخت، ارسال و مرجوعی محصولات. آشنایی با حقوق و تعهدات خریداران.",
+  openGraph: {
+    title: "قوانین و مقررات - کیتیا",
+    description: "شرایط استفاده از خدمات فروشگاه کیتیا و قوانین خرید",
+    type: "website",
+    locale: "fa_IR",
+    siteName: "کیتیا",
+  },
+  twitter: {
+    card: "summary",
+    title: "قوانین و مقررات - کیتیا",
+    description: "شرایط استفاده از خدمات فروشگاه کیتیا",
+  },
+};
 
 export default function TermsPage() {
   return (
