@@ -7,6 +7,7 @@ import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '@/components/ui/Button';
 import CartIcon from '@/components/cart/CartIcon';
 import CartDrawer from '@/components/cart/CartDrawer';
+import SearchBar from '@/components/ui/SearchBar';
 
 export default function Header() {
   const { data: session, status } = useSession();
@@ -33,12 +34,17 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="flex items-center flex-shrink-0">
               <h1 className="text-2xl font-bold text-gray-900">کیتیا</h1>
             </Link>
 
+            {/* Search Bar - Desktop */}
+            <div className="hidden md:block flex-1 max-w-lg mx-6">
+              <SearchBar />
+            </div>
+
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-4">
+            <nav className="hidden md:flex items-center gap-4 flex-shrink-0">
               <Link
                 href="/products"
                 className="text-gray-700 hover:text-gray-900 font-medium transition-colors"
@@ -111,10 +117,15 @@ export default function Header() {
           {/* Mobile Menu - Animated Dropdown */}
           <div
             className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-              isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+              isMobileMenuOpen ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
             <div className="border-t border-gray-200 py-3 bg-gradient-to-b from-gray-50 to-white">
+              {/* Search Bar - Mobile */}
+              <div className="px-4 mb-3">
+                <SearchBar onResultClick={() => setIsMobileMenuOpen(false)} />
+              </div>
+
               <nav className="flex flex-col gap-2 px-2">
                 {/* Products Link */}
                 <Link
