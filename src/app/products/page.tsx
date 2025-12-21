@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import ProductList from '@/components/products/ProductList';
 import { getActiveProducts } from '@/services/product-service';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 
 // Use ISR for better performance - revalidate every 60 seconds
 export const revalidate = 60;
@@ -45,11 +46,20 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
       type: "website",
       locale: "fa_IR",
       siteName: "کیتیا",
+      images: [
+        {
+          url: DEFAULT_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: "کیتیا - فروشگاه آنلاین",
+        }
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: [DEFAULT_OG_IMAGE],
     },
     alternates: {
       canonical: `/products${page && parseInt(page) > 1 ? `?page=${page}` : ''}`,

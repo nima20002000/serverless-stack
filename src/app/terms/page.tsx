@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 
 export const metadata: Metadata = {
   title: "قوانین و مقررات - کیتیا",
@@ -10,11 +11,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fa_IR",
     siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "قوانین و مقررات - کیتیا",
     description: "شرایط استفاده از خدمات فروشگاه کیتیا",
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 

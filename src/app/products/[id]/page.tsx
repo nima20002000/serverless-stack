@@ -9,6 +9,7 @@ import {
   generateProductBreadcrumbs,
   renderJsonLd,
 } from '@/lib/seo/structured-data';
+import { getProductOgImage } from '@/lib/seo/og-images';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -43,6 +44,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         ? product.images[0]
         : undefined;
 
+    // Optimize image for Open Graph (1200x630)
+    const ogImage = firstImage ? getProductOgImage(firstImage) : undefined;
+
     // Calculate final price
     const finalPrice = product.discountPercent
       ? Number(product.price) * (1 - product.discountPercent / 100)
@@ -60,14 +64,13 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       openGraph: {
         title: `${product.name} - کیتیا`,
         description: product.description,
-        type: "website",
         locale: "fa_IR",
         siteName: "کیتیا",
-        images: firstImage ? [
+        images: ogImage ? [
           {
-            url: firstImage,
-            width: 800,
-            height: 800,
+            url: ogImage,
+            width: 1200,
+            height: 630,
             alt: product.name,
           }
         ] : undefined,
@@ -76,12 +79,13 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         card: "summary_large_image",
         title: `${product.name} - کیتیا`,
         description: product.description,
-        images: firstImage ? [firstImage] : undefined,
+        images: ogImage ? [ogImage] : undefined,
       },
       alternates: {
         canonical: `/products/${id}`,
       },
       other: {
+        'og:type': 'product',
         'product:price:amount': finalPrice.toString(),
         'product:price:currency': 'IRR',
         'product:availability': product.stock > 0 ? 'in stock' : 'out of stock',

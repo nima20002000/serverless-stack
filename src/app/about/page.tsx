@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { HeartIcon, SparklesIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 
 export const metadata: Metadata = {
   title: "درباره ما - کیتیا",
@@ -10,11 +11,20 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fa_IR",
     siteName: "کیتیا",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "کیتیا - فروشگاه آنلاین",
+      }
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "درباره ما - کیتیا",
     description: "کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد.",
+    images: [DEFAULT_OG_IMAGE],
   },
 };
 
