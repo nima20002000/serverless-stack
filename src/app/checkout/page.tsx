@@ -239,8 +239,8 @@ export default function CheckoutPage() {
                       className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
                     />
                     <div className="flex-1 text-right">
-                      <div className="font-medium text-gray-900">دیجی‌پی</div>
-                      <div className="text-sm text-gray-600">پرداخت با کیف پول یا کارت بانکی</div>
+                      <div className="font-medium text-gray-900">دیجی پی</div>
+                      <div className="text-sm text-gray-600">پرداخت اقساطی</div>
                     </div>
                     <div className="flex-shrink-0">
                       <DigipayBadge />
