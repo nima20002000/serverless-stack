@@ -128,7 +128,7 @@ export default function FAQList() {
             تیم پشتیبانی ما آماده است تا به سوالات شما پاسخ دهد
           </p>
           <div className="space-y-3">
-            <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463</p>
+            <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463 - 09910258259</p>
             <p className="text-sm text-gray-600">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
           </div>
         </div>

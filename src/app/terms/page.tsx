@@ -165,7 +165,7 @@ export default function TermsPage() {
               <p className="mb-2">
                 برای سوالات در مورد قوانین و مقررات، با ما تماس بگیرید:
               </p>
-              <p className="font-bold">تلفن: 09912218463</p>
+              <p className="font-bold">تلفن: 09912218463 - 09910258259</p>
               <p className="text-sm text-gray-600 mt-2">
                 آخرین بروزرسانی: آذر ۱۴۰۴
               </p>

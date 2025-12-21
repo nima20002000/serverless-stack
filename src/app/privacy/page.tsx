@@ -147,7 +147,7 @@ export default function PrivacyPage() {
               <p className="mb-2">
                 در صورت داشتن هرگونه سوال یا نگرانی در مورد حریم خصوصی، با ما تماس بگیرید:
               </p>
-              <p className="font-bold">تلفن: 09912218463</p>
+              <p className="font-bold">تلفن: 09912218463 - 09910258259</p>
             </div>
           </section>
         </div>

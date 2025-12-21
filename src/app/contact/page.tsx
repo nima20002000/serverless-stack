@@ -42,12 +42,21 @@ export default function ContactPage() {
             <div className="space-y-3">
               <div className="text-right">
                 <p className="text-sm text-gray-600 mb-2">شماره تماس و واتساپ:</p>
-                <a
-                  href="tel:09912218463"
-                  className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors dir-ltr inline-block"
-                >
-                  09912218463
-                </a>
+                <div className="space-y-2">
+                  <a
+                    href="tel:09912218463"
+                    className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors dir-ltr inline-block"
+                  >
+                    09912218463
+                  </a>
+                  <br />
+                  <a
+                    href="tel:09910258259"
+                    className="text-2xl font-bold text-blue-600 hover:text-blue-800 transition-colors dir-ltr inline-block"
+                  >
+                    09910258259
+                  </a>
+                </div>
               </div>
               <p className="text-sm text-gray-500 pt-4 border-t">
                 پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب

@@ -194,7 +194,7 @@ export default function ShippingPage() {
             <div className="text-center space-y-3">
               <p className="text-gray-700">تیم پشتیبانی ما آماده پاسخگویی به سوالات شماست</p>
               <div>
-                <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463</p>
+                <p className="font-bold text-lg text-gray-900">تلفن و واتساپ: 09912218463 - 09910258259</p>
                 <p className="text-sm text-gray-600 mt-1">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>

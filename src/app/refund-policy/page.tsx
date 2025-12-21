@@ -225,7 +225,7 @@ export default function RefundPolicyPage() {
                 برای ثبت درخواست مرجوعی یا سوالات مربوط به آن، با ما تماس بگیرید:
               </p>
               <div className="space-y-2">
-                <p className="font-bold">تلفن و واتساپ: 09912218463</p>
+                <p className="font-bold">تلفن و واتساپ: 09912218463 - 09910258259</p>
                 <p className="text-sm text-gray-600">پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب</p>
               </div>
             </div>
