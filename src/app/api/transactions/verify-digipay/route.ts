@@ -16,12 +16,13 @@ import { sendOrderConfirmation } from '@/services/sms-service';
 export const dynamic = 'force-dynamic';
 
 // GET/POST /api/transactions/verify-digipay - Verify payment callback from Digipay
-// Digipay sends POST requests with JSON payload according to their documentation
+// Digipay sends POST requests with form-encoded data (application/x-www-form-urlencoded)
 async function getHandler(req: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // Digipay sends POST with JSON body: { amount, providerId, trackingCode, result, etc }
+    // Digipay sends POST with form-encoded body (application/x-www-form-urlencoded)
+    // Format: result=SUCCESS&trackingCode=xxx&providerId=xxx&amount=xxx
     // Also support GET with query params for manual testing
     let trackingCode: string | null = null;
     let status: string | null = null;
@@ -29,8 +30,29 @@ async function getHandler(req: NextRequest) {
     let providerId: string | null = null;
 
     if (req.method === 'POST') {
-      // Parse POST body from Digipay
-      const body = await req.json();
+      // Parse form-encoded POST body from Digipay
+      const contentType = req.headers.get('content-type') || '';
+
+      let body: Record<string, string> = {};
+
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        // Parse form data
+        const formData = await req.formData();
+        formData.forEach((value, key) => {
+          body[key] = value.toString();
+        });
+      } else if (contentType.includes('application/json')) {
+        // Fallback: try JSON parsing (in case Digipay changes format)
+        body = await req.json();
+      } else {
+        // Unknown content type - try to read as text and parse as form data
+        const text = await req.text();
+        const params = new URLSearchParams(text);
+        params.forEach((value, key) => {
+          body[key] = value;
+        });
+      }
+
       trackingCode = body.trackingCode || null;
       providerId = body.providerId || null;
       status = body.result || null; // 'SUCCESS' or 'FAILURE'
@@ -43,6 +65,7 @@ async function getHandler(req: NextRequest) {
         providerId,
         status,
         ticket,
+        contentType,
         bodyKeys: Object.keys(body),
       });
     } else {
