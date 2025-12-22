@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Documentation Policy
 
 **NEVER create extensive documentation in this project unless explicitly requested by the user.** This includes:
+
 - Detailed README files
 - API documentation
 - Architecture documents
@@ -19,6 +20,7 @@ Kitia is a Persian (Farsi) e-commerce platform built with Next.js 14 App Router,
 ## Essential Commands
 
 ### Development
+
 ```bash
 npm run dev              # Start dev server (clears .next cache first)
 npm run build            # Build for production
@@ -28,6 +30,7 @@ npm run verify:routes    # Verify all API routes have 'export const dynamic' (ru
 ```
 
 ### Database (Supabase)
+
 ```bash
 # Generate TypeScript types from Supabase schema
 npx supabase gen types typescript --project-id gozxjxtnrbuurmstjydo > src/types/supabase.ts
@@ -37,17 +40,21 @@ npx supabase gen types typescript --project-id gozxjxtnrbuurmstjydo > src/types/
 ```
 
 ### Database Environments
+
 The project uses **Supabase** for database management:
+
 1. **Supabase Production** - `aws-1-ap-southeast-1.pooler.supabase.com` (project_ref: `tanqgnztclrucfldxhuk`)
 2. **Supabase Preview/Preproduction** - `aws-1-ap-northeast-2.pooler.supabase.com` (project_ref: `gozxjxtnrbuurmstjydo`)
 
 Currently using **Preview database** on the `migration/prisma-to-supabase` branch.
 
 **Database Connection Strings**:
+
 - **Production**: `postgresql://postgres.tanqgnztclrucfldxhuk:BHZnE4rPyZO4lSmA@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true`
 - **Preview**: `postgresql://postgres.gozxjxtnrbuurmstjydo:PawK0YK7sYbCzzMi@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true`
 
 **Important**: When applying schema changes, use:
+
 - Supabase Dashboard SQL Editor (recommended)
 - Supabase MCP `apply_migration` tool
 - `psql` command (see examples below)
@@ -55,11 +62,13 @@ Currently using **Preview database** on the `migration/prisma-to-supabase` branc
 **Examples - Apply migrations**:
 
 Production (via psql):
+
 ```bash
 PGPASSWORD="BHZnE4rPyZO4lSmA" psql -h aws-1-ap-southeast-1.pooler.supabase.com -U postgres.tanqgnztclrucfldxhuk -d postgres -p 6543 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
 ```
 
 Preview (via psql):
+
 ```bash
 PGPASSWORD="PawK0YK7sYbCzzMi" psql -h aws-1-ap-northeast-2.pooler.supabase.com -U postgres.gozxjxtnrbuurmstjydo -d postgres -p 6543 -c "ALTER TABLE users ADD COLUMN \"newColumn\" TEXT;"
 ```
@@ -67,7 +76,9 @@ PGPASSWORD="PawK0YK7sYbCzzMi" psql -h aws-1-ap-northeast-2.pooler.supabase.com -
 ## Critical Architecture Patterns
 
 ### Service Layer Pattern
+
 All business logic lives in `/src/services/*.ts` files. API routes are thin controllers that:
+
 1. Parse and validate request data
 2. Call service functions
 3. Return responses
@@ -75,6 +86,7 @@ All business logic lives in `/src/services/*.ts` files. API routes are thin cont
 **Never put business logic in API routes.** Always use services.
 
 Example:
+
 ```typescript
 // ❌ BAD - Logic in API route
 export async function POST(req: Request) {
@@ -94,8 +106,113 @@ export async function POST(req: Request) {
 }
 ```
 
+### Server-Only Module Protection
+
+**CRITICAL: All service files and server-only libraries MUST include `import 'server-only';` as the first import.**
+
+This prevents client components from accidentally importing server-side code, which causes runtime errors.
+
+**Required in:**
+
+- All files in `/src/services/*.ts`
+- Server-only libraries:
+  - `/src/lib/email/client.ts`
+  - `/src/lib/kavenegar/client.ts`
+  - `/src/lib/zarinpal/client.ts`
+  - `/src/lib/storage/index.ts`
+  - `/src/lib/supabase/server.ts` (already has it)
+
+**Example:**
+
+```typescript
+// ✅ CORRECT - Service file with server-only guard
+import 'server-only';
+import { createClient } from '@/lib/supabase/server';
+import { log } from '@/lib/logger';
+
+export async function getProducts() {
+  // ... implementation
+}
+```
+
+**Why this matters:**
+
+- Webpack bundles the entire import chain, even for type-only imports
+- If a client component imports from a service file (even just types), the server dependencies get bundled
+- This causes runtime errors like "Cannot read properties of undefined (reading 'call')"
+- The `server-only` package throws a **build-time error** to catch this mistake immediately
+
+### Type Separation for Client-Server Boundaries
+
+**When types need to be shared between server and client code, extract them to separate type files.**
+
+This is Strategy 4 (Type Separation Pattern):
+
+**Pattern:**
+
+1. Create a dedicated type file in `/src/types/` (e.g., `search.ts`)
+2. Define shared types without any server imports
+3. Service files import and re-export types (for backward compatibility)
+4. Client components import directly from the type file
+
+**Example:**
+
+```typescript
+// ✅ Step 1: Create src/types/search.ts (safe for client)
+export interface ProductSearchResult {
+  id: string;
+  name: string;
+  price: number;
+  // ... other fields
+}
+
+export interface SearchResponse {
+  products: ProductSearchResult[];
+  total: number;
+}
+
+// ✅ Step 2: Service imports from types
+// src/services/search-service.ts
+import 'server-only';
+import { createClient } from '@/lib/supabase/server';
+import type { SearchResponse } from '@/types/search';
+
+// Re-export for backward compatibility
+export type { SearchResponse };
+
+export async function searchProducts(query: string): Promise<SearchResponse> {
+  // ... implementation
+}
+
+// ✅ Step 3: Client component imports from types (NOT service)
+// src/components/SearchBar.tsx
+('use client');
+import type { SearchResponse } from '@/types/search'; // ✅ SAFE
+// import type { SearchResponse } from '@/services/search-service'; // ❌ NEVER DO THIS
+
+export function SearchBar() {
+  const [results, setResults] = useState<SearchResponse | null>(null);
+  // ... implementation
+}
+```
+
+**Rules:**
+
+- Type files in `/src/types/` must NEVER import server-only modules
+- Type files can import from other type files, utility functions, or pure libraries
+- Client components should ALWAYS import types from `/src/types/`, NOT from `/src/services/`
+- Service files can import and re-export types for backward compatibility
+
+**Defense in depth:**
+
+- Strategy 1 (server-only imports): Catches mistakes at build time ✅
+- Strategy 4 (type separation): Prevents the problem architecturally ✅
+- Together they provide robust protection against client-server bundling issues
+
 ### Dynamic Route Requirement
+
 **All API routes and Server Component pages with dynamic params MUST export:**
+
 ```typescript
 export const dynamic = 'force-dynamic';
 ```
@@ -103,7 +220,9 @@ export const dynamic = 'force-dynamic';
 This prevents Vercel build failures. The `verify:routes` script validates this before builds.
 
 ### Rate Limiting Strategy
+
 Rate limiting is applied at the middleware level (`src/middleware.ts`) before any route logic:
+
 - **Public endpoints** (products, categories, tags): 1000 req/min (publicLimiter)
 - **General API endpoints**: 100 req/min (apiLimiter)
 - **Auth endpoints** (`/api/auth/*`): 5 req/15min (strictLimiter) - prevents brute force
@@ -111,7 +230,9 @@ Rate limiting is applied at the middleware level (`src/middleware.ts`) before an
 Rate limiting uses Upstash Redis with sliding window algorithm. Client identifier uses user ID when authenticated, otherwise IP address.
 
 ### Caching Architecture
+
 Redis caching (Upstash) is implemented in `/src/lib/redis/client.ts`:
+
 - **Cache-aside pattern**: Check cache → fetch if miss → store result
 - **Graceful degradation**: If Redis fails, operations continue without caching
 - **Invalidation**: Service functions invalidate specific cache keys after mutations
@@ -123,7 +244,9 @@ Example: `products:active:page:1:limit:20`
 Since Upstash REST API doesn't support pattern matching (no `KEYS` command), cache invalidation clears specific known keys (e.g., pages 1-10).
 
 ### File Storage Architecture
+
 Product images and videos are stored in **Cloudflare R2** (S3-compatible object storage):
+
 - **Storage abstraction layer**: `/src/lib/storage` - allows switching providers without code changes
 - **Current provider**: Cloudflare R2 via S3 SDK (`@aws-sdk/client-s3`)
 - **Upload endpoint**: `POST /api/upload/product-media` (admin-only)
@@ -131,19 +254,23 @@ Product images and videos are stored in **Cloudflare R2** (S3-compatible object 
 - **File paths**: Auto-generated with format `products/{images|videos}/{random}-{timestamp}.{ext}`
 
 **Key benefits of R2:**
+
 - 10GB free storage (vs 1GB alternatives)
 - Zero egress fees - unlimited bandwidth
 - Global CDN delivery
 - Future-proof: Can migrate to Supabase/S3 by swapping adapter
 
 ### Image Optimization (Cloudflare Image Resizing)
+
 Images are optimized on-demand using **Cloudflare Image Resizing**:
+
 - **Free tier**: 5,000 unique transformations/month (more than enough for most e-commerce sites)
 - **How it works**: On first request, Cloudflare fetches original from R2, transforms it, and caches globally
 - **Supported transformations**: Resize, format conversion (WebP/AVIF), quality compression, smart cropping
 - **Zero storage overhead**: Only original files stored in R2, variants generated on-demand
 
 **⚠️ IMPORTANT**: Cloudflare Image Resizing must be **manually enabled in Cloudflare Dashboard**:
+
 1. Go to https://dash.cloudflare.com → Images → Transformations
 2. Click "Enable Image Resizing"
 3. If not enabled, set `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED="false"` in `.env` to use raw images
@@ -152,16 +279,17 @@ Images are optimized on-demand using **Cloudflare Image Resizing**:
 The code automatically falls back to raw R2 URLs if `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED="false"`. This prevents 404 errors when the feature is not enabled in Cloudflare dashboard.
 
 **Image optimization utilities** (`/src/lib/cloudflare-images-client.ts`):
+
 ```typescript
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 // Predefined variants (optimized for specific use cases)
-optimizeImage.thumbnail(url);    // 400x500, WebP, 80% quality (product cards)
-optimizeImage.medium(url);       // 800x1000, WebP, 85% quality (product detail)
-optimizeImage.large(url);        // 1200x1500, WebP, 90% quality (zoom/hero)
-optimizeImage.cartItem(url);     // 100x100, WebP, 75% quality (cart preview)
+optimizeImage.thumbnail(url); // 400x500, WebP, 80% quality (product cards)
+optimizeImage.medium(url); // 800x1000, WebP, 85% quality (product detail)
+optimizeImage.large(url); // 1200x1500, WebP, 90% quality (zoom/hero)
+optimizeImage.cartItem(url); // 100x100, WebP, 75% quality (cart preview)
 optimizeImage.categoryCard(url); // 300x300, WebP, 80% quality (category cards)
-optimizeImage.adminThumb(url);   // 150x150, WebP, 70% quality (admin thumbnails)
+optimizeImage.adminThumb(url); // 150x150, WebP, 70% quality (admin thumbnails)
 
 // Custom transformations
 import { getOptimizedImageUrl } from '@/lib/cloudflare-images-client';
@@ -169,14 +297,15 @@ import { getOptimizedImageUrl } from '@/lib/cloudflare-images-client';
 const customUrl = getOptimizedImageUrl(imageUrl, {
   width: 600,
   height: 800,
-  format: 'auto',  // Serves WebP to supported browsers, JPEG fallback
+  format: 'auto', // Serves WebP to supported browsers, JPEG fallback
   quality: 85,
-  fit: 'cover',    // scale-down, contain, cover, crop, pad
+  fit: 'cover', // scale-down, contain, cover, crop, pad
   gravity: 'auto', // Smart focus (detects faces/salient features)
 });
 ```
 
 **Important notes**:
+
 - Use `@/lib/cloudflare-images-client` in client components (browser-safe)
 - Use `@/lib/cloudflare-images` in server components/API routes (includes all features)
 - Original images uploaded to R2 remain unchanged
@@ -185,6 +314,7 @@ const customUrl = getOptimizedImageUrl(imageUrl, {
 - If feature is disabled, functions return original URLs (no optimization)
 
 **Storage adapter pattern:**
+
 ```typescript
 import { storage } from '@/lib/storage';
 
@@ -193,7 +323,7 @@ const result = await storage.upload({
   file: fileBuffer,
   path: 'products/images/example.jpg',
   contentType: 'image/jpeg',
-  isPublic: true
+  isPublic: true,
 });
 
 // Get public URL
@@ -201,6 +331,7 @@ const url = storage.getPublicUrl('products/images/example.jpg');
 ```
 
 **Environment variables required:**
+
 - `R2_ACCOUNT_ID` - Cloudflare account ID
 - `R2_ACCESS_KEY_ID` - R2 API access key
 - `R2_SECRET_ACCESS_KEY` - R2 API secret
@@ -212,6 +343,7 @@ const url = storage.getPublicUrl('products/images/example.jpg');
 
 **Production Custom Domain Setup:**
 The bucket uses `cdn.kitia.ir` as the public-facing domain (configured in Cloudflare R2 bucket settings). This provides:
+
 - No rate limits (vs r2.dev which is rate-limited)
 - Full Cloudflare CDN caching
 - WAF and security features
@@ -223,6 +355,7 @@ This development environment does NOT have IPv6 connectivity. The AWS S3 SDK mus
 See `/docs/R2_SETUP.md` for complete setup instructions.
 
 ### Authentication Flow
+
 - Uses NextAuth.js with Credentials provider
 - JWT strategy (not database sessions)
 - Password hashing with bcrypt
@@ -235,9 +368,11 @@ See `/docs/R2_SETUP.md` for complete setup instructions.
 Session data includes: `id`, `email`, `name`, `role`
 
 ### OTP Authentication (Email & SMS)
+
 Supports passwordless login and registration via OTP codes.
 
 **Email OTP** (via Resend):
+
 - Production: Uses Resend API with verified domain (`kitia.ir`)
 - Development: Auto-creates Ethereal test accounts
 - DNS configured: DKIM, SPF, MX records via Cloudflare
@@ -246,10 +381,12 @@ Supports passwordless login and registration via OTP codes.
   - Without this, Resend will fail to send emails and OTP will fail silently
 
 **SMS OTP** (via Kavenegar):
+
 - Template-based SMS delivery for Iranian phone numbers
 - Format: `09xxxxxxxxx`
 
 **OTP Service** (`src/services/otp-service.ts`):
+
 - 6-digit codes, 5-minute expiration
 - Rate limiting: 1 OTP per 2 minutes per identifier
 - Max 3 verification attempts
@@ -257,10 +394,12 @@ Supports passwordless login and registration via OTP codes.
 - Supports both `register` and `login` purposes
 
 **API Endpoints**:
+
 - `POST /api/auth/send-otp` - Send OTP to email or phone
 - `POST /api/auth/verify-otp` - Verify OTP code
 
 ### Transaction & Payment Flow
+
 1. User creates transaction → generates unique `transactionCode` (8-char alphanumeric)
 2. Initiate Zarinpal payment → stores `zarinpalAuthority`
 3. User completes payment on Zarinpal gateway
@@ -272,6 +411,7 @@ Supports passwordless login and registration via OTP codes.
 Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
 
 **Admin Order Notifications**:
+
 - Automatic email sent to admin after each successful payment
 - Includes comprehensive order details: buyer info, products with variants, quantities, prices
 - Configured via `ADMIN_EMAIL` environment variable
@@ -279,6 +419,7 @@ Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
 - Service: `sendAdminOrderConfirmation()` in `src/lib/email/client.ts`
 
 ### Database Schema Key Points
+
 - **Products**: Support variants, media, tags, categories
   - `images` field is deprecated (kept for backward compatibility)
   - Use `ProductMedia` relation for new media
@@ -293,6 +434,7 @@ Transaction statuses: `PENDING`, `COMPLETED`, `FAILED`
 ## Path Aliases
 
 Use `@/` to reference `/src`:
+
 ```typescript
 import { getAllProducts } from '@/services/product-service';
 import { createClient } from '@/lib/supabase/server';
@@ -301,6 +443,7 @@ import { createClient } from '@/lib/supabase/server';
 ## Logging
 
 Use structured logging via Pino (`@/lib/logger`):
+
 ```typescript
 import { log } from '@/lib/logger';
 
@@ -315,6 +458,7 @@ Development mode uses `pino-pretty` for colorized output. Production uses JSON l
 ## Environment Variables
 
 Required variables (see `.env.example`):
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - Supabase publishable key (replaces legacy anon key)
 - `SUPABASE_SECRET_KEY` - Supabase secret key (replaces legacy service_role key, for server-side operations)
@@ -339,6 +483,7 @@ Required variables (see `.env.example`):
 ## RTL and Internationalization
 
 The entire application is RTL (Right-to-Left) for Persian/Farsi:
+
 - Tailwind configured for RTL via `next.config.js`
 - Use logical properties: `ms-*` (margin-start), `pe-*` (padding-end)
 - All user-facing text is in Farsi
@@ -359,6 +504,7 @@ The entire application is RTL (Right-to-Left) for Persian/Farsi:
 ## Testing API Routes Locally
 
 Use the verify script before committing route changes:
+
 ```bash
 npm run verify:routes
 ```
@@ -381,6 +527,7 @@ This checks that all API routes and dynamic Server Component pages have the requ
 Always use the appropriate client for your context:
 
 **Server-side (API routes, Server Components, Server Actions)**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/server';
 
@@ -392,6 +539,7 @@ export async function GET() {
 ```
 
 **Client-side (Client Components)**:
+
 ```typescript
 import { createClient } from '@/lib/supabase/client';
 
@@ -408,6 +556,7 @@ Admin-specific business logic is in `/src/services/admin-service.ts`. Admin rout
 ## Payment Integration (Zarinpal)
 
 Sandbox mode is enabled via `ZARINPAL_SANDBOX=true`. For production:
+
 1. Set `ZARINPAL_SANDBOX=false`
 2. Use real merchant ID from Zarinpal dashboard
 3. Update callback URL to production domain

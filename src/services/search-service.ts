@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import type {

@@ -1,3 +1,4 @@
+import 'server-only';
 import { sendOrderConfirmationSMS } from '@/lib/kavenegar/client';
 import { log } from '@/lib/logger';
 

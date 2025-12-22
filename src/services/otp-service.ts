@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { sendOTPSMS } from '@/lib/kavenegar/client';
 import { sendOTPEmail } from '@/lib/email/client';

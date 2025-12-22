@@ -1,3 +1,4 @@
+import 'server-only';
 import Kavenegar from 'kavenegar';
 import { log } from '@/lib/logger';
 

@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { TagFormData, TagWithCount } from '@/types/product';
 import { DeleteResult } from '@/types/api';

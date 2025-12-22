@@ -3,6 +3,7 @@
  * Wrapper for zarinpal-node-sdk
  */
 
+import 'server-only';
 import ZarinPal from 'zarinpal-node-sdk';
 import { log } from '@/lib/logger';
 

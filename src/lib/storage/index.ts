@@ -5,6 +5,7 @@
  * Currently uses Cloudflare R2, but can be swapped for other providers.
  */
 
+import 'server-only';
 import { R2StorageAdapter } from './adapters/r2';
 import { StorageAdapter } from './types';
 

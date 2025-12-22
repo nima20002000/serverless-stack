@@ -1,3 +1,4 @@
+import 'server-only';
 import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { PaginatedResponse, StockVerificationResult } from '@/types/api';

@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { randomUUID } from 'crypto';
 import { createFirstTimePromoCode } from './promo-service';

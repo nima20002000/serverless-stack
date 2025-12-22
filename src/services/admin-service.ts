@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { PaginatedResponse, DeleteResult, DashboardStats } from '@/types/api';
 import { log } from '@/lib/logger';
