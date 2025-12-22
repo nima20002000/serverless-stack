@@ -8,6 +8,20 @@ const nextConfig = {
     },
     optimizeCss: true, // Enable CSS optimization
   },
+  webpack: (config, { isServer }) => {
+    // Fix for module resolution issues in Next.js 14
+    // Prevents "Cannot read properties of undefined (reading 'call')" webpack error
+    // when Node.js modules are referenced in client code import chains
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {
