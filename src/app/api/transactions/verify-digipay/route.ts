@@ -253,17 +253,11 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           phone: transaction.phone,
           transactionCode: transaction.transactionCode,
-          trackingCode: verification.trackingCode,
         });
-
-        // Digipay trackingCode is a string, but SMS service expects number
-        // Try to parse it, fallback to 0 if not numeric
-        const trackingCodeNum = parseInt(verification.trackingCode, 10) || 0;
 
         const smsResult = await sendOrderConfirmation(
           transaction.phone,
-          transaction.transactionCode,
-          trackingCodeNum
+          transaction.transactionCode
         );
 
         if (!smsResult.success) {
@@ -300,7 +294,6 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           email: fullTransaction.email,
           transactionCode: transaction.transactionCode,
-          trackingCode: verification.trackingCode,
         });
 
         const emailResult = await sendBuyerOrderConfirmation(fullTransaction);

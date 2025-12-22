@@ -154,13 +154,11 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           phone: transaction.phone,
           transactionCode: transaction.transactionCode,
-          refId: verification.refId,
         });
 
         const smsResult = await sendOrderConfirmation(
           transaction.phone,
-          transaction.transactionCode,
-          verification.refId
+          transaction.transactionCode
         );
 
         if (!smsResult.success) {
@@ -197,13 +195,9 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           email: fullTransaction.email,
           transactionCode: transaction.transactionCode,
-          refId: verification.refId,
         });
 
-        const emailResult = await sendBuyerOrderConfirmation(
-          fullTransaction,
-          verification.refId
-        );
+        const emailResult = await sendBuyerOrderConfirmation(fullTransaction);
 
         if (!emailResult.success) {
           log.warn('Buyer confirmation email not sent', {
