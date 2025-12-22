@@ -17,12 +17,18 @@ export default function CartPageClient() {
   const itemCount = useCartStore(selectItemCount);
   const [error, setError] = useState('');
 
-  const handleUpdateQuantity = (productId: string, quantity: number, variantId?: string) => {
+  const handleUpdateQuantity = (
+    productId: string,
+    quantity: number,
+    variantId?: string
+  ) => {
     try {
       setError('');
       updateQuantity(productId, quantity, variantId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید');
+      setError(
+        err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید'
+      );
     }
   };
 

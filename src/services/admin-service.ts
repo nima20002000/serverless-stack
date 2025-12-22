@@ -130,10 +130,8 @@ export async function getAllUsers(
 
   try {
     // Build the base query
-    let query = supabase
-      .from('users')
-      .select(
-        `
+    let query = supabase.from('users').select(
+      `
         id,
         uid,
         email,
@@ -142,8 +140,8 @@ export async function getAllUsers(
         role,
         createdAt
       `,
-        { count: 'exact' }
-      );
+      { count: 'exact' }
+    );
 
     // Apply search filter
     if (search) {
@@ -189,7 +187,10 @@ export async function getAllUsers(
 
     (transactionCounts || []).forEach((t) => {
       if (t.userId) {
-        transactionCountMap.set(t.userId, (transactionCountMap.get(t.userId) || 0) + 1);
+        transactionCountMap.set(
+          t.userId,
+          (transactionCountMap.get(t.userId) || 0) + 1
+        );
       }
     });
 
@@ -286,7 +287,10 @@ export async function getUserById(id: string): Promise<UserWithDetails> {
   }
 }
 
-export async function updateUserRole(id: string, role: 'USER' | 'ADMIN'): Promise<UserBasic> {
+export async function updateUserRole(
+  id: string,
+  role: 'USER' | 'ADMIN'
+): Promise<UserBasic> {
   const supabase = await createClient();
 
   try {
@@ -331,7 +335,10 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
     }
 
     // Delete user (cascade will handle related records)
-    const { error: deleteError } = await supabase.from('users').delete().eq('id', id);
+    const { error: deleteError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
 
     if (deleteError) {
       log.error('Error deleting user', { id, error: deleteError });
@@ -349,7 +356,9 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
 /**
  * Bulk delete users (only non-admin users)
  */
-export async function bulkDeleteUsers(userIds: string[]): Promise<{ count: number }> {
+export async function bulkDeleteUsers(
+  userIds: string[]
+): Promise<{ count: number }> {
   const supabase = await createClient();
 
   try {
@@ -435,10 +444,8 @@ export async function getAllTransactions(
 
   try {
     // Build the base query
-    let query = supabase
-      .from('transactions')
-      .select(
-        `
+    let query = supabase.from('transactions').select(
+      `
         *,
         user:users!userId(id, uid, name, email, phone),
         items:transaction_items(
@@ -448,8 +455,8 @@ export async function getAllTransactions(
         ),
         invoice:invoices(id, transactionId, invoiceNumber, generatedAt)
       `,
-        { count: 'exact' }
-      );
+      { count: 'exact' }
+    );
 
     // Apply status filter
     if (status) {
@@ -477,7 +484,9 @@ export async function getAllTransactions(
     }
 
     // Apply ordering and pagination
-    query = query.order('createdAt', { ascending: false }).range(offset, offset + limit - 1);
+    query = query
+      .order('createdAt', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     const { data: transactions, error, count } = await query;
 
@@ -490,7 +499,9 @@ export async function getAllTransactions(
 
     // Process transactions to normalize invoice array (Supabase returns it as array)
     const processedTransactions = (transactions || []).map((tx) => {
-      const invoiceData = Array.isArray(tx.invoice) ? tx.invoice[0] : tx.invoice;
+      const invoiceData = Array.isArray(tx.invoice)
+        ? tx.invoice[0]
+        : tx.invoice;
       return {
         ...tx,
         invoice: invoiceData || null,
@@ -510,7 +521,9 @@ export async function getAllTransactions(
   }
 }
 
-export async function getTransactionById(id: string): Promise<TransactionWithDetails> {
+export async function getTransactionById(
+  id: string
+): Promise<TransactionWithDetails> {
   const supabase = await createClient();
 
   try {
@@ -558,7 +571,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 
   try {
-    const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const thisMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1
+    );
     const thisMonthISO = thisMonth.toISOString();
 
     // Run all independent queries in parallel
@@ -582,7 +599,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       supabase.from('products').select('id', { count: 'exact', head: true }),
 
       // Total transactions count
-      supabase.from('transactions').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true }),
 
       // Completed transactions count
       supabase
@@ -665,11 +684,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       recentTransactions:
         recentTransactionsResult.data?.map((t) => {
           const userName: string = t.user
-            ? (t.user as { name: string | null; email: string | null }).name || 'بدون نام'
-            : (t.fullName || 'مهمان');
+            ? (t.user as { name: string | null; email: string | null }).name ||
+              'بدون نام'
+            : t.fullName || 'مهمان';
           const userEmail: string = t.user
-            ? (t.user as { name: string | null; email: string | null }).email || ''
-            : (t.email || 'مهمان');
+            ? (t.user as { name: string | null; email: string | null }).email ||
+              ''
+            : t.email || 'مهمان';
 
           return {
             id: t.id,

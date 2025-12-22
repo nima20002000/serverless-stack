@@ -6,7 +6,9 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import BulkActionsToolbar, {
+  BulkAction,
+} from '@/components/admin/BulkActionsToolbar';
 
 interface User {
   id: string;
@@ -43,9 +45,13 @@ export default function UsersManagementPage() {
   const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const searchParam = searchQuery
+        ? `&search=${encodeURIComponent(searchQuery)}`
+        : '';
       const roleParam = roleFilter !== 'all' ? `&role=${roleFilter}` : '';
-      const response = await fetch(`/api/admin/users?page=${currentPage}&limit=20${searchParam}${roleParam}`);
+      const response = await fetch(
+        `/api/admin/users?page=${currentPage}&limit=20${searchParam}${roleParam}`
+      );
       if (!response.ok) throw new Error('خطا در دریافت کاربران');
       const result = await response.json();
       setData(result);
@@ -73,8 +79,15 @@ export default function UsersManagementPage() {
     setCurrentPage(1);
   };
 
-  const handleChangeRole = async (userId: string, newRole: 'USER' | 'ADMIN') => {
-    if (!confirm(`آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`)) {
+  const handleChangeRole = async (
+    userId: string,
+    newRole: 'USER' | 'ADMIN'
+  ) => {
+    if (
+      !confirm(
+        `آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`
+      )
+    ) {
       return;
     }
 
@@ -95,7 +108,11 @@ export default function UsersManagementPage() {
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`آیا از حذف کاربر "${userName}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`)) {
+    if (
+      !confirm(
+        `آیا از حذف کاربر "${userName}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`
+      )
+    ) {
       return;
     }
 
@@ -122,7 +139,7 @@ export default function UsersManagementPage() {
     if (selectedUsers.size === data.data.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(data.data.map(u => u.id)));
+      setSelectedUsers(new Set(data.data.map((u) => u.id)));
     }
   };
 
@@ -256,7 +273,9 @@ export default function UsersManagementPage() {
       <Breadcrumbs items={[{ label: 'مدیریت کاربران' }]} />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">مدیریت کاربران</h1>
+        <h1 className="text-3xl font-bold text-gray-900 text-right">
+          مدیریت کاربران
+        </h1>
         <p className="text-gray-600 text-right mt-2">
           مشاهده و مدیریت کاربران سیستم
         </p>
@@ -269,7 +288,11 @@ export default function UsersManagementPage() {
       )}
 
       {successMessage && (
-        <Alert type="success" className="mb-4" onClose={() => setSuccessMessage('')}>
+        <Alert
+          type="success"
+          className="mb-4"
+          onClose={() => setSuccessMessage('')}
+        >
           {successMessage}
         </Alert>
       )}
@@ -277,7 +300,10 @@ export default function UsersManagementPage() {
       {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-2"
+          >
             <input
               type="text"
               value={searchQuery}
@@ -285,7 +311,11 @@ export default function UsersManagementPage() {
               placeholder="جستجو بر اساس نام یا ایمیل..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
             />
-            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full sm:w-auto order-1 sm:order-2"
+            >
               جستجو
             </Button>
           </form>
@@ -309,7 +339,9 @@ export default function UsersManagementPage() {
                 <option value="USER">کاربران</option>
                 <option value="ADMIN">مدیران</option>
               </select>
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">نقش:</label>
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                نقش:
+              </label>
             </div>
 
             <Button
@@ -347,7 +379,10 @@ export default function UsersManagementPage() {
                     <th className="px-4 py-3 text-center w-12">
                       <input
                         type="checkbox"
-                        checked={data.data.length > 0 && selectedUsers.size === data.data.length}
+                        checked={
+                          data.data.length > 0 &&
+                          selectedUsers.size === data.data.length
+                        }
                         onChange={toggleSelectAll}
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                       />
@@ -417,7 +452,8 @@ export default function UsersManagementPage() {
                           href={`/admin/users/${user.id}`}
                           className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
                         >
-                          {user._count.transactions.toLocaleString('fa-IR')} تراکنش
+                          {user._count.transactions.toLocaleString('fa-IR')}{' '}
+                          تراکنش
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -468,7 +504,9 @@ export default function UsersManagementPage() {
               </span>
               <Button
                 variant="secondary"
-                onClick={() => setCurrentPage((p) => Math.min(data.totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(data.totalPages, p + 1))
+                }
                 disabled={currentPage === data.totalPages}
               >
                 بعدی

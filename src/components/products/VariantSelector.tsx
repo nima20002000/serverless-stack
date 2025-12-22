@@ -29,7 +29,9 @@ function VariantSelector({
   selectedVariantId,
 }: VariantSelectorProps) {
   // Use the parent's selectedVariantId (which may be auto-selected)
-  const [selected, setSelected] = useState<string | null>(selectedVariantId || null);
+  const [selected, setSelected] = useState<string | null>(
+    selectedVariantId || null
+  );
 
   // Sync with parent's selection changes using useEffect
   useEffect(() => {
@@ -39,12 +41,18 @@ function VariantSelector({
   }, [selectedVariantId, selected]);
 
   // Memoize variant filtering to avoid recalculating on every render
-  const { colorVariants, sizeVariants, materialVariants, otherVariants } = useMemo(() => ({
-    colorVariants: variants.filter(v => v.color && v.isActive),
-    sizeVariants: variants.filter(v => v.size && v.isActive),
-    materialVariants: variants.filter(v => v.material && v.isActive),
-    otherVariants: variants.filter(v => !v.color && !v.size && !v.material && v.isActive),
-  }), [variants]);
+  const { colorVariants, sizeVariants, materialVariants, otherVariants } =
+    useMemo(
+      () => ({
+        colorVariants: variants.filter((v) => v.color && v.isActive),
+        sizeVariants: variants.filter((v) => v.size && v.isActive),
+        materialVariants: variants.filter((v) => v.material && v.isActive),
+        otherVariants: variants.filter(
+          (v) => !v.color && !v.size && !v.material && v.isActive
+        ),
+      }),
+      [variants]
+    );
 
   if (!variants || variants.length === 0) {
     return null;
@@ -145,7 +153,9 @@ function VariantSelector({
                 {Number(variant.priceAdjust).toLocaleString('fa-IR')} تومان
               </div>
             )}
-            <div className={`text-xs ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}>
+            <div
+              className={`text-xs ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}
+            >
               {outOfStock ? 'ناموجود' : `موجودی: ${variant.stock}`}
             </div>
           </div>
@@ -154,7 +164,9 @@ function VariantSelector({
     );
   };
 
-  const selectedVariant = selected ? variants.find(v => v.id === selected) : null;
+  const selectedVariant = selected
+    ? variants.find((v) => v.id === selected)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -165,7 +177,7 @@ function VariantSelector({
             رنگ
           </label>
           <div className="flex flex-wrap gap-3">
-            {colorVariants.map(variant => (
+            {colorVariants.map((variant) => (
               <ColorSwatch key={variant.id} variant={variant} />
             ))}
           </div>
@@ -179,7 +191,7 @@ function VariantSelector({
             سایز
           </label>
           <div className="flex flex-wrap gap-2">
-            {sizeVariants.map(variant => (
+            {sizeVariants.map((variant) => (
               <SizeButton key={variant.id} variant={variant} />
             ))}
           </div>
@@ -193,7 +205,7 @@ function VariantSelector({
             جنس
           </label>
           <div className="flex flex-wrap gap-2">
-            {materialVariants.map(variant => (
+            {materialVariants.map((variant) => (
               <button
                 key={variant.id}
                 onClick={() => !isOutOfStock(variant) && handleSelect(variant)}
@@ -218,7 +230,7 @@ function VariantSelector({
             انتخاب نوع
           </label>
           <div className="space-y-2">
-            {otherVariants.map(variant => (
+            {otherVariants.map((variant) => (
               <VariantButton key={variant.id} variant={variant} />
             ))}
           </div>

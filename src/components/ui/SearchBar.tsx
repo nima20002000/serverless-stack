@@ -23,7 +23,7 @@ interface SearchResponse {
 export default function SearchBar({
   className = '',
   placeholder = 'جستجوی محصولات و دسته‌بندی‌ها...',
-  onResultClick
+  onResultClick,
 }: SearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -33,7 +33,9 @@ export default function SearchBar({
     total: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [selected, setSelected] = useState<SearchResult | null | undefined>(null);
+  const [selected, setSelected] = useState<SearchResult | null | undefined>(
+    null
+  );
 
   // Debounced search
   useEffect(() => {
@@ -49,7 +51,9 @@ export default function SearchBar({
 
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=5`);
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&limit=5`
+        );
         const data = await response.json();
         setResults(data);
       } catch (error) {
@@ -163,7 +167,9 @@ export default function SearchBar({
                           value={category}
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
-                              active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
+                              active
+                                ? 'bg-blue-50 text-blue-900'
+                                : 'text-gray-900'
                             }`
                           }
                         >
@@ -181,7 +187,9 @@ export default function SearchBar({
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{category.name}</p>
+                                <p className="font-medium truncate">
+                                  {category.name}
+                                </p>
                                 {category.description && (
                                   <p className="text-xs text-gray-500 truncate mt-0.5">
                                     {category.description}
@@ -207,7 +215,9 @@ export default function SearchBar({
                           value={product}
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
-                              active ? 'bg-blue-50 text-blue-900' : 'text-gray-900'
+                              active
+                                ? 'bg-blue-50 text-blue-900'
+                                : 'text-gray-900'
                             }`
                           }
                         >
@@ -234,7 +244,9 @@ export default function SearchBar({
 
                               {/* Product Info */}
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">{product.name}</p>
+                                <p className="font-medium truncate">
+                                  {product.name}
+                                </p>
                                 <div className="flex items-center gap-2 mt-1">
                                   <span className="text-sm font-semibold text-blue-600">
                                     {formatPrice(product.price)}
@@ -251,13 +263,14 @@ export default function SearchBar({
                               </div>
 
                               {/* Discount Badge */}
-                              {product.discountPercent && product.discountPercent > 0 && (
-                                <div className="flex-shrink-0">
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                    {product.discountPercent}٪ تخفیف
-                                  </span>
-                                </div>
-                              )}
+                              {product.discountPercent &&
+                                product.discountPercent > 0 && (
+                                  <div className="flex-shrink-0">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                      {product.discountPercent}٪ تخفیف
+                                    </span>
+                                  </div>
+                                )}
                             </div>
                           )}
                         </Combobox.Option>
@@ -266,7 +279,8 @@ export default function SearchBar({
                   )}
                 </div>
               ) : (
-                query.trim().length >= 2 && !isLoading && (
+                query.trim().length >= 2 &&
+                !isLoading && (
                   <div className="px-4 py-8 text-center text-gray-500">
                     <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-300 mb-3" />
                     <p className="text-sm font-medium">نتیجه‌ای یافت نشد</p>

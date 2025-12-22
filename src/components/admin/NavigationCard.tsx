@@ -33,7 +33,9 @@ export default function NavigationCard({
       <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300 h-full">
         <div className="flex items-start gap-3 sm:gap-4">
           {/* Icon */}
-          <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-colors ${colorStyles[color]}`}>
+          <div
+            className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-colors ${colorStyles[color]}`}
+          >
             {icon}
           </div>
 

@@ -24,10 +24,7 @@ export async function POST(req: NextRequest) {
 
     // Validate input
     if (!Array.isArray(productOrders) || productOrders.length === 0) {
-      return NextResponse.json(
-        { error: 'داده‌های نامعتبر' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'داده‌های نامعتبر' }, { status: 400 });
     }
 
     // Validate each order item

@@ -33,9 +33,6 @@ export async function GET(request: Request) {
     return NextResponse.json(results, { status: 200 });
   } catch (error) {
     log.error('Search API error', { error });
-    return NextResponse.json(
-      { error: 'خطا در جستجو' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطا در جستجو' }, { status: 500 });
   }
 }

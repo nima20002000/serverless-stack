@@ -64,7 +64,9 @@ export async function searchAll(
     // Search products
     let productsQuery = supabase
       .from('products')
-      .select('id, name, description, price, discountPercent, images, categoryId, category:categories(name)')
+      .select(
+        'id, name, description, price, discountPercent, images, categoryId, category:categories(name)'
+      )
       .or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
 
     if (!includeInactive) {
@@ -76,7 +78,10 @@ export async function searchAll(
       .limit(limit);
 
     if (productsError) {
-      log.error('Error searching products', { query: searchQuery, error: productsError });
+      log.error('Error searching products', {
+        query: searchQuery,
+        error: productsError,
+      });
     }
 
     // Search categories
@@ -94,7 +99,10 @@ export async function searchAll(
       .limit(limit);
 
     if (categoriesError) {
-      log.error('Error searching categories', { query: searchQuery, error: categoriesError });
+      log.error('Error searching categories', {
+        query: searchQuery,
+        error: categoriesError,
+      });
     }
 
     // Map results to typed interfaces
@@ -110,14 +118,16 @@ export async function searchAll(
       type: 'product' as const,
     }));
 
-    const categoryResults: CategorySearchResult[] = (categories || []).map((c) => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description,
-      image: c.image,
-      type: 'category' as const,
-    }));
+    const categoryResults: CategorySearchResult[] = (categories || []).map(
+      (c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        image: c.image,
+        type: 'category' as const,
+      })
+    );
 
     const total = productResults.length + categoryResults.length;
 

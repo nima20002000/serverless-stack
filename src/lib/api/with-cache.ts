@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCached } from '@/lib/redis/client';
 import { log } from '@/lib/logger';
 
-type ApiHandler = (req: NextRequest, context?: unknown) => Promise<NextResponse>;
+type ApiHandler = (
+  req: NextRequest,
+  context?: unknown
+) => Promise<NextResponse>;
 
 export function withCache(
   handler: ApiHandler,
@@ -42,7 +45,7 @@ export function withCache(
     } catch (error) {
       log.debug('Cache bypass', {
         cacheKey,
-        reason: error instanceof Error ? error.message : 'error or non-200'
+        reason: error instanceof Error ? error.message : 'error or non-200',
       });
       const response = await handler(req, context);
 

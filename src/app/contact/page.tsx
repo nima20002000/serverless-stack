@@ -1,30 +1,36 @@
 import { Metadata } from 'next';
-import { PhoneIcon, MapPinIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import {
+  PhoneIcon,
+  MapPinIcon,
+  ChatBubbleLeftRightIcon,
+} from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
-  title: "تماس با ما - کیتیا",
-  description: "راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳، آدرس تهران - خیابان اردستانی - مجتمع مهسان. پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب.",
+  title: 'تماس با ما - کیتیا',
+  description:
+    'راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳، آدرس تهران - خیابان اردستانی - مجتمع مهسان. پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب.',
   openGraph: {
-    title: "تماس با ما - کیتیا",
-    description: "با تیم پشتیبانی کیتیا در ارتباط باشید. تلفن و واتساپ: ۰۹۹۱۲۲۱۸۴۶۳",
-    type: "website",
-    locale: "fa_IR",
-    siteName: "کیتیا",
+    title: 'تماس با ما - کیتیا',
+    description:
+      'با تیم پشتیبانی کیتیا در ارتباط باشید. تلفن و واتساپ: ۰۹۹۱۲۲۱۸۴۶۳',
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: 'کیتیا',
     images: [
       {
         url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "کیتیا - فروشگاه آنلاین",
-      }
+        alt: 'کیتیا - فروشگاه آنلاین',
+      },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "تماس با ما - کیتیا",
-    description: "راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳",
+    card: 'summary_large_image',
+    title: 'تماس با ما - کیتیا',
+    description: 'راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳',
     images: [DEFAULT_OG_IMAGE],
   },
   alternates: {
@@ -55,7 +61,9 @@ export default function ContactPage() {
             </div>
             <div className="space-y-3">
               <div className="text-right">
-                <p className="text-sm text-gray-600 mb-2">شماره تماس و واتساپ:</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  شماره تماس و واتساپ:
+                </p>
                 <div className="space-y-2">
                   <a
                     href="tel:09912218463"
@@ -88,7 +96,9 @@ export default function ContactPage() {
             </div>
             <div className="space-y-3">
               <div className="text-right">
-                <p className="text-sm text-gray-600 mb-2">ارتباط سریع از طریق واتساپ:</p>
+                <p className="text-sm text-gray-600 mb-2">
+                  ارتباط سریع از طریق واتساپ:
+                </p>
                 <a
                   href="https://wa.me/989912218463"
                   target="_blank"
@@ -127,7 +137,8 @@ export default function ContactPage() {
           </h2>
           <div className="space-y-4 text-center">
             <p className="text-gray-700">
-              برای پیگیری وضعیت سفارش خود می‌توانید به کانال تلگرام ما مراجعه کنید:
+              برای پیگیری وضعیت سفارش خود می‌توانید به کانال تلگرام ما مراجعه
+              کنید:
             </p>
             <a
               href="https://t.me/kitia_a"
@@ -139,7 +150,8 @@ export default function ContactPage() {
             </a>
             <div className="pt-4 border-t border-blue-200">
               <p className="text-sm text-gray-600">
-                کد رهگیری تیپاکس خود را در پروفایل کاربری‌تان مشاهده کنید و از طریق سایت تیپاکس پیگیری نمایید.
+                کد رهگیری تیپاکس خود را در پروفایل کاربری‌تان مشاهده کنید و از
+                طریق سایت تیپاکس پیگیری نمایید.
               </p>
             </div>
           </div>

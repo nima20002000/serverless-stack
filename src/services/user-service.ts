@@ -1,14 +1,14 @@
-import { createClient } from "@/lib/supabase/server";
-import { randomUUID } from "crypto";
-import { createFirstTimePromoCode } from "./promo-service";
-import { log } from "@/lib/logger";
+import { createClient } from '@/lib/supabase/server';
+import { randomUUID } from 'crypto';
+import { createFirstTimePromoCode } from './promo-service';
+import { log } from '@/lib/logger';
 
 // Import utilities from modular structure
 import {
   queryUser,
   checkUserExists,
   type UserInfo,
-} from "./user-service/queries";
+} from './user-service/queries';
 import {
   validatePassword,
   hashPassword,
@@ -16,26 +16,29 @@ import {
   verifyCurrentPassword,
   ensureNoPassword,
   getUserWithPassword,
-} from "./user-service/password";
+} from './user-service/password';
 import {
   validateEmail,
   validatePhone,
   detectIdentifierType,
   validateEmailUniqueness,
   validatePhoneUniqueness,
-} from "./user-service/validation";
+} from './user-service/validation';
 
-type UserWithoutPassword = Omit<{
-  id: string;
-  uid: string;
-  email: string | null;
-  phone: string | null;
-  name: string;
-  role: 'USER' | 'ADMIN';
-  isVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}, never>;
+type UserWithoutPassword = Omit<
+  {
+    id: string;
+    uid: string;
+    email: string | null;
+    phone: string | null;
+    name: string;
+    role: 'USER' | 'ADMIN';
+    isVerified: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+  never
+>;
 
 // Re-export for backward compatibility
 export type { UserInfo };
@@ -96,26 +99,28 @@ export async function createUser(data: {
     // Validate email if provided
     if (email && !validateEmail(email)) {
       log.warn('Invalid email format', { email });
-      throw new Error("فرمت ایمیل نامعتبر است");
+      throw new Error('فرمت ایمیل نامعتبر است');
     }
 
     // Validate phone if provided
     if (phone && !validatePhone(phone)) {
       log.warn('Invalid phone format', { phone });
-      throw new Error("فرمت شماره تلفن نامعتبر است");
+      throw new Error('فرمت شماره تلفن نامعتبر است');
     }
 
     // Validate password (required for email, optional for phone)
     if (password && !validatePassword(password)) {
       log.warn('Invalid password length', { email, phone });
-      throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
+      throw new Error('رمز عبور باید حداقل ۸ کاراکتر باشد');
     }
 
     // Check if user already exists
     const exists = await checkUserExists({ email, phone });
     if (exists) {
       log.warn('User already exists', { email, phone });
-      throw new Error("کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است");
+      throw new Error(
+        'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+      );
     }
 
     // Hash password if provided
@@ -144,7 +149,7 @@ export async function createUser(data: {
             phone: phone || null,
             password: hashedPassword,
             name,
-            role: "USER",
+            role: 'USER',
             isVerified: !!phone, // Phone users are verified via OTP
             updatedAt: now,
           })
@@ -153,18 +158,30 @@ export async function createUser(data: {
 
         if (createError) {
           // Check if error is due to unique constraint violation on UID
-          if (createError.code === '23505' && createError.message?.includes('uid')) {
+          if (
+            createError.code === '23505' &&
+            createError.message?.includes('uid')
+          ) {
             // UID conflict - retry with new UID
             retries++;
-            log.warn('UID conflict detected, retrying', { retries, email, phone });
+            log.warn('UID conflict detected, retrying', {
+              retries,
+              email,
+              phone,
+            });
 
             if (retries >= maxRetries) {
-              log.error('Max retries reached for UID generation', { email, phone });
-              throw new Error('خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید');
+              log.error('Max retries reached for UID generation', {
+                email,
+                phone,
+              });
+              throw new Error(
+                'خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید'
+              );
             }
 
             // Wait a bit before retrying to reduce collision probability
-            await new Promise(resolve => setTimeout(resolve, 100 * retries));
+            await new Promise((resolve) => setTimeout(resolve, 100 * retries));
             continue;
           }
 
@@ -177,7 +194,10 @@ export async function createUser(data: {
         break;
       } catch (error) {
         // If it's not a UID conflict error, rethrow
-        if (retries >= maxRetries || !(error instanceof Error && error.message?.includes('uid'))) {
+        if (
+          retries >= maxRetries ||
+          !(error instanceof Error && error.message?.includes('uid'))
+        ) {
           throw error;
         }
       }
@@ -246,7 +266,7 @@ export async function createUser(data: {
     try {
       await createFirstTimePromoCode(user.id);
     } catch (error) {
-      log.error("Failed to create promo code", {
+      log.error('Failed to create promo code', {
         userId: user.id,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -299,7 +319,9 @@ export async function getUserByPhone(phone: string): Promise<UserInfo | null> {
 /**
  * Get user by identifier (email or phone)
  */
-export async function getUserByIdentifier(identifier: string): Promise<UserInfo | null> {
+export async function getUserByIdentifier(
+  identifier: string
+): Promise<UserInfo | null> {
   const type = detectIdentifierType(identifier);
 
   if (type === 'email') {
@@ -314,10 +336,13 @@ export async function getUserByIdentifier(identifier: string): Promise<UserInfo 
 /**
  * Update user's shipping information
  */
-export async function updateUserShippingInfo(userId: string, data: {
-  shippingAddress: string;
-  postalCode?: string;
-}): Promise<void> {
+export async function updateUserShippingInfo(
+  userId: string,
+  data: {
+    shippingAddress: string;
+    postalCode?: string;
+  }
+): Promise<void> {
   log.info('Updating user shipping info', { userId });
 
   try {
@@ -350,13 +375,16 @@ export async function updateUserShippingInfo(userId: string, data: {
 /**
  * Update user profile information
  */
-export async function updateUserProfile(userId: string, data: {
-  name?: string;
-  email?: string;
-  phone?: string;
-  shippingAddress?: string;
-  postalCode?: string;
-}): Promise<UserInfo> {
+export async function updateUserProfile(
+  userId: string,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    shippingAddress?: string;
+    postalCode?: string;
+  }
+): Promise<UserInfo> {
   log.info('Updating user profile', { userId, fields: Object.keys(data) });
 
   try {
@@ -373,7 +401,8 @@ export async function updateUserProfile(userId: string, data: {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.phone !== undefined) updateData.phone = data.phone || null;
-    if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress;
+    if (data.shippingAddress !== undefined)
+      updateData.shippingAddress = data.shippingAddress;
     if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
 
     // Update user
@@ -381,7 +410,9 @@ export async function updateUserProfile(userId: string, data: {
       .from('users')
       .update(updateData)
       .eq('id', userId)
-      .select('id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt')
+      .select(
+        'id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt'
+      )
       .single();
 
     if (error || !updatedUser) {
@@ -449,7 +480,7 @@ export async function resetPasswordWithOTP(
     const user = await getUserWithPassword(userId);
     if (!user) {
       log.warn('User not found', { userId });
-      throw new Error("کاربر یافت نشد");
+      throw new Error('کاربر یافت نشد');
     }
 
     // Update password (validation happens inside)
@@ -468,7 +499,10 @@ export async function resetPasswordWithOTP(
 /**
  * Set password for OTP-only users
  */
-export async function setUserPassword(userId: string, newPassword: string): Promise<void> {
+export async function setUserPassword(
+  userId: string,
+  newPassword: string
+): Promise<void> {
   log.info('Setting user password', { userId });
 
   try {
@@ -493,7 +527,10 @@ export async function setUserPassword(userId: string, newPassword: string): Prom
  * This is called when a user registers/logs in with OTP to ensure
  * any previous guest transactions with their phone are linked to their account
  */
-export async function linkOrphanedTransactions(userId: string, phone: string): Promise<number> {
+export async function linkOrphanedTransactions(
+  userId: string,
+  phone: string
+): Promise<number> {
   log.info('Linking orphaned guest transactions to user', { userId, phone });
 
   try {
@@ -508,7 +545,11 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
       .eq('isGuest', true);
 
     if (fetchError) {
-      log.error('Failed to fetch orphaned transactions', { userId, phone, error: fetchError });
+      log.error('Failed to fetch orphaned transactions', {
+        userId,
+        phone,
+        error: fetchError,
+      });
       return 0;
     }
 
@@ -527,7 +568,11 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
       .eq('isGuest', true);
 
     if (updateError) {
-      log.error('Failed to update orphaned transactions', { userId, phone, error: updateError });
+      log.error('Failed to update orphaned transactions', {
+        userId,
+        phone,
+        error: updateError,
+      });
       return 0;
     }
 
@@ -535,7 +580,7 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
       userId,
       phone,
       count: orphanedTransactions.length,
-      transactionCodes: orphanedTransactions.map(t => t.transactionCode),
+      transactionCodes: orphanedTransactions.map((t) => t.transactionCode),
     });
 
     return orphanedTransactions.length;
@@ -553,11 +598,14 @@ export async function linkOrphanedTransactions(userId: string, phone: string): P
 /**
  * Get user's transaction history with details
  */
-export async function getUserTransactions(userId: string, options?: {
-  limit?: number;
-  offset?: number;
-  status?: 'PENDING' | 'COMPLETED' | 'FAILED';
-}) {
+export async function getUserTransactions(
+  userId: string,
+  options?: {
+    limit?: number;
+    offset?: number;
+    status?: 'PENDING' | 'COMPLETED' | 'FAILED';
+  }
+) {
   log.info('Fetching user transactions', { userId, options });
 
   try {
@@ -578,7 +626,8 @@ export async function getUserTransactions(userId: string, options?: {
     // Build query for data with relations
     let dataQuery = supabase
       .from('transactions')
-      .select(`
+      .select(
+        `
         *,
         items:transaction_items(
           *,
@@ -601,7 +650,8 @@ export async function getUserTransactions(userId: string, options?: {
           generatedAt,
           pdfUrl
         )
-      `)
+      `
+      )
       .eq('userId', userId)
       .order('createdAt', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -621,28 +671,39 @@ export async function getUserTransactions(userId: string, options?: {
     }
 
     // Process transactions to include only first image for each product
-    const processedTransactions = (transactions || []).map(transaction => {
+    const processedTransactions = (transactions || []).map((transaction) => {
       // Supabase returns invoice as an array due to the join, get first element
-      const invoiceData = Array.isArray(transaction.invoice) ? transaction.invoice[0] : transaction.invoice;
+      const invoiceData = Array.isArray(transaction.invoice)
+        ? transaction.invoice[0]
+        : transaction.invoice;
 
       return {
         ...transaction,
         createdAt: new Date(transaction.createdAt),
         updatedAt: new Date(transaction.updatedAt),
-        items: transaction.items?.map(item => ({
-          ...item,
-          product: item.product ? {
-            ...item.product,
-            media: item.product.media
-              ?.filter((m: { type: string }) => m.type === 'IMAGE')
-              .sort((a: { order: number }, b: { order: number }) => a.order - b.order)
-              .slice(0, 1) || []
-          } : null
-        })) || [],
-        invoice: invoiceData ? {
-          ...invoiceData,
-          generatedAt: new Date(invoiceData.generatedAt),
-        } : null,
+        items:
+          transaction.items?.map((item) => ({
+            ...item,
+            product: item.product
+              ? {
+                  ...item.product,
+                  media:
+                    item.product.media
+                      ?.filter((m: { type: string }) => m.type === 'IMAGE')
+                      .sort(
+                        (a: { order: number }, b: { order: number }) =>
+                          a.order - b.order
+                      )
+                      .slice(0, 1) || [],
+                }
+              : null,
+          })) || [],
+        invoice: invoiceData
+          ? {
+              ...invoiceData,
+              generatedAt: new Date(invoiceData.generatedAt),
+            }
+          : null,
       };
     });
 

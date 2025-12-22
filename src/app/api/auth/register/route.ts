@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createUser } from "@/services/user-service";
-import { withLogging } from "@/lib/api/with-logging";
+import { NextRequest, NextResponse } from 'next/server';
+import { createUser } from '@/services/user-service';
+import { withLogging } from '@/lib/api/with-logging';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +12,7 @@ async function postHandler(req: NextRequest) {
     // Validate required fields (name is optional)
     if (!email || !password) {
       return NextResponse.json(
-        { error: "ایمیل و رمز عبور الزامی هستند" },
+        { error: 'ایمیل و رمز عبور الزامی هستند' },
         { status: 400 }
       );
     }
@@ -22,13 +22,13 @@ async function postHandler(req: NextRequest) {
     const user = await createUser({
       email,
       password,
-      name: name || ''
+      name: name || '',
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: "ثبت‌نام با موفقیت انجام شد",
+        message: 'ثبت‌نام با موفقیت انجام شد',
         user: {
           id: user.id,
           email: user.email,
@@ -39,18 +39,15 @@ async function postHandler(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error('Registration error:', error);
 
     // Return user-friendly error message
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "خطا در ثبت‌نام" },
+      { error: error instanceof Error ? error.message : 'خطا در ثبت‌نام' },
       { status: 400 }
     );
   }
 }
 
 // Rate limiting is handled by middleware (strictLimiter, 5 req/2min)
-export const POST = withLogging(
-  postHandler,
-  'POST /api/auth/register'
-);
+export const POST = withLogging(postHandler, 'POST /api/auth/register');

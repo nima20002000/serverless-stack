@@ -17,7 +17,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Search tags error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در جستجوی برچسب‌ها' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در جستجوی برچسب‌ها',
+      },
       { status: 500 }
     );
   }

@@ -12,7 +12,8 @@ export default function ProductsHero() {
           محصولات کیتیا
         </h1>
         <p className="text-lg sm:text-xl text-gray-700 max-w-2xl mx-auto leading-relaxed">
-          مجموعه‌ای منحصر به فرد از لیوان‌های سفری و ماگ‌های زیبا، برای لحظات دلنشین شما
+          مجموعه‌ای منحصر به فرد از لیوان‌های سفری و ماگ‌های زیبا، برای لحظات
+          دلنشین شما
         </p>
 
         {/* Decorative line */}

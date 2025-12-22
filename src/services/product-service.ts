@@ -36,7 +36,9 @@ export interface VariantWithMedia extends ProductVariant {
  * Populate images array from media for backward compatibility
  * Handles fallback logic: product.images → product.media → first variant.media
  */
-function populateProductImages(product: ProductWithRelations): ProductWithRelations {
+function populateProductImages(
+  product: ProductWithRelations
+): ProductWithRelations {
   let images = [...(product.images || [])];
 
   // If no images in legacy field, populate from media
@@ -66,7 +68,9 @@ function populateProductImages(product: ProductWithRelations): ProductWithRelati
 /**
  * Populate images for an array of products
  */
-function populateProductsImages(products: ProductWithRelations[]): ProductWithRelations[] {
+function populateProductsImages(
+  products: ProductWithRelations[]
+): ProductWithRelations[] {
   return products.map(populateProductImages);
 }
 
@@ -79,13 +83,22 @@ async function invalidateProductCache(): Promise<void> {
   // Clear common pagination keys (pages 1-10, which covers most traffic)
   // Include all sort options to ensure cache consistency
   const cacheKeys: string[] = [];
-  const sortOptions = ['popular', 'newest', 'price-asc', 'price-desc', 'featured', 'discount'];
+  const sortOptions = [
+    'popular',
+    'newest',
+    'price-asc',
+    'price-desc',
+    'featured',
+    'discount',
+  ];
   const perPageOptions = [10, 20, 50];
 
   for (let page = 1; page <= 10; page++) {
     for (const perPage of perPageOptions) {
       for (const sort of sortOptions) {
-        cacheKeys.push(`products:active:page:${page}:limit:${perPage}:sort:${sort}`);
+        cacheKeys.push(
+          `products:active:page:${page}:limit:${perPage}:sort:${sort}`
+        );
       }
       // Also clear old cache keys without sort parameter for backward compatibility
       cacheKeys.push(`products:active:page:${page}:limit:${perPage}`);
@@ -99,16 +112,20 @@ async function invalidateProductCache(): Promise<void> {
 /**
  * Fetch product with all relations
  */
-async function fetchProductWithRelations(productId: string): Promise<ProductWithRelations | null> {
+async function fetchProductWithRelations(
+  productId: string
+): Promise<ProductWithRelations | null> {
   const supabase = createClient();
 
   // Get product with category
   const { data: product, error } = await supabase
     .from('products')
-    .select(`
+    .select(
+      `
       *,
       category:categories(*)
-    `)
+    `
+    )
     .eq('id', productId)
     .single();
 
@@ -152,7 +169,7 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
   // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
   if (variants && variants.length > 0) {
-    const variantIds = variants.map(v => v.id);
+    const variantIds = variants.map((v) => v.id);
     const { data: allVariantMedia } = await supabase
       .from('product_media')
       .select('*')
@@ -188,7 +205,10 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
   // Calculate stock from variants if product has variants
   let actualStock = product.stock;
   if (variantsWithMedia.length > 0) {
-    actualStock = variantsWithMedia.reduce((sum, variant) => sum + variant.stock, 0);
+    actualStock = variantsWithMedia.reduce(
+      (sum, variant) => sum + variant.stock,
+      0
+    );
   }
 
   return {
@@ -234,7 +254,9 @@ export async function getAllProducts(options?: {
 
   // Search filter
   if (options?.search) {
-    query = query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+    query = query.or(
+      `name.ilike.%${options.search}%,description.ilike.%${options.search}%`
+    );
   }
 
   // Stock filter
@@ -247,7 +269,11 @@ export async function getAllProducts(options?: {
   }
 
   // Apply ordering and pagination
-  const { data: products, count, error } = await query
+  const {
+    data: products,
+    count,
+    error,
+  } = await query
     .order('displayOrder', { ascending: true })
     .order('createdAt', { ascending: false })
     .range(offset, offset + perPage - 1);
@@ -260,7 +286,9 @@ export async function getAllProducts(options?: {
   // If includeRelations is false, return products without fetching relations
   // This is much faster for admin list views that don't need full product data
   if (!includeRelations) {
-    const productsWithEmptyRelations: ProductWithRelations[] = (products || []).map(product => ({
+    const productsWithEmptyRelations: ProductWithRelations[] = (
+      products || []
+    ).map((product) => ({
       ...product,
       category: null,
       tags: [],
@@ -280,7 +308,9 @@ export async function getAllProducts(options?: {
   // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
   if (products && products.length > 0) {
-    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
     const results = await Promise.all(fetchPromises);
 
     for (const fullProduct of results) {
@@ -303,20 +333,18 @@ export async function getAllProducts(options?: {
  * Sorting options for product listing
  */
 export type ProductSortOption =
-  | 'popular'         // محبوب‌ترین‌ها (displayOrder)
-  | 'price-asc'       // قیمت: کم به زیاد
-  | 'price-desc'      // قیمت: زیاد به کم
-  | 'featured'        // محصولات ویژه
-  | 'discount'        // بیشترین تخفیف
-  | 'newest';         // جدیدترین
+  | 'popular' // محبوب‌ترین‌ها (displayOrder)
+  | 'price-asc' // قیمت: کم به زیاد
+  | 'price-desc' // قیمت: زیاد به کم
+  | 'featured' // محصولات ویژه
+  | 'discount' // بیشترین تخفیف
+  | 'newest'; // جدیدترین
 
 /**
  * Batch fetch all relations for multiple products (OPTIMIZED - eliminates N+1 queries)
  * This function fetches all relations in just 4 queries instead of N*5 queries
  */
-async function batchFetchProductRelations(
-  products: Product[]
-): Promise<{
+async function batchFetchProductRelations(products: Product[]): Promise<{
   categoriesMap: Map<string, Category>;
   tagsMap: Map<string, Tag[]>;
   mediaMap: Map<string, ProductMedia[]>;
@@ -332,15 +360,13 @@ async function batchFetchProductRelations(
   }
 
   const supabase = createClient();
-  const productIds = products.map(p => p.id);
+  const productIds = products.map((p) => p.id);
 
   // Query 1: Get all categories (single query using categoryIds from already-fetched products)
   const categoriesMap = new Map<string, Category>();
-  const uniqueCategoryIds = [...new Set(
-    products
-      .map(p => p.categoryId)
-      .filter(Boolean)
-  )] as string[];
+  const uniqueCategoryIds = [
+    ...new Set(products.map((p) => p.categoryId).filter(Boolean)),
+  ] as string[];
 
   if (uniqueCategoryIds.length > 0) {
     const { data: categories } = await supabase
@@ -363,7 +389,7 @@ async function batchFetchProductRelations(
     .in('A', productIds);
 
   if (productToTags && productToTags.length > 0) {
-    const uniqueTagIds = [...new Set(productToTags.map(pt => pt.B))];
+    const uniqueTagIds = [...new Set(productToTags.map((pt) => pt.B))];
     const { data: allTags } = await supabase
       .from('tags')
       .select('*')
@@ -422,7 +448,7 @@ async function batchFetchProductRelations(
     .order('order', { ascending: true });
 
   if (allVariants && allVariants.length > 0) {
-    const variantIds = allVariants.map(v => v.id);
+    const variantIds = allVariants.map((v) => v.id);
     const { data: allVariantMedia } = await supabase
       .from('product_media')
       .select('*')
@@ -482,14 +508,19 @@ export async function getActiveProducts(options?: {
   const supabase = createClient();
 
   // Base query for active products only
-  let query = supabase.from('products').select('*', { count: 'exact' }).eq('isActive', true);
+  let query = supabase
+    .from('products')
+    .select('*', { count: 'exact' })
+    .eq('isActive', true);
 
   // Apply sorting based on selected option
   // All sorting is done at the database level for optimal performance
   switch (sortBy) {
     case 'popular':
       // Popular (Original order based on displayOrder set by admin)
-      query = query.order('displayOrder', { ascending: true }).order('createdAt', { ascending: false });
+      query = query
+        .order('displayOrder', { ascending: true })
+        .order('createdAt', { ascending: false });
       break;
 
     case 'price-asc':
@@ -504,12 +535,16 @@ export async function getActiveProducts(options?: {
 
     case 'featured':
       // Featured products first, then by display order
-      query = query.order('isFeatured', { ascending: false }).order('displayOrder', { ascending: true });
+      query = query
+        .order('isFeatured', { ascending: false })
+        .order('displayOrder', { ascending: true });
       break;
 
     case 'discount':
       // Highest discount percentage first (products with discount > 0)
-      query = query.gt('discountPercent', 0).order('discountPercent', { ascending: false });
+      query = query
+        .gt('discountPercent', 0)
+        .order('discountPercent', { ascending: false });
       break;
 
     case 'newest':
@@ -519,12 +554,18 @@ export async function getActiveProducts(options?: {
 
     default:
       // Fallback to popular
-      query = query.order('displayOrder', { ascending: true }).order('createdAt', { ascending: false });
+      query = query
+        .order('displayOrder', { ascending: true })
+        .order('createdAt', { ascending: false });
       break;
   }
 
   // Apply pagination
-  const { data: products, count, error } = await query.range(offset, offset + perPage - 1);
+  const {
+    data: products,
+    count,
+    error,
+  } = await query.range(offset, offset + perPage - 1);
 
   if (error) {
     log.error('Error fetching active products', { error, sortBy });
@@ -542,33 +583,36 @@ export async function getActiveProducts(options?: {
   }
 
   // OPTIMIZED: Batch fetch all relations in just 4 queries instead of N*5 queries
-  const { categoriesMap, tagsMap, mediaMap, variantsMap } = await batchFetchProductRelations(products);
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+    await batchFetchProductRelations(products);
 
   // Combine products with their relations
-  const productsWithRelations: ProductWithRelations[] = products.map((product) => {
-    const variants = variantsMap.get(product.id) || [];
+  const productsWithRelations: ProductWithRelations[] = products.map(
+    (product) => {
+      const variants = variantsMap.get(product.id) || [];
 
-    // Calculate actual stock from variants if they exist
-    let actualStock = product.stock;
-    if (variants.length > 0) {
-      actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      // Calculate actual stock from variants if they exist
+      let actualStock = product.stock;
+      if (variants.length > 0) {
+        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Get category from map
+      let category: Category | null = null;
+      if (product.categoryId) {
+        category = categoriesMap.get(product.categoryId) || null;
+      }
+
+      return {
+        ...product,
+        stock: actualStock,
+        category,
+        tags: tagsMap.get(product.id) || [],
+        media: mediaMap.get(product.id) || [],
+        variants,
+      };
     }
-
-    // Get category from map
-    let category: Category | null = null;
-    if (product.categoryId) {
-      category = categoriesMap.get(product.categoryId) || null;
-    }
-
-    return {
-      ...product,
-      stock: actualStock,
-      category,
-      tags: tagsMap.get(product.id) || [],
-      media: mediaMap.get(product.id) || [],
-      variants,
-    };
-  });
+  );
 
   return {
     data: populateProductsImages(productsWithRelations),
@@ -606,7 +650,9 @@ export async function getFeaturedProducts(options?: {
   // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
   if (products && products.length > 0) {
-    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
     const results = await Promise.all(fetchPromises);
 
     for (const fullProduct of results) {
@@ -647,7 +693,9 @@ export async function getDiscountedProducts(options?: {
   // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
   if (products && products.length > 0) {
-    const fetchPromises = products.map(product => fetchProductWithRelations(product.id));
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
     const results = await Promise.all(fetchPromises);
 
     for (const fullProduct of results) {
@@ -711,17 +759,24 @@ export async function getProductById(
 /**
  * Search products by name or description
  */
-export async function searchProducts(query: string, options?: {
-  page?: number;
-  perPage?: number;
-}): Promise<PaginatedResponse<Product>> {
+export async function searchProducts(
+  query: string,
+  options?: {
+    page?: number;
+    perPage?: number;
+  }
+): Promise<PaginatedResponse<Product>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
 
   const supabase = createClient();
 
-  const { data: products, count, error } = await supabase
+  const {
+    data: products,
+    count,
+    error,
+  } = await supabase
     .from('products')
     .select('*', { count: 'exact' })
     .eq('isActive', true)
@@ -761,7 +816,11 @@ export async function createProduct(data: {
   isFeatured?: boolean;
   isActive?: boolean;
 }): Promise<ProductWithRelations> {
-  log.info('Creating product', { name: data.name, price: data.price, stock: data.stock });
+  log.info('Creating product', {
+    name: data.name,
+    price: data.price,
+    stock: data.stock,
+  });
 
   try {
     // Validate required fields
@@ -996,7 +1055,9 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
 /**
  * Bulk delete products
  */
-export async function bulkDeleteProducts(productIds: string[]): Promise<{ count: number }> {
+export async function bulkDeleteProducts(
+  productIds: string[]
+): Promise<{ count: number }> {
   const supabase = createClient();
 
   try {
@@ -1058,7 +1119,10 @@ export async function bulkUpdateProducts(
 /**
  * Update product stock
  */
-export async function updateStock(id: string, quantity: number): Promise<Product> {
+export async function updateStock(
+  id: string,
+  quantity: number
+): Promise<Product> {
   log.info('Updating product stock', { productId: id, quantity });
 
   try {
@@ -1182,7 +1246,7 @@ export async function addProductMedia(data: {
   const { count: existingMediaCount } = await query;
 
   // If this is the first media, make it default automatically (unless explicitly set to false)
-  const shouldBeDefault = data.isDefault ?? (existingMediaCount === 0);
+  const shouldBeDefault = data.isDefault ?? existingMediaCount === 0;
 
   // If this is set as default, unset any existing default for the same product/variant
   if (shouldBeDefault) {
@@ -1229,7 +1293,9 @@ export async function addProductMedia(data: {
 /**
  * Get all media for a product
  */
-export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
+export async function getProductMedia(
+  productId: string
+): Promise<ProductMedia[]> {
   const supabase = createClient();
 
   const { data: media, error } = await supabase
@@ -1361,7 +1427,9 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
  * If product has variants, stock = sum of all variant stocks
  * If no variants, stock remains as manually set
  */
-export async function updateProductStockFromVariants(productId: string): Promise<void> {
+export async function updateProductStockFromVariants(
+  productId: string
+): Promise<void> {
   log.info('Updating product stock from variants', { productId });
 
   const supabase = createClient();
@@ -1373,13 +1441,19 @@ export async function updateProductStockFromVariants(productId: string): Promise
     .eq('productId', productId);
 
   if (error) {
-    log.error('Failed to fetch variants for stock calculation', { productId, error });
+    log.error('Failed to fetch variants for stock calculation', {
+      productId,
+      error,
+    });
     return;
   }
 
   // Only update if product has variants
   if (variants && variants.length > 0) {
-    const totalStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+    const totalStock = variants.reduce(
+      (sum, variant) => sum + variant.stock,
+      0
+    );
 
     await supabase
       .from('products')
@@ -1400,7 +1474,9 @@ export async function updateProductStockFromVariants(productId: string): Promise
 /**
  * Get all variants for a product (ordered by 'order' field)
  */
-export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
+export async function getProductVariants(
+  productId: string
+): Promise<VariantWithMedia[]> {
   const supabase = createClient();
 
   const { data: variants, error } = await supabase
@@ -1448,7 +1524,11 @@ export async function createProductVariant(data: {
   order?: number;
   isActive?: boolean;
 }): Promise<VariantWithMedia> {
-  log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
+  log.info('Creating product variant', {
+    productId: data.productId,
+    name: data.name,
+    stock: data.stock,
+  });
 
   const supabase = createClient();
 
@@ -1508,7 +1588,11 @@ export async function createProductVariant(data: {
   // Update parent product stock
   await updateProductStockFromVariants(data.productId);
 
-  log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId, order });
+  log.info('Product variant created successfully', {
+    variantId: variant.id,
+    productId: data.productId,
+    order,
+  });
 
   return {
     ...variant,
@@ -1580,7 +1664,10 @@ export async function updateProductVariant(
     await updateProductStockFromVariants(existingVariant.productId);
   }
 
-  log.info('Product variant updated successfully', { variantId: id, productId: existingVariant.productId });
+  log.info('Product variant updated successfully', {
+    variantId: id,
+    productId: existingVariant.productId,
+  });
 
   // Fetch media for the variant
   const { data: media } = await supabase
@@ -1616,7 +1703,10 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   }
 
   // Delete the variant
-  const { error } = await supabase.from('product_variants').delete().eq('id', id);
+  const { error } = await supabase
+    .from('product_variants')
+    .delete()
+    .eq('id', id);
 
   if (error) {
     log.error('Failed to delete product variant', { id, error });
@@ -1645,7 +1735,10 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   // Update parent product stock after deletion
   await updateProductStockFromVariants(existingVariant.productId);
 
-  log.info('Product variant deleted successfully', { variantId: id, productId: existingVariant.productId });
+  log.info('Product variant deleted successfully', {
+    variantId: id,
+    productId: existingVariant.productId,
+  });
 
   return { success: true };
 }
@@ -1658,7 +1751,10 @@ export async function reorderProductVariants(
   productId: string,
   variantOrders: Array<{ id: string; order: number }>
 ): Promise<void> {
-  log.info('Reordering product variants', { productId, count: variantOrders.length });
+  log.info('Reordering product variants', {
+    productId,
+    count: variantOrders.length,
+  });
 
   const supabase = createClient();
 

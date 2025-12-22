@@ -31,7 +31,9 @@ export default function BulkActionsToolbar<T = unknown>({
 
   const handleAction = async (action: BulkAction<T>, selectedIds: string[]) => {
     if (action.requiresConfirmation) {
-      const message = action.confirmationMessage || `آیا از انجام این عملیات روی ${selectedCount} مورد انتخاب‌شده اطمینان دارید؟`;
+      const message =
+        action.confirmationMessage ||
+        `آیا از انجام این عملیات روی ${selectedCount} مورد انتخاب‌شده اطمینان دارید؟`;
       if (!confirm(message)) {
         return;
       }

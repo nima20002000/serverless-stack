@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store/cart-store';
+import {
+  useCartStore,
+  formatPrice,
+  selectTotal,
+  selectItemCount,
+} from '@/store/cart-store';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
@@ -20,7 +25,9 @@ export default function CheckoutPage() {
   const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>('zarinpal');
+  const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>(
+    'zarinpal'
+  );
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -30,59 +37,62 @@ export default function CheckoutPage() {
     }
   }, [items.length, router, status]);
 
-  const handleCheckout = useCallback(async (formData: {
-    fullName: string;
-    phone: string;
-    email: string;
-    shippingAddress: string;
-    postalCode: string;
-    createAccount: boolean;
-    phoneVerified: boolean;
-  }) => {
-    try {
-      setError('');
-      setIsProcessing(true);
+  const handleCheckout = useCallback(
+    async (formData: {
+      fullName: string;
+      phone: string;
+      email: string;
+      shippingAddress: string;
+      postalCode: string;
+      createAccount: boolean;
+      phoneVerified: boolean;
+    }) => {
+      try {
+        setError('');
+        setIsProcessing(true);
 
-      // Phone verification is NOT required for already logged-in users
-      // They may have registered with email and don't have a phone number
-      // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
+        // Phone verification is NOT required for already logged-in users
+        // They may have registered with email and don't have a phone number
+        // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
 
-      const response = await fetch('/api/transactions/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            quantity: item.quantity,
-          })),
-          paymentMethod: paymentMethod === 'digipay' ? 'DIGIPAY' : 'ZARINPAL',
-          shippingInfo: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            email: formData.email || undefined,
-            shippingAddress: formData.shippingAddress,
-            postalCode: formData.postalCode || undefined,
-            createAccount: formData.createAccount,
+        const response = await fetch('/api/transactions/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            items: items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: item.quantity,
+            })),
+            paymentMethod: paymentMethod === 'digipay' ? 'DIGIPAY' : 'ZARINPAL',
+            shippingInfo: {
+              fullName: formData.fullName,
+              phone: formData.phone,
+              email: formData.email || undefined,
+              shippingAddress: formData.shippingAddress,
+              postalCode: formData.postalCode || undefined,
+              createAccount: formData.createAccount,
+            },
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در ایجاد تراکنش');
+        if (!response.ok) {
+          throw new Error(data.error || 'خطا در ایجاد تراکنش');
+        }
+
+        // Redirect to Zarinpal payment page
+        window.location.href = data.paymentUrl;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
+        setIsProcessing(false);
       }
-
-      // Redirect to Zarinpal payment page
-      window.location.href = data.paymentUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
-      setIsProcessing(false);
-    }
-  }, [items, session, paymentMethod]);
+    },
+    [items, session, paymentMethod]
+  );
 
   if (status === 'loading') {
     return (
@@ -216,7 +226,9 @@ export default function CheckoutPage() {
                     />
                     <div className="flex-1 text-right">
                       <div className="font-medium text-gray-900">زرین‌پال</div>
-                      <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
+                      <div className="text-sm text-gray-600">
+                        پرداخت امن با کلیه کارت‌های بانکی
+                      </div>
                     </div>
                     <div className="flex-shrink-0">
                       <ZarinpalBadge />
@@ -256,7 +268,9 @@ export default function CheckoutPage() {
                   >
                     <p
                       className={`text-xs ${
-                        paymentMethod === 'digipay' ? 'text-purple-800' : 'text-blue-800'
+                        paymentMethod === 'digipay'
+                          ? 'text-purple-800'
+                          : 'text-blue-800'
                       } text-right`}
                     >
                       {paymentMethod === 'digipay'

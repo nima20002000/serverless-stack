@@ -20,11 +20,15 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(null);
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(
+    null
+  );
   const [loginWithOTP, setLoginWithOTP] = useState(false);
 
   // Detect if identifier is email or phone
-  const detectIdentifierType = (value: string): 'email' | 'phone' | 'invalid' => {
+  const detectIdentifierType = (
+    value: string
+  ): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // Normalize phone number first to handle Persian digits
     const normalizedPhone = normalizePhoneNumber(value);
@@ -42,7 +46,8 @@ export default function LoginPage() {
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
+        newErrors.identifier =
+          'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
       }
     }
 
@@ -77,23 +82,27 @@ export default function LoginPage() {
         }
 
         // Normalize phone number if it's a phone identifier
-        const identifier = identifierType === 'phone'
-          ? normalizePhoneNumber(formData.identifier)
-          : formData.identifier;
+        const identifier =
+          identifierType === 'phone'
+            ? normalizePhoneNumber(formData.identifier)
+            : formData.identifier;
 
-        const requestBody = identifierType === 'phone'
-          ? { phone: identifier, purpose: 'login' }
-          : { email: identifier, purpose: 'login' };
+        const requestBody =
+          identifierType === 'phone'
+            ? { phone: identifier, purpose: 'login' }
+            : { email: identifier, purpose: 'login' };
 
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
         });
 
         if (otpResponse.status === 429) {
           const rateLimitData = await otpResponse.json();
-          setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
+          setRateLimitRetryAfter(
+            rateLimitData.retryAfter || Date.now() + 120000
+          );
           setIsLoading(false);
           return;
         }
@@ -107,7 +116,7 @@ export default function LoginPage() {
         // Redirect to OTP verification page
         const params = new URLSearchParams({
           [identifierType === 'phone' ? 'phone' : 'email']: identifier,
-          purpose: 'login'
+          purpose: 'login',
         });
         router.push(`/verify-otp?${params.toString()}`);
         return;
@@ -115,9 +124,10 @@ export default function LoginPage() {
 
       // NORMAL LOGIN WITH PASSWORD
       // Normalize identifier before sending
-      const normalizedIdentifier = identifierType === 'phone'
-        ? normalizePhoneNumber(formData.identifier)
-        : formData.identifier;
+      const normalizedIdentifier =
+        identifierType === 'phone'
+          ? normalizePhoneNumber(formData.identifier)
+          : formData.identifier;
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -157,7 +167,10 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
       setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
@@ -172,7 +185,9 @@ export default function LoginPage() {
     }
   };
 
-  const identifierType = formData.identifier ? detectIdentifierType(formData.identifier) : null;
+  const identifierType = formData.identifier
+    ? detectIdentifierType(formData.identifier)
+    : null;
   const isPhone = identifierType === 'phone';
   const isEmail = identifierType === 'email';
   const canUseOTP = isPhone || isEmail;
@@ -192,7 +207,11 @@ export default function LoginPage() {
       )}
 
       {errorMessage && !rateLimitRetryAfter && (
-        <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
+        <Alert
+          type="error"
+          className="mb-4"
+          onClose={() => setErrorMessage('')}
+        >
           {errorMessage}
         </Alert>
       )}
@@ -212,8 +231,8 @@ export default function LoginPage() {
             identifierType === 'email'
               ? 'ایمیل وارد شده است'
               : identifierType === 'phone'
-              ? 'شماره تلفن وارد شده است'
-              : 'ایمیل یا شماره موبایل خود را وارد کنید'
+                ? 'شماره تلفن وارد شده است'
+                : 'ایمیل یا شماره موبایل خود را وارد کنید'
           }
         />
 
@@ -246,7 +265,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setLoginWithOTP(!loginWithOTP);
-                setFormData(prev => ({ ...prev, password: '' }));
+                setFormData((prev) => ({ ...prev, password: '' }));
                 setErrors({});
               }}
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
@@ -265,7 +284,10 @@ export default function LoginPage() {
       <div className="mt-6 text-center">
         <p className="text-gray-600">
           حساب کاربری ندارید؟{' '}
-          <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link
+            href="/register"
+            className="text-blue-600 hover:text-blue-700 font-medium"
+          >
             ثبت‌نام کنید
           </Link>
         </p>

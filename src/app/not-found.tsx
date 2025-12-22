@@ -11,7 +11,9 @@ export default function NotFound() {
         <div className="mb-8">
           <h1 className="text-9xl font-bold text-gray-300">404</h1>
           <div className="mt-4 space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">صفحه مورد نظر یافت نشد</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              صفحه مورد نظر یافت نشد
+            </h2>
             <p className="text-gray-600">
               متأسفانه صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.
             </p>
@@ -20,7 +22,9 @@ export default function NotFound() {
 
         {/* Search Bar */}
         <div className="mb-8">
-          <p className="text-sm text-gray-600 mb-3">می‌توانید محصول یا دسته‌بندی مورد نظر خود را جستجو کنید:</p>
+          <p className="text-sm text-gray-600 mb-3">
+            می‌توانید محصول یا دسته‌بندی مورد نظر خود را جستجو کنید:
+          </p>
           <SearchBar placeholder="جستجو در کیتیا..." />
         </div>
 

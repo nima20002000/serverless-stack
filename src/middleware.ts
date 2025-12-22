@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
-import { checkRateLimit, apiLimiter, strictLimiter, publicLimiter } from '@/lib/rate-limit';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import {
+  checkRateLimit,
+  apiLimiter,
+  strictLimiter,
+  publicLimiter,
+} from '@/lib/rate-limit';
 import type { Ratelimit } from '@upstash/ratelimit';
 
 export async function middleware(req: NextRequest) {
@@ -50,14 +55,19 @@ export async function middleware(req: NextRequest) {
     }
 
     if (shouldRateLimit) {
-      const { success, limit, reset } = await checkRateLimit(req, limiter, endpoint);
+      const { success, limit, reset } = await checkRateLimit(
+        req,
+        limiter,
+        endpoint
+      );
 
       if (!success) {
         const retryAfter = Math.ceil((reset - Date.now()) / 1000);
 
         return NextResponse.json(
           {
-            error: 'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
+            error:
+              'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
             retryAfter: reset,
           },
           {
@@ -76,27 +86,27 @@ export async function middleware(req: NextRequest) {
 
   // Handle auth-protected routes (admin, profile)
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
-  const isProfileRoute = req.nextUrl.pathname.startsWith("/profile");
+  const isAdminRoute = req.nextUrl.pathname.startsWith('/admin');
+  const isProfileRoute = req.nextUrl.pathname.startsWith('/profile');
 
   // Protect admin routes - require ADMIN role
   if (isAdminRoute) {
     if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL('/login', req.url));
     }
-    if (token.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/", req.url));
+    if (token.role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/', req.url));
     }
   }
 
   // Protect profile routes - require any authenticated user
   if (isProfileRoute && !token) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/profile/:path*", "/api/:path*"],
+  matcher: ['/admin/:path*', '/profile/:path*', '/api/:path*'],
 };

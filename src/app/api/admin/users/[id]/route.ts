@@ -17,10 +17,7 @@ export async function GET(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const userData = await getUserById(params.id);
@@ -32,14 +29,14 @@ export async function GET(
         transactions: userData.transactions.length,
         promoCodes: userData.promoCodes.length,
       },
-      transactions: userData.transactions.map(t => ({
+      transactions: userData.transactions.map((t) => ({
         id: t.id,
         transactionCode: t.transactionCode,
         amount: Number(t.amount),
         status: t.status,
         createdAt: t.createdAt,
       })),
-      promoCodes: userData.promoCodes.map(p => ({
+      promoCodes: userData.promoCodes.map((p) => ({
         id: p.id,
         code: p.code,
         expiresAt: p.expiresAt,
@@ -50,11 +47,9 @@ export async function GET(
     return NextResponse.json({ user });
   } catch (error) {
     console.error('Error fetching user:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت کاربر';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در دریافت کاربر';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -66,10 +61,7 @@ export async function PUT(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     // Prevent admin from changing their own role
@@ -94,11 +86,9 @@ export async function PUT(
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error updating user:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در به‌روزرسانی کاربر';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در به‌روزرسانی کاربر';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -110,10 +100,7 @@ export async function DELETE(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     // Prevent admin from deleting their own account
@@ -128,10 +115,8 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف کاربر';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در حذف کاربر';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -3,7 +3,11 @@ import Input from '@/components/ui/Input';
 import GradientColorPicker from '@/components/ui/GradientColorPicker';
 import MediaManager from '@/components/admin/MediaManager';
 import { useState } from 'react';
-import type { Variant, VariantFormData, MediaItem } from '@/types/product-admin';
+import type {
+  Variant,
+  VariantFormData,
+  MediaItem,
+} from '@/types/product-admin';
 import {
   DndContext,
   closestCenter,
@@ -102,7 +106,10 @@ function SortableVariantCard({
             )}
             {variant.size && <p>سایز: {variant.size}</p>}
             {variant.material && <p>جنس: {variant.material}</p>}
-            <p>تغییر قیمت: {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان</p>
+            <p>
+              تغییر قیمت:{' '}
+              {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان
+            </p>
             <p>موجودی: {variant.stock}</p>
           </div>
         </div>
@@ -224,7 +231,7 @@ export default function VariantManager({
   };
 
   const handleSetDefaultVariantMedia = (id: string) => {
-    const updatedMedia = variantMedia.map(m => ({
+    const updatedMedia = variantMedia.map((m) => ({
       ...m,
       isDefault: m.id === id,
     }));
@@ -232,8 +239,8 @@ export default function VariantManager({
   };
 
   const handleRemoveVariantMedia = (id: string) => {
-    const removedItem = variantMedia.find(m => m.id === id);
-    const remaining = variantMedia.filter(m => m.id !== id);
+    const removedItem = variantMedia.find((m) => m.id === id);
+    const remaining = variantMedia.filter((m) => m.id !== id);
 
     // If removing the default media and there are remaining items, make the first one default
     if (removedItem?.isDefault && remaining.length > 0) {
@@ -265,7 +272,9 @@ export default function VariantManager({
 
       {hasVariantsError && (
         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-red-600 text-right">{hasVariantsError}</p>
+          <p className="text-xs sm:text-sm text-red-600 text-right">
+            {hasVariantsError}
+          </p>
         </div>
       )}
 
@@ -353,7 +362,10 @@ export default function VariantManager({
               onChange={onVariantFormChange}
               className="w-4 h-4 text-blue-600 rounded"
             />
-            <label htmlFor="variantIsActive" className="text-xs sm:text-sm font-medium text-gray-700">
+            <label
+              htmlFor="variantIsActive"
+              className="text-xs sm:text-sm font-medium text-gray-700"
+            >
               فعال
             </label>
           </div>
@@ -364,7 +376,8 @@ export default function VariantManager({
               تصاویر این نوع محصول (اختیاری)
             </h4>
             <p className="text-[10px] sm:text-xs text-gray-600 mb-2 sm:mb-3 text-right">
-              تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده می‌شوند
+              تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده
+              می‌شوند
             </p>
 
             <MediaManager
@@ -406,7 +419,8 @@ export default function VariantManager({
       {variants.length > 0 ? (
         <div>
           <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 text-right">
-            💡 برای تغییر ترتیب نمایش، واریانت‌ها را با نگه داشتن آیکن کشیده و جابجا کنید
+            💡 برای تغییر ترتیب نمایش، واریانت‌ها را با نگه داشتن آیکن کشیده و
+            جابجا کنید
           </p>
           <DndContext
             sensors={sensors}

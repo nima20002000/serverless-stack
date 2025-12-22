@@ -119,7 +119,9 @@ export default function ProfilePage() {
           const hours = Math.floor(diff / (1000 * 60 * 60));
           const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          setTimeRemaining(`${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+          setTimeRemaining(
+            `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+          );
         }
       }, 1000);
 
@@ -184,41 +186,46 @@ export default function ProfilePage() {
     editFormActions.clearMessages();
   }, [editFormActions]);
 
-  const handleSaveProfile = useCallback(async (data: {
-    name: string;
-    email: string;
-    phone: string;
-    shippingAddress: string;
-    postalCode: string;
-  }) => {
-    editFormActions.setIsSubmitting(true);
-    editFormActions.clearMessages();
+  const handleSaveProfile = useCallback(
+    async (data: {
+      name: string;
+      email: string;
+      phone: string;
+      shippingAddress: string;
+      postalCode: string;
+    }) => {
+      editFormActions.setIsSubmitting(true);
+      editFormActions.clearMessages();
 
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      try {
+        const response = await fetch('/api/user/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
 
-      const responseData = await response.json();
+        const responseData = await response.json();
 
-      if (!response.ok) {
-        editFormActions.setError(responseData.error || 'خطا در به‌روزرسانی پروفایل');
-        return;
+        if (!response.ok) {
+          editFormActions.setError(
+            responseData.error || 'خطا در به‌روزرسانی پروفایل'
+          );
+          return;
+        }
+
+        editFormActions.setSuccess('پروفایل با موفقیت به‌روزرسانی شد');
+        setIsEditingProfile(false);
+        await fetchUserProfile();
+        await update(); // Update session
+      } catch (error) {
+        editFormActions.setError('خطا در به‌روزرسانی پروفایل');
+        console.error('Error updating profile:', error);
+      } finally {
+        editFormActions.setIsSubmitting(false);
       }
-
-      editFormActions.setSuccess('پروفایل با موفقیت به‌روزرسانی شد');
-      setIsEditingProfile(false);
-      await fetchUserProfile();
-      await update(); // Update session
-    } catch (error) {
-      editFormActions.setError('خطا در به‌روزرسانی پروفایل');
-      console.error('Error updating profile:', error);
-    } finally {
-      editFormActions.setIsSubmitting(false);
-    }
-  }, [fetchUserProfile, update, editFormActions]);
+    },
+    [fetchUserProfile, update, editFormActions]
+  );
 
   const handleStartOtpReset = useCallback(() => {
     setIsResettingWithOTP(true);
@@ -243,7 +250,12 @@ export default function ProfilePage() {
   }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
 
   // Show skeleton until minimum time elapsed AND data loaded
-  if (status === 'loading' || !minLoadTimeElapsed || profileLoading || !userProfile) {
+  if (
+    status === 'loading' ||
+    !minLoadTimeElapsed ||
+    profileLoading ||
+    !userProfile
+  ) {
     return <ProfileSkeleton />;
   }
 
@@ -307,7 +319,9 @@ export default function ProfilePage() {
               </div>
               <div>
                 <span className="text-gray-600">نام:</span>{' '}
-                <span className="font-medium text-gray-900">{userProfile.name}</span>
+                <span className="font-medium text-gray-900">
+                  {userProfile.name}
+                </span>
               </div>
               <div>
                 <span className="text-gray-600">ایمیل:</span>{' '}
@@ -384,7 +398,8 @@ export default function ProfilePage() {
                   <span className="text-lg font-bold">{promoCode.code}</span>
                 </div>
                 <div className="text-sm">
-                  زمان باقی‌مانده: <span className="font-mono font-bold">{timeRemaining}</span>
+                  زمان باقی‌مانده:{' '}
+                  <span className="font-mono font-bold">{timeRemaining}</span>
                 </div>
                 <div className="text-xs mt-2 text-gray-600">
                   از این کد برای دریافت تخفیف در اولین خرید خود استفاده کنید!
@@ -413,7 +428,10 @@ export default function ProfilePage() {
 
         {/* Actions */}
         <div className="flex gap-4 justify-end">
-          <Button variant="danger" onClick={() => signOut({ callbackUrl: '/login' })}>
+          <Button
+            variant="danger"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+          >
             خروج از حساب کاربری
           </Button>
         </div>

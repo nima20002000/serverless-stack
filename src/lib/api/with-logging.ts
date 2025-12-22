@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 
-type ApiHandler = (req: NextRequest, context?: unknown) => Promise<NextResponse>;
+type ApiHandler = (
+  req: NextRequest,
+  context?: unknown
+) => Promise<NextResponse>;
 
-export function withLogging(handler: ApiHandler, routeName: string): ApiHandler {
+export function withLogging(
+  handler: ApiHandler,
+  routeName: string
+): ApiHandler {
   return async (req: NextRequest, context?: unknown) => {
     const startTime = Date.now();
     const requestId = crypto.randomUUID();

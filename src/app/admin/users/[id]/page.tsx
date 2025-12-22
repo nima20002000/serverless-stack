@@ -58,7 +58,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       const data = await response.json();
       setUser(data.user);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'خطا در دریافت اطلاعات کاربر');
+      setError(
+        error instanceof Error ? error.message : 'خطا در دریافت اطلاعات کاربر'
+      );
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -70,7 +72,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   }, [fetchUser]);
 
   const handleChangeRole = async (newRole: 'USER' | 'ADMIN') => {
-    if (!confirm(`آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`)) {
+    if (
+      !confirm(
+        `آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`
+      )
+    ) {
       return;
     }
 
@@ -86,14 +92,20 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       setSuccessMessage('نقش کاربر با موفقیت تغییر کرد');
       fetchUser();
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'خطا در تغییر نقش کاربر');
+      setError(
+        error instanceof Error ? error.message : 'خطا در تغییر نقش کاربر'
+      );
     }
   };
 
   const handleDeleteUser = async () => {
     if (!user) return;
 
-    if (!confirm(`آیا از حذف کاربر "${user.name}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`)) {
+    if (
+      !confirm(
+        `آیا از حذف کاربر "${user.name}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`
+      )
+    ) {
       return;
     }
 
@@ -168,7 +180,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">جزئیات کاربر</h1>
+        <h1 className="text-3xl font-bold text-gray-900 text-right">
+          جزئیات کاربر
+        </h1>
       </div>
 
       {error && (
@@ -178,7 +192,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       )}
 
       {successMessage && (
-        <Alert type="success" className="mb-4" onClose={() => setSuccessMessage('')}>
+        <Alert
+          type="success"
+          className="mb-4"
+          onClose={() => setSuccessMessage('')}
+        >
           {successMessage}
         </Alert>
       )}
@@ -226,7 +244,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">تعداد کدهای تخفیف:</span>
+                <span className="text-sm text-gray-600">
+                  تعداد کدهای تخفیف:
+                </span>
                 <p className="font-medium text-gray-900">
                   {user._count.promoCodes.toLocaleString('fa-IR')}
                 </p>
@@ -280,7 +300,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         <Card>
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
-              تراکنش‌های کاربر ({user.transactions.length.toLocaleString('fa-IR')})
+              تراکنش‌های کاربر (
+              {user.transactions.length.toLocaleString('fa-IR')})
             </h2>
             {user.transactions.length > 0 ? (
               <div className="overflow-x-auto">
@@ -308,7 +329,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                           {getStatusBadge(transaction.status)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600">
-                          {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                          {format(
+                            new Date(transaction.createdAt),
+                            'yyyy/MM/dd - HH:mm'
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
                           {formatPrice(Number(transaction.amount))}
@@ -362,19 +386,22 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                               promo.isUsed
                                 ? 'bg-gray-100 text-gray-800'
                                 : new Date(promo.expiresAt) < new Date()
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-green-100 text-green-800'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-green-100 text-green-800'
                             }`}
                           >
                             {promo.isUsed
                               ? 'استفاده شده'
                               : new Date(promo.expiresAt) < new Date()
-                              ? 'منقضی شده'
-                              : 'فعال'}
+                                ? 'منقضی شده'
+                                : 'فعال'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600">
-                          {format(new Date(promo.expiresAt), 'yyyy/MM/dd - HH:mm')}
+                          {format(
+                            new Date(promo.expiresAt),
+                            'yyyy/MM/dd - HH:mm'
+                          )}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <code className="text-sm bg-gray-100 px-2 py-1 rounded font-bold">

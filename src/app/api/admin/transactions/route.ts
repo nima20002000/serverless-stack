@@ -10,17 +10,18 @@ export async function GET(request: NextRequest) {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     // Get query params
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const status = searchParams.get('status') as 'PENDING' | 'COMPLETED' | 'FAILED' | null;
+    const status = searchParams.get('status') as
+      | 'PENDING'
+      | 'COMPLETED'
+      | 'FAILED'
+      | null;
     const search = searchParams.get('search') || undefined;
     const dateFrom = searchParams.get('dateFrom') || undefined;
     const dateTo = searchParams.get('dateTo') || undefined;
@@ -38,10 +39,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching transactions:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

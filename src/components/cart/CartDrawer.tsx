@@ -19,12 +19,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const total = useCartStore(selectTotal);
   const [error, setError] = useState('');
 
-  const handleUpdateQuantity = (productId: string, quantity: number, variantId?: string) => {
+  const handleUpdateQuantity = (
+    productId: string,
+    quantity: number,
+    variantId?: string
+  ) => {
     try {
       setError('');
       updateQuantity(productId, quantity, variantId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید');
+      setError(
+        err instanceof Error ? err.message : 'خطا در به‌روزرسانی سبد خرید'
+      );
     }
   };
 
@@ -92,7 +98,9 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     {/* Error Message */}
                     {error && (
                       <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600 text-right">{error}</p>
+                        <p className="text-sm text-red-600 text-right">
+                          {error}
+                        </p>
                       </div>
                     )}
 

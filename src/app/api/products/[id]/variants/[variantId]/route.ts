@@ -19,7 +19,8 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } = body;
+    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
+      body;
 
     if (!name) {
       return NextResponse.json(
@@ -50,7 +51,12 @@ export async function PUT(
   } catch (error) {
     console.error('Update product variant error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی نوع محصول' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'خطا در به‌روزرسانی نوع محصول',
+      },
       { status: 500 }
     );
   }
@@ -71,7 +77,9 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete product variant error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در حذف نوع محصول' },
+      {
+        error: error instanceof Error ? error.message : 'خطا در حذف نوع محصول',
+      },
       { status: 500 }
     );
   }

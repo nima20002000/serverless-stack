@@ -4,27 +4,28 @@ import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 
 export const metadata: Metadata = {
-  title: "حریم خصوصی - کیتیا",
-  description: "سیاست حفظ حریم خصوصی کیتیا. نحوه جمع‌آوری، استفاده و حفاظت از اطلاعات شخصی کاربران. رعایت امنیت و محرمانگی داده‌ها.",
+  title: 'حریم خصوصی - کیتیا',
+  description:
+    'سیاست حفظ حریم خصوصی کیتیا. نحوه جمع‌آوری، استفاده و حفاظت از اطلاعات شخصی کاربران. رعایت امنیت و محرمانگی داده‌ها.',
   openGraph: {
-    title: "حریم خصوصی - کیتیا",
-    description: "سیاست حفظ حریم خصوصی و امنیت اطلاعات کاربران در کیتیا",
-    type: "website",
-    locale: "fa_IR",
-    siteName: "کیتیا",
+    title: 'حریم خصوصی - کیتیا',
+    description: 'سیاست حفظ حریم خصوصی و امنیت اطلاعات کاربران در کیتیا',
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: 'کیتیا',
     images: [
       {
         url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "کیتیا - فروشگاه آنلاین",
-      }
+        alt: 'کیتیا - فروشگاه آنلاین',
+      },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "حریم خصوصی - کیتیا",
-    description: "سیاست حفظ حریم خصوصی کیتیا",
+    card: 'summary_large_image',
+    title: 'حریم خصوصی - کیتیا',
+    description: 'سیاست حفظ حریم خصوصی کیتیا',
     images: [DEFAULT_OG_IMAGE],
   },
   alternates: {
@@ -50,10 +51,13 @@ export default function PrivacyPage() {
         <div className="bg-white rounded-lg shadow-sm p-8 space-y-8">
           {/* Section 1 */}
           <section>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">جمع‌آوری اطلاعات</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              جمع‌آوری اطلاعات
+            </h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
               <p>
-                کیتیا متعهد به حفظ حریم خصوصی کاربران خود است. اطلاعاتی که از شما جمع‌آوری می‌کنیم شامل:
+                کیتیا متعهد به حفظ حریم خصوصی کاربران خود است. اطلاعاتی که از
+                شما جمع‌آوری می‌کنیم شامل:
               </p>
               <ul className="list-disc list-inside space-y-2 pr-4">
                 <li>نام و نام خانوادگی</li>
@@ -67,11 +71,11 @@ export default function PrivacyPage() {
 
           {/* Section 2 */}
           <section className="border-t pt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">استفاده از اطلاعات</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              استفاده از اطلاعات
+            </h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
-              <p>
-                اطلاعات شما تنها برای موارد زیر استفاده می‌شود:
-              </p>
+              <p>اطلاعات شما تنها برای موارد زیر استفاده می‌شود:</p>
               <ul className="list-disc list-inside space-y-2 pr-4">
                 <li>پردازش و ارسال سفارشات</li>
                 <li>ارتباط با شما در خصوص سفارشات</li>
@@ -84,10 +88,13 @@ export default function PrivacyPage() {
 
           {/* Section 3 */}
           <section className="border-t pt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">حفاظت از اطلاعات</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              حفاظت از اطلاعات
+            </h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
               <p>
-                ما از روش‌های امنیتی استاندارد برای حفاظت از اطلاعات شما استفاده می‌کنیم:
+                ما از روش‌های امنیتی استاندارد برای حفاظت از اطلاعات شما استفاده
+                می‌کنیم:
               </p>
               <ul className="list-disc list-inside space-y-2 pr-4">
                 <li>رمزنگاری اطلاعات حساس</li>
@@ -100,13 +107,18 @@ export default function PrivacyPage() {
 
           {/* Section 4 */}
           <section className="border-t pt-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">اشتراک‌گذاری اطلاعات</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              اشتراک‌گذاری اطلاعات
+            </h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
               <p>
-                اطلاعات شما با هیچ شخص ثالثی به اشتراک گذاشته نمی‌شود، به استثنای:
+                اطلاعات شما با هیچ شخص ثالثی به اشتراک گذاشته نمی‌شود، به
+                استثنای:
               </p>
               <ul className="list-disc list-inside space-y-2 pr-4">
-                <li>سرویس‌های پرداخت آنلاین (زرین‌پال) برای پردازش تراکنش‌ها</li>
+                <li>
+                  سرویس‌های پرداخت آنلاین (زرین‌پال) برای پردازش تراکنش‌ها
+                </li>
                 <li>شرکت‌های حمل و نقل (تیپاکس) برای ارسال سفارشات</li>
                 <li>در صورت الزام قانونی</li>
               </ul>
@@ -118,7 +130,8 @@ export default function PrivacyPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">کوکی‌ها</h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
               <p>
-                ما از کوکی‌ها برای بهبود تجربه کاربری استفاده می‌کنیم. کوکی‌ها شامل:
+                ما از کوکی‌ها برای بهبود تجربه کاربری استفاده می‌کنیم. کوکی‌ها
+                شامل:
               </p>
               <ul className="list-disc list-inside space-y-2 pr-4">
                 <li>کوکی‌های احراز هویت برای حفظ ورود شما</li>
@@ -132,9 +145,7 @@ export default function PrivacyPage() {
           <section className="border-t pt-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">حقوق شما</h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
-              <p>
-                شما حق دارید:
-              </p>
+              <p>شما حق دارید:</p>
               <ul className="list-disc list-inside space-y-2 pr-4">
                 <li>درخواست دسترسی به اطلاعات شخصی خود</li>
                 <li>درخواست اصلاح اطلاعات نادرست</li>
@@ -149,17 +160,21 @@ export default function PrivacyPage() {
             <h2 className="text-2xl font-bold text-gray-900 mb-4">تغییرات</h2>
             <div className="text-gray-700 text-right leading-relaxed">
               <p>
-                ما ممکن است این سیاست حریم خصوصی را به‌روزرسانی کنیم. تغییرات مهم از طریق ایمیل یا اطلاعیه در وب‌سایت به اطلاع شما خواهد رسید.
+                ما ممکن است این سیاست حریم خصوصی را به‌روزرسانی کنیم. تغییرات
+                مهم از طریق ایمیل یا اطلاعیه در وب‌سایت به اطلاع شما خواهد رسید.
               </p>
             </div>
           </section>
 
           {/* Contact */}
           <section className="border-t pt-8 bg-blue-50 -m-8 p-8 rounded-b-lg">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">تماس با ما</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              تماس با ما
+            </h2>
             <div className="text-gray-700 text-right leading-relaxed">
               <p className="mb-2">
-                در صورت داشتن هرگونه سوال یا نگرانی در مورد حریم خصوصی، با ما تماس بگیرید:
+                در صورت داشتن هرگونه سوال یا نگرانی در مورد حریم خصوصی، با ما
+                تماس بگیرید:
               </p>
               <p className="font-bold">تلفن: 09912218463 - 09910258259</p>
             </div>

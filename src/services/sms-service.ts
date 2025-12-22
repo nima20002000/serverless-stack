@@ -31,37 +31,41 @@ export async function sendOrderConfirmation(
     log.info('Sending order confirmation SMS', {
       phone,
       transactionCode,
-      refId
+      refId,
     });
 
     // Validate phone number format (Iranian mobile numbers)
     if (!phone.match(/^09\d{9}$/)) {
       log.warn('Invalid phone number format for order confirmation SMS', {
         phone,
-        transactionCode
+        transactionCode,
       });
       return {
         success: false,
-        error: 'فرمت شماره تلفن نامعتبر است'
+        error: 'فرمت شماره تلفن نامعتبر است',
       };
     }
 
     // Send SMS via Kavenegar
-    const result = await sendOrderConfirmationSMS(phone, transactionCode, refId);
+    const result = await sendOrderConfirmationSMS(
+      phone,
+      transactionCode,
+      refId
+    );
 
     if (result.success) {
       log.info('Order confirmation SMS sent successfully', {
         phone,
         transactionCode,
         refId,
-        messageId: result.messageId
+        messageId: result.messageId,
       });
     } else {
       log.error('Failed to send order confirmation SMS', {
         phone,
         transactionCode,
         refId,
-        error: result.error
+        error: result.error,
       });
     }
 
@@ -71,12 +75,12 @@ export async function sendOrderConfirmation(
       phone,
       transactionCode,
       refId,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
 
     return {
       success: false,
-      error: 'خطا در ارسال پیامک تایید سفارش'
+      error: 'خطا در ارسال پیامک تایید سفارش',
     };
   }
 }

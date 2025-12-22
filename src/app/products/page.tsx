@@ -17,12 +17,15 @@ interface ProductsPageProps {
   }>;
 }
 
-export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: ProductsPageProps): Promise<Metadata> {
   const params = await searchParams;
   const { category, tag, search, page } = params;
 
-  let title = "محصولات - کیتیا";
-  let description = "مشاهده و خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، قیمت مناسب و کمک به گربه‌های خیابانی.";
+  let title = 'محصولات - کیتیا';
+  let description =
+    'مشاهده و خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، قیمت مناسب و کمک به گربه‌های خیابانی.';
 
   if (category) {
     title = `محصولات ${category} - کیتیا`;
@@ -60,9 +63,10 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
     queryParams.push(`page=${page}`);
   }
 
-  const canonicalUrl = queryParams.length > 0
-    ? `${canonicalPath}?${queryParams.join('&')}`
-    : canonicalPath;
+  const canonicalUrl =
+    queryParams.length > 0
+      ? `${canonicalPath}?${queryParams.join('&')}`
+      : canonicalPath;
 
   return {
     title,
@@ -70,20 +74,20 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
     openGraph: {
       title,
       description,
-      type: "website",
-      locale: "fa_IR",
-      siteName: "کیتیا",
+      type: 'website',
+      locale: 'fa_IR',
+      siteName: 'کیتیا',
       images: [
         {
           url: DEFAULT_OG_IMAGE,
           width: 1200,
           height: 630,
-          alt: "کیتیا - فروشگاه آنلاین",
-        }
+          alt: 'کیتیا - فروشگاه آنلاین',
+        },
       ],
     },
     twitter: {
-      card: "summary_large_image",
+      card: 'summary_large_image',
       title,
       description,
       images: [DEFAULT_OG_IMAGE],
@@ -95,7 +99,11 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
 }
 
 export default async function ProductsPage() {
-  const result = await getActiveProducts({ page: 1, perPage: 20, sortBy: 'popular' });
+  const result = await getActiveProducts({
+    page: 1,
+    perPage: 20,
+    sortBy: 'popular',
+  });
 
   // Serialize Decimal prices to numbers for client components
   // Also ensure images is always an array (not null) and include createdAt, displayOrder for client-side sorting
@@ -107,10 +115,10 @@ export default async function ProductsPage() {
     isFeatured: product.isFeatured,
     createdAt: product.createdAt, // Include createdAt for client-side sorting
     displayOrder: product.displayOrder, // Include displayOrder for "popular" sorting
-    variants: product.variants?.map(v => ({
+    variants: product.variants?.map((v) => ({
       ...v,
       priceAdjust: Number(v.priceAdjust),
-      createdAt: v.createdAt
+      createdAt: v.createdAt,
     })),
   }));
 

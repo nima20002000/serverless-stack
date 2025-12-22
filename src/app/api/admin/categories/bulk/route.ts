@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { bulkDeleteCategories, bulkUpdateCategories } from '@/services/category-service';
+import {
+  bulkDeleteCategories,
+  bulkUpdateCategories,
+} from '@/services/category-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +25,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -51,7 +51,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> {
+async function handleBulkDelete(
+  data: BulkDeleteRequest
+): Promise<NextResponse> {
   const { categoryIds } = data;
 
   if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
@@ -69,15 +71,15 @@ async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> 
       count: result.count,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی‌ها';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 400 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی‌ها';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
 
-async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> {
+async function handleBulkUpdate(
+  data: BulkUpdateRequest
+): Promise<NextResponse> {
   const { categoryIds, updates } = data;
 
   if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
@@ -102,10 +104,8 @@ async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> 
       count: result.count,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطا در بروزرسانی دسته‌بندی‌ها';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 400 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در بروزرسانی دسته‌بندی‌ها';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

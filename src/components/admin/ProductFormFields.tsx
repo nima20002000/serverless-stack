@@ -9,7 +9,9 @@ interface ProductFormFieldsProps {
   variants: Variant[];
   errors: Record<string, string>;
   disabled?: boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
   onTagsChange: (tags: Tag[]) => void;
 }
 
@@ -83,7 +85,9 @@ export default function ProductFormFields({
           placeholder="توضیحات کامل محصول را وارد کنید"
         />
         {errors.description && (
-          <p className="mt-1 text-xs sm:text-sm text-red-600 text-right">{errors.description}</p>
+          <p className="mt-1 text-xs sm:text-sm text-red-600 text-right">
+            {errors.description}
+          </p>
         )}
       </div>
 
@@ -125,7 +129,10 @@ export default function ProductFormFields({
           disabled={disabled}
           className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
         />
-        <label htmlFor="hasVariants" className="text-xs sm:text-sm font-medium text-gray-700">
+        <label
+          htmlFor="hasVariants"
+          className="text-xs sm:text-sm font-medium text-gray-700"
+        >
           این محصول دارای انواع مختلف است (رنگ، سایز، جنس، ...)
         </label>
       </div>
@@ -133,7 +140,8 @@ export default function ProductFormFields({
       {formData.hasVariants && (
         <div className="p-3 sm:p-4 border border-amber-200 bg-amber-50 rounded-lg">
           <p className="text-xs sm:text-sm text-amber-800">
-            <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
+            <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به
+            صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
             {variants.length > 0
               ? ` موجودی فعلی: ${variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)} عدد`
               : ' حتماً حداقل یک نوع محصول با موجودی مشخص اضافه کنید.'}
@@ -143,10 +151,18 @@ export default function ProductFormFields({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
-          label={formData.hasVariants ? "موجودی (محاسبه خودکار از انواع)" : "موجودی"}
+          label={
+            formData.hasVariants ? 'موجودی (محاسبه خودکار از انواع)' : 'موجودی'
+          }
           name="stock"
           type="number"
-          value={formData.hasVariants ? variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0).toString() : formData.stock}
+          value={
+            formData.hasVariants
+              ? variants
+                  .reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)
+                  .toString()
+              : formData.stock
+          }
           onChange={onChange}
           error={errors.stock}
           disabled={disabled || formData.hasVariants}
@@ -166,7 +182,10 @@ export default function ProductFormFields({
             disabled={disabled}
             className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
           />
-          <label htmlFor="isFeatured" className="text-xs sm:text-sm font-medium text-gray-700">
+          <label
+            htmlFor="isFeatured"
+            className="text-xs sm:text-sm font-medium text-gray-700"
+          >
             محصول ویژه
           </label>
         </div>
@@ -181,7 +200,10 @@ export default function ProductFormFields({
             disabled={disabled}
             className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
           />
-          <label htmlFor="isActive" className="text-xs sm:text-sm font-medium text-gray-700">
+          <label
+            htmlFor="isActive"
+            className="text-xs sm:text-sm font-medium text-gray-700"
+          >
             محصول فعال باشد
           </label>
         </div>

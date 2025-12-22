@@ -7,7 +7,11 @@ import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
+import {
+  normalizePhoneNumber,
+  isValidIranianPhone,
+  isValidName,
+} from '@/lib/utils/persian';
 
 interface CheckoutFormProps {
   session: Session | null;
@@ -23,7 +27,11 @@ interface CheckoutFormProps {
   isProcessing: boolean;
 }
 
-export default function CheckoutForm({ session, onSubmit, isProcessing }: CheckoutFormProps) {
+export default function CheckoutForm({
+  session,
+  onSubmit,
+  isProcessing,
+}: CheckoutFormProps) {
   const { update: updateSession } = useSession();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -115,7 +123,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
     // Validate phone - normalize first to handle Persian digits
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone || !isValidIranianPhone(normalizedPhone)) {
-      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا 09123456789)');
+      setOtpError(
+        'لطفاً یک شماره تلفن معتبر وارد کنید (مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا 09123456789)'
+      );
       return;
     }
 
@@ -145,7 +155,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
       setOtpCooldown(60);
       setOtpSuccess('کد تایید به شماره تلفن شما ارسال شد');
     } catch (error) {
-      setOtpError(error instanceof Error ? error.message : 'خطا در ارسال کد تایید');
+      setOtpError(
+        error instanceof Error ? error.message : 'خطا در ارسال کد تایید'
+      );
     } finally {
       setIsSendingOTP(false);
     }
@@ -235,7 +247,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
     // Normalize phone for validation
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
-      setOtpError('لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)');
+      setOtpError(
+        'لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)'
+      );
       return;
     }
 
@@ -273,7 +287,7 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
             await updateSession();
 
             // Wait a brief moment for session state to propagate
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
 
             // Now proceed with checkout - session will be available on server
             onSubmit({
@@ -342,7 +356,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
         {/* Full Name */}
         <div>
-          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 text-right mb-2">
+          <label
+            htmlFor="fullName"
+            className="block text-sm font-medium text-gray-700 text-right mb-2"
+          >
             نام و نام خانوادگی <span className="text-red-500">*</span>
           </label>
           <input
@@ -357,14 +374,21 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           />
           {hasProfileName && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر نام، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
+              💡 برای تغییر نام، به{' '}
+              <Link href="/profile" className="underline hover:text-blue-800">
+                صفحه پروفایل
+              </Link>{' '}
+              مراجعه کنید
             </p>
           )}
         </div>
 
         {/* Phone */}
         <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 text-right mb-2">
+          <label
+            htmlFor="phone"
+            className="block text-sm font-medium text-gray-700 text-right mb-2"
+          >
             شماره تلفن <span className="text-red-500">*</span>
           </label>
           <input
@@ -380,17 +404,26 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           />
           {hasProfilePhone && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر شماره تلفن، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
+              💡 برای تغییر شماره تلفن، به{' '}
+              <Link href="/profile" className="underline hover:text-blue-800">
+                صفحه پروفایل
+              </Link>{' '}
+              مراجعه کنید
             </p>
           )}
           {hasVerifiedPhone && !isLoggedIn && (
-            <p className="text-sm text-green-600 text-right mt-2">✓ شماره تلفن تایید شده</p>
+            <p className="text-sm text-green-600 text-right mt-2">
+              ✓ شماره تلفن تایید شده
+            </p>
           )}
         </div>
 
         {/* Email (Optional) */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 text-right mb-2">
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 text-right mb-2"
+          >
             ایمیل (اختیاری)
           </label>
           <input
@@ -404,14 +437,21 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           />
           {hasProfileEmail && (
             <p className="text-sm text-blue-600 text-right mt-2">
-              💡 برای تغییر ایمیل، به <Link href="/profile" className="underline hover:text-blue-800">صفحه پروفایل</Link> مراجعه کنید
+              💡 برای تغییر ایمیل، به{' '}
+              <Link href="/profile" className="underline hover:text-blue-800">
+                صفحه پروفایل
+              </Link>{' '}
+              مراجعه کنید
             </p>
           )}
         </div>
 
         {/* Shipping Address */}
         <div>
-          <label htmlFor="shippingAddress" className="block text-sm font-medium text-gray-700 text-right mb-2">
+          <label
+            htmlFor="shippingAddress"
+            className="block text-sm font-medium text-gray-700 text-right mb-2"
+          >
             آدرس ارسال <span className="text-red-500">*</span>
           </label>
           <textarea
@@ -427,14 +467,19 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
 
         {/* Postal Code (Optional) */}
         <div>
-          <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 text-right mb-2">
+          <label
+            htmlFor="postalCode"
+            className="block text-sm font-medium text-gray-700 text-right mb-2"
+          >
             کد پستی (اختیاری)
           </label>
           <input
             type="text"
             id="postalCode"
             value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))}
+            onChange={(e) =>
+              setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))
+            }
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
             placeholder="1234567890"
             maxLength={10}
@@ -447,7 +492,10 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
             {/* Checkbox Row */}
             <div className="flex items-center gap-2 justify-end">
-              <label htmlFor="createAccount" className="text-sm font-medium text-gray-700 cursor-pointer">
+              <label
+                htmlFor="createAccount"
+                className="text-sm font-medium text-gray-700 cursor-pointer"
+              >
                 ساخت حساب کاربری
               </label>
               <input
@@ -480,14 +528,20 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
                         className="w-full"
                         isLoading={isSendingOTP}
                       >
-                        {otpCooldown > 0 ? `ارسال مجدد (${otpCooldown}ثانیه)` : 'ارسال کد تایید'}
+                        {otpCooldown > 0
+                          ? `ارسال مجدد (${otpCooldown}ثانیه)`
+                          : 'ارسال کد تایید'}
                       </Button>
                     ) : (
                       <div className="space-y-2">
                         <input
                           type="text"
                           value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onChange={(e) =>
+                            setOtpCode(
+                              e.target.value.replace(/\D/g, '').slice(0, 6)
+                            )
+                          }
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
                           placeholder="کد 6 رقمی را وارد کنید"
                           maxLength={6}
@@ -536,7 +590,9 @@ export default function CheckoutForm({ session, onSubmit, isProcessing }: Checko
           variant="primary"
           className="w-full"
           isLoading={isProcessing}
-          disabled={isProcessing || (!isLoggedIn && createAccount && !phoneVerified)}
+          disabled={
+            isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
+          }
         >
           {!isLoggedIn && createAccount && !phoneVerified
             ? 'ابتدا شماره تلفن را تایید کنید'

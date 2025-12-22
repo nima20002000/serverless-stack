@@ -9,7 +9,13 @@ import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
 
-export type ProductSortOption = 'popular' | 'price-asc' | 'price-desc' | 'featured' | 'discount' | 'newest';
+export type ProductSortOption =
+  | 'popular'
+  | 'price-asc'
+  | 'price-desc'
+  | 'featured'
+  | 'discount'
+  | 'newest';
 
 interface Variant {
   id: string;
@@ -57,7 +63,10 @@ interface ProductListProps {
  * Sorts products based on the selected option WITHOUT making API calls
  * This makes filtering instant and reduces server load
  */
-function sortProducts(products: Product[], sortBy: ProductSortOption): Product[] {
+function sortProducts(
+  products: Product[],
+  sortBy: ProductSortOption
+): Product[] {
   const sorted = [...products];
 
   switch (sortBy) {
@@ -68,7 +77,9 @@ function sortProducts(products: Product[], sortBy: ProductSortOption): Product[]
           return a.displayOrder - b.displayOrder;
         }
         if (!a.createdAt || !b.createdAt) return 0;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       });
 
     case 'price-asc':
@@ -95,7 +106,9 @@ function sortProducts(products: Product[], sortBy: ProductSortOption): Product[]
     case 'newest':
       return sorted.sort((a, b) => {
         if (!a.createdAt || !b.createdAt) return 0;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       });
 
     default:
@@ -105,7 +118,9 @@ function sortProducts(products: Product[], sortBy: ProductSortOption): Product[]
           return a.displayOrder - b.displayOrder;
         }
         if (!a.createdAt || !b.createdAt) return 0;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       });
   }
 }
@@ -123,7 +138,8 @@ function ProductList({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<ProductSortOption>('popular');
-  const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
+  const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } =
+    useApiWithRateLimit();
   const perPage = 20;
 
   // Fetch ALL products on mount (only once)
@@ -139,14 +155,16 @@ function ProductList({
           const pagePromises = [];
           for (let i = 2; i <= totalPages; i++) {
             pagePromises.push(
-              fetchWithRateLimit<{ data: Product[]; total: number }>(
-                () => fetch(`/api/products?page=${i}&perPage=${perPage}&sortBy=popular`)
+              fetchWithRateLimit<{ data: Product[]; total: number }>(() =>
+                fetch(
+                  `/api/products?page=${i}&perPage=${perPage}&sortBy=popular`
+                )
               )
             );
           }
 
           const results = await Promise.all(pagePromises);
-          const additionalProducts = results.flatMap(r => r?.data || []);
+          const additionalProducts = results.flatMap((r) => r?.data || []);
 
           setAllProducts([...initialProducts, ...additionalProducts]);
         } catch (err) {
@@ -167,7 +185,14 @@ function ProductList({
     } else {
       setIsInitialLoad(false);
     }
-  }, [total, perPage, initialProducts, isInitialLoad, allProducts.length, fetchWithRateLimit]);
+  }, [
+    total,
+    perPage,
+    initialProducts,
+    isInitialLoad,
+    allProducts.length,
+    fetchWithRateLimit,
+  ]);
 
   // Client-side sorted products (instant filtering!)
   const sortedProducts = useMemo(() => {
@@ -225,7 +250,9 @@ function ProductList({
     return (
       <div className="text-center py-12">
         <div className="text-gray-600 text-lg mb-2">محصولی یافت نشد</div>
-        <p className="text-gray-500">در حال حاضر محصولی برای نمایش وجود ندارد</p>
+        <p className="text-gray-500">
+          در حال حاضر محصولی برای نمایش وجود ندارد
+        </p>
       </div>
     );
   }
@@ -274,10 +301,7 @@ function ProductList({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
             {paginatedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-              />
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
 
@@ -319,7 +343,9 @@ function ProductList({
 
           {/* Results Count */}
           <div className="text-center mt-4 text-gray-600 text-sm">
-            نمایش {(page - 1) * perPage + 1} تا {Math.min(page * perPage, sortedProducts.length)} از {sortedProducts.length} محصول
+            نمایش {(page - 1) * perPage + 1} تا{' '}
+            {Math.min(page * perPage, sortedProducts.length)} از{' '}
+            {sortedProducts.length} محصول
           </div>
         </>
       )}

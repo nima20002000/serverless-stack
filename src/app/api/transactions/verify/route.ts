@@ -10,7 +10,10 @@ import { createUser, getUserByPhone } from '@/services/user-service';
 import { verifyPayment } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { log } from '@/lib/logger';
-import { sendAdminOrderConfirmation, sendBuyerOrderConfirmation } from '@/lib/email/client';
+import {
+  sendAdminOrderConfirmation,
+  sendBuyerOrderConfirmation,
+} from '@/lib/email/client';
 import { sendOrderConfirmation } from '@/services/sms-service';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +31,10 @@ async function getHandler(req: NextRequest) {
       authority,
       status,
       url: req.url,
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+      ip:
+        req.headers.get('x-forwarded-for') ||
+        req.headers.get('x-real-ip') ||
+        'unknown',
       userAgent: req.headers.get('user-agent'),
     });
 
@@ -63,10 +69,7 @@ async function getHandler(req: NextRequest) {
       await updateTransactionStatus(transaction.id, 'FAILED', authority);
 
       return NextResponse.redirect(
-        new URL(
-          `/payment/failure?code=${transaction.transactionCode}`,
-          req.url
-        )
+        new URL(`/payment/failure?code=${transaction.transactionCode}`, req.url)
       );
     }
 
@@ -79,10 +82,7 @@ async function getHandler(req: NextRequest) {
       });
 
       return NextResponse.redirect(
-        new URL(
-          `/payment/success?code=${transaction.transactionCode}`,
-          req.url
-        )
+        new URL(`/payment/success?code=${transaction.transactionCode}`, req.url)
       );
     }
 
@@ -122,24 +122,27 @@ async function getHandler(req: NextRequest) {
     // Send admin confirmation email (await to ensure it completes in serverless)
     if (fullTransaction) {
       try {
-        const emailResult = await sendAdminOrderConfirmation(fullTransaction, verification.refId);
+        const emailResult = await sendAdminOrderConfirmation(
+          fullTransaction,
+          verification.refId
+        );
 
         if (!emailResult.success) {
           log.warn('Admin confirmation email not sent', {
             transactionId: transaction.id,
-            error: emailResult.error
+            error: emailResult.error,
           });
         } else {
           log.info('Admin confirmation email sent successfully', {
             transactionId: transaction.id,
-            messageId: emailResult.messageId
+            messageId: emailResult.messageId,
           });
         }
       } catch (error) {
         // Don't fail the payment if email fails
         log.error('Failed to send admin confirmation email', {
           transactionId: transaction.id,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -151,7 +154,7 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           phone: transaction.phone,
           transactionCode: transaction.transactionCode,
-          refId: verification.refId
+          refId: verification.refId,
         });
 
         const smsResult = await sendOrderConfirmation(
@@ -164,13 +167,13 @@ async function getHandler(req: NextRequest) {
           log.warn('Order confirmation SMS not sent', {
             transactionId: transaction.id,
             phone: transaction.phone,
-            error: smsResult.error
+            error: smsResult.error,
           });
         } else {
           log.info('Order confirmation SMS sent successfully', {
             transactionId: transaction.id,
             phone: transaction.phone,
-            messageId: smsResult.messageId
+            messageId: smsResult.messageId,
           });
         }
       } catch (error) {
@@ -178,12 +181,12 @@ async function getHandler(req: NextRequest) {
         log.error('Failed to send order confirmation SMS', {
           transactionId: transaction.id,
           phone: transaction.phone,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     } else {
       log.warn('No phone number available for order confirmation SMS', {
-        transactionId: transaction.id
+        transactionId: transaction.id,
       });
     }
 
@@ -194,22 +197,25 @@ async function getHandler(req: NextRequest) {
           transactionId: transaction.id,
           email: fullTransaction.email,
           transactionCode: transaction.transactionCode,
-          refId: verification.refId
+          refId: verification.refId,
         });
 
-        const emailResult = await sendBuyerOrderConfirmation(fullTransaction, verification.refId);
+        const emailResult = await sendBuyerOrderConfirmation(
+          fullTransaction,
+          verification.refId
+        );
 
         if (!emailResult.success) {
           log.warn('Buyer confirmation email not sent', {
             transactionId: transaction.id,
             email: fullTransaction.email,
-            error: emailResult.error
+            error: emailResult.error,
           });
         } else {
           log.info('Buyer confirmation email sent successfully', {
             transactionId: transaction.id,
             email: fullTransaction.email,
-            messageId: emailResult.messageId
+            messageId: emailResult.messageId,
           });
         }
       } catch (error) {
@@ -217,24 +223,27 @@ async function getHandler(req: NextRequest) {
         log.error('Failed to send buyer confirmation email', {
           transactionId: transaction.id,
           email: fullTransaction.email,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     } else {
       log.info('No buyer email provided, skipping buyer confirmation email', {
         transactionId: transaction.id,
-        hasEmail: !!fullTransaction?.email
+        hasEmail: !!fullTransaction?.email,
       });
     }
 
     // Create user account if requested (for guest checkouts)
     if (!transaction.userId && transaction.createAccount && transaction.phone) {
       try {
-        log.info('Processing account creation request after successful payment', {
-          transactionId: transaction.id,
-          phone: transaction.phone,
-          email: transaction.email,
-        });
+        log.info(
+          'Processing account creation request after successful payment',
+          {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            email: transaction.email,
+          }
+        );
 
         // First, check if user already exists with this phone (from OTP registration)
         const existingUser = await getUserByPhone(transaction.phone);
@@ -299,7 +308,8 @@ async function getHandler(req: NextRequest) {
 
     console.error('Error verifying payment:', error);
 
-    const errorMessage = error instanceof Error ? error.message : 'خطا در تأیید پرداخت';
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در تأیید پرداخت';
 
     // Try to get transaction code for error page
     const searchParams = req.nextUrl.searchParams;
@@ -327,7 +337,8 @@ async function getHandler(req: NextRequest) {
     } catch (nestedError) {
       log.error('Failed to mark transaction as failed', {
         authority,
-        error: nestedError instanceof Error ? nestedError.message : 'Unknown error',
+        error:
+          nestedError instanceof Error ? nestedError.message : 'Unknown error',
       });
     }
 

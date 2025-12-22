@@ -40,7 +40,7 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
     size,
     material,
     imageIndex,
-    totalImages
+    totalImages,
   } = options;
 
   // Start with product name
@@ -75,7 +75,11 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
   }
 
   // Add image position for galleries (only if there are multiple images)
-  if (imageIndex !== undefined && totalImages !== undefined && totalImages > 1) {
+  if (
+    imageIndex !== undefined &&
+    totalImages !== undefined &&
+    totalImages > 1
+  ) {
     altText += ` - تصویر ${imageIndex + 1} از ${totalImages}`;
   }
 
@@ -89,7 +93,9 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
  *
  * Example: "دسته‌بندی لیوان‌های سفری"
  */
-export function generateCategoryAltText(options: CategoryAltTextOptions): string {
+export function generateCategoryAltText(
+  options: CategoryAltTextOptions
+): string {
   const { categoryName } = options;
   return `دسته‌بندی ${categoryName}`;
 }

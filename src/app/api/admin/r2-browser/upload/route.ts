@@ -28,7 +28,10 @@ export async function POST(req: NextRequest) {
     const folder = formData.get('folder') as string | null;
 
     if (!file) {
-      return NextResponse.json({ error: 'فایلی انتخاب نشده است' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'فایلی انتخاب نشده است' },
+        { status: 400 }
+      );
     }
 
     // Validate file
@@ -58,7 +61,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
-      log.error('R2 browser upload failed', { error: result.error, fileName: file.name });
+      log.error('R2 browser upload failed', {
+        error: result.error,
+        fileName: file.name,
+      });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 

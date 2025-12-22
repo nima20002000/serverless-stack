@@ -55,8 +55,8 @@ async function createTransporter() {
       secure: true,
       auth: {
         user: 'resend',
-        pass: process.env.RESEND_API_KEY
-      }
+        pass: process.env.RESEND_API_KEY,
+      },
     });
   }
 
@@ -68,8 +68,8 @@ async function createTransporter() {
       secure: process.env.EMAIL_SMTP_SECURE === 'true',
       auth: {
         user: process.env.EMAIL_SMTP_USER,
-        pass: process.env.EMAIL_SMTP_PASS
-      }
+        pass: process.env.EMAIL_SMTP_PASS,
+      },
     });
   }
 
@@ -77,7 +77,7 @@ async function createTransporter() {
   const testAccount = await nodemailer.createTestAccount();
   log.info('Created Ethereal test account', {
     user: testAccount.user,
-    pass: testAccount.pass
+    pass: testAccount.pass,
   });
 
   return nodemailer.createTransport({
@@ -86,8 +86,8 @@ async function createTransporter() {
     secure: false,
     auth: {
       user: testAccount.user,
-      pass: testAccount.pass
-    }
+      pass: testAccount.pass,
+    },
   });
 }
 
@@ -96,7 +96,10 @@ async function createTransporter() {
  * Development: Uses Ethereal (test inbox)
  * Production: Uses Resend
  */
-export async function sendOTPEmail(email: string, otp: string): Promise<SendEmailResult> {
+export async function sendOTPEmail(
+  email: string,
+  otp: string
+): Promise<SendEmailResult> {
   try {
     const transporter = await createTransporter();
 
@@ -186,7 +189,7 @@ export async function sendOTPEmail(email: string, otp: string): Promise<SendEmai
       to: email,
       subject: 'کد تایید کیتیا',
       text: emailText,
-      html: emailHTML
+      html: emailHTML,
     });
 
     // In development with Ethereal, log the preview URL
@@ -196,7 +199,7 @@ export async function sendOTPEmail(email: string, otp: string): Promise<SendEmai
         log.info('📧 Email sent (Ethereal)', {
           email,
           previewUrl,
-          messageId: info.messageId
+          messageId: info.messageId,
         });
         console.log('\n==========================================');
         console.log('📧 EMAIL OTP (Ethereal Test Mode)');
@@ -208,22 +211,22 @@ export async function sendOTPEmail(email: string, otp: string): Promise<SendEmai
     } else {
       log.info('📧 Email sent (Production)', {
         email,
-        messageId: info.messageId
+        messageId: info.messageId,
       });
     }
 
     return {
       success: true,
-      messageId: info.messageId
+      messageId: info.messageId,
     };
   } catch (error) {
     log.error('Failed to send email', {
       email,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to send email'
+      error: error instanceof Error ? error.message : 'Failed to send email',
     };
   }
 }
@@ -244,16 +247,16 @@ export async function sendBuyerOrderConfirmation(
       buyerEmail,
       hasEmail: !!buyerEmail,
       resendKeyConfigured: !!process.env.RESEND_API_KEY,
-      emailFromConfigured: !!process.env.EMAIL_FROM
+      emailFromConfigured: !!process.env.EMAIL_FROM,
     });
 
     if (!buyerEmail) {
       log.info('No buyer email provided, skipping buyer confirmation email', {
-        transactionCode: transaction.transactionCode
+        transactionCode: transaction.transactionCode,
       });
       return {
         success: false,
-        error: 'Buyer email not provided'
+        error: 'Buyer email not provided',
       };
     }
 
@@ -261,7 +264,7 @@ export async function sendBuyerOrderConfirmation(
 
     log.info('Email transporter created for buyer confirmation', {
       transactionCode: transaction.transactionCode,
-      hasResendKey: !!process.env.RESEND_API_KEY
+      hasResendKey: !!process.env.RESEND_API_KEY,
     });
 
     // Format order date
@@ -270,22 +273,28 @@ export async function sendBuyerOrderConfirmation(
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
 
     // Calculate total items quantity
-    const totalItems = transaction.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = transaction.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
 
     // Build items HTML table
-    const itemsHTML = transaction.items.map((item, index) => {
-      const variantInfo = item.variant
-        ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
-        : '';
+    const itemsHTML = transaction.items
+      .map((item, index) => {
+        const variantInfo = item.variant
+          ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
+          : '';
 
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString('fa-IR');
+        const price = Number(item.price).toLocaleString('fa-IR');
+        const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
+          'fa-IR'
+        );
 
-      return `
+        return `
         <tr style="border-bottom: 1px solid #e5e7eb;">
           <td style="padding: 12px; text-align: center;">${index + 1}</td>
           <td style="padding: 12px;">
@@ -297,26 +306,32 @@ export async function sendBuyerOrderConfirmation(
           <td style="padding: 12px; text-align: center; direction: rtl;">${totalPrice} تومان</td>
         </tr>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Build items plain text
-    const itemsText = transaction.items.map((item, index) => {
-      const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString('fa-IR');
+    const itemsText = transaction.items
+      .map((item, index) => {
+        const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
+        const price = Number(item.price).toLocaleString('fa-IR');
+        const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
+          'fa-IR'
+        );
 
-      return `${index + 1}. ${item.product.name}${variantInfo}
+        return `${index + 1}. ${item.product.name}${variantInfo}
    تعداد: ${item.quantity}
    قیمت واحد: ${price} تومان
    قیمت کل: ${totalPrice} تومان`;
-    }).join('\n\n');
+      })
+      .join('\n\n');
 
     // Buyer information
     const buyerName = transaction.user?.name || transaction.fullName;
     const buyerPhone = transaction.user?.phone || transaction.phone;
 
     // Payment method label
-    const paymentMethodLabel = transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+    const paymentMethodLabel =
+      transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
 
     const emailHTML = `
 <!DOCTYPE html>
@@ -454,10 +469,14 @@ export async function sendBuyerOrderConfirmation(
         <div class="info-label">آدرس:</div>
         <div class="info-value">${transaction.shippingAddress}</div>
 
-        ${transaction.postalCode ? `
+        ${
+          transaction.postalCode
+            ? `
         <div class="info-label">کد پستی:</div>
         <div class="info-value" style="direction: ltr; text-align: right;">${transaction.postalCode}</div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
 
@@ -544,7 +563,7 @@ ${itemsText}
       transactionCode: transaction.transactionCode,
       to: buyerEmail,
       from: process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>',
-      subject: `✅ تایید سفارش ${transaction.transactionCode} - کیتیا`
+      subject: `✅ تایید سفارش ${transaction.transactionCode} - کیتیا`,
     });
 
     const info = await transporter.sendMail({
@@ -552,7 +571,7 @@ ${itemsText}
       to: buyerEmail,
       subject: `✅ تایید سفارش ${transaction.transactionCode} - کیتیا`,
       text: emailText,
-      html: emailHTML
+      html: emailHTML,
     });
 
     log.info('Email sent via transporter', {
@@ -560,7 +579,7 @@ ${itemsText}
       messageId: info.messageId,
       accepted: info.accepted,
       rejected: info.rejected,
-      response: info.response
+      response: info.response,
     });
 
     // In development with Ethereal, log the preview URL
@@ -570,7 +589,7 @@ ${itemsText}
         log.info('📧 Buyer order confirmation sent (Ethereal)', {
           transactionCode: transaction.transactionCode,
           previewUrl,
-          messageId: info.messageId
+          messageId: info.messageId,
         });
         console.log('\n==========================================');
         console.log('📧 BUYER ORDER CONFIRMATION (Ethereal Test Mode)');
@@ -583,22 +602,25 @@ ${itemsText}
       log.info('📧 Buyer order confirmation sent (Production)', {
         transactionCode: transaction.transactionCode,
         buyerEmail,
-        messageId: info.messageId
+        messageId: info.messageId,
       });
     }
 
     return {
       success: true,
-      messageId: info.messageId
+      messageId: info.messageId,
     };
   } catch (error) {
     log.error('Failed to send buyer order confirmation', {
       transactionCode: transaction.transactionCode,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to send buyer confirmation'
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to send buyer confirmation',
     };
   }
 }
@@ -618,14 +640,14 @@ export async function sendAdminOrderConfirmation(
       transactionCode: transaction.transactionCode,
       adminEmailConfigured: !!adminEmail,
       resendKeyConfigured: !!process.env.RESEND_API_KEY,
-      emailFromConfigured: !!process.env.EMAIL_FROM
+      emailFromConfigured: !!process.env.EMAIL_FROM,
     });
 
     if (!adminEmail) {
       log.warn('ADMIN_EMAIL not configured, skipping admin confirmation email');
       return {
         success: false,
-        error: 'ADMIN_EMAIL not configured'
+        error: 'ADMIN_EMAIL not configured',
       };
     }
 
@@ -633,7 +655,7 @@ export async function sendAdminOrderConfirmation(
 
     log.info('Email transporter created', {
       transactionCode: transaction.transactionCode,
-      hasResendKey: !!process.env.RESEND_API_KEY
+      hasResendKey: !!process.env.RESEND_API_KEY,
     });
 
     // Format order date
@@ -642,22 +664,28 @@ export async function sendAdminOrderConfirmation(
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
 
     // Calculate total items quantity
-    const totalItems = transaction.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = transaction.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
 
     // Build items HTML table
-    const itemsHTML = transaction.items.map((item, index) => {
-      const variantInfo = item.variant
-        ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
-        : '';
+    const itemsHTML = transaction.items
+      .map((item, index) => {
+        const variantInfo = item.variant
+          ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
+          : '';
 
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString('fa-IR');
+        const price = Number(item.price).toLocaleString('fa-IR');
+        const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
+          'fa-IR'
+        );
 
-      return `
+        return `
         <tr style="border-bottom: 1px solid #e5e7eb;">
           <td style="padding: 12px; text-align: center;">${index + 1}</td>
           <td style="padding: 12px;">
@@ -669,28 +697,36 @@ export async function sendAdminOrderConfirmation(
           <td style="padding: 12px; text-align: center; direction: rtl;">${totalPrice} تومان</td>
         </tr>
       `;
-    }).join('');
+      })
+      .join('');
 
     // Build items plain text
-    const itemsText = transaction.items.map((item, index) => {
-      const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString('fa-IR');
+    const itemsText = transaction.items
+      .map((item, index) => {
+        const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
+        const price = Number(item.price).toLocaleString('fa-IR');
+        const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
+          'fa-IR'
+        );
 
-      return `${index + 1}. ${item.product.name}${variantInfo}
+        return `${index + 1}. ${item.product.name}${variantInfo}
    تعداد: ${item.quantity}
    قیمت واحد: ${price} تومان
    قیمت کل: ${totalPrice} تومان`;
-    }).join('\n\n');
+      })
+      .join('\n\n');
 
     // Buyer information
     const buyerName = transaction.user?.name || transaction.fullName;
     const buyerPhone = transaction.user?.phone || transaction.phone;
     const buyerEmail = transaction.user?.email || transaction.email || 'ندارد';
-    const accountType = transaction.isGuest ? 'مهمان (بدون ثبت‌نام)' : 'کاربر ثبت‌نام شده';
+    const accountType = transaction.isGuest
+      ? 'مهمان (بدون ثبت‌نام)'
+      : 'کاربر ثبت‌نام شده';
 
     // Payment method label
-    const paymentMethodLabel = transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+    const paymentMethodLabel =
+      transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
 
     const emailHTML = `
 <!DOCTYPE html>
@@ -826,10 +862,14 @@ export async function sendAdminOrderConfirmation(
         <div class="info-label">آدرس:</div>
         <div class="info-value">${transaction.shippingAddress}</div>
 
-        ${transaction.postalCode ? `
+        ${
+          transaction.postalCode
+            ? `
         <div class="info-label">کد پستی:</div>
         <div class="info-value" style="direction: ltr; text-align: right;">${transaction.postalCode}</div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
 
@@ -892,7 +932,7 @@ ${itemsText}
       transactionCode: transaction.transactionCode,
       to: adminEmail,
       from: process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>',
-      subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`
+      subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`,
     });
 
     const info = await transporter.sendMail({
@@ -900,7 +940,7 @@ ${itemsText}
       to: adminEmail,
       subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`,
       text: emailText,
-      html: emailHTML
+      html: emailHTML,
     });
 
     log.info('Email sent via transporter', {
@@ -908,7 +948,7 @@ ${itemsText}
       messageId: info.messageId,
       accepted: info.accepted,
       rejected: info.rejected,
-      response: info.response
+      response: info.response,
     });
 
     // In development with Ethereal, log the preview URL
@@ -918,7 +958,7 @@ ${itemsText}
         log.info('📧 Admin order confirmation sent (Ethereal)', {
           transactionCode: transaction.transactionCode,
           previewUrl,
-          messageId: info.messageId
+          messageId: info.messageId,
         });
         console.log('\n==========================================');
         console.log('📧 ADMIN ORDER CONFIRMATION (Ethereal Test Mode)');
@@ -931,22 +971,25 @@ ${itemsText}
       log.info('📧 Admin order confirmation sent (Production)', {
         transactionCode: transaction.transactionCode,
         adminEmail,
-        messageId: info.messageId
+        messageId: info.messageId,
       });
     }
 
     return {
       success: true,
-      messageId: info.messageId
+      messageId: info.messageId,
     };
   } catch (error) {
     log.error('Failed to send admin order confirmation', {
       transactionCode: transaction.transactionCode,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to send admin confirmation'
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Failed to send admin confirmation',
     };
   }
 }

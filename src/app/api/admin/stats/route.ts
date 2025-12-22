@@ -10,20 +10,15 @@ export async function GET() {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const stats = await getDashboardStats();
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error fetching stats:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت آمار';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در دریافت آمار';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

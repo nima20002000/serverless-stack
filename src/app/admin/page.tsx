@@ -64,7 +64,8 @@ export default function AdminDashboard() {
       const data = await response.json();
       setStats(data);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت آمار';
+      const errorMessage =
+        error instanceof Error ? error.message : 'خطا در دریافت آمار';
       setError(errorMessage);
       setStats(null);
     } finally {
@@ -115,7 +116,9 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-4 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-right">داشبورد مدیریت</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-right">
+          داشبورد مدیریت
+        </h1>
         <p className="text-sm sm:text-base text-gray-600 text-right mt-1 sm:mt-2">
           خلاصه آمار و فعالیت‌های سیستم
         </p>
@@ -123,7 +126,9 @@ export default function AdminDashboard() {
 
       {/* Quick Navigation Cards - Mobile First */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">دسترسی سریع</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
+          دسترسی سریع
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <NavigationCard
             title="محصولات"
@@ -165,7 +170,9 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">آمار کلی</h2>
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
+          آمار کلی
+        </h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
@@ -249,7 +256,10 @@ export default function AdminDashboard() {
                         {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 whitespace-nowrap">
-                        {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                        {format(
+                          new Date(transaction.createdAt),
+                          'yyyy/MM/dd - HH:mm'
+                        )}
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-medium whitespace-nowrap">
                         {formatPrice(Number(transaction.amount))}

@@ -12,7 +12,10 @@ async function getHandler() {
   } catch (error) {
     console.error('Get tags error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت برچسب‌ها' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت برچسب‌ها',
+      },
       { status: 500 }
     );
   }

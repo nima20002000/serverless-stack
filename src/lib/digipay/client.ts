@@ -84,7 +84,6 @@ export interface PaymentVerificationResponse {
   status: number;
 }
 
-
 /**
  * Create a payment request and get payment URL
  */
@@ -239,7 +238,10 @@ export async function verifyPayment(
  * @param trackingCode - Digipay tracking code of the purchase to reverse
  * @param providerId - Original providerId used in payment request
  */
-export async function reversePayment(trackingCode: string, providerId: string): Promise<void> {
+export async function reversePayment(
+  trackingCode: string,
+  providerId: string
+): Promise<void> {
   const startTime = Date.now();
 
   log.info('Reversing Digipay payment', {
@@ -289,6 +291,8 @@ export function getCallbackUrl(requestUrl?: string): string {
 
   // Fallback to NEXTAUTH_URL (Vercel sets this automatically for previews)
   const baseUrl =
-    process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000';
   return `${baseUrl}/api/transactions/verify-digipay`;
 }

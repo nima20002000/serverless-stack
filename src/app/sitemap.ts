@@ -89,12 +89,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       perPage: 10000, // Large number to get all products
     });
 
-    const productPages: MetadataRoute.Sitemap = productsResponse.data.map((product) => ({
-      url: `${baseUrl}/products/${product.id}`,
-      lastModified: new Date(product.updatedAt),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    }));
+    const productPages: MetadataRoute.Sitemap = productsResponse.data.map(
+      (product) => ({
+        url: `${baseUrl}/products/${product.id}`,
+        lastModified: new Date(product.updatedAt),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      })
+    );
 
     // Fetch all categories
     const categories = await getAllCategories();

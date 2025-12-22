@@ -42,7 +42,9 @@ export function validatePassword(
  * @param password - Password to check
  * @returns Validation result
  */
-export function validatePasswordNotEmpty(password: string): PasswordValidationResult {
+export function validatePasswordNotEmpty(
+  password: string
+): PasswordValidationResult {
   if (!password || password.trim().length === 0) {
     return {
       isValid: false,

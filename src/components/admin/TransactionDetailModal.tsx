@@ -185,7 +185,10 @@ export default function TransactionDetailModal({
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
                   {transaction.createdAt ? (
-                    format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')
+                    format(
+                      new Date(transaction.createdAt),
+                      'yyyy/MM/dd - HH:mm'
+                    )
                   ) : (
                     <span className="text-gray-400">نامشخص</span>
                   )}
@@ -206,7 +209,9 @@ export default function TransactionDetailModal({
                 <div className="flex-1">
                   <div className="text-sm text-gray-600">نام:</div>
                   <div className="font-medium flex items-center gap-2">
-                    {transaction.user ? transaction.user.name : transaction.fullName}
+                    {transaction.user
+                      ? transaction.user.name
+                      : transaction.fullName}
                     {transaction.isGuest && (
                       <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded">
                         مهمان
@@ -258,7 +263,9 @@ export default function TransactionDetailModal({
             آدرس ارسال
           </h3>
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm leading-relaxed">{transaction.shippingAddress}</p>
+            <p className="text-sm leading-relaxed">
+              {transaction.shippingAddress}
+            </p>
             {transaction.postalCode && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-gray-600">کد پستی:</span>
@@ -304,9 +311,11 @@ export default function TransactionDetailModal({
                       {item.variant && (
                         <div className="text-xs text-blue-600 mt-1">
                           {item.variant.name}
-                          {item.variant.color && ` - رنگ: ${item.variant.color}`}
+                          {item.variant.color &&
+                            ` - رنگ: ${item.variant.color}`}
                           {item.variant.size && ` - سایز: ${item.variant.size}`}
-                          {item.variant.material && ` - جنس: ${item.variant.material}`}
+                          {item.variant.material &&
+                            ` - جنس: ${item.variant.material}`}
                         </div>
                       )}
                     </td>

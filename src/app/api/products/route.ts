@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveProducts, createProduct, ProductSortOption } from '@/services/product-service';
+import {
+  getActiveProducts,
+  createProduct,
+  ProductSortOption,
+} from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
@@ -8,7 +12,13 @@ import { withCache } from '@/lib/api/with-cache';
 export const dynamic = 'force-dynamic';
 
 // Valid sort options for validation
-const VALID_SORT_OPTIONS: ProductSortOption[] = ['price-asc', 'price-desc', 'featured', 'discount', 'newest'];
+const VALID_SORT_OPTIONS: ProductSortOption[] = [
+  'price-asc',
+  'price-desc',
+  'featured',
+  'discount',
+  'newest',
+];
 
 // GET /api/products - List active products (public)
 async function getHandler(req: NextRequest) {
@@ -20,20 +30,28 @@ async function getHandler(req: NextRequest) {
 
     // Validate sortBy parameter
     let sortBy: ProductSortOption = 'newest';
-    if (sortByParam && VALID_SORT_OPTIONS.includes(sortByParam as ProductSortOption)) {
+    if (
+      sortByParam &&
+      VALID_SORT_OPTIONS.includes(sortByParam as ProductSortOption)
+    ) {
       sortBy = sortByParam as ProductSortOption;
     }
 
     const result = await getActiveProducts({ page, perPage, sortBy });
 
     // Serialize Decimal prices to numbers and ensure discount fields are included
-    const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
-      ...product,
-      price: Number(product.price),
-      discountPercent: product.discountPercent,
-      isFeatured: product.isFeatured,
-      variants: product.variants?.map(v => ({ ...v, priceAdjust: Number(v.priceAdjust) })),
-    }));
+    const serializedProducts = result.data.map(
+      (product: (typeof result.data)[number]) => ({
+        ...product,
+        price: Number(product.price),
+        discountPercent: product.discountPercent,
+        isFeatured: product.isFeatured,
+        variants: product.variants?.map((v) => ({
+          ...v,
+          priceAdjust: Number(v.priceAdjust),
+        })),
+      })
+    );
 
     return NextResponse.json({
       ...result,
@@ -42,7 +60,9 @@ async function getHandler(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت محصولات' },
+      {
+        error: error instanceof Error ? error.message : 'خطا در دریافت محصولات',
+      },
       { status: 500 }
     );
   }
@@ -54,14 +74,23 @@ async function postHandler(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { name, description, price, discountPercent, stock, images, categoryId, tagIds, hasVariants, isFeatured, isActive } = body;
+    const {
+      name,
+      description,
+      price,
+      discountPercent,
+      stock,
+      images,
+      categoryId,
+      tagIds,
+      hasVariants,
+      isFeatured,
+      isActive,
+    } = body;
 
     if (!name || !description || price === undefined || stock === undefined) {
       return NextResponse.json(
@@ -74,7 +103,10 @@ async function postHandler(req: NextRequest) {
       name,
       description,
       price: parseFloat(price),
-      discountPercent: discountPercent !== undefined && discountPercent !== null ? parseInt(discountPercent) : null,
+      discountPercent:
+        discountPercent !== undefined && discountPercent !== null
+          ? parseInt(discountPercent)
+          : null,
       stock: parseInt(stock),
       images: images || [],
       categoryId: categoryId || undefined,

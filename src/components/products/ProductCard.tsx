@@ -48,7 +48,7 @@ function ProductCard({ product }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   // Get active variants
-  const activeVariants = product.variants?.filter(v => v.isActive) || [];
+  const activeVariants = product.variants?.filter((v) => v.isActive) || [];
   const hasVariants = product.hasVariants && activeVariants.length > 0;
 
   // Auto-select first active variant with media if available
@@ -56,8 +56,8 @@ function ProductCard({ product }: ProductCardProps) {
     if (!hasVariants) return null;
 
     // Prefer variant with media
-    const variantWithMedia = activeVariants.find(v =>
-      v.media && v.media.length > 0
+    const variantWithMedia = activeVariants.find(
+      (v) => v.media && v.media.length > 0
     );
     if (variantWithMedia) return variantWithMedia;
 
@@ -66,7 +66,9 @@ function ProductCard({ product }: ProductCardProps) {
   };
 
   const defaultVariant = getDefaultVariant();
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(defaultVariant);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
+    defaultVariant
+  );
 
   // Set initial image based on default variant or product images
   const getInitialImage = () => {
@@ -80,7 +82,9 @@ function ProductCard({ product }: ProductCardProps) {
 
   // Get color variants for image swapping
   const colorVariants = useMemo(() => {
-    return activeVariants.filter(v => v.color && v.media && v.media.length > 0);
+    return activeVariants.filter(
+      (v) => v.color && v.media && v.media.length > 0
+    );
   }, [activeVariants]);
 
   const hasColorVariants = colorVariants.length > 1;
@@ -88,7 +92,7 @@ function ProductCard({ product }: ProductCardProps) {
   // Current variant index for carousel
   const [currentVariantIndex, setCurrentVariantIndex] = useState(() => {
     if (!hasColorVariants) return 0;
-    const index = colorVariants.findIndex(v => v.id === selectedVariant?.id);
+    const index = colorVariants.findIndex((v) => v.id === selectedVariant?.id);
     return index >= 0 ? index : 0;
   });
 
@@ -110,11 +114,13 @@ function ProductCard({ product }: ProductCardProps) {
       if (preloadedVariants.current.has(variant.id)) return; // Skip if already preloaded
 
       const isFirstVariant = index === 0;
-      const variantImages = variant.media?.filter(m => m.type === 'IMAGE') || [];
+      const variantImages =
+        variant.media?.filter((m) => m.type === 'IMAGE') || [];
 
       variantImages.forEach((media, mediaIndex) => {
         const isFirstImage = mediaIndex === 0;
-        const priority = isFirstVariant && isFirstImage ? 1 : (isFirstImage ? 2 : 3);
+        const priority =
+          isFirstVariant && isFirstImage ? 1 : isFirstImage ? 2 : 3;
 
         const preloadFn = () => {
           const img = new window.Image();
@@ -128,7 +134,10 @@ function ProductCard({ product }: ProductCardProps) {
         if (priority <= 2) {
           preloadFn();
         } else {
-          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          if (
+            typeof window !== 'undefined' &&
+            'requestIdleCallback' in window
+          ) {
             window.requestIdleCallback(preloadFn);
           } else {
             setTimeout(preloadFn, 100);
@@ -157,7 +166,10 @@ function ProductCard({ product }: ProductCardProps) {
   const goToPrevVariant = useCallback(() => {
     if (!hasColorVariants) return;
 
-    const prevIndex = currentVariantIndex === 0 ? colorVariants.length - 1 : currentVariantIndex - 1;
+    const prevIndex =
+      currentVariantIndex === 0
+        ? colorVariants.length - 1
+        : currentVariantIndex - 1;
     setCurrentVariantIndex(prevIndex);
     const prevVariant = colorVariants[prevIndex];
     setSelectedVariant(prevVariant);
@@ -167,40 +179,49 @@ function ProductCard({ product }: ProductCardProps) {
   }, [hasColorVariants, currentVariantIndex, colorVariants]);
 
   // Touch swipe handlers
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    if (!hasColorVariants) return;
-    touchEndX.current = 0; // Reset
-    touchStartX.current = e.targetTouches[0].clientX;
-  }, [hasColorVariants]);
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      touchEndX.current = 0; // Reset
+      touchStartX.current = e.targetTouches[0].clientX;
+    },
+    [hasColorVariants]
+  );
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!hasColorVariants) return;
-    touchEndX.current = e.targetTouches[0].clientX;
-  }, [hasColorVariants]);
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      touchEndX.current = e.targetTouches[0].clientX;
+    },
+    [hasColorVariants]
+  );
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!hasColorVariants) return;
-    if (!touchStartX.current || !touchEndX.current) return;
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      if (!touchStartX.current || !touchEndX.current) return;
 
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+      const distance = touchStartX.current - touchEndX.current;
+      const isLeftSwipe = distance > minSwipeDistance;
+      const isRightSwipe = distance < -minSwipeDistance;
 
-    // In RTL, left swipe = next, right swipe = previous
-    if (isLeftSwipe) {
-      e.preventDefault();
-      e.stopPropagation();
-      goToNextVariant();
-    } else if (isRightSwipe) {
-      e.preventDefault();
-      e.stopPropagation();
-      goToPrevVariant();
-    }
+      // In RTL, left swipe = next, right swipe = previous
+      if (isLeftSwipe) {
+        e.preventDefault();
+        e.stopPropagation();
+        goToNextVariant();
+      } else if (isRightSwipe) {
+        e.preventDefault();
+        e.stopPropagation();
+        goToPrevVariant();
+      }
 
-    // Reset
-    touchStartX.current = 0;
-    touchEndX.current = 0;
-  }, [hasColorVariants, goToNextVariant, goToPrevVariant]);
+      // Reset
+      touchStartX.current = 0;
+      touchEndX.current = 0;
+    },
+    [hasColorVariants, goToNextVariant, goToPrevVariant]
+  );
 
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
@@ -208,12 +229,15 @@ function ProductCard({ product }: ProductCardProps) {
   const effectivePrice = selectedVariant
     ? basePrice + Number(selectedVariant.priceAdjust)
     : basePrice;
-  const discountedPrice = discountPercent > 0
-    ? effectivePrice * (1 - discountPercent / 100)
-    : effectivePrice;
+  const discountedPrice =
+    discountPercent > 0
+      ? effectivePrice * (1 - discountPercent / 100)
+      : effectivePrice;
 
   // Effective stock considering variant selection
-  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const effectiveStock = selectedVariant
+    ? selectedVariant.stock
+    : product.stock;
   const isOutOfStock = effectiveStock === 0;
 
   const handleVariantSelect = (variant: Variant) => {
@@ -229,7 +253,7 @@ function ProductCard({ product }: ProductCardProps) {
 
     // Update carousel index if this is a color variant
     if (hasColorVariants && variant.color) {
-      const variantIndex = colorVariants.findIndex(v => v.id === variant.id);
+      const variantIndex = colorVariants.findIndex((v) => v.id === variant.id);
       if (variantIndex >= 0) {
         setCurrentVariantIndex(variantIndex);
       }
@@ -248,7 +272,9 @@ function ProductCard({ product }: ProductCardProps) {
       addItem(
         {
           productId: product.id,
-          name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
+          name: selectedVariant
+            ? `${product.name} - ${selectedVariant.name}`
+            : product.name,
           price: discountedPrice,
           image: currentImage,
           stock: effectiveStock,
@@ -260,10 +286,21 @@ function ProductCard({ product }: ProductCardProps) {
       // Show success feedback
       setTimeout(() => setIsAdding(false), 500);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
+      alert(
+        error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید'
+      );
       setIsAdding(false);
     }
-  }, [product.id, product.name, hasVariants, selectedVariant, discountedPrice, currentImage, effectiveStock, addItem]);
+  }, [
+    product.id,
+    product.name,
+    hasVariants,
+    selectedVariant,
+    discountedPrice,
+    currentImage,
+    effectiveStock,
+    addItem,
+  ]);
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
@@ -403,7 +440,9 @@ function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           <div className="text-left">
-            <span className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span
+              className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}
+            >
               {effectiveStock > 0 ? `موجود: ${effectiveStock}` : 'ناموجود'}
             </span>
           </div>
@@ -418,7 +457,11 @@ function ProductCard({ product }: ProductCardProps) {
           isLoading={isAdding}
           onClick={handleAddToCart}
         >
-          {isOutOfStock ? 'ناموجود' : isAdding ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
+          {isOutOfStock
+            ? 'ناموجود'
+            : isAdding
+              ? 'در حال افزودن...'
+              : 'افزودن به سبد خرید'}
         </Button>
       </div>
     </div>

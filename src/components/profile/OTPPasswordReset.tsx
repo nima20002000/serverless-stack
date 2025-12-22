@@ -89,7 +89,10 @@ export default function OTPPasswordReset({
     formActions.clearMessages();
 
     // Validate password
-    const validation = validatePassword(otpResetForm.newPassword, otpResetForm.confirmPassword);
+    const validation = validatePassword(
+      otpResetForm.newPassword,
+      otpResetForm.confirmPassword
+    );
     if (!validation.isValid) {
       formActions.setError(validation.error || 'خطا در اعتبارسنجی رمز عبور');
       formActions.setIsSubmitting(false);
@@ -207,7 +210,10 @@ export default function OTPPasswordReset({
               type="password"
               value={otpResetForm.newPassword}
               onChange={(e) =>
-                setOtpResetForm({ ...otpResetForm, newPassword: e.target.value })
+                setOtpResetForm({
+                  ...otpResetForm,
+                  newPassword: e.target.value,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               placeholder="حداقل ۸ کاراکتر"
@@ -221,7 +227,10 @@ export default function OTPPasswordReset({
               type="password"
               value={otpResetForm.confirmPassword}
               onChange={(e) =>
-                setOtpResetForm({ ...otpResetForm, confirmPassword: e.target.value })
+                setOtpResetForm({
+                  ...otpResetForm,
+                  confirmPassword: e.target.value,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
@@ -232,7 +241,9 @@ export default function OTPPasswordReset({
               disabled={otpCountdown > 0 || formState.isSubmitting}
               className="text-sm text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
             >
-              {otpCountdown > 0 ? `ارسال مجدد (${otpCountdown}s)` : 'ارسال مجدد کد'}
+              {otpCountdown > 0
+                ? `ارسال مجدد (${otpCountdown}s)`
+                : 'ارسال مجدد کد'}
             </button>
             <div className="flex gap-3">
               <Button variant="secondary" onClick={handleCancelReset}>
@@ -243,7 +254,9 @@ export default function OTPPasswordReset({
                 onClick={handleVerifyOtpAndReset}
                 disabled={formState.isSubmitting}
               >
-                {formState.isSubmitting ? 'در حال بازیابی...' : 'بازیابی رمز عبور'}
+                {formState.isSubmitting
+                  ? 'در حال بازیابی...'
+                  : 'بازیابی رمز عبور'}
               </Button>
             </div>
           </div>

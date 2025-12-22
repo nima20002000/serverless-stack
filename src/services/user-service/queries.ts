@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * User information type (without password)
@@ -21,14 +21,18 @@ export type UserInfo = {
  * Generic user query function
  * Reduces duplication in getUserById, getUserByEmail, getUserByPhone
  */
-export async function queryUser(
-  where: { id?: string; email?: string; phone?: string }
-): Promise<UserInfo | null> {
+export async function queryUser(where: {
+  id?: string;
+  email?: string;
+  phone?: string;
+}): Promise<UserInfo | null> {
   const supabase = createClient();
 
   let query = supabase
     .from('users')
-    .select('id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt')
+    .select(
+      'id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt'
+    )
     .limit(1);
 
   if (where.id) {

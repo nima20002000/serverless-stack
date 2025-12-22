@@ -79,22 +79,24 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     // If product has no product-level media, always select first active variant
     // to ensure images are displayed
     if (!hasProductMedia) {
-      const firstActive = product.variants.find(v => v.isActive);
+      const firstActive = product.variants.find((v) => v.isActive);
       return firstActive || null;
     }
 
     // Otherwise, prioritize variants with media
-    const variantWithMedia = product.variants.find(v =>
-      v.isActive && v.media && v.media.length > 0
+    const variantWithMedia = product.variants.find(
+      (v) => v.isActive && v.media && v.media.length > 0
     );
     if (variantWithMedia) return variantWithMedia;
 
     // Fallback to first active variant
-    const firstActive = product.variants.find(v => v.isActive);
+    const firstActive = product.variants.find((v) => v.isActive);
     return firstActive || null;
   };
 
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => getDefaultVariant());
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() =>
+    getDefaultVariant()
+  );
 
   // Ensure default variant is set when component mounts or product changes
   useEffect(() => {
@@ -105,15 +107,19 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     let defaultVariant: Variant | null = null;
 
     if (!hasProductMedia) {
-      defaultVariant = product.variants.find(v => v.isActive) || null;
+      defaultVariant = product.variants.find((v) => v.isActive) || null;
     } else {
-      const variantWithMedia = product.variants.find(v =>
-        v.isActive && v.media && v.media.length > 0
+      const variantWithMedia = product.variants.find(
+        (v) => v.isActive && v.media && v.media.length > 0
       );
-      defaultVariant = variantWithMedia || product.variants.find(v => v.isActive) || null;
+      defaultVariant =
+        variantWithMedia || product.variants.find((v) => v.isActive) || null;
     }
 
-    if (defaultVariant && (!selectedVariant || selectedVariant.id !== defaultVariant.id)) {
+    if (
+      defaultVariant &&
+      (!selectedVariant || selectedVariant.id !== defaultVariant.id)
+    ) {
       setSelectedVariant(defaultVariant);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,11 +134,12 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     : product.price;
 
   // Apply discount to effective price
-  const effectivePrice = discountPercent > 0
-    ? basePrice * (1 - discountPercent / 100)
-    : basePrice;
+  const effectivePrice =
+    discountPercent > 0 ? basePrice * (1 - discountPercent / 100) : basePrice;
 
-  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const effectiveStock = selectedVariant
+    ? selectedVariant.stock
+    : product.stock;
   const isOutOfStock = effectiveStock === 0;
 
   const handleIncrement = () => {
@@ -170,8 +177,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         product.media && product.media.length > 0
           ? product.media[0].url
           : product.images && product.images.length > 0
-          ? product.images[0]
-          : '';
+            ? product.images[0]
+            : '';
 
       addItem(
         {
@@ -194,7 +201,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         setQuantity(1);
       }, 500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطا در افزودن به سبد خرید');
+      setError(
+        err instanceof Error ? err.message : 'خطا در افزودن به سبد خرید'
+      );
       setIsAdding(false);
     }
   };
@@ -213,7 +222,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <>
             <span className="mx-2 text-gray-400">/</span>
             <button
-              onClick={() => product.category && router.push(`/products?category=${product.category.slug}`)}
+              onClick={() =>
+                product.category &&
+                router.push(`/products?category=${product.category.slug}`)
+              }
               className="text-blue-600 hover:text-blue-700"
             >
               {product.category.name}
@@ -234,7 +246,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               selectedVariant={selectedVariant}
               allVariants={product.variants}
             />
-          ) : selectedVariant && selectedVariant.media && selectedVariant.media.length > 0 ? (
+          ) : selectedVariant &&
+            selectedVariant.media &&
+            selectedVariant.media.length > 0 ? (
             <ProductGallery
               media={product.media || []}
               productName={product.name}
@@ -280,7 +294,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   {formatPrice(basePrice)}
                 </span>
               )}
-              <span className={`text-3xl font-bold ${discountPercent > 0 ? 'text-red-600' : 'text-blue-600'}`}>
+              <span
+                className={`text-3xl font-bold ${discountPercent > 0 ? 'text-red-600' : 'text-blue-600'}`}
+              >
                 {formatPrice(effectivePrice)}
               </span>
               {discountPercent > 0 && (
@@ -376,7 +392,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 </button>
 
                 {quantity >= effectiveStock && (
-                  <span className="text-sm text-orange-600 mr-2">حداکثر موجودی</span>
+                  <span className="text-sm text-orange-600 mr-2">
+                    حداکثر موجودی
+                  </span>
                 )}
               </div>
             </div>
@@ -395,8 +413,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               {isOutOfStock
                 ? 'ناموجود'
                 : isAdding
-                ? 'در حال افزودن...'
-                : 'افزودن به سبد خرید'}
+                  ? 'در حال افزودن...'
+                  : 'افزودن به سبد خرید'}
             </Button>
 
             <Button

@@ -1,6 +1,6 @@
-import bcrypt from "bcryptjs";
-import { createClient } from "@/lib/supabase/server";
-import { log } from "@/lib/logger";
+import bcrypt from 'bcryptjs';
+import { createClient } from '@/lib/supabase/server';
+import { log } from '@/lib/logger';
 
 /**
  * Validate password strength
@@ -56,7 +56,7 @@ export async function updatePassword(
   // Validate new password
   if (!validatePassword(newPassword)) {
     log.warn('Invalid password length', { userId });
-    throw new Error("رمز عبور باید حداقل ۸ کاراکتر باشد");
+    throw new Error('رمز عبور باید حداقل ۸ کاراکتر باشد');
   }
 
   // Hash password
@@ -88,20 +88,20 @@ export async function verifyCurrentPassword(
 
   if (!user) {
     log.warn('User not found', { userId });
-    throw new Error("کاربر یافت نشد");
+    throw new Error('کاربر یافت نشد');
   }
 
   // SECURITY: If user has a password, current password is REQUIRED
   if (user.password) {
     if (!currentPassword) {
       log.warn('Current password required but not provided', { userId });
-      throw new Error("رمز عبور فعلی الزامی است");
+      throw new Error('رمز عبور فعلی الزامی است');
     }
 
     const isValid = await verifyPassword(currentPassword, user.password);
     if (!isValid) {
       log.warn('Invalid current password', { userId });
-      throw new Error("رمز عبور فعلی نادرست است");
+      throw new Error('رمز عبور فعلی نادرست است');
     }
   }
 
@@ -117,11 +117,13 @@ export async function ensureNoPassword(userId: string): Promise<void> {
 
   if (!user) {
     log.warn('User not found', { userId });
-    throw new Error("کاربر یافت نشد");
+    throw new Error('کاربر یافت نشد');
   }
 
   if (user.password) {
     log.warn('User already has a password', { userId });
-    throw new Error("این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید");
+    throw new Error(
+      'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
+    );
   }
 }

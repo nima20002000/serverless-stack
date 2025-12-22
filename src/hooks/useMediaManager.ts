@@ -22,15 +22,17 @@ export function useMediaManager(initialMedia: MediaItem[] = []) {
   };
 
   const setDefaultMedia = (id: string) => {
-    setMedia(media.map(m => ({
-      ...m,
-      isDefault: m.id === id,
-    })));
+    setMedia(
+      media.map((m) => ({
+        ...m,
+        isDefault: m.id === id,
+      }))
+    );
   };
 
   const removeMedia = (id: string) => {
-    const removedItem = media.find(m => m.id === id);
-    const remaining = media.filter(m => m.id !== id);
+    const removedItem = media.find((m) => m.id === id);
+    const remaining = media.filter((m) => m.id !== id);
 
     // If removing the default media and there are remaining items, make the first one default
     if (removedItem?.isDefault && remaining.length > 0) {

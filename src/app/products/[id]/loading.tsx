@@ -1,4 +1,8 @@
-import { Skeleton, SkeletonText, SkeletonImage } from '@/components/ui/Skeleton';
+import {
+  Skeleton,
+  SkeletonText,
+  SkeletonImage,
+} from '@/components/ui/Skeleton';
 
 /**
  * Loading skeleton for product detail page

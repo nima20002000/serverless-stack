@@ -15,7 +15,11 @@ interface TagInputProps {
   disabled?: boolean;
 }
 
-export default function TagInput({ selectedTags, onChange, disabled = false }: TagInputProps) {
+export default function TagInput({
+  selectedTags,
+  onChange,
+  disabled = false,
+}: TagInputProps) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +29,10 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -34,30 +41,35 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const searchTags = useCallback(async (searchQuery: string) => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/tags/search?q=${encodeURIComponent(searchQuery)}`);
+  const searchTags = useCallback(
+    async (searchQuery: string) => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `/api/tags/search?q=${encodeURIComponent(searchQuery)}`
+        );
 
-      if (!response.ok) {
-        throw new Error('خطا در جستجوی برچسب‌ها');
+        if (!response.ok) {
+          throw new Error('خطا در جستجوی برچسب‌ها');
+        }
+
+        const data = await response.json();
+
+        // Filter out already selected tags
+        const filtered = (data.tags || []).filter(
+          (tag: Tag) => !selectedTags.some((selected) => selected.id === tag.id)
+        );
+
+        setSuggestions(filtered);
+      } catch (err) {
+        console.error('Error searching tags:', err);
+        setSuggestions([]);
+      } finally {
+        setLoading(false);
       }
-
-      const data = await response.json();
-
-      // Filter out already selected tags
-      const filtered = (data.tags || []).filter(
-        (tag: Tag) => !selectedTags.some(selected => selected.id === tag.id)
-      );
-
-      setSuggestions(filtered);
-    } catch (err) {
-      console.error('Error searching tags:', err);
-      setSuggestions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedTags]);
+    },
+    [selectedTags]
+  );
 
   useEffect(() => {
     if (query.trim().length < 2) {
@@ -73,7 +85,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
   }, [query, searchTags]);
 
   const addTag = (tag: Tag) => {
-    if (!selectedTags.some(t => t.id === tag.id)) {
+    if (!selectedTags.some((t) => t.id === tag.id)) {
       onChange([...selectedTags, tag]);
     }
     setQuery('');
@@ -82,7 +94,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
   };
 
   const removeTag = (tagId: string) => {
-    onChange(selectedTags.filter(t => t.id !== tagId));
+    onChange(selectedTags.filter((t) => t.id !== tagId));
   };
 
   const generateSlug = (name: string): string => {
@@ -139,7 +151,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
       {/* Selected Tags */}
       {selectedTags.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {selectedTags.map(tag => (
+          {selectedTags.map((tag) => (
             <span
               key={tag.id}
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm"
@@ -204,7 +216,7 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
               <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200">
                 برچسب‌های موجود
               </div>
-              {suggestions.map(tag => (
+              {suggestions.map((tag) => (
                 <button
                   key={tag.id}
                   type="button"
@@ -232,7 +244,9 @@ export default function TagInput({ selectedTags, onChange, disabled = false }: T
                   <span className="text-sm text-blue-600 font-medium">
                     ایجاد برچسب جدید:
                   </span>
-                  <span className="text-sm text-gray-700">&quot;{query}&quot;</span>
+                  <span className="text-sm text-gray-700">
+                    &quot;{query}&quot;
+                  </span>
                 </div>
               </button>
             </>

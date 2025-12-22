@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { authenticateUser } from "@/services/auth-service";
-import { log } from "@/lib/logger";
+import { NextRequest, NextResponse } from 'next/server';
+import { authenticateUser } from '@/services/auth-service';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
-        { error: "ایمیل و رمز عبور الزامی است" },
+        { error: 'ایمیل و رمز عبور الزامی است' },
         { status: 400 }
       );
     }
@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
     // Authenticate user (throws error if invalid)
     const user = await authenticateUser(email, password);
 
-    log.info("User authenticated successfully", { userId: user.id, email: user.email });
+    log.info('User authenticated successfully', {
+      userId: user.id,
+      email: user.email,
+    });
 
     // Return user data and credentials for NextAuth signIn
     return NextResponse.json({
@@ -45,16 +48,13 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     // Handle authentication errors
     if (error instanceof Error) {
-      log.warn("Login failed", { error: error.message });
-      return NextResponse.json(
-        { error: error.message },
-        { status: 401 }
-      );
+      log.warn('Login failed', { error: error.message });
+      return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
-    log.error("Unexpected login error", { error });
+    log.error('Unexpected login error', { error });
     return NextResponse.json(
-      { error: "خطا در ورود. لطفاً دوباره تلاش کنید." },
+      { error: 'خطا در ورود. لطفاً دوباره تلاش کنید.' },
       { status: 500 }
     );
   }

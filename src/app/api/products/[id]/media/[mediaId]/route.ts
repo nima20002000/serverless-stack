@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { deleteProductMedia, updateProductMedia } from '@/services/product-service';
+import {
+  deleteProductMedia,
+  updateProductMedia,
+} from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +31,10 @@ export async function PATCH(
   } catch (error) {
     console.error('Update product media error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در بروزرسانی رسانه' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در بروزرسانی رسانه',
+      },
       { status: 500 }
     );
   }

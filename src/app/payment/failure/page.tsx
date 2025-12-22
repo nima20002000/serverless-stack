@@ -28,9 +28,7 @@ function FailureContent() {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               پرداخت ناموفق
             </h1>
-            <p className="text-gray-600 mb-6">
-              متأسفانه پرداخت شما انجام نشد
-            </p>
+            <p className="text-gray-600 mb-6">متأسفانه پرداخت شما انجام نشد</p>
 
             {/* Transaction Code if available */}
             {transactionCode && (
@@ -56,7 +54,8 @@ function FailureContent() {
             {/* Info Message */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-yellow-800 text-right">
-                مبلغی از حساب شما کسر نشده است. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.
+                مبلغی از حساب شما کسر نشده است. لطفاً دوباره تلاش کنید یا با
+                پشتیبانی تماس بگیرید.
               </p>
             </div>
 
@@ -85,11 +84,13 @@ function FailureContent() {
 
 export default function PaymentFailurePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">در حال بارگذاری...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-gray-600">در حال بارگذاری...</div>
+        </div>
+      }
+    >
       <FailureContent />
     </Suspense>
   );

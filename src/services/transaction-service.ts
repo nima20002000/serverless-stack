@@ -96,7 +96,9 @@ export async function createTransaction(data: {
 
     if (itemsError) {
       // Rollback: delete transaction
-      log.error('Failed to create transaction items, rolling back', { error: itemsError });
+      log.error('Failed to create transaction items, rolling back', {
+        error: itemsError,
+      });
       await supabase.from('transactions').delete().eq('id', newTransaction.id);
       throw new Error('خطا در ایجاد آیتم‌های تراکنش');
     }
@@ -104,13 +106,15 @@ export async function createTransaction(data: {
     // Step 3: Fetch complete transaction with relations
     const { data: fullTransaction, error: fetchError } = await supabase
       .from('transactions')
-      .select(`
+      .select(
+        `
         *,
         items:transaction_items(
           *,
           product:products(*)
         )
-      `)
+      `
+      )
       .eq('id', newTransaction.id)
       .single();
 
@@ -173,13 +177,15 @@ export async function updateTransactionStatus(
       .from('transactions')
       .update(updateData)
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         items:transaction_items(
           *,
           product:products(*)
         )
-      `)
+      `
+      )
       .single();
 
     if (error || !transaction) {
@@ -211,7 +217,8 @@ export async function getTransactionById(id: string) {
 
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select(`
+    .select(
+      `
       *,
       items:transaction_items(
         *,
@@ -222,7 +229,8 @@ export async function getTransactionById(id: string) {
         generatedAt,
         pdfUrl
       )
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -232,7 +240,9 @@ export async function getTransactionById(id: string) {
   }
 
   // Supabase returns invoice as array, get first element
-  const invoiceData = Array.isArray(transaction.invoice) ? transaction.invoice[0] : transaction.invoice;
+  const invoiceData = Array.isArray(transaction.invoice)
+    ? transaction.invoice[0]
+    : transaction.invoice;
 
   return {
     ...transaction,
@@ -248,7 +258,8 @@ export async function getTransactionByCode(code: string) {
 
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select(`
+    .select(
+      `
       *,
       items:transaction_items(
         *,
@@ -259,7 +270,8 @@ export async function getTransactionByCode(code: string) {
         generatedAt,
         pdfUrl
       )
-    `)
+    `
+    )
     .eq('transactionCode', code)
     .single();
 
@@ -269,7 +281,9 @@ export async function getTransactionByCode(code: string) {
   }
 
   // Supabase returns invoice as array, get first element
-  const invoiceData = Array.isArray(transaction.invoice) ? transaction.invoice[0] : transaction.invoice;
+  const invoiceData = Array.isArray(transaction.invoice)
+    ? transaction.invoice[0]
+    : transaction.invoice;
 
   return {
     ...transaction,
@@ -285,13 +299,15 @@ export async function getTransactionByAuthority(authority: string) {
 
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select(`
+    .select(
+      `
       *,
       items:transaction_items(
         *,
         product:products(*)
       )
-    `)
+    `
+    )
     .eq('zarinpalAuthority', authority)
     .limit(1)
     .single();
@@ -312,7 +328,8 @@ export async function getTransactionByDigipayTicket(ticket: string) {
 
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select(`
+    .select(
+      `
       *,
       items:transaction_items(
         *,
@@ -325,7 +342,8 @@ export async function getTransactionByDigipayTicket(ticket: string) {
         name,
         phone
       )
-    `)
+    `
+    )
     .eq('digipayTicket', ticket)
     .single();
 
@@ -348,7 +366,8 @@ export async function getTransactionWithVariants(id: string) {
 
   const { data: transaction, error } = await supabase
     .from('transactions')
-    .select(`
+    .select(
+      `
       *,
       items:transaction_items(
         *,
@@ -361,7 +380,8 @@ export async function getTransactionWithVariants(id: string) {
         name,
         phone
       )
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -371,7 +391,9 @@ export async function getTransactionWithVariants(id: string) {
   }
 
   // Flatten user array if returned
-  const userData = Array.isArray(transaction.user) ? transaction.user[0] : transaction.user;
+  const userData = Array.isArray(transaction.user)
+    ? transaction.user[0]
+    : transaction.user;
 
   return {
     ...transaction,
@@ -382,7 +404,10 @@ export async function getTransactionWithVariants(id: string) {
 /**
  * Link transaction to user (for guest checkout account creation)
  */
-export async function linkTransactionToUser(transactionId: string, userId: string): Promise<void> {
+export async function linkTransactionToUser(
+  transactionId: string,
+  userId: string
+): Promise<void> {
   const supabase = createClient();
   const now = new Date().toISOString();
 
@@ -402,7 +427,10 @@ export async function linkTransactionToUser(transactionId: string, userId: strin
       throw new Error('خطا در ارتباط تراکنش با کاربر');
     }
 
-    log.info('Transaction linked to user successfully', { transactionId, userId });
+    log.info('Transaction linked to user successfully', {
+      transactionId,
+      userId,
+    });
   } catch (error) {
     log.error('Failed to link transaction to user', {
       transactionId,
@@ -435,7 +463,8 @@ export async function getUserTransactions(
       .eq('userId', userId),
     supabase
       .from('transactions')
-      .select(`
+      .select(
+        `
         *,
         items:transaction_items(
           *,
@@ -446,7 +475,8 @@ export async function getUserTransactions(
           generatedAt,
           pdfUrl
         )
-      `)
+      `
+      )
       .eq('userId', userId)
       .order('createdAt', { ascending: false })
       .range(offset, offset + perPage - 1),
@@ -619,13 +649,16 @@ export async function verifyStockAvailability(
   const productMap = new Map((products || []).map((p) => [p.id, p]));
 
   // Batch fetch all variants
-  const variantIds = items.filter((item) => item.variantId).map((item) => item.variantId as string);
-  const { data: variants } = variantIds.length > 0
-    ? await supabase
-        .from('product_variants')
-        .select('id, stock, name, isActive')
-        .in('id', variantIds)
-    : { data: [] };
+  const variantIds = items
+    .filter((item) => item.variantId)
+    .map((item) => item.variantId as string);
+  const { data: variants } =
+    variantIds.length > 0
+      ? await supabase
+          .from('product_variants')
+          .select('id, stock, name, isActive')
+          .in('id', variantIds)
+      : { data: [] };
 
   const variantMap = new Map((variants || []).map((v) => [v.id, v]));
 
@@ -634,7 +667,7 @@ export async function verifyStockAvailability(
     const product = productMap.get(item.productId);
 
     if (!product) {
-      errors.push(`محصول یافت نشد`);
+      errors.push('محصول یافت نشد');
       continue;
     }
 
@@ -644,7 +677,9 @@ export async function verifyStockAvailability(
     }
 
     if (product.hasVariants && !item.variantId) {
-      errors.push(`برای محصول ${product.name} باید یک نوع (رنگ، سایز، ...) انتخاب کنید`);
+      errors.push(
+        `برای محصول ${product.name} باید یک نوع (رنگ، سایز، ...) انتخاب کنید`
+      );
       continue;
     }
 
@@ -657,7 +692,9 @@ export async function verifyStockAvailability(
       }
 
       if (!variant.isActive) {
-        errors.push(`واریانت ${variant.name} از محصول ${product.name} غیرفعال است`);
+        errors.push(
+          `واریانت ${variant.name} از محصول ${product.name} غیرفعال است`
+        );
         continue;
       }
 

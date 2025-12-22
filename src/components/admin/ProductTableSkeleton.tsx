@@ -9,12 +9,18 @@ export function ProductTableRowSkeleton() {
     <tr className="hover:bg-gray-50">
       {/* Drag Handle */}
       <td className="px-2 sm:px-4 py-3 text-center">
-        <Skeleton variant="circular" className="w-4 h-4 sm:w-5 sm:h-5 mx-auto" />
+        <Skeleton
+          variant="circular"
+          className="w-4 h-4 sm:w-5 sm:h-5 mx-auto"
+        />
       </td>
 
       {/* Checkbox */}
       <td className="px-2 sm:px-4 py-3 text-center">
-        <Skeleton variant="rectangular" className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto rounded" />
+        <Skeleton
+          variant="rectangular"
+          className="w-3.5 h-3.5 sm:w-4 sm:h-4 mx-auto rounded"
+        />
       </td>
 
       {/* Actions */}
@@ -83,12 +89,24 @@ export default function ProductTableSkeleton({ rows = 10 }: { rows?: number }) {
                 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded"
               />
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">عملیات</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">وضعیت</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">ویژگی‌ها</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">موجودی</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">قیمت</th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">نام محصول</th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+              عملیات
+            </th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+              وضعیت
+            </th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">
+              ویژگی‌ها
+            </th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+              موجودی
+            </th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+              قیمت
+            </th>
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+              نام محصول
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">

@@ -101,7 +101,7 @@ export async function createPaymentRequest(
       elapsedMs: Date.now() - startTime,
     });
 
-    throw new Error(`خطا در ایجاد درخواست پرداخت`);
+    throw new Error('خطا در ایجاد درخواست پرداخت');
   } catch (error) {
     log.error('Zarinpal payment request error', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -110,7 +110,9 @@ export async function createPaymentRequest(
     });
 
     console.error('Zarinpal payment request error:', error);
-    throw new Error(error instanceof Error ? error.message : 'خطا در اتصال به درگاه پرداخت');
+    throw new Error(
+      error instanceof Error ? error.message : 'خطا در اتصال به درگاه پرداخت'
+    );
   }
 }
 
@@ -169,7 +171,7 @@ export async function verifyPayment(
       elapsedMs: Date.now() - startTime,
     });
 
-    throw new Error(`تراکنش ناموفق بود`);
+    throw new Error('تراکنش ناموفق بود');
   } catch (error) {
     log.error('Zarinpal payment verification error', {
       authority,
@@ -181,7 +183,9 @@ export async function verifyPayment(
     });
 
     console.error('Zarinpal payment verification error:', error);
-    throw new Error(error instanceof Error ? error.message : 'خطا در تأیید پرداخت');
+    throw new Error(
+      error instanceof Error ? error.message : 'خطا در تأیید پرداخت'
+    );
   }
 }
 

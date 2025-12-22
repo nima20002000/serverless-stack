@@ -93,9 +93,8 @@ export function generateProductSchema(
     stock = selectedVariant.stock;
   }
 
-  const availability = stock > 0
-    ? 'https://schema.org/InStock'
-    : 'https://schema.org/OutOfStock';
+  const availability =
+    stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   // Schema.org requires at least one image - use logo as absolute last resort
   const schemaImages = images.length > 0 ? images : [`${baseUrl}/logo.png`];
@@ -103,8 +102,11 @@ export function generateProductSchema(
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
-    description: product.description || `${product.name} - خرید آنلاین از کیتیا`,
+    name: selectedVariant
+      ? `${product.name} - ${selectedVariant.name}`
+      : product.name,
+    description:
+      product.description || `${product.name} - خرید آنلاین از کیتیا`,
     image: schemaImages,
     ...(product.sku && { sku: product.sku }),
     brand: {
@@ -117,9 +119,12 @@ export function generateProductSchema(
       priceCurrency: 'IRR',
       availability,
       url: `${baseUrl}/products/${product.slug || product.id}`,
-      ...(product.discount && product.discount > 0 && {
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-      }),
+      ...(product.discount &&
+        product.discount > 0 && {
+          priceValidUntil: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 30 days
+        }),
     },
   };
 

@@ -30,7 +30,9 @@ async function invalidateCategoryCache(): Promise<void> {
  * Bulk delete categories
  * Only deletes categories that have no products or children
  */
-export async function bulkDeleteCategories(categoryIds: string[]): Promise<{ count: number }> {
+export async function bulkDeleteCategories(
+  categoryIds: string[]
+): Promise<{ count: number }> {
   const supabase = await createClient();
 
   try {
@@ -170,7 +172,10 @@ export async function getAllCategories(): Promise<CategoryWithRelations[]> {
   const productCountMap = new Map<string, number>();
   (productCounts || []).forEach((p) => {
     if (p.categoryId) {
-      productCountMap.set(p.categoryId, (productCountMap.get(p.categoryId) || 0) + 1);
+      productCountMap.set(
+        p.categoryId,
+        (productCountMap.get(p.categoryId) || 0) + 1
+      );
     }
   });
 
@@ -194,7 +199,9 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('*, parent:categories!parentId(*), children:categories!parentId!inner(id, name, slug, isActive)')
+    .select(
+      '*, parent:categories!parentId(*), children:categories!parentId!inner(id, name, slug, isActive)'
+    )
     .eq('isActive', true)
     .eq('children.isActive', true)
     .order('name', { ascending: true });
@@ -216,7 +223,9 @@ export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('*, children:categories!parentId!inner(*, children:categories!parentId!inner(*))')
+    .select(
+      '*, children:categories!parentId!inner(*, children:categories!parentId!inner(*))'
+    )
     .is('parentId', null)
     .eq('isActive', true)
     .eq('children.isActive', true)
@@ -234,7 +243,9 @@ export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
 /**
  * Get category by ID
  */
-export async function getCategoryById(id: string): Promise<CategoryWithRelations> {
+export async function getCategoryById(
+  id: string
+): Promise<CategoryWithRelations> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -255,7 +266,9 @@ export async function getCategoryById(id: string): Promise<CategoryWithRelations
 /**
  * Get category by slug
  */
-export async function getCategoryBySlug(slug: string): Promise<CategoryWithRelations | null> {
+export async function getCategoryBySlug(
+  slug: string
+): Promise<CategoryWithRelations | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -356,7 +369,9 @@ export async function updateCategory(
 /**
  * Delete a category
  */
-export async function deleteCategory(id: string): Promise<{ success: boolean }> {
+export async function deleteCategory(
+  id: string
+): Promise<{ success: boolean }> {
   const supabase = await createClient();
 
   // Check if category has products
@@ -379,10 +394,7 @@ export async function deleteCategory(id: string): Promise<{ success: boolean }> 
     throw new Error('امکان حذف دسته‌بندی که زیردسته دارد وجود ندارد');
   }
 
-  const { error } = await supabase
-    .from('categories')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('categories').delete().eq('id', id);
 
   if (error) {
     log.error('Error deleting category', { id, error });

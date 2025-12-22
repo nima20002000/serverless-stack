@@ -40,9 +40,7 @@ function SuccessContent() {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               پرداخت موفق
             </h1>
-            <p className="text-gray-600 mb-6">
-              خرید شما با موفقیت انجام شد
-            </p>
+            <p className="text-gray-600 mb-6">خرید شما با موفقیت انجام شد</p>
 
             {/* Transaction Details */}
             <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
@@ -64,7 +62,8 @@ function SuccessContent() {
             {/* Info Message */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-blue-800 text-right">
-                کد تراکنش خود را یادداشت کنید. شما می‌توانید وضعیت سفارش خود را از طریق پروفایل خود پیگیری کنید.
+                کد تراکنش خود را یادداشت کنید. شما می‌توانید وضعیت سفارش خود را
+                از طریق پروفایل خود پیگیری کنید.
               </p>
             </div>
 
@@ -93,11 +92,13 @@ function SuccessContent() {
 
 export default function PaymentSuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-600">در حال بارگذاری...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-gray-600">در حال بارگذاری...</div>
+        </div>
+      }
+    >
       <SuccessContent />
     </Suspense>
   );

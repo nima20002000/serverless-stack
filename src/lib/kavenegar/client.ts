@@ -7,7 +7,7 @@ if (!apiKey) {
 }
 
 const api = Kavenegar.KavenegarApi({
-  apikey: apiKey
+  apikey: apiKey,
 });
 
 export interface SendOTPResult {
@@ -26,30 +26,36 @@ export interface SendOrderConfirmationResult {
  * Send OTP via Kavenegar VerifyLookup (template-based)
  * Uses template defined in KAVENEGAR_TEMPLATE_NAME env variable
  */
-export async function sendOTPSMS(phone: string, otp: string): Promise<SendOTPResult> {
+export async function sendOTPSMS(
+  phone: string,
+  otp: string
+): Promise<SendOTPResult> {
   return new Promise((resolve) => {
-    api.VerifyLookup({
-      receptor: phone,
-      token: otp,
-      template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms'
-    }, function(response, status, message) {
-      if (status === 200) {
-        log.info('OTP sent successfully via Kavenegar', {
-          phone,
-          messageId: response[0]?.messageid,
-          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms'
-        });
-        resolve({ success: true, messageId: response[0]?.messageid });
-      } else {
-        log.error('Failed to send OTP via Kavenegar', {
-          phone,
-          status,
-          message,
-          template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms'
-        });
-        resolve({ success: false, error: message || `خطا ${status}` });
+    api.VerifyLookup(
+      {
+        receptor: phone,
+        token: otp,
+        template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms',
+      },
+      function (response, status, message) {
+        if (status === 200) {
+          log.info('OTP sent successfully via Kavenegar', {
+            phone,
+            messageId: response[0]?.messageid,
+            template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms',
+          });
+          resolve({ success: true, messageId: response[0]?.messageid });
+        } else {
+          log.error('Failed to send OTP via Kavenegar', {
+            phone,
+            status,
+            message,
+            template: process.env.KAVENEGAR_TEMPLATE_NAME || 'kitia-otp-sms',
+          });
+          resolve({ success: false, error: message || `خطا ${status}` });
+        }
       }
-    });
+    );
   });
 }
 
@@ -67,34 +73,39 @@ export async function sendOrderConfirmationSMS(
   refId: number
 ): Promise<SendOrderConfirmationResult> {
   return new Promise((resolve) => {
-    const templateName = process.env.KAVENEGAR_ORDER_CONFIRMATION_TEMPLATE_NAME || 'kitia-order-confirmation';
+    const templateName =
+      process.env.KAVENEGAR_ORDER_CONFIRMATION_TEMPLATE_NAME ||
+      'kitia-order-confirmation';
 
-    api.VerifyLookup({
-      receptor: phone,
-      token: transactionCode,   // token1: tracking number
-      token2: refId.toString(),  // token2: payment reference ID
-      template: templateName
-    }, function(response, status, message) {
-      if (status === 200) {
-        log.info('Order confirmation SMS sent successfully via Kavenegar', {
-          phone,
-          transactionCode,
-          refId,
-          messageId: response[0]?.messageid,
-          template: templateName
-        });
-        resolve({ success: true, messageId: response[0]?.messageid });
-      } else {
-        log.error('Failed to send order confirmation SMS via Kavenegar', {
-          phone,
-          transactionCode,
-          refId,
-          status,
-          message,
-          template: templateName
-        });
-        resolve({ success: false, error: message || `خطا ${status}` });
+    api.VerifyLookup(
+      {
+        receptor: phone,
+        token: transactionCode, // token1: tracking number
+        token2: refId.toString(), // token2: payment reference ID
+        template: templateName,
+      },
+      function (response, status, message) {
+        if (status === 200) {
+          log.info('Order confirmation SMS sent successfully via Kavenegar', {
+            phone,
+            transactionCode,
+            refId,
+            messageId: response[0]?.messageid,
+            template: templateName,
+          });
+          resolve({ success: true, messageId: response[0]?.messageid });
+        } else {
+          log.error('Failed to send order confirmation SMS via Kavenegar', {
+            phone,
+            transactionCode,
+            refId,
+            status,
+            message,
+            template: templateName,
+          });
+          resolve({ success: false, error: message || `خطا ${status}` });
+        }
       }
-    });
+    );
   });
 }

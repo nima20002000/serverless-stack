@@ -95,13 +95,15 @@ export default function NewProductPage() {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : null,
+          discountPercent: formData.discountPercent
+            ? parseInt(formData.discountPercent)
+            : null,
           stock: formData.hasVariants ? 0 : parseInt(formData.stock), // If variants enabled, stock is 0 initially
           hasVariants: formData.hasVariants,
           isFeatured: formData.isFeatured,
           isActive: formData.isActive,
           categoryId: formData.categoryId,
-          tagIds: selectedTags.map(t => t.id),
+          tagIds: selectedTags.map((t) => t.id),
           images: [], // Keep for backward compatibility
         }),
       });
@@ -117,17 +119,20 @@ export default function NewProductPage() {
       // Step 2: Add media
       if (productMedia.media.length > 0) {
         for (const mediaItem of productMedia.media) {
-          const mediaResponse = await fetch(`/api/products/${productId}/media`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: mediaItem.type,
-              url: mediaItem.url,
-              alt: mediaItem.alt,
-              order: mediaItem.order,
-              isDefault: mediaItem.isDefault,
-            }),
-          });
+          const mediaResponse = await fetch(
+            `/api/products/${productId}/media`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              }),
+            }
+          );
 
           if (!mediaResponse.ok) {
             const errorData = await mediaResponse.json();
@@ -139,21 +144,24 @@ export default function NewProductPage() {
       // Step 3: Add variants (with order)
       if (variantManager.variants.length > 0) {
         for (const variant of variantManager.variants) {
-          const variantResponse = await fetch(`/api/products/${productId}/variants`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              order: variant.order,
-              isActive: variant.isActive,
-            }),
-          });
+          const variantResponse = await fetch(
+            `/api/products/${productId}/variants`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                order: variant.order,
+                isActive: variant.isActive,
+              }),
+            }
+          );
 
           const variantData = await variantResponse.json();
           const variantId = variantData.variant?.id;
@@ -161,22 +169,27 @@ export default function NewProductPage() {
           // Step 4: Add variant-specific media
           if (variantId && variant.media && variant.media.length > 0) {
             for (const mediaItem of variant.media) {
-              const variantMediaResponse = await fetch(`/api/products/${productId}/media`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  variantId: variantId,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
-                  isDefault: mediaItem.isDefault,
-                }),
-              });
+              const variantMediaResponse = await fetch(
+                `/api/products/${productId}/media`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    variantId: variantId,
+                    type: mediaItem.type,
+                    url: mediaItem.url,
+                    alt: mediaItem.alt,
+                    order: mediaItem.order,
+                    isDefault: mediaItem.isDefault,
+                  }),
+                }
+              );
 
               if (!variantMediaResponse.ok) {
                 const errorData = await variantMediaResponse.json();
-                throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت');
+                throw new Error(
+                  errorData.error || 'خطا در افزودن رسانه واریانت'
+                );
               }
             }
           }
@@ -185,14 +198,17 @@ export default function NewProductPage() {
 
       router.push('/admin/products');
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'خطا در ایجاد محصول';
+      const errorMsg =
+        error instanceof Error ? error.message : 'خطا در ایجاد محصول';
       setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
@@ -222,7 +238,11 @@ export default function NewProductPage() {
       </div>
 
       {errorMessage && (
-        <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
+        <Alert
+          type="error"
+          className="mb-4"
+          onClose={() => setErrorMessage('')}
+        >
           {errorMessage}
         </Alert>
       )}
@@ -294,7 +314,13 @@ export default function NewProductPage() {
             >
               انصراف
             </Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={isLoading} className="w-full sm:w-auto order-1 sm:order-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isLoading}
+              className="w-full sm:w-auto order-1 sm:order-2"
+            >
               ایجاد محصول
             </Button>
           </div>

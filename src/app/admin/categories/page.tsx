@@ -5,7 +5,9 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import BulkActionsToolbar, {
+  BulkAction,
+} from '@/components/admin/BulkActionsToolbar';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 
 interface Category {
@@ -33,7 +35,9 @@ export default function CategoriesManagementPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
+    new Set()
+  );
 
   // Form state
   const [formData, setFormData] = useState({
@@ -89,7 +93,11 @@ export default function CategoriesManagementPage() {
         throw new Error(errorData.error || 'خطا در ذخیره دسته‌بندی');
       }
 
-      setSuccessMessage(editingCategory ? 'دسته‌بندی با موفقیت ویرایش شد' : 'دسته‌بندی با موفقیت ایجاد شد');
+      setSuccessMessage(
+        editingCategory
+          ? 'دسته‌بندی با موفقیت ویرایش شد'
+          : 'دسته‌بندی با موفقیت ایجاد شد'
+      );
       setShowForm(false);
       setEditingCategory(null);
       setFormData({
@@ -183,7 +191,7 @@ export default function CategoriesManagementPage() {
     if (selectedCategories.size === categories.length) {
       setSelectedCategories(new Set());
     } else {
-      setSelectedCategories(new Set(categories.map(c => c.id)));
+      setSelectedCategories(new Set(categories.map((c) => c.id)));
     }
   };
 
@@ -290,11 +298,11 @@ export default function CategoriesManagementPage() {
   ];
 
   // Get root categories (no parent)
-  const rootCategories = categories.filter(cat => !cat.parentId);
+  const rootCategories = categories.filter((cat) => !cat.parentId);
 
   // Get all categories that can be parents (excluding the one being edited)
-  const availableParents = categories.filter(cat =>
-    !editingCategory || cat.id !== editingCategory.id
+  const availableParents = categories.filter(
+    (cat) => !editingCategory || cat.id !== editingCategory.id
   );
 
   if (isLoading) {
@@ -317,7 +325,9 @@ export default function CategoriesManagementPage() {
         >
           {showForm ? 'انصراف' : 'افزودن دسته‌بندی جدید'}
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت دسته‌بندی‌ها</h1>
+        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">
+          مدیریت دسته‌بندی‌ها
+        </h1>
       </div>
 
       {error && (
@@ -327,7 +337,11 @@ export default function CategoriesManagementPage() {
       )}
 
       {successMessage && (
-        <Alert type="success" className="mb-4" onClose={() => setSuccessMessage('')}>
+        <Alert
+          type="success"
+          className="mb-4"
+          onClose={() => setSuccessMessage('')}
+        >
           {successMessage}
         </Alert>
       )}
@@ -348,7 +362,9 @@ export default function CategoriesManagementPage() {
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                     required
                   />
@@ -360,7 +376,9 @@ export default function CategoriesManagementPage() {
                   <input
                     type="text"
                     value={formData.slug}
-                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
                     placeholder="electronics"
                     required
@@ -374,7 +392,9 @@ export default function CategoriesManagementPage() {
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                   rows={3}
                 />
@@ -421,13 +441,16 @@ export default function CategoriesManagementPage() {
                   </label>
                   <select
                     value={formData.parentId}
-                    onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, parentId: e.target.value })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white"
                   >
                     <option value="">بدون والد (دسته اصلی)</option>
                     {availableParents.map((cat) => (
                       <option key={cat.id} value={cat.id}>
-                        {cat.parent ? `${cat.parent.name} > ` : ''}{cat.name}
+                        {cat.parent ? `${cat.parent.name} > ` : ''}
+                        {cat.name}
                       </option>
                     ))}
                   </select>
@@ -439,7 +462,12 @@ export default function CategoriesManagementPage() {
                   </label>
                   <select
                     value={formData.isActive ? 'active' : 'inactive'}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        isActive: e.target.value === 'active',
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white"
                   >
                     <option value="active">فعال</option>
@@ -449,7 +477,11 @@ export default function CategoriesManagementPage() {
               </div>
 
               <div className="flex gap-3 justify-end">
-                <Button type="button" variant="secondary" onClick={handleCancelForm}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCancelForm}
+                >
                   انصراف
                 </Button>
                 <Button type="submit" variant="primary">
@@ -470,16 +502,29 @@ export default function CategoriesManagementPage() {
                 <th className="px-4 py-3 text-center w-12">
                   <input
                     type="checkbox"
-                    checked={categories.length > 0 && selectedCategories.size === categories.length}
+                    checked={
+                      categories.length > 0 &&
+                      selectedCategories.size === categories.length
+                    }
                     onChange={toggleSelectAll}
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">عملیات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">وضعیت</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">تعداد محصولات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">توضیحات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">نام دسته‌بندی</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  عملیات
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  وضعیت
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
+                  تعداد محصولات
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
+                  توضیحات
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  نام دسته‌بندی
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -506,7 +551,9 @@ export default function CategoriesManagementPage() {
                         <Button
                           variant="danger"
                           size="sm"
-                          onClick={() => handleDelete(category.id, category.name)}
+                          onClick={() =>
+                            handleDelete(category.id, category.name)
+                          }
                         >
                           حذف
                         </Button>
@@ -514,7 +561,9 @@ export default function CategoriesManagementPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => toggleActive(category.id, category.isActive)}
+                        onClick={() =>
+                          toggleActive(category.id, category.isActive)
+                        }
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           category.isActive
                             ? 'bg-green-100 text-green-800'
@@ -534,7 +583,9 @@ export default function CategoriesManagementPage() {
                     </td>
                     <td className="px-4 py-3 text-right font-medium">
                       {category.name}
-                      <div className="text-xs text-gray-500">{category.slug}</div>
+                      <div className="text-xs text-gray-500">
+                        {category.slug}
+                      </div>
                     </td>
                   </tr>
                   {/* Child categories */}
@@ -589,7 +640,9 @@ export default function CategoriesManagementPage() {
                       <td className="px-4 py-3 text-right font-medium">
                         <span className="text-gray-500 ml-2">↳</span>
                         {child.name}
-                        <div className="text-xs text-gray-500 mr-4">{child.slug}</div>
+                        <div className="text-xs text-gray-500 mr-4">
+                          {child.slug}
+                        </div>
                       </td>
                     </tr>
                   ))}

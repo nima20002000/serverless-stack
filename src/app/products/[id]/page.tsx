@@ -28,22 +28,31 @@ const getCachedProduct = cache(async (id: string) => {
   return getProductById(id, true);
 });
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
   try {
     const product = await getCachedProduct(id);
 
     // Get first image from media or fallback to legacy images
     const productWithRelations = product as Product & {
-      media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }>;
+      media?: Array<{
+        id: string;
+        type: 'IMAGE' | 'VIDEO';
+        url: string;
+        alt?: string;
+        order: number;
+      }>;
       category?: { id: string; name: string; slug: string } | null;
     };
 
-    const firstImage = productWithRelations.media && productWithRelations.media.length > 0
-      ? productWithRelations.media.find(m => m.type === 'IMAGE')?.url
-      : product.images && product.images.length > 0
-        ? product.images[0]
-        : undefined;
+    const firstImage =
+      productWithRelations.media && productWithRelations.media.length > 0
+        ? productWithRelations.media.find((m) => m.type === 'IMAGE')?.url
+        : product.images && product.images.length > 0
+          ? product.images[0]
+          : undefined;
 
     // Optimize image for Open Graph (1200x630)
     const ogImage = firstImage ? getProductOgImage(firstImage) : undefined;
@@ -65,19 +74,21 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       openGraph: {
         title: `${product.name} - کیتیا`,
         description: product.description,
-        locale: "fa_IR",
-        siteName: "کیتیا",
-        images: ogImage ? [
-          {
-            url: ogImage,
-            width: 1200,
-            height: 630,
-            alt: product.name,
-          }
-        ] : undefined,
+        locale: 'fa_IR',
+        siteName: 'کیتیا',
+        images: ogImage
+          ? [
+              {
+                url: ogImage,
+                width: 1200,
+                height: 630,
+                alt: product.name,
+              },
+            ]
+          : undefined,
       },
       twitter: {
-        card: "summary_large_image",
+        card: 'summary_large_image',
         title: `${product.name} - کیتیا`,
         description: product.description,
         images: ogImage ? [ogImage] : undefined,
@@ -113,10 +124,26 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
   // Serialize product data for client component
   type ProductWithRelations = Product & {
-    variants?: Array<ProductVariant & { media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }> }>;
+    variants?: Array<
+      ProductVariant & {
+        media?: Array<{
+          id: string;
+          type: 'IMAGE' | 'VIDEO';
+          url: string;
+          alt?: string;
+          order: number;
+        }>;
+      }
+    >;
     category?: { id: string; name: string; slug: string } | null;
     tags?: Array<{ id: string; name: string; slug: string }>;
-    media?: Array<{ id: string; type: 'IMAGE' | 'VIDEO'; url: string; alt?: string; order: number }>;
+    media?: Array<{
+      id: string;
+      type: 'IMAGE' | 'VIDEO';
+      url: string;
+      alt?: string;
+      order: number;
+    }>;
   };
 
   const productWithRelations = product as ProductWithRelations;
@@ -128,19 +155,22 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     hasVariants: product.hasVariants,
     isFeatured: product.isFeatured,
     category: 'category' in product ? productWithRelations.category : null,
-    tags: 'tags' in product ? (productWithRelations.tags || []) : [],
-    media: 'media' in product ? (productWithRelations.media || []) : [],
-    variants: 'variants' in product && productWithRelations.variants && Array.isArray(productWithRelations.variants)
-      ? productWithRelations.variants.map((v) => ({
-          ...v,
-          sku: v.sku || undefined,
-          color: v.color || undefined,
-          size: v.size || undefined,
-          material: v.material || undefined,
-          priceAdjust: Number(v.priceAdjust),
-          media: v.media || [],
-        }))
-      : [],
+    tags: 'tags' in product ? productWithRelations.tags || [] : [],
+    media: 'media' in product ? productWithRelations.media || [] : [],
+    variants:
+      'variants' in product &&
+      productWithRelations.variants &&
+      Array.isArray(productWithRelations.variants)
+        ? productWithRelations.variants.map((v) => ({
+            ...v,
+            sku: v.sku || undefined,
+            color: v.color || undefined,
+            size: v.size || undefined,
+            material: v.material || undefined,
+            priceAdjust: Number(v.priceAdjust),
+            media: v.media || [],
+          }))
+        : [],
   };
 
   // Generate JSON-LD structured data

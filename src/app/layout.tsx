@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import { SessionProvider } from "@/components/providers/SessionProvider";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import type { Metadata } from 'next';
+import './globals.css';
+import { SessionProvider } from '@/components/providers/SessionProvider';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
 import {
   generateOrganizationSchema,
   generateWebSiteSchema,
   renderJsonLd,
-} from "@/lib/seo/structured-data";
+} from '@/lib/seo/structured-data';
 
 export const metadata: Metadata = {
-  title: "Kitia - فروشگاه آنلاین",
-  description: "پلتفرم خرید آنلاین کیتیا",
+  title: 'Kitia - فروشگاه آنلاین',
+  description: 'پلتفرم خرید آنلاین کیتیا',
   icons: {
     icon: '/favicon.ico',
   },

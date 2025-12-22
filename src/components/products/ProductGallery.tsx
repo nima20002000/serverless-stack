@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
@@ -32,7 +36,12 @@ interface ProductGalleryProps {
   allVariants?: Variant[]; // NEW: All product variants for aggressive preloading
 }
 
-export default function ProductGallery({ media, productName, selectedVariant, allVariants }: ProductGalleryProps) {
+export default function ProductGallery({
+  media,
+  productName,
+  selectedVariant,
+  allVariants,
+}: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -47,7 +56,7 @@ export default function ProductGallery({ media, productName, selectedVariant, al
 
   // Touch swipe handling (for zoom modal)
   const zoomTouchStartX = useRef<number>(0);
-  const zoomTouchEndX = useRef<number>(0)
+  const zoomTouchEndX = useRef<number>(0);
 
   // Memoize filtered and sorted media to avoid recalculating on every render
   const sortedMedia = useMemo(() => {
@@ -55,15 +64,16 @@ export default function ProductGallery({ media, productName, selectedVariant, al
 
     if (!selectedVariant) {
       // Show only product-level media (no variantId) when no variant is selected
-      displayMedia = media.filter(m => !m.variantId);
+      displayMedia = media.filter((m) => !m.variantId);
     } else {
       // When variant is selected, prefer variant-specific media
       const variantMedia = selectedVariant.media || [];
 
       // If variant has no specific media, fall back to product-level media
-      displayMedia = variantMedia.length === 0
-        ? media.filter(m => !m.variantId)
-        : variantMedia;
+      displayMedia =
+        variantMedia.length === 0
+          ? media.filter((m) => !m.variantId)
+          : variantMedia;
     }
 
     // Sort by order
@@ -104,10 +114,12 @@ export default function ProductGallery({ media, productName, selectedVariant, al
     const seenUrls = new Set<string>(); // Avoid duplicate preloads
 
     // 1. Add product-level media (highest priority - shown by default)
-    const productMedia = media.filter(m => !m.variantId);
-    productMedia.forEach(item => {
+    const productMedia = media.filter((m) => !m.variantId);
+    productMedia.forEach((item) => {
       if (item.type === 'IMAGE' && !seenUrls.has(item.url)) {
-        allMediaToPreload.push({ ...item, priority: 1 } as MediaItem & { priority: number });
+        allMediaToPreload.push({ ...item, priority: 1 } as MediaItem & {
+          priority: number;
+        });
         seenUrls.add(item.url);
       }
     });
@@ -120,7 +132,9 @@ export default function ProductGallery({ media, productName, selectedVariant, al
             if (item.type === 'IMAGE' && !seenUrls.has(item.url)) {
               // First image of each variant gets higher priority
               const priority = itemIndex === 0 ? 2 : 3;
-              allMediaToPreload.push({ ...item, priority } as MediaItem & { priority: number });
+              allMediaToPreload.push({ ...item, priority } as MediaItem & {
+                priority: number;
+              });
               seenUrls.add(item.url);
             }
           });
@@ -159,7 +173,10 @@ export default function ProductGallery({ media, productName, selectedVariant, al
           preloadFn();
         } else {
           // Load low-priority images during idle time
-          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          if (
+            typeof window !== 'undefined' &&
+            'requestIdleCallback' in window
+          ) {
             window.requestIdleCallback(preloadFn);
           } else {
             // Fallback: use setTimeout to defer loading
@@ -209,7 +226,9 @@ export default function ProductGallery({ media, productName, selectedVariant, al
 
   const goToPrevious = () => {
     setIsTransitioning(true);
-    setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
+    setSelectedIndex((prev) =>
+      prev === 0 ? sortedMedia.length - 1 : prev - 1
+    );
     // Brief transition effect, then reset
     setTimeout(() => {
       setIsTransitioning(false);
@@ -218,7 +237,9 @@ export default function ProductGallery({ media, productName, selectedVariant, al
 
   const goToNext = () => {
     setIsTransitioning(true);
-    setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
+    setSelectedIndex((prev) =>
+      prev === sortedMedia.length - 1 ? 0 : prev + 1
+    );
     // Brief transition effect, then reset
     setTimeout(() => {
       setIsTransitioning(false);
@@ -310,15 +331,18 @@ export default function ProductGallery({ media, productName, selectedVariant, al
           <Image
             key={currentMedia.id}
             src={optimizeImage.large(currentMedia.url)}
-            alt={currentMedia.alt || generateProductAltText({
-              productName,
-              variantName: selectedVariant?.name,
-              color: selectedVariant?.color,
-              size: selectedVariant?.size,
-              material: selectedVariant?.material,
-              imageIndex: selectedIndex,
-              totalImages: sortedMedia.length,
-            })}
+            alt={
+              currentMedia.alt ||
+              generateProductAltText({
+                productName,
+                variantName: selectedVariant?.name,
+                color: selectedVariant?.color,
+                size: selectedVariant?.size,
+                material: selectedVariant?.material,
+                imageIndex: selectedIndex,
+                totalImages: sortedMedia.length,
+              })
+            }
             fill
             className={`object-contain object-center transition-opacity duration-150 ${
               isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
@@ -371,15 +395,16 @@ export default function ProductGallery({ media, productName, selectedVariant, al
 
         {/* Variant Indicator */}
         {selectedVariant && (
-          <div className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
-            selectedVariant.media && selectedVariant.media.length > 0
-              ? 'bg-blue-600'
-              : 'bg-gray-600'
-          }`}>
+          <div
+            className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
+              selectedVariant.media && selectedVariant.media.length > 0
+                ? 'bg-blue-600'
+                : 'bg-gray-600'
+            }`}
+          >
             {selectedVariant.media && selectedVariant.media.length > 0
               ? `تصاویر ویژه نوع: ${selectedVariant.media.length}`
-              : 'تصاویر پیش‌فرض محصول'
-            }
+              : 'تصاویر پیش‌فرض محصول'}
           </div>
         )}
       </div>
@@ -400,15 +425,18 @@ export default function ProductGallery({ media, productName, selectedVariant, al
               {item.type === 'IMAGE' ? (
                 <Image
                   src={optimizeImage.adminThumb(item.url)}
-                  alt={item.alt || generateProductAltText({
-                    productName,
-                    variantName: selectedVariant?.name,
-                    color: selectedVariant?.color,
-                    size: selectedVariant?.size,
-                    material: selectedVariant?.material,
-                    imageIndex: index,
-                    totalImages: sortedMedia.length,
-                  })}
+                  alt={
+                    item.alt ||
+                    generateProductAltText({
+                      productName,
+                      variantName: selectedVariant?.name,
+                      color: selectedVariant?.color,
+                      size: selectedVariant?.size,
+                      material: selectedVariant?.material,
+                      imageIndex: index,
+                      totalImages: sortedMedia.length,
+                    })
+                  }
                   fill
                   className="object-cover object-center"
                   sizes="80px"
@@ -490,15 +518,18 @@ export default function ProductGallery({ media, productName, selectedVariant, al
             <Image
               key={currentMedia.id}
               src={optimizeImage.large(currentMedia.url)}
-              alt={currentMedia.alt || generateProductAltText({
-                productName,
-                variantName: selectedVariant?.name,
-                color: selectedVariant?.color,
-                size: selectedVariant?.size,
-                material: selectedVariant?.material,
-                imageIndex: selectedIndex,
-                totalImages: sortedMedia.length,
-              })}
+              alt={
+                currentMedia.alt ||
+                generateProductAltText({
+                  productName,
+                  variantName: selectedVariant?.name,
+                  color: selectedVariant?.color,
+                  size: selectedVariant?.size,
+                  material: selectedVariant?.material,
+                  imageIndex: selectedIndex,
+                  totalImages: sortedMedia.length,
+                })
+              }
               fill
               className={`object-contain transition-opacity duration-150 ${
                 isTransitioning ? 'opacity-0' : 'opacity-100'

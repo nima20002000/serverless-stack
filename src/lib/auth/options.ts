@@ -1,11 +1,11 @@
-import { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { createClient } from "@/lib/supabase/server";
-import { detectIdentifierType } from "@/services/user-service";
+import { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import { createClient } from '@/lib/supabase/server';
+import { detectIdentifierType } from '@/services/user-service';
 
 // Extend the built-in types
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session {
     user: {
       id: string;
@@ -14,7 +14,7 @@ declare module "next-auth" {
       name: string;
       role: 'USER' | 'ADMIN';
       isVerified: boolean;
-    }
+    };
   }
 
   interface User {
@@ -27,7 +27,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
     role: 'USER' | 'ADMIN';
@@ -41,21 +41,21 @@ declare module "next-auth/jwt" {
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        identifier: { label: "ایمیل یا شماره تلفن", type: "text" },
-        password: { label: "رمز عبور", type: "password" },
+        identifier: { label: 'ایمیل یا شماره تلفن', type: 'text' },
+        password: { label: 'رمز عبور', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.identifier) {
-          throw new Error("ایمیل یا شماره تلفن الزامی است");
+          throw new Error('ایمیل یا شماره تلفن الزامی است');
         }
 
         // Detect if identifier is email or phone
         const identifierType = detectIdentifierType(credentials.identifier);
 
         if (identifierType === 'invalid') {
-          throw new Error("فرمت ایمیل یا شماره تلفن نامعتبر است");
+          throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
         }
 
         const supabase = createClient();
@@ -64,11 +64,14 @@ export const authOptions: NextAuthOptions = {
         const { data: user, error } = await supabase
           .from('users')
           .select('*')
-          .eq(identifierType === 'email' ? 'email' : 'phone', credentials.identifier)
+          .eq(
+            identifierType === 'email' ? 'email' : 'phone',
+            credentials.identifier
+          )
           .single();
 
         if (error || !user) {
-          throw new Error("کاربری با این مشخصات یافت نشد");
+          throw new Error('کاربری با این مشخصات یافت نشد');
         }
 
         // For authentication without password (OTP-verified)
@@ -78,7 +81,7 @@ export const authOptions: NextAuthOptions = {
           // The OTP was already verified before calling signIn
           // Security: Only allow if user is verified (went through OTP for phone)
           if (identifierType === 'phone' && !user.isVerified) {
-            throw new Error("لطفاً ابتدا شماره تلفن خود را تایید کنید");
+            throw new Error('لطفاً ابتدا شماره تلفن خود را تایید کنید');
           }
 
           return {
@@ -93,7 +96,7 @@ export const authOptions: NextAuthOptions = {
 
         // For email/phone authentication with password
         if (!user.password) {
-          throw new Error("برای این حساب از ورود با کد تایید استفاده کنید");
+          throw new Error('برای این حساب از ورود با کد تایید استفاده کنید');
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -102,7 +105,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
-          throw new Error("رمز عبور اشتباه است");
+          throw new Error('رمز عبور اشتباه است');
         }
 
         return {
@@ -141,10 +144,10 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: '/login',
   },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

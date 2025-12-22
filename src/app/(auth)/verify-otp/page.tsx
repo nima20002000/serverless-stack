@@ -18,7 +18,9 @@ function VerifyOTPContent() {
   const isEmail = !!email;
   const name = searchParams.get('name');
   const password = searchParams.get('password');
-  const purpose = (searchParams.get('purpose') || 'register') as 'register' | 'login';
+  const purpose = (searchParams.get('purpose') || 'register') as
+    | 'register'
+    | 'login';
   const redirectTo = searchParams.get('redirectTo') || '/';
 
   const [isVerifying, setIsVerifying] = useState(false);
@@ -36,7 +38,7 @@ function VerifyOTPContent() {
   // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
+      setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           return 0;
@@ -68,7 +70,7 @@ function VerifyOTPContent() {
       const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -91,13 +93,13 @@ function VerifyOTPContent() {
         signInData = {
           identifier: identifier,
           password: password,
-          redirect: false
+          redirect: false,
         };
       } else {
         // Login with OTP: no password (passwordless auth)
         signInData = {
           identifier: identifier,
-          redirect: false
+          redirect: false,
         };
       }
 
@@ -124,14 +126,12 @@ function VerifyOTPContent() {
     setError('');
 
     try {
-      const requestBody = isEmail
-        ? { email, purpose }
-        : { phone, purpose };
+      const requestBody = isEmail ? { email, purpose } : { phone, purpose };
 
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -167,8 +167,10 @@ function VerifyOTPContent() {
 
       <p className="text-center text-gray-600 mb-6">
         کد تایید ۶ رقمی به {isEmail ? 'ایمیل' : 'شماره'}{' '}
-        <span className="font-bold text-gray-900" dir="ltr">{identifier}</span>
-        {' '}ارسال شد
+        <span className="font-bold text-gray-900" dir="ltr">
+          {identifier}
+        </span>{' '}
+        ارسال شد
       </p>
 
       {error && (
@@ -189,7 +191,8 @@ function VerifyOTPContent() {
           <p className="text-sm text-gray-600">
             زمان باقی‌مانده:{' '}
             <span className="font-mono font-bold text-gray-900">
-              {minutes.toString().padStart(2, '0')}:{seconds.toString().padStart(2, '0')}
+              {minutes.toString().padStart(2, '0')}:
+              {seconds.toString().padStart(2, '0')}
             </span>
           </p>
         ) : (
@@ -223,11 +226,13 @@ function VerifyOTPContent() {
 
 export default function VerifyOTPPage() {
   return (
-    <Suspense fallback={
-      <Card>
-        <div className="text-center">در حال بارگذاری...</div>
-      </Card>
-    }>
+    <Suspense
+      fallback={
+        <Card>
+          <div className="text-center">در حال بارگذاری...</div>
+        </Card>
+      }
+    >
       <VerifyOTPContent />
     </Suspense>
   );
