@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Combobox, Transition } from '@headlessui/react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TagIcon, FolderIcon } from '@heroicons/react/24/solid';
-import type { SearchResult } from '@/services/search-service';
+import type { SearchResult } from '@/types/search';
 import { formatPrice } from '@/lib/utils/format';
 
 interface SearchBarProps {
