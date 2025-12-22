@@ -657,13 +657,14 @@ export async function sendAdminOrderConfirmation(
     });
 
     // Format order date
-    const orderDate = new Date(transaction.createdAt).toLocaleString('fa-IR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const orderDate =
+      new Date(transaction.createdAt).toLocaleString('fa-IR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }) + ' UTC';
 
     // Calculate total items quantity
     const totalItems = transaction.items.reduce(
