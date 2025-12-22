@@ -8,6 +8,7 @@
   "parserOptions": {
     "project": "./tsconfig.json"
   },
+  "ignorePatterns": ["next.config.js"],
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
     "@typescript-eslint/no-explicit-any": "error",
