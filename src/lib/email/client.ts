@@ -237,8 +237,7 @@ export async function sendOTPEmail(
  * Sends order confirmation with transaction code and items purchased
  */
 export async function sendBuyerOrderConfirmation(
-  transaction: TransactionEmailData,
-  refId?: number
+  transaction: TransactionEmailData
 ): Promise<SendEmailResult> {
   try {
     const buyerEmail = transaction.email;
@@ -454,7 +453,6 @@ export async function sendBuyerOrderConfirmation(
       <strong>📦 تعداد کل اقلام:</strong> ${totalItems} عدد<br/>
       <strong>💰 مبلغ پرداختی:</strong> ${Number(transaction.amount).toLocaleString('fa-IR')} تومان<br/>
       <strong>💳 روش پرداخت:</strong> ${paymentMethodLabel}<br/>
-      ${refId ? `<strong>🔢 شناسه پرداخت:</strong> ${refId}<br/>` : ''}
       <strong>📅 تاریخ ثبت سفارش:</strong> ${orderDate}
     </div>
 
@@ -532,7 +530,6 @@ ${buyerName} عزیز،
 تعداد کل اقلام: ${totalItems} عدد
 مبلغ پرداختی: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
 روش پرداخت: ${paymentMethodLabel}
-${refId ? `شناسه پرداخت: ${refId}` : ''}
 تاریخ ثبت: ${orderDate}
 
 ────────────────────────────────

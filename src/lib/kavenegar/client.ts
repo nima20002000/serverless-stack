@@ -66,12 +66,10 @@ export async function sendOTPSMS(
  *
  * @param phone - Buyer's phone number (format: 09xxxxxxxxx)
  * @param transactionCode - Unique transaction code (tracking number)
- * @param refId - Zarinpal reference ID (payment confirmation)
  */
 export async function sendOrderConfirmationSMS(
   phone: string,
-  transactionCode: string,
-  refId: number
+  transactionCode: string
 ): Promise<SendOrderConfirmationResult> {
   return new Promise((resolve) => {
     const templateName =
@@ -82,7 +80,6 @@ export async function sendOrderConfirmationSMS(
       {
         receptor: phone,
         token: transactionCode, // token1: tracking number
-        token2: refId.toString(), // token2: payment reference ID
         template: templateName,
       },
       function (response, status, message) {
@@ -90,7 +87,6 @@ export async function sendOrderConfirmationSMS(
           log.info('Order confirmation SMS sent successfully via Kavenegar', {
             phone,
             transactionCode,
-            refId,
             messageId: response[0]?.messageid,
             template: templateName,
           });
@@ -99,7 +95,6 @@ export async function sendOrderConfirmationSMS(
           log.error('Failed to send order confirmation SMS via Kavenegar', {
             phone,
             transactionCode,
-            refId,
             status,
             message,
             template: templateName,
