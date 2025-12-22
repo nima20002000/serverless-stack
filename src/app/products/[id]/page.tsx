@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductDetail from '@/components/products/ProductDetail';
-import { getProductById } from '@/services/product-service';
+import RelatedProducts from '@/components/products/RelatedProducts';
+import { getProductById, getRelatedProducts } from '@/services/product-service';
 import { Tables } from '@/lib/supabase/types';
 import {
   generateProductSchema,
@@ -115,9 +116,12 @@ export async function generateMetadata({
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { id } = await params;
   let product;
+  let relatedProducts;
 
   try {
     product = await getCachedProduct(id);
+    // Fetch related products
+    relatedProducts = await getRelatedProducts(id, { limit: 4 });
   } catch {
     notFound();
   }
@@ -173,6 +177,31 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         : [],
   };
 
+  // Serialize related products for client component
+  const serializedRelatedProducts = relatedProducts.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    price: Number(p.price),
+    discountPercent: p.discountPercent,
+    stock: p.stock,
+    images: p.images || [],
+    isActive: p.isActive,
+    isFeatured: p.isFeatured,
+    hasVariants: p.hasVariants,
+    variants: p.variants
+      ? p.variants.map((v) => ({
+          ...v,
+          sku: v.sku || undefined,
+          color: v.color || undefined,
+          size: v.size || undefined,
+          material: v.material || undefined,
+          priceAdjust: Number(v.priceAdjust),
+          media: v.media || [],
+        }))
+      : [],
+  }));
+
   // Generate JSON-LD structured data
   const productSchema = generateProductSchema(productWithRelations);
   const breadcrumbItems = generateProductBreadcrumbs(productWithRelations);
@@ -193,6 +222,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       <div className="min-h-screen bg-gray-50">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ProductDetail product={serializedProduct} />
+          <RelatedProducts products={serializedRelatedProducts} />
         </main>
       </div>
     </>

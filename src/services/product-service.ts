@@ -798,6 +798,140 @@ export async function searchProducts(
   };
 }
 
+/**
+ * Get related products based on same category or tags
+ * Strategy: First try to find products in same category, then by shared tags
+ */
+export async function getRelatedProducts(
+  productId: string,
+  options?: {
+    limit?: number;
+  }
+): Promise<ProductWithRelations[]> {
+  const limit = options?.limit || 4;
+  const supabase = createClient();
+
+  // Get the current product to find its category and tags
+  const currentProduct = await fetchProductWithRelations(productId);
+
+  if (!currentProduct) {
+    return [];
+  }
+
+  let relatedProducts: Product[] = [];
+
+  // Strategy 1: Get products from the same category
+  if (currentProduct.categoryId) {
+    const { data: categoryProducts, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('isActive', true)
+      .eq('categoryId', currentProduct.categoryId)
+      .neq('id', productId)
+      .order('displayOrder', { ascending: true })
+      .order('createdAt', { ascending: false })
+      .limit(limit);
+
+    if (!error && categoryProducts && categoryProducts.length >= limit) {
+      relatedProducts = categoryProducts;
+    } else if (!error && categoryProducts) {
+      relatedProducts = categoryProducts;
+    }
+  }
+
+  // Strategy 2: If we don't have enough products, supplement with products sharing tags
+  if (
+    relatedProducts.length < limit &&
+    currentProduct.tags &&
+    currentProduct.tags.length > 0
+  ) {
+    const tagIds = currentProduct.tags.map((tag) => tag.id);
+
+    // Get products that share tags
+    const { data: productToTags } = await supabase
+      .from('_ProductToTag')
+      .select('A')
+      .in('B', tagIds)
+      .neq('A', productId);
+
+    if (productToTags && productToTags.length > 0) {
+      const productIds = [...new Set(productToTags.map((pt) => pt.A))];
+
+      // Filter out already included products
+      const existingIds = relatedProducts.map((p) => p.id);
+      const newProductIds = productIds.filter(
+        (id) => !existingIds.includes(id)
+      );
+
+      if (newProductIds.length > 0) {
+        const { data: tagProducts, error: tagError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('isActive', true)
+          .in('id', newProductIds)
+          .order('displayOrder', { ascending: true })
+          .order('createdAt', { ascending: false })
+          .limit(limit - relatedProducts.length);
+
+        if (!tagError && tagProducts) {
+          relatedProducts = [...relatedProducts, ...tagProducts];
+        }
+      }
+    }
+  }
+
+  // Strategy 3: If still not enough, get recent active products
+  if (relatedProducts.length < limit) {
+    const existingIds = relatedProducts.map((p) => p.id);
+    const { data: recentProducts, error: recentError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('isActive', true)
+      .neq('id', productId)
+      .not('id', 'in', `(${existingIds.join(',')})`)
+      .order('createdAt', { ascending: false })
+      .limit(limit - relatedProducts.length);
+
+    if (!recentError && recentProducts) {
+      relatedProducts = [...relatedProducts, ...recentProducts];
+    }
+  }
+
+  // Fetch relations for all related products
+  const relatedProductsWithRelations: ProductWithRelations[] = [];
+  if (relatedProducts.length > 0) {
+    const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+      await batchFetchProductRelations(relatedProducts);
+
+    for (const product of relatedProducts) {
+      const variants = variantsMap.get(product.id) || [];
+
+      // Calculate actual stock from variants if they exist
+      let actualStock = product.stock;
+      if (variants.length > 0) {
+        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Get category from map
+      let category: Category | null = null;
+      if (product.categoryId) {
+        category = categoriesMap.get(product.categoryId) || null;
+      }
+
+      relatedProductsWithRelations.push({
+        ...product,
+        stock: actualStock,
+        category,
+        tags: tagsMap.get(product.id) || [],
+        media: mediaMap.get(product.id) || [],
+        variants,
+      });
+    }
+  }
+
+  return populateProductsImages(relatedProductsWithRelations);
+}
+
 // ========== PRODUCT MUTATIONS ==========
 
 /**
