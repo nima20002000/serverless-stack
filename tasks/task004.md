@@ -4,7 +4,7 @@
 **Risk**: Medium (DNS change affects production)
 **Rollback**: Revert DNS A record to Vercel IP
 
-**STATUS**: ❌ NOT STARTED
+**STATUS**: ✅ COMPLETED (2025-12-25)
 
 **CRITICAL**: Do NOT proceed until:
 
@@ -12,11 +12,18 @@
 2. ✅ All features tested and working
 3. ✅ Payment proxy still functioning (regression test)
 
-**CURRENT DNS STATE**:
+**COMPLETED ACTIONS (2025-12-25)**:
 
-- `kitia.ir` → Vercel (production)
-- `payment.kitia.ir` → VPS (87.107.108.75, active)
-- No changes needed until Kitia is ready
+- ✅ `kitia.ir` A record → VPS IP (87.107.108.75) via Cloudflare API
+- ✅ `www.kitia.ir` CNAME → `kitia.ir` via Cloudflare API
+- ✅ Cloudflare proxy enabled (orange cloud)
+- ✅ SSL mode set to "Flexible" (Cloudflare terminates SSL, connects to origin via HTTP)
+- ✅ "Always Use HTTPS" enabled
+- ✅ Homepage accessible: https://kitia.ir/
+- ✅ Health endpoint working: https://kitia.ir/api/health
+- ✅ Products page working: https://kitia.ir/products
+- ✅ Admin redirects to login (expected): https://kitia.ir/admin
+- ✅ payment.kitia.ir still working independently
 
 ### 4.1 Pre-Cutover Verification
 
@@ -203,14 +210,20 @@ tail -f /var/log/nginx/kitia.error.log
 
 ### 4.7 Verification Checklist
 
-- [ ] DNS A record updated to VPS IP (87.107.108.75)
-- [ ] DNS propagated globally (check whatsmydns.net)
-- [ ] SSL certificate generated successfully
-- [ ] HTTPS works: `https://kitia.ir` returns 200
-- [ ] HTTP redirects to HTTPS
-- [ ] www subdomain works
-- [ ] Application loads correctly in browser
-- [ ] Admin panel accessible
+**COMPLETED (2025-12-25)**:
+
+- [x] DNS A record updated to VPS IP (87.107.108.75)
+- [x] DNS propagated globally (via Cloudflare proxy)
+- [x] SSL handled by Cloudflare (Flexible mode)
+- [x] HTTPS works: `https://kitia.ir` returns 200
+- [x] HTTP redirects to HTTPS (Always Use HTTPS enabled)
+- [x] www subdomain works
+- [x] Application loads correctly via HTTPS
+- [x] Admin panel redirects to login (expected behavior)
+- [x] Health endpoint responds correctly
+
+**TO VERIFY (user testing)**:
+
 - [ ] Payment flow works (test transaction)
 - [ ] Image uploads work (admin)
 - [ ] Email notifications work
