@@ -199,16 +199,12 @@ export function isSandboxMode(): boolean {
 
 /**
  * Get callback URL for payment verification
- * @param requestUrl Optional request URL to extract origin from (for Vercel preview deployments)
+ * Prioritizes environment variables over request URL to handle reverse proxy scenarios
+ * (e.g., Nginx proxying to localhost:3001 on VPS)
  */
-export function getCallbackUrl(requestUrl?: string): string {
-  // Runtime detection: use request origin for preview deployments
-  if (requestUrl) {
-    const origin = new URL(requestUrl).origin;
-    return `${origin}/api/transactions/verify`;
-  }
-
-  // Fallback to NEXTAUTH_URL (Vercel sets this automatically for previews)
-  const baseUrl = process.env.NEXTAUTH_URL || getAppUrl();
+export function getCallbackUrl(_requestUrl?: string): string {
+  // Use environment variables as primary source (handles VPS reverse proxy correctly)
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || getAppUrl();
   return `${baseUrl}/api/transactions/verify`;
 }
