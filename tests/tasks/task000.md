@@ -2,7 +2,7 @@
 
 ## ✅ CURRENT STATUS
 
-### Completed Tests (4/12):
+### Completed Tests (5/12):
 - ✅ **auth-service.test.ts** - 16/16 tests passing
   - User Registration (4 tests)
   - Password Authentication (5 tests)
@@ -35,9 +35,19 @@
   - Max Attempts Enforcement (1 test)
   - Expiration Handling (1 test)
   - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
+- ⚠️ **user-service.test.ts** - 10 tests (NOT TESTED YET)
+  - User Creation (2 tests)
+  - User Retrieval (1 test)
+  - Duplicate User Rejection (1 test)
+  - Profile Update Success (1 test)
+  - Profile Update Uniqueness Failure (1 test)
+  - Password Change (2 tests)
+  - Set Password for OTP Users (1 test)
+  - Reset Password via OTP (1 test)
+  - Orphaned Transaction Linking (1 test)
+  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 
-### Remaining Tests (8/12):
-- ⏳ user-service.test.ts
+### Remaining Tests (7/12):
 - ⏳ category-service.test.ts
 - ⏳ promo-service.test.ts
 - ⏳ cache-invalidation.test.ts
@@ -52,6 +62,7 @@
 3. **Created transaction-service.test.ts** - Comprehensive 22-test suite covering all transaction flows, stock management, payment tracking, and edge cases.
 4. **All cleanup functions optimized** - Added logging, error handling, and batch operations for Redis cleanup.
 5. **Created otp-service.test.ts** - Added 7-test suite covering OTP sending, rate limiting, verification, attempt limits, and expiration handling (not run yet).
+6. **Created user-service.test.ts** - Added 10-test suite covering user creation, profile updates, password flows, and orphaned transaction linking (not run yet).
 
 ---
 

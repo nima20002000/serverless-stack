@@ -204,13 +204,39 @@ export async function cleanupTestOTPs() {
 export async function cleanupTestPromoCodes() {
   const supabase = createTestSupabaseClient();
 
-  const { error } = await supabase
+  const { error: codeError } = await supabase
     .from('promo_codes')
     .delete()
     .or(`code.like.TEST%,code.like.INTEGRATION%`);
 
-  if (error && error.code !== 'PGRST116') {
-    console.warn('Failed to cleanup test promo codes:', error);
+  if (codeError && codeError.code !== 'PGRST116') {
+    console.warn('Failed to cleanup test promo codes by code:', codeError);
+  }
+
+  // Delete promo codes created for test users (WELCOME-* codes)
+  const { data: testUsers, error: userFetchError } = await supabase
+    .from('users')
+    .select('id')
+    .or(`email.like.test-%@%,phone.like.091200000%`);
+
+  if (userFetchError && userFetchError.code !== 'PGRST116') {
+    console.warn('Failed to fetch test users for promo cleanup:', userFetchError);
+    return;
+  }
+
+  if (!testUsers || testUsers.length === 0) {
+    return;
+  }
+
+  const userIds = testUsers.map((user) => user.id);
+
+  const { error: userPromoError } = await supabase
+    .from('promo_codes')
+    .delete()
+    .in('userId', userIds);
+
+  if (userPromoError && userPromoError.code !== 'PGRST116') {
+    console.warn('Failed to cleanup test promo codes by user:', userPromoError);
   }
 }
 
