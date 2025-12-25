@@ -1,14 +1,12 @@
 /**
- * Digipay Shell Command Wrapper
- * Executes Digipay API calls via curl shell commands
+ * Digipay API Client
+ * Uses axios for HTTP requests with proxy disabled
  */
 
 import 'server-only';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import axios from 'axios';
+import FormData from 'form-data';
 import { log } from '@/lib/logger';
-
-const execAsync = promisify(exec);
 
 /**
  * Digipay API credentials and configuration
@@ -153,6 +151,19 @@ function getDigipayConfig(): DigipayConfig {
 }
 
 /**
+ * Create axios client with proxy disabled
+ */
+function createHttpClient(baseUrl: string) {
+  return axios.create({
+    baseURL: baseUrl,
+    proxy: false, // Disable proxy to avoid HTTP/HTTPS mismatch issues
+    headers: {
+      'User-Agent': 'DigipayClient/v1 (Node.js)',
+    },
+  });
+}
+
+/**
  * Create OAuth Basic Authentication header
  */
 function getBasicAuthHeader(clientId: string, clientSecret: string): string {
@@ -173,29 +184,35 @@ export async function obtainAccessToken(): Promise<OAuthTokenResponse> {
   });
 
   try {
+    const httpClient = createHttpClient(config.baseUrl);
     const basicAuth = getBasicAuthHeader(config.clientId, config.clientSecret);
 
-    const curlCommand = `curl --location --request POST '${config.baseUrl}/digipay/api/oauth/token' \
---header 'Authorization: Basic ${basicAuth}' \
---form 'username="${config.username}"' \
---form 'password="${config.password}"' \
---form 'grant_type=password'`;
+    // Create form data for OAuth token request
+    const formData = new FormData();
+    formData.append('username', config.username);
+    formData.append('password', config.password);
+    formData.append('grant_type', 'password');
 
-    const { stdout, stderr } = await execAsync(curlCommand);
+    const response = await httpClient.post(
+      '/digipay/api/oauth/token',
+      formData,
+      {
+        headers: {
+          ...formData.getHeaders(),
+          Authorization: `Basic ${basicAuth}`,
+        },
+      }
+    );
 
-    if (stderr) {
-      log.warn('Digipay OAuth stderr output', { stderr });
-    }
-
-    const response: OAuthTokenResponse = JSON.parse(stdout);
+    const tokenResponse: OAuthTokenResponse = response.data;
 
     log.info('Digipay OAuth token obtained successfully', {
-      tokenType: response.token_type,
-      expiresIn: response.expires_in,
+      tokenType: tokenResponse.token_type,
+      expiresIn: tokenResponse.expires_in,
       elapsedMs: Date.now() - startTime,
     });
 
-    return response;
+    return tokenResponse;
   } catch (error) {
     log.error('Failed to obtain Digipay OAuth token', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -225,6 +242,8 @@ export async function createTicket(
   });
 
   try {
+    const httpClient = createHttpClient(config.baseUrl);
+
     const requestBody = {
       cellNumber: request.cellNumber,
       amount: request.amount,
@@ -237,38 +256,40 @@ export async function createTicket(
       }),
     };
 
-    const curlCommand = `curl --location '${config.baseUrl}/digipay/api/tickets/business?type=11' \
---header 'Agent: WEB' \
---header 'Digipay-Version: 2022-02-02' \
---header 'Content-Type: application/json' \
---header 'Authorization: Bearer ${accessToken}' \
---data '${JSON.stringify(requestBody).replace(/'/g, "'\\''")}'`;
+    const response = await httpClient.post(
+      '/digipay/api/tickets/business?type=11',
+      requestBody,
+      {
+        headers: {
+          Agent: 'WEB',
+          'Digipay-Version': '2022-02-02',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
-    const { stdout, stderr } = await execAsync(curlCommand);
+    const ticketResponse: TicketResponse = response.data;
 
-    if (stderr) {
-      log.warn('Digipay ticket creation stderr output', { stderr });
-    }
-
-    const response: TicketResponse = JSON.parse(stdout);
-
-    if (response.result.status !== 0) {
+    if (ticketResponse.result.status !== 0) {
       log.error('Digipay ticket creation failed', {
-        status: response.result.status,
-        message: response.result.message,
+        status: ticketResponse.result.status,
+        message: ticketResponse.result.message,
         elapsedMs: Date.now() - startTime,
       });
 
-      throw new Error(response.result.message || 'خطا در ایجاد تیکت پرداخت');
+      throw new Error(
+        ticketResponse.result.message || 'خطا در ایجاد تیکت پرداخت'
+      );
     }
 
     log.info('Digipay ticket created successfully', {
-      ticket: response.ticket,
-      redirectUrl: response.redirectUrl,
+      ticket: ticketResponse.ticket,
+      redirectUrl: ticketResponse.redirectUrl,
       elapsedMs: Date.now() - startTime,
     });
 
-    return response;
+    return ticketResponse;
   } catch (error) {
     log.error('Failed to create Digipay ticket', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -300,38 +321,42 @@ export async function verifyPurchase(
   });
 
   try {
-    const curlCommand = `curl --location --request POST '${config.baseUrl}/digipay/api/purchases/verify?type=5' \
---header 'Authorization: Bearer ${accessToken}' \
---header 'Content-Type: application/json' \
---data-raw '${JSON.stringify(request).replace(/'/g, "'\\''")}'`;
+    const httpClient = createHttpClient(config.baseUrl);
 
-    const { stdout, stderr } = await execAsync(curlCommand);
+    const response = await httpClient.post(
+      '/digipay/api/purchases/verify?type=5',
+      request,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
 
-    if (stderr) {
-      log.warn('Digipay verification stderr output', { stderr });
-    }
+    const verificationResponse: VerificationResponse = response.data;
 
-    const response: VerificationResponse = JSON.parse(stdout);
-
-    if (response.result.status !== 0) {
+    if (verificationResponse.result.status !== 0) {
       log.error('Digipay verification failed', {
-        status: response.result.status,
-        message: response.result.message,
+        status: verificationResponse.result.status,
+        message: verificationResponse.result.message,
         trackingCode: request.trackingCode,
         elapsedMs: Date.now() - startTime,
       });
 
-      throw new Error(response.result.message || 'تراکنش ناموفق بود');
+      throw new Error(
+        verificationResponse.result.message || 'تراکنش ناموفق بود'
+      );
     }
 
     log.info('Digipay purchase verified successfully', {
-      trackingCode: response.trackingCode,
-      amount: response.amount,
-      fpName: response.fpName,
+      trackingCode: verificationResponse.trackingCode,
+      amount: verificationResponse.amount,
+      fpName: verificationResponse.fpName,
       elapsedMs: Date.now() - startTime,
     });
 
-    return response;
+    return verificationResponse;
   } catch (error) {
     log.error('Failed to verify Digipay purchase', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -364,37 +389,35 @@ export async function reversePurchase(
   });
 
   try {
-    const curlCommand = `curl --location --request POST '${config.baseUrl}/digipay/api/reverse' \
---header 'Authorization: Bearer ${accessToken}' \
---header 'Content-Type: application/json' \
---data '${JSON.stringify(request).replace(/'/g, "'\\''")}'`;
+    const httpClient = createHttpClient(config.baseUrl);
 
-    const { stdout, stderr } = await execAsync(curlCommand);
+    const response = await httpClient.post('/digipay/api/reverse', request, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
 
-    if (stderr) {
-      log.warn('Digipay reverse stderr output', { stderr });
-    }
+    const reverseResponse: ReverseResponse = response.data;
 
-    const response: ReverseResponse = JSON.parse(stdout);
-
-    if (response.result.status !== 0) {
+    if (reverseResponse.result.status !== 0) {
       log.error('Digipay reverse failed', {
-        status: response.result.status,
-        message: response.result.message,
+        status: reverseResponse.result.status,
+        message: reverseResponse.result.message,
         purchaseTrackingCode: request.purchaseTrackingCode,
         elapsedMs: Date.now() - startTime,
       });
 
-      throw new Error(response.result.message || 'خطا در برگشت تراکنش');
+      throw new Error(reverseResponse.result.message || 'خطا در برگشت تراکنش');
     }
 
     log.info('Digipay purchase reversed successfully', {
-      trackingCode: response.trackingCode,
-      amount: response.amount,
+      trackingCode: reverseResponse.trackingCode,
+      amount: reverseResponse.amount,
       elapsedMs: Date.now() - startTime,
     });
 
-    return response;
+    return reverseResponse;
   } catch (error) {
     log.error('Failed to reverse Digipay purchase', {
       error: error instanceof Error ? error.message : 'Unknown error',
