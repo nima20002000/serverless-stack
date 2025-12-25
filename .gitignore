@@ -40,6 +40,9 @@ sync-to-production.sh
 # Claude Code project instructions
 CLAUDE.md
 
+# tasks folder (project notes and planning)
+/tasks
+
 # mcp config
 .mcp.json
 
