@@ -15,6 +15,7 @@ import {
   sendBuyerOrderConfirmation,
 } from '@/lib/email/client';
 import { sendOrderConfirmation } from '@/services/sms-service';
+import { createRedirectUrl } from '@/lib/utils/url';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,7 +70,9 @@ async function getHandler(req: NextRequest) {
       await updateTransactionStatus(transaction.id, 'FAILED', authority);
 
       return NextResponse.redirect(
-        new URL(`/payment/failure?code=${transaction.transactionCode}`, req.url)
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
+        )
       );
     }
 
@@ -82,7 +85,9 @@ async function getHandler(req: NextRequest) {
       });
 
       return NextResponse.redirect(
-        new URL(`/payment/success?code=${transaction.transactionCode}`, req.url)
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}`
+        )
       );
     }
 
@@ -285,9 +290,8 @@ async function getHandler(req: NextRequest) {
 
     // Redirect to success page
     return NextResponse.redirect(
-      new URL(
-        `/payment/success?code=${transaction.transactionCode}&refId=${verification.refId}`,
-        req.url
+      createRedirectUrl(
+        `/payment/success?code=${transaction.transactionCode}&refId=${verification.refId}`
       )
     );
   } catch (error) {
@@ -322,9 +326,8 @@ async function getHandler(req: NextRequest) {
         await updateTransactionStatus(transaction.id, 'FAILED', authority);
 
         return NextResponse.redirect(
-          new URL(
-            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`,
-            req.url
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`
           )
         );
       }
@@ -337,9 +340,8 @@ async function getHandler(req: NextRequest) {
     }
 
     return NextResponse.redirect(
-      new URL(
-        `/payment/failure?error=${encodeURIComponent(errorMessage)}`,
-        req.url
+      createRedirectUrl(
+        `/payment/failure?error=${encodeURIComponent(errorMessage)}`
       )
     );
   }

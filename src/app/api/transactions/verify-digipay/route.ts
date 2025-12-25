@@ -15,6 +15,7 @@ import {
   sendBuyerOrderConfirmation,
 } from '@/lib/email/client';
 import { sendOrderConfirmation } from '@/services/sms-service';
+import { createRedirectUrl } from '@/lib/utils/url';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,9 +154,8 @@ async function getHandler(req: NextRequest) {
       // Use 303 (See Other) to force browser to use GET for the redirect
       // 307 preserves POST method which causes 405 on page routes
       return NextResponse.redirect(
-        new URL(
-          `/payment/failure?code=${transaction.transactionCode}`,
-          req.url
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
         ),
         303
       );
@@ -171,9 +171,8 @@ async function getHandler(req: NextRequest) {
 
       // Use 303 (See Other) to force browser to use GET for the redirect
       return NextResponse.redirect(
-        new URL(
-          `/payment/success?code=${transaction.transactionCode}`,
-          req.url
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}`
         ),
         303
       );
@@ -385,9 +384,8 @@ async function getHandler(req: NextRequest) {
     // Redirect to success page
     // Use 303 (See Other) to force browser to use GET for the redirect
     return NextResponse.redirect(
-      new URL(
-        `/payment/success?code=${transaction.transactionCode}&trackingCode=${verification.trackingCode}`,
-        req.url
+      createRedirectUrl(
+        `/payment/success?code=${transaction.transactionCode}&trackingCode=${verification.trackingCode}`
       ),
       303
     );
@@ -435,9 +433,8 @@ async function getHandler(req: NextRequest) {
 
         // Use 303 (See Other) to force browser to use GET for the redirect
         return NextResponse.redirect(
-          new URL(
-            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`,
-            req.url
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`
           ),
           303
         );
@@ -452,9 +449,8 @@ async function getHandler(req: NextRequest) {
 
     // Use 303 (See Other) to force browser to use GET for the redirect
     return NextResponse.redirect(
-      new URL(
-        `/payment/failure?error=${encodeURIComponent(errorMessage)}`,
-        req.url
+      createRedirectUrl(
+        `/payment/failure?error=${encodeURIComponent(errorMessage)}`
       ),
       303
     );
