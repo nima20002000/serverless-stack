@@ -11,7 +11,7 @@ export default function Alert({
   type = 'info',
   children,
   onClose,
-  className = ''
+  className = '',
 }: AlertProps) {
   const styles = {
     success: 'bg-green-50 text-green-800 border-green-200',
@@ -21,7 +21,10 @@ export default function Alert({
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${styles[type]} ${className}`} role="alert">
+    <div
+      className={`rounded-lg border p-4 ${styles[type]} ${className}`}
+      role="alert"
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1 text-right">{children}</div>
         {onClose && (
@@ -30,7 +33,11 @@ export default function Alert({
             className="mr-4 text-gray-400 hover:text-gray-600"
           >
             <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
         )}

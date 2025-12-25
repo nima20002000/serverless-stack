@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { PaginatedResponse, DeleteResult, DashboardStats } from '@/types/api';
 import { log } from '@/lib/logger';
@@ -130,10 +131,8 @@ export async function getAllUsers(
 
   try {
     // Build the base query
-    let query = supabase
-      .from('users')
-      .select(
-        `
+    let query = supabase.from('users').select(
+      `
         id,
         uid,
         email,
@@ -142,8 +141,8 @@ export async function getAllUsers(
         role,
         createdAt
       `,
-        { count: 'exact' }
-      );
+      { count: 'exact' }
+    );
 
     // Apply search filter
     if (search) {
@@ -168,29 +167,48 @@ export async function getAllUsers(
       throw new Error('خطا در دریافت کاربران');
     }
 
-    // Get transaction and promo code counts for each user
-    const usersWithCounts: UserWithCount[] = await Promise.all(
-      (users || []).map(async (user) => {
-        const [transactionCountResult, promoCodeCountResult] = await Promise.all([
-          supabase
-            .from('transactions')
-            .select('id', { count: 'exact', head: true })
-            .eq('userId', user.id),
-          supabase
-            .from('promo_codes')
-            .select('id', { count: 'exact', head: true })
-            .eq('userId', user.id),
-        ]);
+    // Batch fetch counts for all users to avoid N+1 queries
+    const userIds = (users || []).map((u) => u.id);
 
-        return {
-          ...user,
-          _count: {
-            transactions: transactionCountResult.count || 0,
-            promoCodes: promoCodeCountResult.count || 0,
-          },
-        };
-      })
-    );
+    // Get transaction counts for all users in a single query
+    const { data: transactionCounts } = await supabase
+      .from('transactions')
+      .select('userId')
+      .in('userId', userIds);
+
+    // Get promo code counts for all users in a single query
+    const { data: promoCounts } = await supabase
+      .from('promo_codes')
+      .select('userId')
+      .in('userId', userIds);
+
+    // Create count maps for O(1) lookup
+    const transactionCountMap = new Map<string, number>();
+    const promoCountMap = new Map<string, number>();
+
+    (transactionCounts || []).forEach((t) => {
+      if (t.userId) {
+        transactionCountMap.set(
+          t.userId,
+          (transactionCountMap.get(t.userId) || 0) + 1
+        );
+      }
+    });
+
+    (promoCounts || []).forEach((p) => {
+      if (p.userId) {
+        promoCountMap.set(p.userId, (promoCountMap.get(p.userId) || 0) + 1);
+      }
+    });
+
+    // Map users with their counts
+    const usersWithCounts: UserWithCount[] = (users || []).map((user) => ({
+      ...user,
+      _count: {
+        transactions: transactionCountMap.get(user.id) || 0,
+        promoCodes: promoCountMap.get(user.id) || 0,
+      },
+    }));
 
     const total = count || 0;
 
@@ -270,7 +288,10 @@ export async function getUserById(id: string): Promise<UserWithDetails> {
   }
 }
 
-export async function updateUserRole(id: string, role: 'USER' | 'ADMIN'): Promise<UserBasic> {
+export async function updateUserRole(
+  id: string,
+  role: 'USER' | 'ADMIN'
+): Promise<UserBasic> {
   const supabase = await createClient();
 
   try {
@@ -315,7 +336,10 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
     }
 
     // Delete user (cascade will handle related records)
-    const { error: deleteError } = await supabase.from('users').delete().eq('id', id);
+    const { error: deleteError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
 
     if (deleteError) {
       log.error('Error deleting user', { id, error: deleteError });
@@ -333,7 +357,9 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
 /**
  * Bulk delete users (only non-admin users)
  */
-export async function bulkDeleteUsers(userIds: string[]): Promise<{ count: number }> {
+export async function bulkDeleteUsers(
+  userIds: string[]
+): Promise<{ count: number }> {
   const supabase = await createClient();
 
   try {
@@ -419,10 +445,8 @@ export async function getAllTransactions(
 
   try {
     // Build the base query
-    let query = supabase
-      .from('transactions')
-      .select(
-        `
+    let query = supabase.from('transactions').select(
+      `
         *,
         user:users!userId(id, uid, name, email, phone),
         items:transaction_items(
@@ -432,8 +456,8 @@ export async function getAllTransactions(
         ),
         invoice:invoices(id, transactionId, invoiceNumber, generatedAt)
       `,
-        { count: 'exact' }
-      );
+      { count: 'exact' }
+    );
 
     // Apply status filter
     if (status) {
@@ -461,7 +485,9 @@ export async function getAllTransactions(
     }
 
     // Apply ordering and pagination
-    query = query.order('createdAt', { ascending: false }).range(offset, offset + limit - 1);
+    query = query
+      .order('createdAt', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     const { data: transactions, error, count } = await query;
 
@@ -474,7 +500,9 @@ export async function getAllTransactions(
 
     // Process transactions to normalize invoice array (Supabase returns it as array)
     const processedTransactions = (transactions || []).map((tx) => {
-      const invoiceData = Array.isArray(tx.invoice) ? tx.invoice[0] : tx.invoice;
+      const invoiceData = Array.isArray(tx.invoice)
+        ? tx.invoice[0]
+        : tx.invoice;
       return {
         ...tx,
         invoice: invoiceData || null,
@@ -494,7 +522,9 @@ export async function getAllTransactions(
   }
 }
 
-export async function getTransactionById(id: string): Promise<TransactionWithDetails> {
+export async function getTransactionById(
+  id: string
+): Promise<TransactionWithDetails> {
   const supabase = await createClient();
 
   try {
@@ -542,7 +572,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const supabase = await createClient();
 
   try {
-    const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const thisMonth = new Date(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      1
+    );
     const thisMonthISO = thisMonth.toISOString();
 
     // Run all independent queries in parallel
@@ -566,7 +600,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       supabase.from('products').select('id', { count: 'exact', head: true }),
 
       // Total transactions count
-      supabase.from('transactions').select('id', { count: 'exact', head: true }),
+      supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true }),
 
       // Completed transactions count
       supabase
@@ -598,18 +634,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .select('id', { count: 'exact', head: true })
         .eq('status', 'FAILED'),
 
-      // Total revenue (sum of completed transactions)
-      supabase
-        .from('transactions')
-        .select('amount')
-        .eq('status', 'COMPLETED'),
+      // Total revenue (sum of completed transactions) - Using RPC for aggregation
+      supabase.rpc('get_total_revenue'),
 
-      // Monthly revenue (sum of completed transactions this month)
-      supabase
-        .from('transactions')
-        .select('amount')
-        .eq('status', 'COMPLETED')
-        .gte('createdAt', thisMonthISO),
+      // Monthly revenue (sum of completed transactions this month) - Using RPC for aggregation
+      supabase.rpc('get_monthly_revenue', { month_start: thisMonthISO }),
 
       // Recent transactions
       supabase
@@ -630,13 +659,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         .limit(5),
     ]);
 
-    // Calculate total revenue
-    const totalRevenue =
-      totalRevenueResult.data?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
-
-    // Calculate monthly revenue
-    const monthlyRevenue =
-      monthlyRevenueResult.data?.reduce((sum, tx) => sum + Number(tx.amount), 0) || 0;
+    // Extract revenue from RPC results (database-side aggregation)
+    const totalRevenue = Number(totalRevenueResult.data) || 0;
+    const monthlyRevenue = Number(monthlyRevenueResult.data) || 0;
 
     return {
       users: {
@@ -660,11 +685,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       recentTransactions:
         recentTransactionsResult.data?.map((t) => {
           const userName: string = t.user
-            ? (t.user as { name: string | null; email: string | null }).name || 'بدون نام'
-            : (t.fullName || 'مهمان');
+            ? (t.user as { name: string | null; email: string | null }).name ||
+              'بدون نام'
+            : t.fullName || 'مهمان';
           const userEmail: string = t.user
-            ? (t.user as { name: string | null; email: string | null }).email || ''
-            : (t.email || 'مهمان');
+            ? (t.user as { name: string | null; email: string | null }).email ||
+              ''
+            : t.email || 'مهمان';
 
           return {
             id: t.id,

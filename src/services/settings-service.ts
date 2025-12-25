@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 
@@ -64,7 +65,9 @@ export async function getSetting(key: string): Promise<SiteSetting | null> {
 /**
  * Update or create settings (bulk upsert)
  */
-export async function updateSettings(settings: Record<string, string>): Promise<void> {
+export async function updateSettings(
+  settings: Record<string, string>
+): Promise<void> {
   const supabase = createClient();
 
   try {

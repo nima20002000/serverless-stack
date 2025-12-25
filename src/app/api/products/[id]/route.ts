@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProductById, updateProduct, deleteProduct } from '@/services/product-service';
+import {
+  getProductById,
+  updateProduct,
+  deleteProduct,
+} from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 
@@ -20,12 +24,13 @@ export async function GET(
     const serializedProduct = {
       ...product,
       price: Number(product.price),
-      ...(('variants' in product && Array.isArray(product.variants)) && {
-        variants: product.variants.map((v) => ({
-          ...v,
-          priceAdjust: Number(v.priceAdjust),
-        })),
-      }),
+      ...('variants' in product &&
+        Array.isArray(product.variants) && {
+          variants: product.variants.map((v) => ({
+            ...v,
+            priceAdjust: Number(v.priceAdjust),
+          })),
+        }),
     };
 
     return NextResponse.json({ product: serializedProduct });
@@ -47,14 +52,23 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const body = await req.json();
-    const { name, description, price, discountPercent, stock, images, hasVariants, isFeatured, isActive, categoryId, tagIds } = body;
+    const {
+      name,
+      description,
+      price,
+      discountPercent,
+      stock,
+      images,
+      hasVariants,
+      isFeatured,
+      isActive,
+      categoryId,
+      tagIds,
+    } = body;
 
     type UpdateData = {
       name?: string;
@@ -74,7 +88,9 @@ export async function PUT(
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (price !== undefined) updateData.price = parseFloat(price);
-    if (discountPercent !== undefined) updateData.discountPercent = discountPercent !== null ? parseInt(discountPercent) : null;
+    if (discountPercent !== undefined)
+      updateData.discountPercent =
+        discountPercent !== null ? parseInt(discountPercent) : null;
     if (stock !== undefined) updateData.stock = parseInt(stock);
     if (images !== undefined) updateData.images = images;
     if (hasVariants !== undefined) updateData.hasVariants = hasVariants;
@@ -93,7 +109,10 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating product:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی محصول' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در به‌روزرسانی محصول',
+      },
       { status: 400 }
     );
   }
@@ -108,10 +127,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     await deleteProduct(params.id);

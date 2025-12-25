@@ -11,14 +11,20 @@ export async function GET(
     const category = await getCategoryBySlug(params.slug);
 
     if (!category) {
-      return NextResponse.json({ error: 'دسته‌بندی یافت نشد' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'دسته‌بندی یافت نشد' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ category });
   } catch (error) {
     console.error('Get category error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی',
+      },
       { status: 500 }
     );
   }

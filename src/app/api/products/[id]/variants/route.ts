@@ -18,7 +18,10 @@ export async function GET(
   } catch (error) {
     console.error('Get product variants error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت انواع محصول' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت انواع محصول',
+      },
       { status: 500 }
     );
   }
@@ -35,7 +38,8 @@ export async function POST(
     }
 
     const body = await req.json();
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } = body;
+    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
+      body;
 
     if (!name) {
       return NextResponse.json(
@@ -67,7 +71,10 @@ export async function POST(
   } catch (error) {
     console.error('Create product variant error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در ایجاد نوع محصول' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در ایجاد نوع محصول',
+      },
       { status: 500 }
     );
   }

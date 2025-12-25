@@ -11,10 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const searchParams = req.nextUrl.searchParams;
@@ -28,16 +25,19 @@ export async function GET(req: NextRequest) {
       page,
       perPage,
       includeInactive: true,
+      includeRelations: false, // Admin list view doesn't need relations - major performance boost
       search,
       status,
-      stock
+      stock,
     });
 
     // Serialize Decimal prices to numbers
-    const serializedProducts = result.data.map((product: typeof result.data[number]) => ({
-      ...product,
-      price: Number(product.price),
-    }));
+    const serializedProducts = result.data.map(
+      (product: (typeof result.data)[number]) => ({
+        ...product,
+        price: Number(product.price),
+      })
+    );
 
     return NextResponse.json({
       ...result,
@@ -45,10 +45,8 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching products:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت محصولات';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در دریافت محصولات';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

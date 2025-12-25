@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
     const prefix = searchParams.get('prefix') || undefined;
     const maxKeysParam = searchParams.get('maxKeys');
     const maxKeys = maxKeysParam ? parseInt(maxKeysParam) : 100;
-    const continuationToken = searchParams.get('continuationToken') || undefined;
+    const continuationToken =
+      searchParams.get('continuationToken') || undefined;
 
     // List objects from R2
     const result = await storage.list({
@@ -52,7 +53,10 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     log.error('R2 browser API error', { error });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
+      },
       { status: 500 }
     );
   }
@@ -74,7 +78,10 @@ export async function DELETE(req: NextRequest) {
     const { path } = await req.json();
 
     if (!path) {
-      return NextResponse.json({ error: 'مسیر فایل الزامی است' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'مسیر فایل الزامی است' },
+        { status: 400 }
+      );
     }
 
     // Delete from R2

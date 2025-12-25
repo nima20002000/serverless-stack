@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { TagFormData, TagWithCount } from '@/types/product';
 import { DeleteResult } from '@/types/api';
@@ -38,7 +39,7 @@ export async function getAllTags(): Promise<TagWithCount[]> {
   }
 
   // Get product counts for each tag via junction table
-  const tagIds = tags.map(tag => tag.id);
+  const tagIds = tags.map((tag) => tag.id);
   const { data: productCounts, error: countError } = await supabase
     .from('_ProductToTag')
     .select('B')
@@ -47,25 +48,25 @@ export async function getAllTags(): Promise<TagWithCount[]> {
   if (countError) {
     log.error('Error fetching tag product counts', { error: countError });
     // Return tags with 0 count if count query fails
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       ...tag,
-      _count: { products: 0 }
+      _count: { products: 0 },
     }));
   }
 
   // Count products for each tag
   const countMap = new Map<string, number>();
-  productCounts?.forEach(item => {
+  productCounts?.forEach((item) => {
     const tagId = item.B;
     countMap.set(tagId, (countMap.get(tagId) || 0) + 1);
   });
 
   // Merge counts with tags
-  return tags.map(tag => ({
+  return tags.map((tag) => ({
     ...tag,
     _count: {
-      products: countMap.get(tag.id) || 0
-    }
+      products: countMap.get(tag.id) || 0,
+    },
   }));
 }
 
@@ -93,7 +94,7 @@ export async function searchTags(query: string): Promise<TagWithCount[]> {
   }
 
   // Get product counts for found tags
-  const tagIds = tags.map(tag => tag.id);
+  const tagIds = tags.map((tag) => tag.id);
   const { data: productCounts, error: countError } = await supabase
     .from('_ProductToTag')
     .select('B')
@@ -101,25 +102,25 @@ export async function searchTags(query: string): Promise<TagWithCount[]> {
 
   if (countError) {
     log.error('Error fetching tag product counts', { error: countError });
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       ...tag,
-      _count: { products: 0 }
+      _count: { products: 0 },
     }));
   }
 
   // Count products for each tag
   const countMap = new Map<string, number>();
-  productCounts?.forEach(item => {
+  productCounts?.forEach((item) => {
     const tagId = item.B;
     countMap.set(tagId, (countMap.get(tagId) || 0) + 1);
   });
 
   // Merge counts with tags
-  return tags.map(tag => ({
+  return tags.map((tag) => ({
     ...tag,
     _count: {
-      products: countMap.get(tag.id) || 0
-    }
+      products: countMap.get(tag.id) || 0,
+    },
   }));
 }
 
@@ -162,8 +163,8 @@ export async function getTagById(id: string): Promise<TagWithCount | null> {
   return {
     ...tag,
     _count: {
-      products: count || 0
-    }
+      products: count || 0,
+    },
   };
 }
 
@@ -206,8 +207,8 @@ export async function getTagBySlug(slug: string): Promise<TagWithCount | null> {
   return {
     ...tag,
     _count: {
-      products: count || 0
-    }
+      products: count || 0,
+    },
   };
 }
 
@@ -256,15 +257,18 @@ export async function createTag(data: TagFormData): Promise<TagWithCount> {
   return {
     ...newTag,
     _count: {
-      products: 0  // New tag has no products
-    }
+      products: 0, // New tag has no products
+    },
   };
 }
 
 /**
  * Update an existing tag
  */
-export async function updateTag(id: string, data: Partial<TagFormData>): Promise<TagWithCount> {
+export async function updateTag(
+  id: string,
+  data: Partial<TagFormData>
+): Promise<TagWithCount> {
   const supabase = createClient();
 
   // Check if tag exists
@@ -334,8 +338,8 @@ export async function updateTag(id: string, data: Partial<TagFormData>): Promise
   return {
     ...updatedTag,
     _count: {
-      products: count || 0
-    }
+      products: count || 0,
+    },
   };
 }
 

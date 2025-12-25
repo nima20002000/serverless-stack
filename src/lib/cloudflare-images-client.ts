@@ -7,7 +7,13 @@
 
 export type ImageFormat = 'auto' | 'webp' | 'avif' | 'json' | 'jpeg' | 'png';
 export type ImageFit = 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad';
-export type ImageGravity = 'auto' | 'left' | 'right' | 'top' | 'bottom' | 'center';
+export type ImageGravity =
+  | 'auto'
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'center';
 
 export interface ImageTransformOptions {
   width?: number;
@@ -81,9 +87,10 @@ export function getOptimizedImageUrl(
 
   // Check if Cloudflare Image Resizing is enabled via environment variable
   // This allows graceful fallback if the feature is not enabled in Cloudflare dashboard
-  const isEnabled = typeof process !== 'undefined'
-    ? process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED !== 'false'
-    : true;
+  const isEnabled =
+    typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED !== 'false'
+      : true;
 
   if (!isEnabled) {
     // Fallback: return original URL without optimization
@@ -130,10 +137,13 @@ export function getResponsiveSrcSet(
 }
 
 export const optimizeImage = {
-  thumbnail: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.thumbnail),
+  thumbnail: (url: string) =>
+    getOptimizedImageUrl(url, IMAGE_VARIANTS.thumbnail),
   medium: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.medium),
   large: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.large),
   cartItem: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.cartItem),
-  categoryCard: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.categoryCard),
-  adminThumb: (url: string) => getOptimizedImageUrl(url, IMAGE_VARIANTS.adminThumb),
+  categoryCard: (url: string) =>
+    getOptimizedImageUrl(url, IMAGE_VARIANTS.categoryCard),
+  adminThumb: (url: string) =>
+    getOptimizedImageUrl(url, IMAGE_VARIANTS.adminThumb),
 };

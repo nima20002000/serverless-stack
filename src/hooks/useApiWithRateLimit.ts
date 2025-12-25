@@ -30,7 +30,7 @@ export function useApiWithRateLimit(): UseApiWithRateLimitResult {
   }, []);
 
   const fetchWithRateLimit = useCallback(
-    async <T,>(fetchFn: () => Promise<Response>): Promise<T | null> => {
+    async <T>(fetchFn: () => Promise<Response>): Promise<T | null> => {
       try {
         const response = await fetchFn();
 

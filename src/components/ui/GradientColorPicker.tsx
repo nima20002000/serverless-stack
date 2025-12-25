@@ -18,10 +18,14 @@ export default function GradientColorPicker({
   placeholder = 'انتخاب رنگ...',
 }: GradientColorPickerProps) {
   const [mode, setMode] = useState<'solid' | 'gradient'>(
-    value.startsWith('linear-gradient') || value.startsWith('radial-gradient') ? 'gradient' : 'solid'
+    value.startsWith('linear-gradient') || value.startsWith('radial-gradient')
+      ? 'gradient'
+      : 'solid'
   );
   const [solidColor, setSolidColor] = useState(
-    value && !value.startsWith('linear-gradient') && !value.startsWith('radial-gradient')
+    value &&
+      !value.startsWith('linear-gradient') &&
+      !value.startsWith('radial-gradient')
       ? value
       : '#000000'
   );
@@ -32,7 +36,9 @@ export default function GradientColorPicker({
   // Parse existing gradient value if present
   useState(() => {
     if (value.startsWith('linear-gradient')) {
-      const match = value.match(/linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}),\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\)/);
+      const match = value.match(
+        /linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}),\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\)/
+      );
       if (match) {
         setGradientAngle(parseInt(match[1]));
         setGradientColor1(match[2]);
@@ -41,7 +47,9 @@ export default function GradientColorPicker({
     }
   });
 
-  const createChangeEvent = (newValue: string): React.ChangeEvent<HTMLInputElement> => {
+  const createChangeEvent = (
+    newValue: string
+  ): React.ChangeEvent<HTMLInputElement> => {
     return {
       target: { name, value: newValue },
     } as React.ChangeEvent<HTMLInputElement>;
@@ -88,7 +96,10 @@ export default function GradientColorPicker({
     }
   };
 
-  const currentValue = mode === 'solid' ? solidColor : `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`;
+  const currentValue =
+    mode === 'solid'
+      ? solidColor
+      : `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`;
 
   return (
     <div className="space-y-3">
@@ -145,7 +156,9 @@ export default function GradientColorPicker({
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">رنگ اول:</label>
+            <label className="text-sm text-gray-700 w-20 text-right">
+              رنگ اول:
+            </label>
             <input
               type="color"
               value={gradientColor1}
@@ -162,7 +175,9 @@ export default function GradientColorPicker({
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">رنگ دوم:</label>
+            <label className="text-sm text-gray-700 w-20 text-right">
+              رنگ دوم:
+            </label>
             <input
               type="color"
               value={gradientColor2}
@@ -179,7 +194,9 @@ export default function GradientColorPicker({
           </div>
 
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">زاویه:</label>
+            <label className="text-sm text-gray-700 w-20 text-right">
+              زاویه:
+            </label>
             <input
               type="range"
               min="0"

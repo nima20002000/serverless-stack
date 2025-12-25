@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -45,7 +49,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm order-1 sm:order-2">
               <div>
                 <span className="opacity-90">خوش آمدید، </span>
-                <span className="font-medium truncate max-w-[150px] sm:max-w-none inline-block">{session.user?.name || session.user?.email}</span>
+                <span className="font-medium truncate max-w-[150px] sm:max-w-none inline-block">
+                  {session.user?.name || session.user?.email}
+                </span>
               </div>
             </div>
           </div>

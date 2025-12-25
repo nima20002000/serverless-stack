@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOTP } from '@/services/otp-service';
-import { validatePhone, validateEmail, getUserByIdentifier } from '@/services/user-service';
+import {
+  validatePhone,
+  validateEmail,
+  getUserByIdentifier,
+} from '@/services/user-service';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -68,7 +72,10 @@ export async function POST(req: NextRequest) {
     // For checkout: existing users should log in, only allow OTP for new users
     if (purpose === 'checkout' && existingUser) {
       return NextResponse.json(
-        { error: 'این شماره قبلاً ثبت‌نام شده است. لطفاً وارد حساب کاربری خود شوید' },
+        {
+          error:
+            'این شماره قبلاً ثبت‌نام شده است. لطفاً وارد حساب کاربری خود شوید',
+        },
         { status: 400 }
       );
     }
@@ -84,7 +91,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: result.error,
-          expiresAt: result.expiresAt
+          expiresAt: result.expiresAt,
         },
         { status: statusCode }
       );
@@ -99,12 +106,14 @@ export async function POST(req: NextRequest) {
       success: true,
       message,
       expiresIn: 300, // 5 minutes in seconds
-      expiresAt: result.expiresAt
+      expiresAt: result.expiresAt,
     });
   } catch (error) {
     log.error('Send OTP error', { error });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در ارسال کد تایید' },
+      {
+        error: error instanceof Error ? error.message : 'خطا در ارسال کد تایید',
+      },
       { status: 500 }
     );
   }

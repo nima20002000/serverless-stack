@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { XMarkIcon, PhotoIcon, FolderIcon, ArrowUpTrayIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  XMarkIcon,
+  PhotoIcon,
+  FolderIcon,
+  ArrowUpTrayIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
@@ -72,7 +78,9 @@ export default function R2MediaBrowser({
       setLoading(true);
       setError('');
 
-      const response = await fetch(`/api/admin/r2-browser?prefix=${selectedFolder}/&maxKeys=100`);
+      const response = await fetch(
+        `/api/admin/r2-browser?prefix=${selectedFolder}/&maxKeys=100`
+      );
       const data = await response.json();
 
       if (!response.ok) {
@@ -181,7 +189,10 @@ export default function R2MediaBrowser({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        />
 
         {/* Modal */}
         <div className="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
@@ -189,7 +200,9 @@ export default function R2MediaBrowser({
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <h3 className="text-lg font-medium text-gray-900">انتخاب رسانه از R2</h3>
+                <h3 className="text-lg font-medium text-gray-900">
+                  انتخاب رسانه از R2
+                </h3>
 
                 {/* Folder selector */}
                 <select
@@ -227,7 +240,10 @@ export default function R2MediaBrowser({
                 )}
               </div>
 
-              <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500"
+              >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
@@ -240,7 +256,10 @@ export default function R2MediaBrowser({
           </div>
 
           {/* Content */}
-          <div className="bg-gray-50 px-4 py-5 sm:p-6" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <div
+            className="bg-gray-50 px-4 py-5 sm:p-6"
+            style={{ maxHeight: '60vh', overflowY: 'auto' }}
+          >
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
@@ -260,7 +279,9 @@ export default function R2MediaBrowser({
                     <div
                       key={obj.key}
                       className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                       onClick={() => toggleSelection(obj.url)}
                     >
@@ -302,7 +323,10 @@ export default function R2MediaBrowser({
 
                       {/* Info */}
                       <div className="p-2 bg-white">
-                        <p className="text-xs text-gray-600 truncate" title={obj.key}>
+                        <p
+                          className="text-xs text-gray-600 truncate"
+                          title={obj.key}
+                        >
                           {obj.key.split('/').pop()}
                         </p>
                         <p className="text-xs text-gray-400">

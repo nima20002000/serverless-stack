@@ -1,12 +1,21 @@
 'use client';
 
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, memo, useEffect } from 'react';
 import ProductCard from './ProductCard';
 import { ProductCardSkeletonGrid } from './ProductCardSkeleton';
 import Button from '@/components/ui/Button';
+import Select from '@/components/ui/Select';
 import RateLimitError from '@/components/ui/RateLimitError';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import Alert from '@/components/ui/Alert';
+
+export type ProductSortOption =
+  | 'popular'
+  | 'price-asc'
+  | 'price-desc'
+  | 'featured'
+  | 'discount'
+  | 'newest';
 
 interface Variant {
   id: string;
@@ -17,6 +26,7 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  createdAt?: string;
   media?: Array<{
     id: string;
     type: 'IMAGE' | 'VIDEO';
@@ -38,6 +48,8 @@ interface Product {
   isFeatured?: boolean;
   hasVariants?: boolean;
   variants?: Variant[];
+  createdAt?: string;
+  displayOrder: number;
 }
 
 interface ProductListProps {
@@ -46,19 +58,155 @@ interface ProductListProps {
   initialTotal?: number;
 }
 
+/**
+ * Client-side sorting function
+ * Sorts products based on the selected option WITHOUT making API calls
+ * This makes filtering instant and reduces server load
+ */
+function sortProducts(
+  products: Product[],
+  sortBy: ProductSortOption
+): Product[] {
+  const sorted = [...products];
+
+  switch (sortBy) {
+    case 'popular':
+      // Popular: Sort by displayOrder (ascending), then by createdAt (newest first)
+      return sorted.sort((a, b) => {
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+        if (!a.createdAt || !b.createdAt) return 0;
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+
+    case 'price-asc':
+      return sorted.sort((a, b) => a.price - b.price);
+
+    case 'price-desc':
+      return sorted.sort((a, b) => b.price - a.price);
+
+    case 'featured':
+      return sorted.sort((a, b) => {
+        // Featured first
+        if (a.isFeatured && !b.isFeatured) return -1;
+        if (!a.isFeatured && b.isFeatured) return 1;
+        return 0;
+      });
+
+    case 'discount':
+      return sorted.sort((a, b) => {
+        const aDiscount = a.discountPercent || 0;
+        const bDiscount = b.discountPercent || 0;
+        return bDiscount - aDiscount;
+      });
+
+    case 'newest':
+      return sorted.sort((a, b) => {
+        if (!a.createdAt || !b.createdAt) return 0;
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+
+    default:
+      // Fallback to popular
+      return sorted.sort((a, b) => {
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+        if (!a.createdAt || !b.createdAt) return 0;
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      });
+  }
+}
+
 function ProductList({
   initialProducts = [],
   initialPage = 1,
   initialTotal = 0,
 }: ProductListProps) {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
+  // Store ALL products fetched from server
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [page, setPage] = useState(initialPage);
-  const [total, setTotal] = useState(initialTotal);
+  const [total] = useState(initialTotal); // Only used for initial fetch calculation
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } = useApiWithRateLimit();
+  const [sortBy, setSortBy] = useState<ProductSortOption>('popular');
+  const { rateLimitInfo, clearRateLimit, fetchWithRateLimit } =
+    useApiWithRateLimit();
   const perPage = 20;
-  const totalPages = Math.ceil(total / perPage);
+
+  // Fetch ALL products on mount (only once)
+  useEffect(() => {
+    if (isInitialLoad && allProducts.length < total) {
+      // Calculate how many pages we need to fetch to get all products
+      const totalPages = Math.ceil(total / perPage);
+
+      const fetchAllProducts = async () => {
+        setIsLoading(true);
+        try {
+          // Fetch remaining pages
+          const pagePromises = [];
+          for (let i = 2; i <= totalPages; i++) {
+            pagePromises.push(
+              fetchWithRateLimit<{ data: Product[]; total: number }>(() =>
+                fetch(
+                  `/api/products?page=${i}&perPage=${perPage}&sortBy=popular`
+                )
+              )
+            );
+          }
+
+          const results = await Promise.all(pagePromises);
+          const additionalProducts = results.flatMap((r) => r?.data || []);
+
+          setAllProducts([...initialProducts, ...additionalProducts]);
+        } catch (err) {
+          console.error('Error fetching all products:', err);
+          // Keep using initial products if fetch fails
+        } finally {
+          setIsLoading(false);
+          setIsInitialLoad(false);
+        }
+      };
+
+      // Only fetch if we have more than one page
+      if (totalPages > 1) {
+        fetchAllProducts();
+      } else {
+        setIsInitialLoad(false);
+      }
+    } else {
+      setIsInitialLoad(false);
+    }
+  }, [
+    total,
+    perPage,
+    initialProducts,
+    isInitialLoad,
+    allProducts.length,
+    fetchWithRateLimit,
+  ]);
+
+  // Client-side sorted products (instant filtering!)
+  const sortedProducts = useMemo(() => {
+    return sortProducts(allProducts, sortBy);
+  }, [allProducts, sortBy]);
+
+  // Paginate sorted products client-side
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (page - 1) * perPage;
+    const endIndex = startIndex + perPage;
+    return sortedProducts.slice(startIndex, endIndex);
+  }, [sortedProducts, page, perPage]);
+
+  const totalPages = Math.ceil(sortedProducts.length / perPage);
 
   // Memoize pagination page numbers calculation
   const pageNumbers = useMemo(() => {
@@ -76,55 +224,35 @@ function ProductList({
     });
   }, [totalPages, page]);
 
-  const fetchProducts = async (pageNum: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Ensure minimum skeleton display time (300ms) for better UX
-      const [result] = await Promise.all([
-        fetchWithRateLimit<{ data: Product[]; total: number; page: number; totalPages?: number }>(
-          () => fetch(`/api/products?page=${pageNum}&perPage=${perPage}`)
-        ),
-        new Promise(resolve => setTimeout(resolve, 300))
-      ]);
-
-      if (result) {
-        setProducts(result.data);
-        setTotal(result.total);
-        setPage(result.page);
-      }
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      setError('خطا در دریافت محصولات. لطفاً دوباره تلاش کنید.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handlePageChange = (newPage: number) => {
     // Validate page number
     if (newPage < 1 || newPage > totalPages) {
       return;
     }
 
-    // Don't fetch if already on that page
+    // Don't change if already on that page
     if (newPage === page) {
       return;
     }
 
-    fetchProducts(newPage);
+    setPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (isLoading) {
-    return <ProductCardSkeletonGrid count={perPage} />;
-  }
+  const handleSortChange = (newSort: ProductSortOption) => {
+    if (newSort === sortBy) return;
+    setSortBy(newSort);
+    setPage(1); // Reset to first page when sorting changes
+    // No API call needed - sorting happens instantly on client!
+  };
 
-  if (products.length === 0) {
+  if (paginatedProducts.length === 0 && !isLoading) {
     return (
       <div className="text-center py-12">
         <div className="text-gray-600 text-lg mb-2">محصولی یافت نشد</div>
-        <p className="text-gray-500">در حال حاضر محصولی برای نمایش وجود ندارد</p>
+        <p className="text-gray-500">
+          در حال حاضر محصولی برای نمایش وجود ندارد
+        </p>
       </div>
     );
   }
@@ -147,56 +275,80 @@ function ProductList({
         </Alert>
       )}
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
+      {/* Sort Controls */}
+      <div className="mb-6 flex justify-end">
+        <div className="w-full sm:w-64">
+          <Select
+            value={sortBy}
+            onChange={(value) => handleSortChange(value as ProductSortOption)}
+            label="مرتب‌سازی:"
+            options={[
+              { value: 'popular', label: 'محبوب‌ترین‌ها' },
+              { value: 'newest', label: 'جدیدترین' },
+              { value: 'price-asc', label: 'قیمت: کم به زیاد' },
+              { value: 'price-desc', label: 'قیمت: زیاد به کم' },
+              { value: 'featured', label: 'محصولات ویژه' },
+              { value: 'discount', label: 'بیشترین تخفیف' },
+            ]}
           />
-        ))}
+        </div>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => handlePageChange(page - 1)}
-          >
-            قبلی
-          </Button>
-
-          <div className="flex items-center gap-1">
-            {pageNumbers.map((pageNum) => (
-              <Button
-                key={pageNum}
-                variant={page === pageNum ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => handlePageChange(pageNum)}
-              >
-                {pageNum}
-              </Button>
+      {/* Products Grid */}
+      {isLoading && isInitialLoad ? (
+        <ProductCardSkeletonGrid count={perPage} />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+            {paginatedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
             ))}
           </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page === totalPages}
-            onClick={() => handlePageChange(page + 1)}
-          >
-            بعدی
-          </Button>
-        </div>
-      )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page === 1}
+                onClick={() => handlePageChange(page - 1)}
+              >
+                قبلی
+              </Button>
 
-      {/* Results Count */}
-      <div className="text-center mt-4 text-gray-600 text-sm">
-        نمایش {(page - 1) * perPage + 1} تا {Math.min(page * perPage, total)} از {total} محصول
-      </div>
+              <div className="flex items-center gap-1">
+                {pageNumbers.map((pageNum) => (
+                  <Button
+                    key={pageNum}
+                    variant={page === pageNum ? 'primary' : 'ghost'}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                  >
+                    {pageNum}
+                  </Button>
+                ))}
+              </div>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page === totalPages}
+                onClick={() => handlePageChange(page + 1)}
+              >
+                بعدی
+              </Button>
+            </div>
+          )}
+
+          {/* Results Count */}
+          <div className="text-center mt-4 text-gray-600 text-sm">
+            نمایش {(page - 1) * perPage + 1} تا{' '}
+            {Math.min(page * perPage, sortedProducts.length)} از{' '}
+            {sortedProducts.length} محصول
+          </div>
+        </>
+      )}
     </div>
   );
 }

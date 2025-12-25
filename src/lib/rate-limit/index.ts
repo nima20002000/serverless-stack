@@ -7,7 +7,9 @@ const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
 if (!redisUrl || !redisToken) {
-  throw new Error('UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required');
+  throw new Error(
+    'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required'
+  );
 }
 
 // Initialize Redis client
@@ -89,7 +91,8 @@ export async function checkRateLimit(
   const identifier = getClientId(req, endpoint);
 
   try {
-    const { success, limit, remaining, reset } = await limiter.limit(identifier);
+    const { success, limit, remaining, reset } =
+      await limiter.limit(identifier);
 
     if (!success) {
       log.warn('Rate limit exceeded', {

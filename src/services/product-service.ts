@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
@@ -36,7 +37,9 @@ export interface VariantWithMedia extends ProductVariant {
  * Populate images array from media for backward compatibility
  * Handles fallback logic: product.images → product.media → first variant.media
  */
-function populateProductImages(product: ProductWithRelations): ProductWithRelations {
+function populateProductImages(
+  product: ProductWithRelations
+): ProductWithRelations {
   let images = [...(product.images || [])];
 
   // If no images in legacy field, populate from media
@@ -66,22 +69,43 @@ function populateProductImages(product: ProductWithRelations): ProductWithRelati
 /**
  * Populate images for an array of products
  */
-function populateProductsImages(products: ProductWithRelations[]): ProductWithRelations[] {
+function populateProductsImages(
+  products: ProductWithRelations[]
+): ProductWithRelations[] {
   return products.map(populateProductImages);
 }
 
 /**
  * Helper to invalidate all product caches
  * Since Upstash doesn't support pattern matching, we clear common cache keys
+ * Now includes all sort options to ensure cache consistency
  */
 async function invalidateProductCache(): Promise<void> {
   // Clear common pagination keys (pages 1-10, which covers most traffic)
-  const cacheKeys = [];
+  // Include all sort options to ensure cache consistency
+  const cacheKeys: string[] = [];
+  const sortOptions = [
+    'popular',
+    'newest',
+    'price-asc',
+    'price-desc',
+    'featured',
+    'discount',
+  ];
+  const perPageOptions = [10, 20, 50];
+
   for (let page = 1; page <= 10; page++) {
-    cacheKeys.push(`products:active:page:${page}:limit:20`);
-    cacheKeys.push(`products:active:page:${page}:limit:10`);
-    cacheKeys.push(`products:active:page:${page}:limit:50`);
+    for (const perPage of perPageOptions) {
+      for (const sort of sortOptions) {
+        cacheKeys.push(
+          `products:active:page:${page}:limit:${perPage}:sort:${sort}`
+        );
+      }
+      // Also clear old cache keys without sort parameter for backward compatibility
+      cacheKeys.push(`products:active:page:${page}:limit:${perPage}`);
+    }
   }
+
   await clearCachePattern(cacheKeys);
   log.info('Product cache invalidated', { keysCleared: cacheKeys.length });
 }
@@ -89,16 +113,20 @@ async function invalidateProductCache(): Promise<void> {
 /**
  * Fetch product with all relations
  */
-async function fetchProductWithRelations(productId: string): Promise<ProductWithRelations | null> {
+async function fetchProductWithRelations(
+  productId: string
+): Promise<ProductWithRelations | null> {
   const supabase = createClient();
 
   // Get product with category
   const { data: product, error } = await supabase
     .from('products')
-    .select(`
+    .select(
+      `
       *,
       category:categories(*)
-    `)
+    `
+    )
     .eq('id', productId)
     .single();
 
@@ -139,20 +167,38 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
     .eq('productId', productId)
     .order('order', { ascending: true });
 
-  // Fetch media for each variant
+  // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
   if (variants && variants.length > 0) {
-    for (const variant of variants) {
-      const { data: variantMedia } = await supabase
-        .from('product_media')
-        .select('*')
-        .eq('variantId', variant.id)
-        .order('isDefault', { ascending: false })
-        .order('order', { ascending: true });
+    const variantIds = variants.map((v) => v.id);
+    const { data: allVariantMedia } = await supabase
+      .from('product_media')
+      .select('*')
+      .in('variantId', variantIds)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
 
+    // Group media by variantId
+    const mediaByVariantId = new Map<string, ProductMedia[]>();
+    if (allVariantMedia) {
+      for (const media of allVariantMedia) {
+        if (media.variantId) {
+          if (!mediaByVariantId.has(media.variantId)) {
+            mediaByVariantId.set(media.variantId, []);
+          }
+          const variantMediaArray = mediaByVariantId.get(media.variantId);
+          if (variantMediaArray) {
+            variantMediaArray.push(media);
+          }
+        }
+      }
+    }
+
+    // Attach media to each variant
+    for (const variant of variants) {
       variantsWithMedia.push({
         ...variant,
-        media: variantMedia || [],
+        media: mediaByVariantId.get(variant.id) || [],
       });
     }
   }
@@ -160,7 +206,10 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
   // Calculate stock from variants if product has variants
   let actualStock = product.stock;
   if (variantsWithMedia.length > 0) {
-    actualStock = variantsWithMedia.reduce((sum, variant) => sum + variant.stock, 0);
+    actualStock = variantsWithMedia.reduce(
+      (sum, variant) => sum + variant.stock,
+      0
+    );
   }
 
   return {
@@ -175,7 +224,9 @@ async function fetchProductWithRelations(productId: string): Promise<ProductWith
 // ========== PRODUCT QUERIES ==========
 
 /**
- * Get all products with pagination
+ * Get all products with pagination (lightweight for admin list view)
+ * For admin product list, we don't need full relations - just basic product info
+ * Use getProductById with includeRelations=true for detail views
  */
 export async function getAllProducts(options?: {
   page?: number;
@@ -184,10 +235,12 @@ export async function getAllProducts(options?: {
   search?: string;
   status?: string;
   stock?: string;
+  includeRelations?: boolean; // NEW: Control whether to fetch relations
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
+  const includeRelations = options?.includeRelations ?? true; // Default true for backward compatibility
 
   const supabase = createClient();
   let query = supabase.from('products').select('*', { count: 'exact' });
@@ -202,7 +255,9 @@ export async function getAllProducts(options?: {
 
   // Search filter
   if (options?.search) {
-    query = query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+    query = query.or(
+      `name.ilike.%${options.search}%,description.ilike.%${options.search}%`
+    );
   }
 
   // Stock filter
@@ -215,7 +270,11 @@ export async function getAllProducts(options?: {
   }
 
   // Apply ordering and pagination
-  const { data: products, count, error } = await query
+  const {
+    data: products,
+    count,
+    error,
+  } = await query
     .order('displayOrder', { ascending: true })
     .order('createdAt', { ascending: false })
     .range(offset, offset + perPage - 1);
@@ -225,12 +284,40 @@ export async function getAllProducts(options?: {
     throw new Error('خطا در دریافت محصولات');
   }
 
-  // Fetch relations for each product
+  // If includeRelations is false, return products without fetching relations
+  // This is much faster for admin list views that don't need full product data
+  if (!includeRelations) {
+    const productsWithEmptyRelations: ProductWithRelations[] = (
+      products || []
+    ).map((product) => ({
+      ...product,
+      category: null,
+      tags: [],
+      media: [],
+      variants: [],
+    }));
+
+    return {
+      data: populateProductsImages(productsWithEmptyRelations),
+      total: count || 0,
+      page,
+      perPage,
+      totalPages: Math.ceil((count || 0) / perPage),
+    };
+  }
+
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
@@ -244,13 +331,297 @@ export async function getAllProducts(options?: {
 }
 
 /**
+ * Sorting options for product listing
+ */
+export type ProductSortOption =
+  | 'popular' // محبوب‌ترین‌ها (displayOrder)
+  | 'price-asc' // قیمت: کم به زیاد
+  | 'price-desc' // قیمت: زیاد به کم
+  | 'featured' // محصولات ویژه
+  | 'discount' // بیشترین تخفیف
+  | 'newest'; // جدیدترین
+
+/**
+ * Batch fetch all relations for multiple products (OPTIMIZED - eliminates N+1 queries)
+ * This function fetches all relations in just 4 queries instead of N*5 queries
+ */
+async function batchFetchProductRelations(products: Product[]): Promise<{
+  categoriesMap: Map<string, Category>;
+  tagsMap: Map<string, Tag[]>;
+  mediaMap: Map<string, ProductMedia[]>;
+  variantsMap: Map<string, VariantWithMedia[]>;
+}> {
+  if (products.length === 0) {
+    return {
+      categoriesMap: new Map(),
+      tagsMap: new Map(),
+      mediaMap: new Map(),
+      variantsMap: new Map(),
+    };
+  }
+
+  const supabase = createClient();
+  const productIds = products.map((p) => p.id);
+
+  // Query 1: Get all categories (single query using categoryIds from already-fetched products)
+  const categoriesMap = new Map<string, Category>();
+  const uniqueCategoryIds = [
+    ...new Set(products.map((p) => p.categoryId).filter(Boolean)),
+  ] as string[];
+
+  if (uniqueCategoryIds.length > 0) {
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('*')
+      .in('id', uniqueCategoryIds);
+
+    if (categories) {
+      for (const cat of categories) {
+        categoriesMap.set(cat.id, cat);
+      }
+    }
+  }
+
+  // Query 2: Get all tags via junction table (2 queries total: junction + tags)
+  const tagsMap = new Map<string, Tag[]>();
+  const { data: productToTags } = await supabase
+    .from('_ProductToTag')
+    .select('A, B')
+    .in('A', productIds);
+
+  if (productToTags && productToTags.length > 0) {
+    const uniqueTagIds = [...new Set(productToTags.map((pt) => pt.B))];
+    const { data: allTags } = await supabase
+      .from('tags')
+      .select('*')
+      .in('id', uniqueTagIds);
+
+    // Group tags by productId
+    const tagsById = new Map<string, Tag>();
+    if (allTags) {
+      for (const tag of allTags) {
+        tagsById.set(tag.id, tag);
+      }
+    }
+
+    for (const pt of productToTags) {
+      if (!tagsMap.has(pt.A)) {
+        tagsMap.set(pt.A, []);
+      }
+      const tag = tagsById.get(pt.B);
+      if (tag) {
+        const productTags = tagsMap.get(pt.A);
+        if (productTags) {
+          productTags.push(tag);
+        }
+      }
+    }
+  }
+
+  // Query 3: Get all product media (single query)
+  const mediaMap = new Map<string, ProductMedia[]>();
+  const { data: allMedia } = await supabase
+    .from('product_media')
+    .select('*')
+    .in('productId', productIds)
+    .is('variantId', null)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  if (allMedia) {
+    for (const media of allMedia) {
+      if (!mediaMap.has(media.productId)) {
+        mediaMap.set(media.productId, []);
+      }
+      const productMediaArray = mediaMap.get(media.productId);
+      if (productMediaArray) {
+        productMediaArray.push(media);
+      }
+    }
+  }
+
+  // Query 4 & 5: Get all variants + their media (2 queries total)
+  const variantsMap = new Map<string, VariantWithMedia[]>();
+  const { data: allVariants } = await supabase
+    .from('product_variants')
+    .select('*')
+    .in('productId', productIds)
+    .order('order', { ascending: true });
+
+  if (allVariants && allVariants.length > 0) {
+    const variantIds = allVariants.map((v) => v.id);
+    const { data: allVariantMedia } = await supabase
+      .from('product_media')
+      .select('*')
+      .in('variantId', variantIds)
+      .order('isDefault', { ascending: false })
+      .order('order', { ascending: true });
+
+    // Group media by variantId
+    const variantMediaMap = new Map<string, ProductMedia[]>();
+    if (allVariantMedia) {
+      for (const media of allVariantMedia) {
+        if (media.variantId) {
+          if (!variantMediaMap.has(media.variantId)) {
+            variantMediaMap.set(media.variantId, []);
+          }
+          const variantMediaArray = variantMediaMap.get(media.variantId);
+          if (variantMediaArray) {
+            variantMediaArray.push(media);
+          }
+        }
+      }
+    }
+
+    // Group variants by productId
+    for (const variant of allVariants) {
+      if (!variantsMap.has(variant.productId)) {
+        variantsMap.set(variant.productId, []);
+      }
+      const productVariantsArray = variantsMap.get(variant.productId);
+      if (productVariantsArray) {
+        productVariantsArray.push({
+          ...variant,
+          media: variantMediaMap.get(variant.id) || [],
+        });
+      }
+    }
+  }
+
+  return { categoriesMap, tagsMap, mediaMap, variantsMap };
+}
+
+/**
  * Get active products only (for public listing)
+ * Supports multiple sorting options with optimized database queries
+ * OPTIMIZED: Uses batch fetching to eliminate N+1 queries (5 queries total instead of N*5)
  */
 export async function getActiveProducts(options?: {
   page?: number;
   perPage?: number;
+  sortBy?: ProductSortOption;
 }): Promise<PaginatedResponse<ProductWithRelations>> {
-  return getAllProducts({ ...options, includeInactive: false });
+  const page = options?.page || 1;
+  const perPage = options?.perPage || 20;
+  const offset = (page - 1) * perPage;
+  const sortBy = options?.sortBy || 'popular';
+
+  const supabase = createClient();
+
+  // Base query for active products only
+  let query = supabase
+    .from('products')
+    .select('*', { count: 'exact' })
+    .eq('isActive', true);
+
+  // Apply sorting based on selected option
+  // All sorting is done at the database level for optimal performance
+  switch (sortBy) {
+    case 'popular':
+      // Popular (Original order based on displayOrder set by admin)
+      query = query
+        .order('displayOrder', { ascending: true })
+        .order('createdAt', { ascending: false });
+      break;
+
+    case 'price-asc':
+      // Price: Low to High
+      query = query.order('price', { ascending: true });
+      break;
+
+    case 'price-desc':
+      // Price: High to Low
+      query = query.order('price', { ascending: false });
+      break;
+
+    case 'featured':
+      // Featured products first, then by display order
+      query = query
+        .order('isFeatured', { ascending: false })
+        .order('displayOrder', { ascending: true });
+      break;
+
+    case 'discount':
+      // Highest discount percentage first (products with discount > 0)
+      query = query
+        .gt('discountPercent', 0)
+        .order('discountPercent', { ascending: false });
+      break;
+
+    case 'newest':
+      // Newest first
+      query = query.order('createdAt', { ascending: false });
+      break;
+
+    default:
+      // Fallback to popular
+      query = query
+        .order('displayOrder', { ascending: true })
+        .order('createdAt', { ascending: false });
+      break;
+  }
+
+  // Apply pagination
+  const {
+    data: products,
+    count,
+    error,
+  } = await query.range(offset, offset + perPage - 1);
+
+  if (error) {
+    log.error('Error fetching active products', { error, sortBy });
+    throw new Error('خطا در دریافت محصولات');
+  }
+
+  if (!products || products.length === 0) {
+    return {
+      data: [],
+      total: count || 0,
+      page,
+      perPage,
+      totalPages: Math.ceil((count || 0) / perPage),
+    };
+  }
+
+  // OPTIMIZED: Batch fetch all relations in just 4 queries instead of N*5 queries
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+    await batchFetchProductRelations(products);
+
+  // Combine products with their relations
+  const productsWithRelations: ProductWithRelations[] = products.map(
+    (product) => {
+      const variants = variantsMap.get(product.id) || [];
+
+      // Calculate actual stock from variants if they exist
+      let actualStock = product.stock;
+      if (variants.length > 0) {
+        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Get category from map
+      let category: Category | null = null;
+      if (product.categoryId) {
+        category = categoriesMap.get(product.categoryId) || null;
+      }
+
+      return {
+        ...product,
+        stock: actualStock,
+        category,
+        tags: tagsMap.get(product.id) || [],
+        media: mediaMap.get(product.id) || [],
+        variants,
+      };
+    }
+  );
+
+  return {
+    data: populateProductsImages(productsWithRelations),
+    total: count || 0,
+    page,
+    perPage,
+    totalPages: Math.ceil((count || 0) / perPage),
+  };
 }
 
 /**
@@ -277,12 +648,18 @@ export async function getFeaturedProducts(options?: {
     throw new Error('خطا در دریافت محصولات ویژه');
   }
 
-  // Fetch relations for each product
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
@@ -314,12 +691,18 @@ export async function getDiscountedProducts(options?: {
     throw new Error('خطا در دریافت محصولات تخفیف‌دار');
   }
 
-  // Fetch relations for each product
+  // Fetch relations for all products in parallel (OPTIMIZATION)
   const productsWithRelations: ProductWithRelations[] = [];
-  for (const product of products || []) {
-    const fullProduct = await fetchProductWithRelations(product.id);
-    if (fullProduct) {
-      productsWithRelations.push(fullProduct);
+  if (products && products.length > 0) {
+    const fetchPromises = products.map((product) =>
+      fetchProductWithRelations(product.id)
+    );
+    const results = await Promise.all(fetchPromises);
+
+    for (const fullProduct of results) {
+      if (fullProduct) {
+        productsWithRelations.push(fullProduct);
+      }
     }
   }
 
@@ -377,17 +760,24 @@ export async function getProductById(
 /**
  * Search products by name or description
  */
-export async function searchProducts(query: string, options?: {
-  page?: number;
-  perPage?: number;
-}): Promise<PaginatedResponse<Product>> {
+export async function searchProducts(
+  query: string,
+  options?: {
+    page?: number;
+    perPage?: number;
+  }
+): Promise<PaginatedResponse<Product>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
 
   const supabase = createClient();
 
-  const { data: products, count, error } = await supabase
+  const {
+    data: products,
+    count,
+    error,
+  } = await supabase
     .from('products')
     .select('*', { count: 'exact' })
     .eq('isActive', true)
@@ -409,6 +799,140 @@ export async function searchProducts(query: string, options?: {
   };
 }
 
+/**
+ * Get related products based on same category or tags
+ * Strategy: First try to find products in same category, then by shared tags
+ */
+export async function getRelatedProducts(
+  productId: string,
+  options?: {
+    limit?: number;
+  }
+): Promise<ProductWithRelations[]> {
+  const limit = options?.limit || 4;
+  const supabase = createClient();
+
+  // Get the current product to find its category and tags
+  const currentProduct = await fetchProductWithRelations(productId);
+
+  if (!currentProduct) {
+    return [];
+  }
+
+  let relatedProducts: Product[] = [];
+
+  // Strategy 1: Get products from the same category
+  if (currentProduct.categoryId) {
+    const { data: categoryProducts, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('isActive', true)
+      .eq('categoryId', currentProduct.categoryId)
+      .neq('id', productId)
+      .order('displayOrder', { ascending: true })
+      .order('createdAt', { ascending: false })
+      .limit(limit);
+
+    if (!error && categoryProducts && categoryProducts.length >= limit) {
+      relatedProducts = categoryProducts;
+    } else if (!error && categoryProducts) {
+      relatedProducts = categoryProducts;
+    }
+  }
+
+  // Strategy 2: If we don't have enough products, supplement with products sharing tags
+  if (
+    relatedProducts.length < limit &&
+    currentProduct.tags &&
+    currentProduct.tags.length > 0
+  ) {
+    const tagIds = currentProduct.tags.map((tag) => tag.id);
+
+    // Get products that share tags
+    const { data: productToTags } = await supabase
+      .from('_ProductToTag')
+      .select('A')
+      .in('B', tagIds)
+      .neq('A', productId);
+
+    if (productToTags && productToTags.length > 0) {
+      const productIds = [...new Set(productToTags.map((pt) => pt.A))];
+
+      // Filter out already included products
+      const existingIds = relatedProducts.map((p) => p.id);
+      const newProductIds = productIds.filter(
+        (id) => !existingIds.includes(id)
+      );
+
+      if (newProductIds.length > 0) {
+        const { data: tagProducts, error: tagError } = await supabase
+          .from('products')
+          .select('*')
+          .eq('isActive', true)
+          .in('id', newProductIds)
+          .order('displayOrder', { ascending: true })
+          .order('createdAt', { ascending: false })
+          .limit(limit - relatedProducts.length);
+
+        if (!tagError && tagProducts) {
+          relatedProducts = [...relatedProducts, ...tagProducts];
+        }
+      }
+    }
+  }
+
+  // Strategy 3: If still not enough, get recent active products
+  if (relatedProducts.length < limit) {
+    const existingIds = relatedProducts.map((p) => p.id);
+    const { data: recentProducts, error: recentError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('isActive', true)
+      .neq('id', productId)
+      .not('id', 'in', `(${existingIds.join(',')})`)
+      .order('createdAt', { ascending: false })
+      .limit(limit - relatedProducts.length);
+
+    if (!recentError && recentProducts) {
+      relatedProducts = [...relatedProducts, ...recentProducts];
+    }
+  }
+
+  // Fetch relations for all related products
+  const relatedProductsWithRelations: ProductWithRelations[] = [];
+  if (relatedProducts.length > 0) {
+    const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+      await batchFetchProductRelations(relatedProducts);
+
+    for (const product of relatedProducts) {
+      const variants = variantsMap.get(product.id) || [];
+
+      // Calculate actual stock from variants if they exist
+      let actualStock = product.stock;
+      if (variants.length > 0) {
+        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Get category from map
+      let category: Category | null = null;
+      if (product.categoryId) {
+        category = categoriesMap.get(product.categoryId) || null;
+      }
+
+      relatedProductsWithRelations.push({
+        ...product,
+        stock: actualStock,
+        category,
+        tags: tagsMap.get(product.id) || [],
+        media: mediaMap.get(product.id) || [],
+        variants,
+      });
+    }
+  }
+
+  return populateProductsImages(relatedProductsWithRelations);
+}
+
 // ========== PRODUCT MUTATIONS ==========
 
 /**
@@ -427,7 +951,11 @@ export async function createProduct(data: {
   isFeatured?: boolean;
   isActive?: boolean;
 }): Promise<ProductWithRelations> {
-  log.info('Creating product', { name: data.name, price: data.price, stock: data.stock });
+  log.info('Creating product', {
+    name: data.name,
+    price: data.price,
+    stock: data.stock,
+  });
 
   try {
     // Validate required fields
@@ -662,7 +1190,9 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
 /**
  * Bulk delete products
  */
-export async function bulkDeleteProducts(productIds: string[]): Promise<{ count: number }> {
+export async function bulkDeleteProducts(
+  productIds: string[]
+): Promise<{ count: number }> {
   const supabase = createClient();
 
   try {
@@ -724,7 +1254,10 @@ export async function bulkUpdateProducts(
 /**
  * Update product stock
  */
-export async function updateStock(id: string, quantity: number): Promise<Product> {
+export async function updateStock(
+  id: string,
+  quantity: number
+): Promise<Product> {
   log.info('Updating product stock', { productId: id, quantity });
 
   try {
@@ -848,7 +1381,7 @@ export async function addProductMedia(data: {
   const { count: existingMediaCount } = await query;
 
   // If this is the first media, make it default automatically (unless explicitly set to false)
-  const shouldBeDefault = data.isDefault ?? (existingMediaCount === 0);
+  const shouldBeDefault = data.isDefault ?? existingMediaCount === 0;
 
   // If this is set as default, unset any existing default for the same product/variant
   if (shouldBeDefault) {
@@ -895,7 +1428,9 @@ export async function addProductMedia(data: {
 /**
  * Get all media for a product
  */
-export async function getProductMedia(productId: string): Promise<ProductMedia[]> {
+export async function getProductMedia(
+  productId: string
+): Promise<ProductMedia[]> {
   const supabase = createClient();
 
   const { data: media, error } = await supabase
@@ -1027,7 +1562,9 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
  * If product has variants, stock = sum of all variant stocks
  * If no variants, stock remains as manually set
  */
-export async function updateProductStockFromVariants(productId: string): Promise<void> {
+export async function updateProductStockFromVariants(
+  productId: string
+): Promise<void> {
   log.info('Updating product stock from variants', { productId });
 
   const supabase = createClient();
@@ -1039,13 +1576,19 @@ export async function updateProductStockFromVariants(productId: string): Promise
     .eq('productId', productId);
 
   if (error) {
-    log.error('Failed to fetch variants for stock calculation', { productId, error });
+    log.error('Failed to fetch variants for stock calculation', {
+      productId,
+      error,
+    });
     return;
   }
 
   // Only update if product has variants
   if (variants && variants.length > 0) {
-    const totalStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+    const totalStock = variants.reduce(
+      (sum, variant) => sum + variant.stock,
+      0
+    );
 
     await supabase
       .from('products')
@@ -1066,7 +1609,9 @@ export async function updateProductStockFromVariants(productId: string): Promise
 /**
  * Get all variants for a product (ordered by 'order' field)
  */
-export async function getProductVariants(productId: string): Promise<VariantWithMedia[]> {
+export async function getProductVariants(
+  productId: string
+): Promise<VariantWithMedia[]> {
   const supabase = createClient();
 
   const { data: variants, error } = await supabase
@@ -1114,7 +1659,11 @@ export async function createProductVariant(data: {
   order?: number;
   isActive?: boolean;
 }): Promise<VariantWithMedia> {
-  log.info('Creating product variant', { productId: data.productId, name: data.name, stock: data.stock });
+  log.info('Creating product variant', {
+    productId: data.productId,
+    name: data.name,
+    stock: data.stock,
+  });
 
   const supabase = createClient();
 
@@ -1174,7 +1723,11 @@ export async function createProductVariant(data: {
   // Update parent product stock
   await updateProductStockFromVariants(data.productId);
 
-  log.info('Product variant created successfully', { variantId: variant.id, productId: data.productId, order });
+  log.info('Product variant created successfully', {
+    variantId: variant.id,
+    productId: data.productId,
+    order,
+  });
 
   return {
     ...variant,
@@ -1246,7 +1799,10 @@ export async function updateProductVariant(
     await updateProductStockFromVariants(existingVariant.productId);
   }
 
-  log.info('Product variant updated successfully', { variantId: id, productId: existingVariant.productId });
+  log.info('Product variant updated successfully', {
+    variantId: id,
+    productId: existingVariant.productId,
+  });
 
   // Fetch media for the variant
   const { data: media } = await supabase
@@ -1282,7 +1838,10 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   }
 
   // Delete the variant
-  const { error } = await supabase.from('product_variants').delete().eq('id', id);
+  const { error } = await supabase
+    .from('product_variants')
+    .delete()
+    .eq('id', id);
 
   if (error) {
     log.error('Failed to delete product variant', { id, error });
@@ -1311,7 +1870,10 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   // Update parent product stock after deletion
   await updateProductStockFromVariants(existingVariant.productId);
 
-  log.info('Product variant deleted successfully', { variantId: id, productId: existingVariant.productId });
+  log.info('Product variant deleted successfully', {
+    variantId: id,
+    productId: existingVariant.productId,
+  });
 
   return { success: true };
 }
@@ -1324,7 +1886,10 @@ export async function reorderProductVariants(
   productId: string,
   variantOrders: Array<{ id: string; order: number }>
 ): Promise<void> {
-  log.info('Reordering product variants', { productId, count: variantOrders.length });
+  log.info('Reordering product variants', {
+    productId,
+    count: variantOrders.length,
+  });
 
   const supabase = createClient();
 

@@ -60,15 +60,31 @@ export default function TransactionHistory({
       FAILED: 'ناموفق',
     };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status as keyof typeof colors]}`}>
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status as keyof typeof colors]}`}
+      >
         {labels[status as keyof typeof labels]}
+      </span>
+    );
+  }, []);
+
+  const getPaymentMethodBadge = useCallback((method: string) => {
+    const labels = {
+      ZARINPAL: 'زرین‌پال',
+      DIGIPAY: 'دیجی‌پی',
+    };
+    return (
+      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+        {labels[method as keyof typeof labels] || method}
       </span>
     );
   }, []);
 
   const renderedTransactions = useMemo(() => {
     if (isLoading) {
-      return <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>;
+      return (
+        <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>
+      );
     }
 
     if (transactions.length === 0) {
@@ -92,7 +108,13 @@ export default function TransactionHistory({
                   کد تراکنش: {transaction.transactionCode}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                  {format(
+                    new Date(transaction.createdAt),
+                    'yyyy/MM/dd - HH:mm'
+                  )}
+                </div>
+                <div className="mt-2">
+                  {getPaymentMethodBadge(transaction.paymentMethod)}
                 </div>
               </div>
               {getStatusBadge(transaction.status)}
@@ -137,7 +159,7 @@ export default function TransactionHistory({
         ))}
       </div>
     );
-  }, [transactions, isLoading, getStatusBadge]);
+  }, [transactions, isLoading, getStatusBadge, getPaymentMethodBadge]);
 
   return renderedTransactions;
 }

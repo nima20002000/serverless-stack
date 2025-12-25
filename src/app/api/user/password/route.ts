@@ -53,7 +53,10 @@ async function postHandler(req: Request) {
   } catch (error) {
     console.error('Error managing user password:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در مدیریت رمز عبور' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در مدیریت رمز عبور',
+      },
       { status: 500 }
     );
   }

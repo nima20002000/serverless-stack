@@ -1,3 +1,4 @@
+import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
 import { log } from '@/lib/logger';
@@ -23,7 +24,9 @@ export async function generatePromoCode(): Promise<string> {
  * Create a promo code for a new user
  * Expires in 24 hours
  */
-export async function createFirstTimePromoCode(userId: string): Promise<PromoCode> {
+export async function createFirstTimePromoCode(
+  userId: string
+): Promise<PromoCode> {
   const supabase = await createClient();
 
   try {
@@ -59,7 +62,9 @@ export async function createFirstTimePromoCode(userId: string): Promise<PromoCod
 /**
  * Get active promo code for a user
  */
-export async function getActivePromoCode(userId: string): Promise<PromoCode | null> {
+export async function getActivePromoCode(
+  userId: string
+): Promise<PromoCode | null> {
   const supabase = await createClient();
 
   try {

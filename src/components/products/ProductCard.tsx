@@ -5,8 +5,9 @@ import Image from 'next/image';
 import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { generateProductAltText } from '@/lib/seo/alt-text';
 
 interface Variant {
   id: string;
@@ -47,7 +48,7 @@ function ProductCard({ product }: ProductCardProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   // Get active variants
-  const activeVariants = product.variants?.filter(v => v.isActive) || [];
+  const activeVariants = product.variants?.filter((v) => v.isActive) || [];
   const hasVariants = product.hasVariants && activeVariants.length > 0;
 
   // Auto-select first active variant with media if available
@@ -55,8 +56,8 @@ function ProductCard({ product }: ProductCardProps) {
     if (!hasVariants) return null;
 
     // Prefer variant with media
-    const variantWithMedia = activeVariants.find(v =>
-      v.media && v.media.length > 0
+    const variantWithMedia = activeVariants.find(
+      (v) => v.media && v.media.length > 0
     );
     if (variantWithMedia) return variantWithMedia;
 
@@ -65,7 +66,9 @@ function ProductCard({ product }: ProductCardProps) {
   };
 
   const defaultVariant = getDefaultVariant();
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(defaultVariant);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
+    defaultVariant
+  );
 
   // Set initial image based on default variant or product images
   const getInitialImage = () => {
@@ -77,18 +80,164 @@ function ProductCard({ product }: ProductCardProps) {
 
   const [currentImage, setCurrentImage] = useState(getInitialImage());
 
+  // Get color variants for image swapping
+  const colorVariants = useMemo(() => {
+    return activeVariants.filter(
+      (v) => v.color && v.media && v.media.length > 0
+    );
+  }, [activeVariants]);
+
+  const hasColorVariants = colorVariants.length > 1;
+
+  // Current variant index for carousel
+  const [currentVariantIndex, setCurrentVariantIndex] = useState(() => {
+    if (!hasColorVariants) return 0;
+    const index = colorVariants.findIndex((v) => v.id === selectedVariant?.id);
+    return index >= 0 ? index : 0;
+  });
+
+  // Touch swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+  const minSwipeDistance = 50; // Minimum swipe distance in pixels
+
+  // Track preloaded variant images
+  const preloadedVariants = useRef<Set<string>>(new Set());
+
+  // PRELOADING STRATEGY: Aggressively preload all color variant images on mount
+  // This ensures instant switching when user swipes between variants
+  useEffect(() => {
+    if (!hasColorVariants || colorVariants.length === 0) return;
+
+    // Preload all color variant images
+    colorVariants.forEach((variant, index) => {
+      if (preloadedVariants.current.has(variant.id)) return; // Skip if already preloaded
+
+      const isFirstVariant = index === 0;
+      const variantImages =
+        variant.media?.filter((m) => m.type === 'IMAGE') || [];
+
+      variantImages.forEach((media, mediaIndex) => {
+        const isFirstImage = mediaIndex === 0;
+        const priority =
+          isFirstVariant && isFirstImage ? 1 : isFirstImage ? 2 : 3;
+
+        const preloadFn = () => {
+          const img = new window.Image();
+          img.src = optimizeImage.thumbnail(media.url);
+          if (priority <= 2) {
+            img.fetchPriority = 'high';
+          }
+        };
+
+        // High-priority images load immediately, low-priority during idle time
+        if (priority <= 2) {
+          preloadFn();
+        } else {
+          if (
+            typeof window !== 'undefined' &&
+            'requestIdleCallback' in window
+          ) {
+            window.requestIdleCallback(preloadFn);
+          } else {
+            setTimeout(preloadFn, 100);
+          }
+        }
+      });
+
+      preloadedVariants.current.add(variant.id);
+    });
+  }, [hasColorVariants, colorVariants]);
+
+  // Navigate to next color variant image
+  const goToNextVariant = useCallback(() => {
+    if (!hasColorVariants) return;
+
+    const nextIndex = (currentVariantIndex + 1) % colorVariants.length;
+    setCurrentVariantIndex(nextIndex);
+    const nextVariant = colorVariants[nextIndex];
+    setSelectedVariant(nextVariant);
+    if (nextVariant.media && nextVariant.media.length > 0) {
+      setCurrentImage(nextVariant.media[0].url);
+    }
+  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+
+  // Navigate to previous color variant image
+  const goToPrevVariant = useCallback(() => {
+    if (!hasColorVariants) return;
+
+    const prevIndex =
+      currentVariantIndex === 0
+        ? colorVariants.length - 1
+        : currentVariantIndex - 1;
+    setCurrentVariantIndex(prevIndex);
+    const prevVariant = colorVariants[prevIndex];
+    setSelectedVariant(prevVariant);
+    if (prevVariant.media && prevVariant.media.length > 0) {
+      setCurrentImage(prevVariant.media[0].url);
+    }
+  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+
+  // Touch swipe handlers
+  const onTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      touchEndX.current = 0; // Reset
+      touchStartX.current = e.targetTouches[0].clientX;
+    },
+    [hasColorVariants]
+  );
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      touchEndX.current = e.targetTouches[0].clientX;
+    },
+    [hasColorVariants]
+  );
+
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (!hasColorVariants) return;
+      if (!touchStartX.current || !touchEndX.current) return;
+
+      const distance = touchStartX.current - touchEndX.current;
+      const isLeftSwipe = distance > minSwipeDistance;
+      const isRightSwipe = distance < -minSwipeDistance;
+
+      // In RTL, left swipe = next, right swipe = previous
+      if (isLeftSwipe) {
+        e.preventDefault();
+        e.stopPropagation();
+        goToNextVariant();
+      } else if (isRightSwipe) {
+        e.preventDefault();
+        e.stopPropagation();
+        goToPrevVariant();
+      }
+
+      // Reset
+      touchStartX.current = 0;
+      touchEndX.current = 0;
+    },
+    [hasColorVariants, goToNextVariant, goToPrevVariant]
+  );
+
   // Calculate discounted price
   const discountPercent = product.discountPercent || 0;
   const basePrice = Number(product.price);
   const effectivePrice = selectedVariant
     ? basePrice + Number(selectedVariant.priceAdjust)
     : basePrice;
-  const discountedPrice = discountPercent > 0
-    ? effectivePrice * (1 - discountPercent / 100)
-    : effectivePrice;
+  const discountedPrice =
+    discountPercent > 0
+      ? effectivePrice * (1 - discountPercent / 100)
+      : effectivePrice;
 
   // Effective stock considering variant selection
-  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
+  const effectiveStock = selectedVariant
+    ? selectedVariant.stock
+    : product.stock;
   const isOutOfStock = effectiveStock === 0;
 
   const handleVariantSelect = (variant: Variant) => {
@@ -100,6 +249,14 @@ function ProductCard({ product }: ProductCardProps) {
     } else {
       // Fallback to product's first image
       setCurrentImage(product.images[0] || '');
+    }
+
+    // Update carousel index if this is a color variant
+    if (hasColorVariants && variant.color) {
+      const variantIndex = colorVariants.findIndex((v) => v.id === variant.id);
+      if (variantIndex >= 0) {
+        setCurrentVariantIndex(variantIndex);
+      }
     }
   };
 
@@ -115,7 +272,9 @@ function ProductCard({ product }: ProductCardProps) {
       addItem(
         {
           productId: product.id,
-          name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
+          name: selectedVariant
+            ? `${product.name} - ${selectedVariant.name}`
+            : product.name,
           price: discountedPrice,
           image: currentImage,
           stock: effectiveStock,
@@ -127,20 +286,42 @@ function ProductCard({ product }: ProductCardProps) {
       // Show success feedback
       setTimeout(() => setIsAdding(false), 500);
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید');
+      alert(
+        error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید'
+      );
       setIsAdding(false);
     }
-  }, [product.id, product.name, hasVariants, selectedVariant, discountedPrice, currentImage, effectiveStock, addItem]);
+  }, [
+    product.id,
+    product.name,
+    hasVariants,
+    selectedVariant,
+    discountedPrice,
+    currentImage,
+    effectiveStock,
+    addItem,
+  ]);
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
-        <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
+        <div
+          className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden group"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
           {currentImage ? (
             <Image
               src={optimizeImage.thumbnail(currentImage)}
-              alt={product.name}
+              alt={generateProductAltText({
+                productName: product.name,
+                variantName: selectedVariant?.name,
+                color: selectedVariant?.color,
+                size: selectedVariant?.size,
+                material: selectedVariant?.material,
+              })}
               fill
               loading="lazy"
               className="object-cover object-center hover:scale-105 transition-transform duration-300"
@@ -167,6 +348,23 @@ function ProductCard({ product }: ProductCardProps) {
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <span className="text-white font-bold text-lg">ناموجود</span>
+            </div>
+          )}
+
+          {/* Color Variant Indicators (dots) - Only show if there are multiple color variants */}
+          {hasColorVariants && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+              {colorVariants.map((variant, index) => (
+                <div
+                  key={variant.id}
+                  className={`transition-all duration-200 ${
+                    index === currentVariantIndex
+                      ? 'w-6 h-2 bg-white rounded-full shadow-md'
+                      : 'w-2 h-2 bg-white/60 rounded-full'
+                  }`}
+                  title={variant.name}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -242,7 +440,9 @@ function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           <div className="text-left">
-            <span className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span
+              className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}
+            >
               {effectiveStock > 0 ? `موجود: ${effectiveStock}` : 'ناموجود'}
             </span>
           </div>
@@ -257,7 +457,11 @@ function ProductCard({ product }: ProductCardProps) {
           isLoading={isAdding}
           onClick={handleAddToCart}
         >
-          {isOutOfStock ? 'ناموجود' : isAdding ? 'در حال افزودن...' : 'افزودن به سبد خرید'}
+          {isOutOfStock
+            ? 'ناموجود'
+            : isAdding
+              ? 'در حال افزودن...'
+              : 'افزودن به سبد خرید'}
         </Button>
       </div>
     </div>

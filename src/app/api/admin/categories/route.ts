@@ -17,11 +17,9 @@ export async function GET() {
     return NextResponse.json({ categories });
   } catch (error) {
     console.error('Get categories error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی‌ها';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی‌ها';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -54,10 +52,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
     console.error('Create category error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'خطا در ایجاد دسته‌بندی';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در ایجاد دسته‌بندی';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

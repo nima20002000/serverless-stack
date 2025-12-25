@@ -5,10 +5,16 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { useCartStore, formatPrice, selectTotal, selectItemCount } from '@/store/cart-store';
+import {
+  useCartStore,
+  formatPrice,
+  selectTotal,
+  selectItemCount,
+} from '@/store/cart-store';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
+import DigipayBadge from '@/components/payment/DigipayBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 
 export default function CheckoutPage() {
@@ -19,6 +25,9 @@ export default function CheckoutPage() {
   const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>(
+    'zarinpal'
+  );
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -28,60 +37,62 @@ export default function CheckoutPage() {
     }
   }, [items.length, router, status]);
 
-  const handleCheckout = useCallback(async (formData: {
-    fullName: string;
-    phone: string;
-    email: string;
-    shippingAddress: string;
-    postalCode: string;
-    createAccount: boolean;
-    phoneVerified: boolean;
-  }) => {
-    try {
-      setError('');
-      setIsProcessing(true);
+  const handleCheckout = useCallback(
+    async (formData: {
+      fullName: string;
+      phone: string;
+      email: string;
+      shippingAddress: string;
+      postalCode: string;
+      createAccount: boolean;
+      phoneVerified: boolean;
+    }) => {
+      try {
+        setError('');
+        setIsProcessing(true);
 
-      // Phone verification is NOT required for already logged-in users
-      // They may have registered with email and don't have a phone number
-      // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
+        // Phone verification is NOT required for already logged-in users
+        // They may have registered with email and don't have a phone number
+        // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
 
-      const response = await fetch('/api/transactions/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            quantity: item.quantity,
-          })),
-          // TODO: Add payment method selection UI when Digipay is integrated
-          // paymentMethod: 'ZARINPAL' | 'DIGIPAY'
-          shippingInfo: {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            email: formData.email || undefined,
-            shippingAddress: formData.shippingAddress,
-            postalCode: formData.postalCode || undefined,
-            createAccount: formData.createAccount,
+        const response = await fetch('/api/transactions/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            items: items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: item.quantity,
+            })),
+            paymentMethod: paymentMethod === 'digipay' ? 'DIGIPAY' : 'ZARINPAL',
+            shippingInfo: {
+              fullName: formData.fullName,
+              phone: formData.phone,
+              email: formData.email || undefined,
+              shippingAddress: formData.shippingAddress,
+              postalCode: formData.postalCode || undefined,
+              createAccount: formData.createAccount,
+            },
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در ایجاد تراکنش');
+        if (!response.ok) {
+          throw new Error(data.error || 'خطا در ایجاد تراکنش');
+        }
+
+        // Redirect to Zarinpal payment page
+        window.location.href = data.paymentUrl;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
+        setIsProcessing(false);
       }
-
-      // Redirect to Zarinpal payment page
-      window.location.href = data.paymentUrl;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
-      setIsProcessing(false);
-    }
-  }, [items]);
+    },
+    [items, session, paymentMethod]
+  );
 
   if (status === 'loading') {
     return (
@@ -160,36 +171,11 @@ export default function CheckoutPage() {
               onSubmit={handleCheckout}
               isProcessing={isProcessing}
             />
-
-            {/* Payment Method */}
-            <Card className="mt-6">
-              <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
-                روش پرداخت
-              </h2>
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 p-4 border-2 border-blue-500 bg-blue-50 rounded-lg cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="zarinpal"
-                    defaultChecked
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                  />
-                  <div className="flex-1 text-right">
-                    <div className="font-medium text-gray-900">زرین‌پال</div>
-                    <div className="text-sm text-gray-600">پرداخت امن با کلیه کارت‌های بانکی</div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <ZarinpalBadge />
-                  </div>
-                </label>
-              </div>
-            </Card>
           </div>
 
-          {/* Payment Summary */}
+          {/* Payment Summary and Payment Method */}
           <div className="lg:col-span-1">
-            <div className="sticky top-4">
+            <div className="sticky top-4 space-y-6">
               <Card>
                 <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
                   اطلاعات پرداخت
@@ -214,10 +200,82 @@ export default function CheckoutPage() {
                     </span>
                     <span className="text-gray-900">مبلغ قابل پرداخت</span>
                   </div>
+                </div>
+              </Card>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-                    <p className="text-xs text-blue-800 text-right">
-                      پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید
+              {/* Payment Method Selection */}
+              <Card>
+                <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
+                  روش پرداخت
+                </h2>
+                <div className="space-y-3">
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'zarinpal'
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="zarinpal"
+                      checked={paymentMethod === 'zarinpal'}
+                      onChange={() => setPaymentMethod('zarinpal')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-900">زرین‌پال</div>
+                      <div className="text-sm text-gray-600">
+                        پرداخت امن با کلیه کارت‌های بانکی
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ZarinpalBadge />
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'digipay'
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="digipay"
+                      checked={paymentMethod === 'digipay'}
+                      onChange={() => setPaymentMethod('digipay')}
+                      className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                    />
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-900">دیجی پی</div>
+                      <div className="text-sm text-gray-600">پرداخت اقساطی</div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <DigipayBadge />
+                    </div>
+                  </label>
+
+                  <div
+                    className={`${
+                      paymentMethod === 'digipay'
+                        ? 'bg-purple-50 border-purple-200'
+                        : 'bg-blue-50 border-blue-200'
+                    } border rounded-lg p-3 mt-4`}
+                  >
+                    <p
+                      className={`text-xs ${
+                        paymentMethod === 'digipay'
+                          ? 'text-purple-800'
+                          : 'text-blue-800'
+                      } text-right`}
+                    >
+                      {paymentMethod === 'digipay'
+                        ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
+                        : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
                     </p>
                   </div>
                 </div>

@@ -41,7 +41,8 @@ export function containsPersianCharacters(text: string): boolean {
   if (!text) return false;
 
   // Persian/Arabic Unicode ranges
-  const persianPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const persianPattern =
+    /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
   return persianPattern.test(text);
 }
 
@@ -54,7 +55,8 @@ export function isValidPersianName(name: string): boolean {
   if (!name || !name.trim()) return false;
 
   // Allow Persian letters, spaces, Arabic diacritics, and common Persian punctuation
-  const persianNamePattern = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+$/;
+  const persianNamePattern =
+    /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+$/;
   return persianNamePattern.test(name.trim());
 }
 
@@ -67,7 +69,8 @@ export function isValidName(name: string): boolean {
   if (!name || !name.trim()) return false;
 
   // Allow Persian, Arabic, English letters, spaces, hyphens, and apostrophes
-  const namePattern = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z\s'-]+$/;
+  const namePattern =
+    /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z\s'-]+$/;
   return namePattern.test(name.trim());
 }
 

@@ -32,7 +32,10 @@ export default function PasswordManagementCard({
     formActions.clearMessages();
 
     // Validate password
-    const validation = validatePassword(passwordForm.newPassword, passwordForm.confirmPassword);
+    const validation = validatePassword(
+      passwordForm.newPassword,
+      passwordForm.confirmPassword
+    );
     if (!validation.isValid) {
       formActions.setError(validation.error || 'خطا در اعتبارسنجی رمز عبور');
       formActions.setIsSubmitting(false);
@@ -113,7 +116,10 @@ export default function PasswordManagementCard({
                 type="password"
                 value={passwordForm.currentPassword}
                 onChange={(e) =>
-                  setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                  setPasswordForm({
+                    ...passwordForm,
+                    currentPassword: e.target.value,
+                  })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="رمز عبور فعلی خود را وارد کنید"
@@ -128,7 +134,10 @@ export default function PasswordManagementCard({
               type="password"
               value={passwordForm.newPassword}
               onChange={(e) =>
-                setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                setPasswordForm({
+                  ...passwordForm,
+                  newPassword: e.target.value,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               placeholder="حداقل ۸ کاراکتر"
@@ -142,7 +151,10 @@ export default function PasswordManagementCard({
               type="password"
               value={passwordForm.confirmPassword}
               onChange={(e) =>
-                setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                setPasswordForm({
+                  ...passwordForm,
+                  confirmPassword: e.target.value,
+                })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
@@ -172,7 +184,10 @@ export default function PasswordManagementCard({
               : 'شما می‌توانید برای حساب کاربری خود رمز عبور تنظیم کنید'}
           </p>
           <div className="flex gap-3 items-center">
-            <Button variant="secondary" onClick={() => setIsChangingPassword(true)}>
+            <Button
+              variant="secondary"
+              onClick={() => setIsChangingPassword(true)}
+            >
               {hasPassword ? 'تغییر رمز عبور' : 'تنظیم رمز عبور'}
             </Button>
             {showOtpResetOption && hasPassword && onStartOtpReset && (

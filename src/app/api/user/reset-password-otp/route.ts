@@ -36,10 +36,7 @@ async function postHandler(req: Request) {
     const user = await getUserById(session.user.id);
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'کاربر یافت نشد' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
     const identifier = user.phone || user.email;
@@ -73,10 +70,16 @@ async function postHandler(req: Request) {
   } catch (error) {
     console.error('Error resetting password with OTP:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در بازیابی رمز عبور' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در بازیابی رمز عبور',
+      },
       { status: 500 }
     );
   }
 }
 
-export const POST = withLogging(postHandler, 'POST /api/user/reset-password-otp');
+export const POST = withLogging(
+  postHandler,
+  'POST /api/user/reset-password-otp'
+);

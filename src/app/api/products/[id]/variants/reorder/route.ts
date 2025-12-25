@@ -18,10 +18,7 @@ export async function PATCH(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const productId = params.id;
@@ -66,7 +63,10 @@ export async function PATCH(
 
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی ترتیب واریانت‌ها',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'خطا در به‌روزرسانی ترتیب واریانت‌ها',
       },
       { status: 500 }
     );

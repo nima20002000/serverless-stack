@@ -8,8 +8,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "verify:routes": "bash scripts/verify-api-routes.sh",
-    "prebuild": "npm run verify:routes"
+    "prebuild": "npm run verify:routes",
+    "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
+    "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
+    "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.943.0",
@@ -27,15 +34,18 @@
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.6.0",
     "date-fns-jalali": "^3.6.0-1",
+    "dotenv": "^17.2.3",
+    "form-data": "^4.0.5",
     "kavenegar": "^1.1.4",
     "libphonenumber-js": "^1.12.30",
-    "next": "^14.2.0",
+    "next": "^14.2.35",
     "next-auth": "^4.24.0",
     "nodemailer": "^7.0.11",
     "pdfkit": "^0.15.0",
     "pino": "^10.1.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "resend": "^6.6.0",
     "server-only": "^0.0.1",
     "uuid": "^9.0.1",
     "zarinpal-node-sdk": "^2.2.0",
@@ -54,12 +64,26 @@
     "autoprefixer": "^10.4.0",
     "critters": "^0.0.23",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.2.0",
+    "eslint-config-next": "^14.2.35",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "pino-pretty": "^13.1.2",
     "postcss": "^8.4.0",
+    "prettier": "^3.7.4",
     "supabase": "^2.67.2",
     "tailwindcss": "^3.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   }
 }

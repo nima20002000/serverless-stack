@@ -22,10 +22,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -51,7 +48,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> {
+async function handleBulkDelete(
+  data: BulkDeleteRequest
+): Promise<NextResponse> {
   const { userIds } = data;
 
   if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
@@ -66,7 +65,10 @@ async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> 
 
     if (result.count === 0) {
       return NextResponse.json(
-        { error: 'هیچ کاربری برای حذف یافت نشد (فقط کاربران عادی قابل حذف هستند)' },
+        {
+          error:
+            'هیچ کاربری برای حذف یافت نشد (فقط کاربران عادی قابل حذف هستند)',
+        },
         { status: 400 }
       );
     }
@@ -76,15 +78,15 @@ async function handleBulkDelete(data: BulkDeleteRequest): Promise<NextResponse> 
       count: result.count,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطا در حذف کاربران';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 400 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در حذف کاربران';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
 
-async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> {
+async function handleBulkUpdate(
+  data: BulkUpdateRequest
+): Promise<NextResponse> {
   const { userIds, updates } = data;
 
   if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
@@ -109,10 +111,8 @@ async function handleBulkUpdate(data: BulkUpdateRequest): Promise<NextResponse> 
       count: result.count,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'خطا در بروزرسانی کاربران';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 400 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'خطا در بروزرسانی کاربران';
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

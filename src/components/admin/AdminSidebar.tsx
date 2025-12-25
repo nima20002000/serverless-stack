@@ -97,8 +97,8 @@ export default function AdminSidebar() {
                       isActive
                         ? 'bg-blue-50 text-blue-600 font-medium'
                         : item.disabled
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'text-gray-400 cursor-not-allowed'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />

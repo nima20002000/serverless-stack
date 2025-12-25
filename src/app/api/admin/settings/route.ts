@@ -39,15 +39,15 @@ export async function POST(req: NextRequest) {
     const { settings } = await req.json();
 
     if (!settings || typeof settings !== 'object') {
-      return NextResponse.json(
-        { error: 'داده‌های نامعتبر' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'داده‌های نامعتبر' }, { status: 400 });
     }
 
     await updateSettings(settings);
 
-    log.info('Site settings updated', { admin: session.user.email, keys: Object.keys(settings) });
+    log.info('Site settings updated', {
+      admin: session.user.email,
+      keys: Object.keys(settings),
+    });
 
     return NextResponse.json({ message: 'تنظیمات با موفقیت ذخیره شد' });
   } catch (error) {

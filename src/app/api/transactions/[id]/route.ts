@@ -51,7 +51,9 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching transaction:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت تراکنش' },
+      {
+        error: error instanceof Error ? error.message : 'خطا در دریافت تراکنش',
+      },
       { status: 404 }
     );
   }

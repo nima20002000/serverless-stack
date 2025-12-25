@@ -5,6 +5,7 @@
  * Currently uses Cloudflare R2, but can be swapped for other providers.
  */
 
+import 'server-only';
 import { R2StorageAdapter } from './adapters/r2';
 import { StorageAdapter } from './types';
 
@@ -13,8 +14,18 @@ export * from './types';
 export * from './validators';
 
 // Export image optimization utilities
-export { getOptimizedImageUrl, getResponsiveSrcSet, optimizeImage, IMAGE_VARIANTS } from '../cloudflare-images-client';
-export type { ImageTransformOptions, ImageFormat, ImageFit, ImageGravity } from '../cloudflare-images-client';
+export {
+  getOptimizedImageUrl,
+  getResponsiveSrcSet,
+  optimizeImage,
+  IMAGE_VARIANTS,
+} from '../cloudflare-images-client';
+export type {
+  ImageTransformOptions,
+  ImageFormat,
+  ImageFit,
+  ImageGravity,
+} from '../cloudflare-images-client';
 
 let storageInstance: StorageAdapter | null = null;
 

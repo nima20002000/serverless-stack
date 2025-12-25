@@ -11,7 +11,12 @@ import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
-import type { ProductFormData, Tag, MediaItem, Variant } from '@/types/product-admin';
+import type {
+  ProductFormData,
+  Tag,
+  MediaItem,
+  Variant,
+} from '@/types/product-admin';
 
 interface EditProductPageProps {
   params: { id: string };
@@ -46,7 +51,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   const fetchProduct = async () => {
     try {
-      const response = await fetch(`/api/products/${params.id}?includeRelations=true`);
+      const response = await fetch(
+        `/api/products/${params.id}?includeRelations=true`
+      );
       if (!response.ok) throw new Error('محصول یافت نشد');
 
       const data = await response.json();
@@ -66,7 +73,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Load existing media (product-level only, not variant media)
       if (product.media) {
-        const productMediaItems = product.media.filter((m: MediaItem) => !m.variantId);
+        const productMediaItems = product.media.filter(
+          (m: MediaItem) => !m.variantId
+        );
         productMedia.setMedia(productMediaItems);
       }
 
@@ -96,7 +105,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         setOriginalVariants(formattedVariants); // Store original state for comparison
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
+      const errorMsg =
+        error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
       setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
@@ -157,13 +167,15 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
-          discountPercent: formData.discountPercent ? parseInt(formData.discountPercent) : null,
+          discountPercent: formData.discountPercent
+            ? parseInt(formData.discountPercent)
+            : null,
           stock: formData.hasVariants ? 0 : parseInt(formData.stock),
           hasVariants: formData.hasVariants,
           isFeatured: formData.isFeatured,
           isActive: formData.isActive,
           categoryId: formData.categoryId,
-          tagIds: selectedTags.map(t => t.id),
+          tagIds: selectedTags.map((t) => t.id),
         }),
       });
 
@@ -175,13 +187,19 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Step 2: Sync media (delete old product-level media and add new ones)
       // Get existing product-level media
-      const existingMediaResponse = await fetch(`/api/products/${params.id}/media`);
+      const existingMediaResponse = await fetch(
+        `/api/products/${params.id}/media`
+      );
       const existingMediaData = await existingMediaResponse.json();
-      const existingProductMedia = existingMediaData.media.filter((m: MediaItem) => !m.variantId);
+      const existingProductMedia = existingMediaData.media.filter(
+        (m: MediaItem) => !m.variantId
+      );
 
       // Delete old product-level media that are not in current media state
       for (const oldMedia of existingProductMedia) {
-        const stillExists = productMedia.media.find(m => m.id === oldMedia.id);
+        const stillExists = productMedia.media.find(
+          (m) => m.id === oldMedia.id
+        );
         if (!stillExists) {
           await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
             method: 'DELETE',
@@ -216,7 +234,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
         // Check if isDefault actually changed
-        const oldMedia = existingProductMedia.find((m: MediaItem) => m.id === mediaItem.id);
+        const oldMedia = existingProductMedia.find(
+          (m: MediaItem) => m.id === mediaItem.id
+        );
         if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
           await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
             method: 'PATCH',
@@ -229,13 +249,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Step 3: Sync variants
-      const existingVariantsResponse = await fetch(`/api/products/${params.id}/variants`);
+      const existingVariantsResponse = await fetch(
+        `/api/products/${params.id}/variants`
+      );
       const existingVariantsData = await existingVariantsResponse.json();
       const existingVariantsFromDB = existingVariantsData.variants || [];
 
       // Delete variants that were removed
       for (const oldVariant of existingVariantsFromDB) {
-        const stillExists = variantManager.variants.find(v => v.id === oldVariant.id);
+        const stillExists = variantManager.variants.find(
+          (v) => v.id === oldVariant.id
+        );
         if (!stillExists) {
           await fetch(`/api/products/${params.id}/variants/${oldVariant.id}`, {
             method: 'DELETE',
@@ -244,7 +268,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Fetch all product media once (to avoid N+1 query pattern)
-      const allProductMediaResponse = await fetch(`/api/products/${params.id}/media`);
+      const allProductMediaResponse = await fetch(
+        `/api/products/${params.id}/media`
+      );
       const allProductMediaData = await allProductMediaResponse.json();
       const allProductMedia = allProductMediaData.media || [];
 
@@ -253,11 +279,18 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
       // Separate existing and new variants
-      const existingVariants = variantManager.variants.filter(v => !v.id.startsWith('variant-'));
-      const newVariants = variantManager.variants.filter(v => v.id.startsWith('variant-'));
+      const existingVariants = variantManager.variants.filter(
+        (v) => !v.id.startsWith('variant-')
+      );
+      const newVariants = variantManager.variants.filter((v) =>
+        v.id.startsWith('variant-')
+      );
 
       // Helper: Check if variant properties changed
-      const variantPropsChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+      const variantPropsChanged = (
+        current: (typeof existingVariants)[0],
+        original: (typeof originalVariants)[0] | undefined
+      ) => {
         if (!original) return true; // New variant or not found in original
         return (
           current.name !== original.name ||
@@ -272,14 +305,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       };
 
       // Step 3.1: Update only changed variants in parallel
-      const variantsToUpdate = existingVariants.filter(variant => {
-        const original = originalVariants.find(v => v.id === variant.id);
+      const variantsToUpdate = existingVariants.filter((variant) => {
+        const original = originalVariants.find((v) => v.id === variant.id);
         return variantPropsChanged(variant, original);
       });
 
       if (variantsToUpdate.length > 0) {
         await Promise.all(
-          variantsToUpdate.map(variant =>
+          variantsToUpdate.map((variant) =>
             fetch(`/api/products/${params.id}/variants/${variant.id}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -299,37 +332,52 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Map existing variant IDs
-      existingVariants.forEach(variant => {
+      existingVariants.forEach((variant) => {
         variantIdMapping[variant.id] = variant.id;
       });
 
       // Helper: Check if variant media changed
-      const variantMediaChanged = (current: typeof existingVariants[0], original: typeof originalVariants[0] | undefined) => {
+      const variantMediaChanged = (
+        current: (typeof existingVariants)[0],
+        original: (typeof originalVariants)[0] | undefined
+      ) => {
         if (!original) return true;
-        const currentMediaIds = (current.media || []).map(m => m.id).sort().join(',');
-        const originalMediaIds = (original.media || []).map(m => m.id).sort().join(',');
+        const currentMediaIds = (current.media || [])
+          .map((m) => m.id)
+          .sort()
+          .join(',');
+        const originalMediaIds = (original.media || [])
+          .map((m) => m.id)
+          .sort()
+          .join(',');
         if (currentMediaIds !== originalMediaIds) return true;
 
         // Check if isDefault changed for any media
-        return (current.media || []).some(currentMedia => {
-          const originalMedia = (original.media || []).find(m => m.id === currentMedia.id);
-          return originalMedia && originalMedia.isDefault !== currentMedia.isDefault;
+        return (current.media || []).some((currentMedia) => {
+          const originalMedia = (original.media || []).find(
+            (m) => m.id === currentMedia.id
+          );
+          return (
+            originalMedia && originalMedia.isDefault !== currentMedia.isDefault
+          );
         });
       };
 
       // Step 3.2: Sync media only for variants where media changed
       for (const variant of existingVariants) {
-        const original = originalVariants.find(v => v.id === variant.id);
+        const original = originalVariants.find((v) => v.id === variant.id);
 
         // Skip if media didn't change
         if (!variantMediaChanged(variant, original)) continue;
 
         // Sync variant media - use cached media data
-        const existingVariantMedia = allProductMedia.filter((m: MediaItem) => m.variantId === variant.id);
+        const existingVariantMedia = allProductMedia.filter(
+          (m: MediaItem) => m.variantId === variant.id
+        );
 
         // Delete old variant media
         for (const oldMedia of existingVariantMedia) {
-          const stillExists = variant.media?.find(m => m.id === oldMedia.id);
+          const stillExists = variant.media?.find((m) => m.id === oldMedia.id);
           if (!stillExists) {
             await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
               method: 'DELETE',
@@ -342,18 +390,21 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           for (const mediaItem of variant.media) {
             if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
 
-            const variantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                variantId: variant.id,
-                type: mediaItem.type,
-                url: mediaItem.url,
-                alt: mediaItem.alt,
-                order: mediaItem.order,
-                isDefault: mediaItem.isDefault,
-              }),
-            });
+            const variantMediaResponse = await fetch(
+              `/api/products/${params.id}/media`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  variantId: variant.id,
+                  type: mediaItem.type,
+                  url: mediaItem.url,
+                  alt: mediaItem.alt,
+                  order: mediaItem.order,
+                  isDefault: mediaItem.isDefault,
+                }),
+              }
+            );
 
             if (!variantMediaResponse.ok) {
               const errorData = await variantMediaResponse.json();
@@ -366,7 +417,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             if (mediaItem.id.startsWith('new-')) continue; // Skip new media
 
             // Check if isDefault actually changed
-            const oldMedia = existingVariantMedia.find((m: MediaItem) => m.id === mediaItem.id);
+            const oldMedia = existingVariantMedia.find(
+              (m: MediaItem) => m.id === mediaItem.id
+            );
             if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
               await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
                 method: 'PATCH',
@@ -383,21 +436,24 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Step 3.3: Create new variants
       for (const variant of newVariants) {
         // Create new variant (including order)
-        const variantResponse = await fetch(`/api/products/${params.id}/variants`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: variant.name,
-            sku: variant.sku || undefined,
-            color: variant.color || undefined,
-            size: variant.size || undefined,
-            material: variant.material || undefined,
-            priceAdjust: parseFloat(variant.priceAdjust),
-            stock: parseInt(variant.stock),
-            order: variant.order,
-            isActive: variant.isActive,
-          }),
-        });
+        const variantResponse = await fetch(
+          `/api/products/${params.id}/variants`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: variant.name,
+              sku: variant.sku || undefined,
+              color: variant.color || undefined,
+              size: variant.size || undefined,
+              material: variant.material || undefined,
+              priceAdjust: parseFloat(variant.priceAdjust),
+              stock: parseInt(variant.stock),
+              order: variant.order,
+              isActive: variant.isActive,
+            }),
+          }
+        );
 
         const variantData = await variantResponse.json();
         const variantId = variantData.variant?.id;
@@ -410,35 +466,41 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         // Add variant media
         if (variantId && variant.media && variant.media.length > 0) {
           for (const mediaItem of variant.media) {
-            const newVariantMediaResponse = await fetch(`/api/products/${params.id}/media`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                variantId: variantId,
-                type: mediaItem.type,
-                url: mediaItem.url,
-                alt: mediaItem.alt,
-                order: mediaItem.order,
-                isDefault: mediaItem.isDefault,
-              }),
-            });
+            const newVariantMediaResponse = await fetch(
+              `/api/products/${params.id}/media`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  variantId: variantId,
+                  type: mediaItem.type,
+                  url: mediaItem.url,
+                  alt: mediaItem.alt,
+                  order: mediaItem.order,
+                  isDefault: mediaItem.isDefault,
+                }),
+              }
+            );
 
             if (!newVariantMediaResponse.ok) {
               const errorData = await newVariantMediaResponse.json();
-              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت جدید');
+              throw new Error(
+                errorData.error || 'خطا در افزودن رسانه واریانت جدید'
+              );
             }
           }
         }
       }
 
       // Step 4: Reorder variants only if order changed
-      const orderChanged = variantManager.variants.some((variant) => {
-        const original = originalVariants.find(v => v.id === variant.id);
-        return !original || original.order !== variant.order;
-      }) || newVariants.length > 0; // Always reorder if there are new variants
+      const orderChanged =
+        variantManager.variants.some((variant) => {
+          const original = originalVariants.find((v) => v.id === variant.id);
+          return !original || original.order !== variant.order;
+        }) || newVariants.length > 0; // Always reorder if there are new variants
 
       if (orderChanged && variantManager.variants.length > 0) {
-        const variantOrders = variantManager.variants.map(v => ({
+        const variantOrders = variantManager.variants.map((v) => ({
           id: variantIdMapping[v.id] || v.id, // Use real ID from mapping
           order: v.order,
         }));
@@ -454,14 +516,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       router.push('/admin/products');
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'خطا در ذخیره محصول';
+      const errorMsg =
+        error instanceof Error ? error.message : 'خطا در ذخیره محصول';
       setErrorMessage(errorMsg);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
@@ -499,7 +564,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       </div>
 
       {errorMessage && (
-        <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
+        <Alert
+          type="error"
+          className="mb-4"
+          onClose={() => setErrorMessage('')}
+        >
           {errorMessage}
         </Alert>
       )}
@@ -570,7 +639,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             >
               انصراف
             </Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={isSaving} className="w-full sm:w-auto order-1 sm:order-2">
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              isLoading={isSaving}
+              className="w-full sm:w-auto order-1 sm:order-2"
+            >
               ذخیره تغییرات
             </Button>
           </div>

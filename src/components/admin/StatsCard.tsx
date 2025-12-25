@@ -24,9 +24,7 @@ export default function StatsCard({
         <div className="flex-1 text-right">
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
           <p className="text-3xl font-bold text-gray-900">{value}</p>
-          {subtitle && (
-            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
           {trend && (
             <div className="flex items-center justify-end gap-1 mt-2">
               <span

@@ -1,6 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  KeyboardEvent,
+  ClipboardEvent,
+} from 'react';
 
 interface OTPInputProps {
   length?: number;
@@ -13,7 +19,7 @@ export default function OTPInput({
   length = 6,
   onComplete,
   disabled = false,
-  autoFocus = true
+  autoFocus = true,
 }: OTPInputProps) {
   const [otp, setOtp] = useState<string[]>(new Array(length).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -38,7 +44,10 @@ export default function OTPInput({
     }
 
     // Call onComplete when all filled
-    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === length) {
+    if (
+      newOtp.every((digit) => digit !== '') &&
+      newOtp.join('').length === length
+    ) {
       onComplete(newOtp.join(''));
     }
   };
@@ -73,12 +82,12 @@ export default function OTPInput({
       setOtp(newOtp);
 
       // Focus on next empty input or last input
-      const nextEmptyIndex = newOtp.findIndex(digit => digit === '');
+      const nextEmptyIndex = newOtp.findIndex((digit) => digit === '');
       const focusIndex = nextEmptyIndex === -1 ? length - 1 : nextEmptyIndex;
       inputRefs.current[focusIndex]?.focus();
 
       // Call onComplete if all filled
-      if (newOtp.every(digit => digit !== '')) {
+      if (newOtp.every((digit) => digit !== '')) {
         onComplete(newOtp.join(''));
       }
     }
@@ -89,13 +98,15 @@ export default function OTPInput({
       {otp.map((digit, index) => (
         <input
           key={index}
-          ref={el => { inputRefs.current[index] = el; }}
+          ref={(el) => {
+            inputRefs.current[index] = el;
+          }}
           type="text"
           inputMode="numeric"
           maxLength={1}
           value={digit}
-          onChange={e => handleChange(index, e.target.value)}
-          onKeyDown={e => handleKeyDown(index, e)}
+          onChange={(e) => handleChange(index, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}
           className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed transition-all"

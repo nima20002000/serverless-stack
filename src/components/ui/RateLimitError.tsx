@@ -10,7 +10,7 @@ interface RateLimitErrorProps {
 export default function RateLimitError({
   retryAfter,
   onRetryReady,
-  className = ''
+  className = '',
 }: RateLimitErrorProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
@@ -74,7 +74,7 @@ export default function RateLimitError({
           <div
             className="bg-yellow-600 h-full transition-all duration-1000 ease-linear"
             style={{
-              width: `${Math.max(0, 100 - (timeRemaining / Math.ceil((retryAfter - Date.now() + timeRemaining * 1000) / 1000)) * 100)}%`
+              width: `${Math.max(0, 100 - (timeRemaining / Math.ceil((retryAfter - Date.now() + timeRemaining * 1000) / 1000)) * 100)}%`,
             }}
           />
         </div>

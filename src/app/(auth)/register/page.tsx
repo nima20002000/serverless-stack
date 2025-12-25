@@ -8,7 +8,11 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import RateLimitError from '@/components/ui/RateLimitError';
-import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
+import {
+  normalizePhoneNumber,
+  isValidIranianPhone,
+  isValidName,
+} from '@/lib/utils/persian';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,10 +26,14 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(null);
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(
+    null
+  );
 
   // Detect if identifier is email or phone
-  const detectIdentifierType = (value: string): 'email' | 'phone' | 'invalid' => {
+  const detectIdentifierType = (
+    value: string
+  ): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     // Normalize phone number first to handle Persian digits
     const normalizedPhone = normalizePhoneNumber(value);
@@ -48,7 +56,8 @@ export default function RegisterPage() {
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier = 'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
+        newErrors.identifier =
+          'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
       }
     }
 
@@ -84,23 +93,27 @@ export default function RegisterPage() {
       // OTP FLOW: Send OTP for both phone and email
       if (identifierType === 'phone' || identifierType === 'email') {
         // Normalize phone number if it's a phone identifier
-        const identifier = identifierType === 'phone'
-          ? normalizePhoneNumber(formData.identifier)
-          : formData.identifier;
+        const identifier =
+          identifierType === 'phone'
+            ? normalizePhoneNumber(formData.identifier)
+            : formData.identifier;
 
-        const requestBody = identifierType === 'phone'
-          ? { phone: identifier, purpose: 'register' }
-          : { email: identifier, purpose: 'register' };
+        const requestBody =
+          identifierType === 'phone'
+            ? { phone: identifier, purpose: 'register' }
+            : { email: identifier, purpose: 'register' };
 
         const otpResponse = await fetch('/api/auth/send-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
+          body: JSON.stringify(requestBody),
         });
 
         if (otpResponse.status === 429) {
           const rateLimitData = await otpResponse.json();
-          setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
+          setRateLimitRetryAfter(
+            rateLimitData.retryAfter || Date.now() + 120000
+          );
           setIsLoading(false);
           return;
         }
@@ -116,14 +129,16 @@ export default function RegisterPage() {
           [identifierType === 'phone' ? 'phone' : 'email']: identifier,
           name: formData.name,
           password: formData.password,
-          purpose: 'register'
+          purpose: 'register',
         });
         router.push(`/verify-otp?${params.toString()}`);
         return;
       }
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
       setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
@@ -138,7 +153,9 @@ export default function RegisterPage() {
     }
   };
 
-  const identifierType = formData.identifier ? detectIdentifierType(formData.identifier) : null;
+  const identifierType = formData.identifier
+    ? detectIdentifierType(formData.identifier)
+    : null;
 
   return (
     <Card>
@@ -161,7 +178,11 @@ export default function RegisterPage() {
       )}
 
       {errorMessage && !rateLimitRetryAfter && (
-        <Alert type="error" className="mb-4" onClose={() => setErrorMessage('')}>
+        <Alert
+          type="error"
+          className="mb-4"
+          onClose={() => setErrorMessage('')}
+        >
           {errorMessage}
         </Alert>
       )}
@@ -192,8 +213,8 @@ export default function RegisterPage() {
             identifierType === 'email'
               ? 'ایمیل وارد شده است'
               : identifierType === 'phone'
-              ? 'شماره تلفن وارد شده است - کد تایید ارسال خواهد شد'
-              : 'ایمیل یا شماره موبایل خود را وارد کنید'
+                ? 'شماره تلفن وارد شده است - کد تایید ارسال خواهد شد'
+                : 'ایمیل یا شماره موبایل خود را وارد کنید'
           }
         />
 
@@ -234,7 +255,10 @@ export default function RegisterPage() {
       <div className="mt-6 text-center">
         <p className="text-gray-600">
           قبلاً ثبت‌نام کرده‌اید؟{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link
+            href="/login"
+            className="text-blue-600 hover:text-blue-700 font-medium"
+          >
             وارد شوید
           </Link>
         </p>

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import {
-  getProductMedia,
-  addProductMedia,
-} from '@/services/product-service';
+import { getProductMedia, addProductMedia } from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +15,10 @@ export async function GET(
   } catch (error) {
     console.error('Get product media error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در دریافت رسانه‌ها' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت رسانه‌ها',
+      },
       { status: 500 }
     );
   }

@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
-import { normalizePhoneNumber, isValidIranianPhone, isValidName } from '@/lib/utils/persian';
+import {
+  normalizePhoneNumber,
+  isValidIranianPhone,
+  isValidName,
+} from '@/lib/utils/persian';
 
 interface ProfileEditFormProps {
   initialData: {
@@ -38,7 +42,9 @@ export default function ProfileEditForm({
     if (formData.phone.trim()) {
       const normalizedPhone = normalizePhoneNumber(formData.phone);
       if (!isValidIranianPhone(normalizedPhone)) {
-        onValidationError('شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)');
+        onValidationError(
+          'شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)'
+        );
         return;
       }
     }
@@ -46,7 +52,9 @@ export default function ProfileEditForm({
     // Normalize phone before sending
     const normalizedData = {
       ...formData,
-      phone: formData.phone ? normalizePhoneNumber(formData.phone) : formData.phone,
+      phone: formData.phone
+        ? normalizePhoneNumber(formData.phone)
+        : formData.phone,
     };
 
     await onSave(normalizedData);
@@ -96,7 +104,9 @@ export default function ProfileEditForm({
         </label>
         <textarea
           value={formData.shippingAddress}
-          onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, shippingAddress: e.target.value })
+          }
           className="w-full px-3 py-2 border border-gray-300 rounded-md text-right"
           rows={3}
         />
@@ -109,24 +119,18 @@ export default function ProfileEditForm({
           type="text"
           dir="ltr"
           value={formData.postalCode}
-          onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, postalCode: e.target.value })
+          }
           className="w-full px-3 py-2 border border-gray-300 rounded-md"
           placeholder="1234567890"
         />
       </div>
       <div className="flex gap-3 justify-end">
-        <Button
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isUpdating}
-        >
+        <Button variant="secondary" onClick={onCancel} disabled={isUpdating}>
           انصراف
         </Button>
-        <Button
-          variant="primary"
-          onClick={handleSubmit}
-          disabled={isUpdating}
-        >
+        <Button variant="primary" onClick={handleSubmit} disabled={isUpdating}>
           {isUpdating ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
         </Button>
       </div>

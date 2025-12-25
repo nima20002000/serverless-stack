@@ -8,10 +8,7 @@ import {
 } from '@/services/transaction-service';
 import { getProductById } from '@/services/product-service';
 import { updateUserShippingInfo } from '@/services/user-service';
-import {
-  createPaymentRequest,
-  getCallbackUrl,
-} from '@/lib/zarinpal/client';
+import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
@@ -32,15 +29,15 @@ async function postHandler(req: NextRequest) {
       userId: session?.user?.id || 'guest',
       itemCount: items?.length || 0,
       paymentMethod: paymentMethod || 'ZARINPAL',
-      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown',
+      ip:
+        req.headers.get('x-forwarded-for') ||
+        req.headers.get('x-real-ip') ||
+        'unknown',
     });
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'سبد خرید خالی است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'سبد خرید خالی است' }, { status: 400 });
     }
 
     // Validate shipping info
@@ -150,7 +147,11 @@ async function postHandler(req: NextRequest) {
       log.warn('Stock verification failed', {
         userId: session?.user?.id || 'guest',
         errors: stockCheck.errors,
-        items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+        items: items.map((i) => ({
+          productId: i.productId,
+          variantId: i.variantId,
+          quantity: i.quantity,
+        })),
       });
       return NextResponse.json(
         {
@@ -163,12 +164,21 @@ async function postHandler(req: NextRequest) {
 
     // Calculate total and prepare transaction items
     let totalAmount = 0;
-    const transactionItems: Array<{ productId: string; variantId?: string; quantity: number; price: number }> = [];
+    const transactionItems: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+      price: number;
+    }> = [];
 
     log.info('Starting price calculation for transaction items', {
       userId: session?.user?.id || 'guest',
       itemCount: items.length,
-      items: items.map(i => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      items: items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId,
+        quantity: i.quantity,
+      })),
     });
 
     for (const item of items) {
@@ -192,9 +202,10 @@ async function postHandler(req: NextRequest) {
       // Calculate base price with discount if applicable
       const basePrice = Number(product.price);
       const discountPercent = product.discountPercent || 0;
-      let finalPrice = discountPercent > 0
-        ? basePrice * (1 - discountPercent / 100)
-        : basePrice;
+      let finalPrice =
+        discountPercent > 0
+          ? basePrice * (1 - discountPercent / 100)
+          : basePrice;
 
       // If variant is specified, add variant's price adjustment
       if (item.variantId) {
@@ -244,7 +255,8 @@ async function postHandler(req: NextRequest) {
     }
 
     // Validate payment method
-    const validPaymentMethod = paymentMethod === 'DIGIPAY' ? 'DIGIPAY' : 'ZARINPAL';
+    const validPaymentMethod =
+      paymentMethod === 'DIGIPAY' ? 'DIGIPAY' : 'ZARINPAL';
 
     // Create transaction in database with shipping info
     const transaction = await createTransaction({
@@ -273,7 +285,11 @@ async function postHandler(req: NextRequest) {
       // Update profile with new contact info if user filled in null fields
       if (shouldUpdateProfile) {
         const { fullName, phone, email } = shippingInfo;
-        const updateData: { name?: string; phone?: string; email?: string | null } = {};
+        const updateData: {
+          name?: string;
+          phone?: string;
+          email?: string | null;
+        } = {};
 
         // Only update fields that were null in profile (use session data for checking)
         if (!session.user.name && fullName) {
@@ -295,49 +311,100 @@ async function postHandler(req: NextRequest) {
             .eq('id', session.user.id);
 
           if (updateError) {
-            log.error('Failed to update user profile from checkout', { userId: session.user.id, error: updateError });
-          } else {
-            log.info('Updated user profile with new contact info from checkout', {
+            log.error('Failed to update user profile from checkout', {
               userId: session.user.id,
-              updatedFields: Object.keys(updateData),
+              error: updateError,
             });
+          } else {
+            log.info(
+              'Updated user profile with new contact info from checkout',
+              {
+                userId: session.user.id,
+                updatedFields: Object.keys(updateData),
+              }
+            );
           }
         }
       }
     }
 
-    // Create payment request with Zarinpal
-    const paymentRequest = await createPaymentRequest({
-      amount: totalAmount, // In Tomans
-      description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-      email: finalEmail,
-      mobile: finalPhone,
-      callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
-    });
+    // Create payment request with selected payment gateway
+    let paymentUrl: string;
+    let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay
 
-    // Update transaction with Zarinpal authority
-    const supabaseTx = createClient();
-    await supabaseTx
-      .from('transactions')
-      .update({ zarinpalAuthority: paymentRequest.authority })
-      .eq('id', transaction.id);
+    if (validPaymentMethod === 'DIGIPAY') {
+      // Digipay payment flow
+      const digipayClient = await import('@/lib/digipay/client');
 
-    log.info('Transaction created successfully', {
-      transactionId: transaction.id,
-      transactionCode: transaction.transactionCode,
-      amount: totalAmount,
-      authority: paymentRequest.authority,
-      userId: session?.user?.id || 'guest',
-      elapsedMs: Date.now() - startTime,
-    });
+      const digipayRequest = await digipayClient.createPaymentRequest({
+        amount: totalAmount, // In Tomans
+        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
+        cellNumber: finalPhone,
+        providerId: transaction.transactionCode, // Use transactionCode as unique providerId
+        callbackUrl: `${digipayClient.getCallbackUrl(req.url)}?ticket=${transaction.id}`,
+        // Optional: Allow user to select preferred gateway in UI
+        // preferredGateway: 'IPG' | 'WALLET'
+      });
+
+      // Update transaction with Digipay ticket
+      const supabaseTx = createClient();
+      await supabaseTx
+        .from('transactions')
+        .update({ digipayTicket: digipayRequest.ticket })
+        .eq('id', transaction.id);
+
+      paymentUrl = digipayRequest.redirectUrl;
+      paymentIdentifier = digipayRequest.ticket;
+
+      log.info('Digipay transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        ticket: digipayRequest.ticket,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    } else {
+      // Zarinpal payment flow (default)
+      const paymentRequest = await createPaymentRequest({
+        amount: totalAmount, // In Tomans
+        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
+        email: finalEmail,
+        mobile: finalPhone,
+        callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
+      });
+
+      // Update transaction with Zarinpal authority
+      const supabaseTx = createClient();
+      await supabaseTx
+        .from('transactions')
+        .update({ zarinpalAuthority: paymentRequest.authority })
+        .eq('id', transaction.id);
+
+      paymentUrl = paymentRequest.url;
+      paymentIdentifier = paymentRequest.authority;
+
+      log.info('Zarinpal transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        authority: paymentRequest.authority,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    }
 
     return NextResponse.json({
       success: true,
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
       amount: totalAmount,
-      paymentUrl: paymentRequest.url,
-      authority: paymentRequest.authority,
+      paymentMethod: validPaymentMethod,
+      paymentUrl,
+      // For compatibility, include both identifiers (one will be undefined)
+      authority:
+        validPaymentMethod === 'ZARINPAL' ? paymentIdentifier : undefined,
+      ticket: validPaymentMethod === 'DIGIPAY' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {

@@ -72,15 +72,19 @@ export default function TransactionsManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loadingTransaction, setLoadingTransaction] = useState(false);
 
   const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
-      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
+      const statusParam =
+        statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const searchParam = searchQuery
+        ? `&search=${encodeURIComponent(searchQuery)}`
+        : '';
       const dateFromParam = dateFrom ? `&dateFrom=${dateFrom}` : '';
       const dateToParam = dateTo ? `&dateTo=${dateTo}` : '';
       const response = await fetch(
@@ -90,7 +94,9 @@ export default function TransactionsManagementPage() {
       const result = await response.json();
       setData(result);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها');
+      setError(
+        error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها'
+      );
       setData(null);
     } finally {
       setIsLoading(false);
@@ -124,7 +130,9 @@ export default function TransactionsManagementPage() {
       setSelectedTransaction(transactionData);
       setIsModalOpen(true);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'خطا در دریافت جزئیات تراکنش');
+      setError(
+        error instanceof Error ? error.message : 'خطا در دریافت جزئیات تراکنش'
+      );
     } finally {
       setLoadingTransaction(false);
     }
@@ -199,7 +207,10 @@ export default function TransactionsManagementPage() {
       {/* Search Bar */}
       <Card className="mb-6">
         <div className="p-4">
-          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-col sm:flex-row gap-2"
+          >
             <input
               type="text"
               value={searchQuery}
@@ -207,7 +218,11 @@ export default function TransactionsManagementPage() {
               placeholder="جستجو بر اساس کد تراکنش، نام کاربر یا ایمیل..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
             />
-            <Button type="submit" variant="primary" className="w-full sm:w-auto order-1 sm:order-2">
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full sm:w-auto order-1 sm:order-2"
+            >
               جستجو
             </Button>
           </form>
@@ -219,7 +234,9 @@ export default function TransactionsManagementPage() {
         <div className="p-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap order-1">بازه تاریخ:</label>
+              <label className="text-sm font-medium text-gray-700 whitespace-nowrap order-1">
+                بازه تاریخ:
+              </label>
               <input
                 type="date"
                 value={dateFrom}
@@ -229,7 +246,9 @@ export default function TransactionsManagementPage() {
                 }}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-2"
               />
-              <span className="text-sm text-gray-600 text-center order-3">تا</span>
+              <span className="text-sm text-gray-600 text-center order-3">
+                تا
+              </span>
               <input
                 type="date"
                 value={dateTo}
@@ -270,7 +289,9 @@ export default function TransactionsManagementPage() {
               <option value="PENDING">در انتظار</option>
               <option value="FAILED">ناموفق</option>
             </select>
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
+            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              وضعیت:
+            </label>
           </div>
         </div>
       </Card>
@@ -327,7 +348,8 @@ export default function TransactionsManagementPage() {
                     >
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <div className="text-sm text-gray-600">
-                          {transaction.items.length.toLocaleString('fa-IR')} محصول
+                          {transaction.items.length.toLocaleString('fa-IR')}{' '}
+                          محصول
                           {transaction.items.length > 0 && (
                             <div className="text-xs text-gray-500 mt-1">
                               {transaction.items.slice(0, 2).map((item) => (
@@ -335,14 +357,21 @@ export default function TransactionsManagementPage() {
                                   {item.product.name}
                                   {item.variant && (
                                     <span className="text-blue-600">
-                                      {' '}({item.variant.name})
+                                      {' '}
+                                      ({item.variant.name})
                                     </span>
-                                  )}
-                                  {' '}(×{item.quantity.toLocaleString('fa-IR')})
+                                  )}{' '}
+                                  (×{item.quantity.toLocaleString('fa-IR')})
                                 </div>
                               ))}
                               {transaction.items.length > 2 && (
-                                <div>و {(transaction.items.length - 2).toLocaleString('fa-IR')} مورد دیگر...</div>
+                                <div>
+                                  و{' '}
+                                  {(
+                                    transaction.items.length - 2
+                                  ).toLocaleString('fa-IR')}{' '}
+                                  مورد دیگر...
+                                </div>
                               )}
                             </div>
                           )}
@@ -355,7 +384,10 @@ export default function TransactionsManagementPage() {
                         {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap hidden sm:table-cell">
-                        {format(new Date(transaction.createdAt), 'yyyy/MM/dd - HH:mm')}
+                        {format(
+                          new Date(transaction.createdAt),
+                          'yyyy/MM/dd - HH:mm'
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">
                         {formatPrice(Number(transaction.amount))}
@@ -363,13 +395,21 @@ export default function TransactionsManagementPage() {
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm">
                           <div className="font-medium text-gray-900 flex items-center gap-2">
-                            <span>{transaction.user ? transaction.user.name : transaction.fullName}</span>
+                            <span>
+                              {transaction.user
+                                ? transaction.user.name
+                                : transaction.fullName}
+                            </span>
                             {transaction.isGuest && (
-                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">مهمان</span>
+                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                                مهمان
+                              </span>
                             )}
                           </div>
                           <div className="text-gray-500 text-xs">
-                            {transaction.user ? transaction.user.email : transaction.email || transaction.phone}
+                            {transaction.user
+                              ? transaction.user.email
+                              : transaction.email || transaction.phone}
                           </div>
                         </div>
                       </td>
@@ -417,7 +457,9 @@ export default function TransactionsManagementPage() {
               </span>
               <Button
                 variant="secondary"
-                onClick={() => setCurrentPage((p) => Math.min(data.totalPages, p + 1))}
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(data.totalPages, p + 1))
+                }
                 disabled={currentPage === data.totalPages}
               >
                 بعدی

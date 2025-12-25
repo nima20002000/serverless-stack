@@ -2,9 +2,14 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
-import { ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { generateProductAltText } from '@/lib/seo/alt-text';
 
 interface MediaItem {
   id: string;
@@ -17,6 +22,10 @@ interface MediaItem {
 
 interface Variant {
   id: string;
+  name?: string;
+  color?: string | null;
+  size?: string | null;
+  material?: string | null;
   media?: MediaItem[];
 }
 
@@ -24,12 +33,21 @@ interface ProductGalleryProps {
   media: MediaItem[];
   productName: string;
   selectedVariant?: Variant | null;
+  allVariants?: Variant[]; // NEW: All product variants for aggressive preloading
 }
 
-export default function ProductGallery({ media, productName, selectedVariant }: ProductGalleryProps) {
+export default function ProductGallery({
+  media,
+  productName,
+  selectedVariant,
+  allVariants,
+}: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Track preloaded variant IDs to avoid redundant preloading
+  const preloadedVariants = useRef<Set<string>>(new Set());
 
   // Touch swipe handling (for main gallery)
   const touchStartX = useRef<number>(0);
@@ -38,7 +56,7 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
   // Touch swipe handling (for zoom modal)
   const zoomTouchStartX = useRef<number>(0);
-  const zoomTouchEndX = useRef<number>(0)
+  const zoomTouchEndX = useRef<number>(0);
 
   // Memoize filtered and sorted media to avoid recalculating on every render
   const sortedMedia = useMemo(() => {
@@ -46,20 +64,127 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
     if (!selectedVariant) {
       // Show only product-level media (no variantId) when no variant is selected
-      displayMedia = media.filter(m => !m.variantId);
+      displayMedia = media.filter((m) => !m.variantId);
     } else {
       // When variant is selected, prefer variant-specific media
       const variantMedia = selectedVariant.media || [];
 
       // If variant has no specific media, fall back to product-level media
-      displayMedia = variantMedia.length === 0
-        ? media.filter(m => !m.variantId)
-        : variantMedia;
+      displayMedia =
+        variantMedia.length === 0
+          ? media.filter((m) => !m.variantId)
+          : variantMedia;
     }
 
     // Sort by order
     return [...displayMedia].sort((a, b) => a.order - b.order);
   }, [media, selectedVariant]);
+
+  // STRATEGY 1: Preload current variant/product images IMMEDIATELY when sortedMedia changes
+  useEffect(() => {
+    // Mark current variant as preloaded
+    const variantKey = selectedVariant?.id || 'product-default';
+
+    // Preload first 5 images for instant switching
+    sortedMedia.slice(0, 5).forEach((item, index) => {
+      if (item.type === 'IMAGE') {
+        const img = new window.Image();
+        // Use large variant for main gallery
+        img.src = optimizeImage.large(item.url);
+
+        // Also preload thumbnail for gallery thumbnails
+        const thumbImg = new window.Image();
+        thumbImg.src = optimizeImage.adminThumb(item.url);
+
+        // Set loading priority - first 3 images are high priority
+        if (index < 3) {
+          img.fetchPriority = 'high';
+          thumbImg.fetchPriority = 'high';
+        }
+      }
+    });
+
+    preloadedVariants.current.add(variantKey);
+  }, [sortedMedia, selectedVariant?.id]);
+
+  // STRATEGY 2: Aggressively preload ALL variant images on component mount
+  // This ensures instant switching even before user selects a variant
+  useEffect(() => {
+    const allMediaToPreload: MediaItem[] = [];
+    const seenUrls = new Set<string>(); // Avoid duplicate preloads
+
+    // 1. Add product-level media (highest priority - shown by default)
+    const productMedia = media.filter((m) => !m.variantId);
+    productMedia.forEach((item) => {
+      if (item.type === 'IMAGE' && !seenUrls.has(item.url)) {
+        allMediaToPreload.push({ ...item, priority: 1 } as MediaItem & {
+          priority: number;
+        });
+        seenUrls.add(item.url);
+      }
+    });
+
+    // 2. Add ALL variants' media (preload to enable instant switching)
+    if (allVariants && allVariants.length > 0) {
+      allVariants.forEach((variant) => {
+        if (variant.media && variant.media.length > 0) {
+          variant.media.forEach((item, itemIndex) => {
+            if (item.type === 'IMAGE' && !seenUrls.has(item.url)) {
+              // First image of each variant gets higher priority
+              const priority = itemIndex === 0 ? 2 : 3;
+              allMediaToPreload.push({ ...item, priority } as MediaItem & {
+                priority: number;
+              });
+              seenUrls.add(item.url);
+            }
+          });
+        }
+      });
+    }
+
+    // Define extended type for preload items
+    type PreloadItem = MediaItem & { priority: number };
+
+    // 3. Sort by priority (1 = highest, 3 = lowest) and preload
+    allMediaToPreload
+      .sort((a, b) => (a as PreloadItem).priority - (b as PreloadItem).priority)
+      .forEach((item, index) => {
+        const priority = (item as PreloadItem).priority;
+        const isHighPriority = priority === 1 || index === 0;
+
+        // Use requestIdleCallback for low-priority images to avoid blocking
+        const preloadFn = () => {
+          const img = new window.Image();
+          img.src = optimizeImage.large(item.url);
+          if (isHighPriority) {
+            img.fetchPriority = 'high';
+          }
+
+          // Also preload thumbnail
+          const thumbImg = new window.Image();
+          thumbImg.src = optimizeImage.adminThumb(item.url);
+          if (isHighPriority) {
+            thumbImg.fetchPriority = 'high';
+          }
+        };
+
+        if (isHighPriority) {
+          // Load high-priority images immediately
+          preloadFn();
+        } else {
+          // Load low-priority images during idle time
+          if (
+            typeof window !== 'undefined' &&
+            'requestIdleCallback' in window
+          ) {
+            window.requestIdleCallback(preloadFn);
+          } else {
+            // Fallback: use setTimeout to defer loading
+            setTimeout(preloadFn, 100);
+          }
+        }
+      });
+  }, [media, allVariants]); // Run once when component mounts or media/variants change
 
   // Reset selectedIndex when variant changes or media changes
   useEffect(() => {
@@ -101,27 +226,34 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
   const goToPrevious = () => {
     setIsTransitioning(true);
+    setSelectedIndex((prev) =>
+      prev === 0 ? sortedMedia.length - 1 : prev - 1
+    );
+    // Brief transition effect, then reset
     setTimeout(() => {
-      setSelectedIndex((prev) => (prev === 0 ? sortedMedia.length - 1 : prev - 1));
       setIsTransitioning(false);
-    }, 150);
+    }, 100);
   };
 
   const goToNext = () => {
     setIsTransitioning(true);
+    setSelectedIndex((prev) =>
+      prev === sortedMedia.length - 1 ? 0 : prev + 1
+    );
+    // Brief transition effect, then reset
     setTimeout(() => {
-      setSelectedIndex((prev) => (prev === sortedMedia.length - 1 ? 0 : prev + 1));
       setIsTransitioning(false);
-    }, 150);
+    }, 100);
   };
 
   const handleThumbnailClick = (index: number) => {
     if (index !== selectedIndex) {
       setIsTransitioning(true);
+      setSelectedIndex(index);
+      // Brief transition effect, then reset
       setTimeout(() => {
-        setSelectedIndex(index);
         setIsTransitioning(false);
-      }, 150);
+      }, 100);
     }
     setIsZoomed(false);
   };
@@ -196,18 +328,30 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
         onTouchEnd={onTouchEnd}
       >
         {currentMedia.type === 'IMAGE' ? (
-          <>
-            <Image
-              src={optimizeImage.large(currentMedia.url)}
-              alt={currentMedia.alt || productName}
-              fill
-              className={`object-contain object-center transition-all duration-300 ${
-                isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
-              } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
-              onClick={() => setIsZoomed(!isZoomed)}
-              priority={selectedIndex === 0}
-            />
-          </>
+          <Image
+            key={currentMedia.id}
+            src={optimizeImage.large(currentMedia.url)}
+            alt={
+              currentMedia.alt ||
+              generateProductAltText({
+                productName,
+                variantName: selectedVariant?.name,
+                color: selectedVariant?.color,
+                size: selectedVariant?.size,
+                material: selectedVariant?.material,
+                imageIndex: selectedIndex,
+                totalImages: sortedMedia.length,
+              })
+            }
+            fill
+            className={`object-contain object-center transition-opacity duration-150 ${
+              isZoomed ? 'cursor-zoom-out scale-150' : 'cursor-zoom-in'
+            } ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
+            onClick={() => setIsZoomed(!isZoomed)}
+            priority={selectedIndex === 0}
+            loading={selectedIndex <= 2 ? 'eager' : 'lazy'}
+            unoptimized={false}
+          />
         ) : (
           <video
             src={currentMedia.url}
@@ -251,15 +395,16 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
         {/* Variant Indicator */}
         {selectedVariant && (
-          <div className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
-            selectedVariant.media && selectedVariant.media.length > 0
-              ? 'bg-blue-600'
-              : 'bg-gray-600'
-          }`}>
+          <div
+            className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
+              selectedVariant.media && selectedVariant.media.length > 0
+                ? 'bg-blue-600'
+                : 'bg-gray-600'
+            }`}
+          >
             {selectedVariant.media && selectedVariant.media.length > 0
               ? `تصاویر ویژه نوع: ${selectedVariant.media.length}`
-              : 'تصاویر پیش‌فرض محصول'
-            }
+              : 'تصاویر پیش‌فرض محصول'}
           </div>
         )}
       </div>
@@ -280,7 +425,18 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
               {item.type === 'IMAGE' ? (
                 <Image
                   src={optimizeImage.adminThumb(item.url)}
-                  alt={item.alt || `${productName} - ${index + 1}`}
+                  alt={
+                    item.alt ||
+                    generateProductAltText({
+                      productName,
+                      variantName: selectedVariant?.name,
+                      color: selectedVariant?.color,
+                      size: selectedVariant?.size,
+                      material: selectedVariant?.material,
+                      imageIndex: index,
+                      totalImages: sortedMedia.length,
+                    })
+                  }
                   fill
                   className="object-cover object-center"
                   sizes="80px"
@@ -360,13 +516,27 @@ export default function ProductGallery({ media, productName, selectedVariant }: 
 
           <div className="relative w-full h-full max-w-7xl max-h-screen pointer-events-none">
             <Image
+              key={currentMedia.id}
               src={optimizeImage.large(currentMedia.url)}
-              alt={currentMedia.alt || productName}
+              alt={
+                currentMedia.alt ||
+                generateProductAltText({
+                  productName,
+                  variantName: selectedVariant?.name,
+                  color: selectedVariant?.color,
+                  size: selectedVariant?.size,
+                  material: selectedVariant?.material,
+                  imageIndex: selectedIndex,
+                  totalImages: sortedMedia.length,
+                })
+              }
               fill
-              className={`object-contain transition-opacity duration-300 ${
+              className={`object-contain transition-opacity duration-150 ${
                 isTransitioning ? 'opacity-0' : 'opacity-100'
               }`}
               onClick={(e) => e.stopPropagation()}
+              priority
+              unoptimized={false}
             />
           </div>
         </div>

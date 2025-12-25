@@ -78,10 +78,5 @@ export function SkeletonImage({
   aspectRatio?: string;
   className?: string;
 }) {
-  return (
-    <Skeleton
-      className={`w-full ${className}`}
-      style={{ aspectRatio }}
-    />
-  );
+  return <Skeleton className={`w-full ${className}`} style={{ aspectRatio }} />;
 }

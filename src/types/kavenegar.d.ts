@@ -21,7 +21,11 @@ declare module 'kavenegar' {
   interface KavenegarApi {
     VerifyLookup(
       params: VerifyLookupParams,
-      callback: (response: KavenegarResponse[], status: number, message: string) => void
+      callback: (
+        response: KavenegarResponse[],
+        status: number,
+        message: string
+      ) => void
     ): void;
 
     Send(
@@ -30,12 +34,20 @@ declare module 'kavenegar' {
         sender: string;
         receptor: string;
       },
-      callback: (response: KavenegarResponse[], status: number, message: string) => void
+      callback: (
+        response: KavenegarResponse[],
+        status: number,
+        message: string
+      ) => void
     ): void;
 
     AccountInfo(
       params: Record<string, unknown>,
-      callback: (response: Record<string, unknown>, status: number, message: string) => void
+      callback: (
+        response: Record<string, unknown>,
+        status: number,
+        message: string
+      ) => void
     ): void;
   }
 

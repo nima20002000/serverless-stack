@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronDownIcon, FolderIcon, PlusIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  FolderIcon,
+  PlusIcon,
+} from '@heroicons/react/24/outline';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
@@ -19,7 +23,11 @@ interface CategorySelectorProps {
   disabled?: boolean;
 }
 
-export default function CategorySelector({ value, onChange, disabled = false }: CategorySelectorProps) {
+export default function CategorySelector({
+  value,
+  onChange,
+  disabled = false,
+}: CategorySelectorProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,13 +58,18 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
       setError(null);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      setError(err instanceof Error ? err.message : 'خطا در دریافت دسته‌بندی‌ها');
+      setError(
+        err instanceof Error ? err.message : 'خطا در دریافت دسته‌بندی‌ها'
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const findCategoryById = (categories: Category[], id: string): Category | null => {
+  const findCategoryById = (
+    categories: Category[],
+    id: string
+  ): Category | null => {
     for (const category of categories) {
       if (category.id === id) return category;
       if (category.children) {
@@ -143,7 +156,10 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
     }
   };
 
-  const renderCategoryOptions = (categories: Category[], level = 0): JSX.Element[] => {
+  const renderCategoryOptions = (
+    categories: Category[],
+    level = 0
+  ): JSX.Element[] => {
     const elements: JSX.Element[] = [];
 
     for (const category of categories) {
@@ -260,7 +276,9 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
                 <Input
                   label="نام دسته‌بندی"
                   value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, name: e.target.value })
+                  }
                   placeholder="مثال: لپ‌تاپ"
                   disabled={isCreating}
                 />
@@ -271,7 +289,12 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
                   </label>
                   <textarea
                     value={createForm.description}
-                    onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        description: e.target.value,
+                      })
+                    }
                     placeholder="توضیحات دسته‌بندی..."
                     disabled={isCreating}
                     rows={2}
@@ -285,7 +308,12 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
                   </label>
                   <select
                     value={createForm.parentId || ''}
-                    onChange={(e) => setCreateForm({ ...createForm, parentId: e.target.value || null })}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        parentId: e.target.value || null,
+                      })
+                    }
                     disabled={isCreating}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -304,7 +332,11 @@ export default function CategorySelector({ value, onChange, disabled = false }: 
                     variant="secondary"
                     onClick={() => {
                       setShowCreateForm(false);
-                      setCreateForm({ name: '', description: '', parentId: null });
+                      setCreateForm({
+                        name: '',
+                        description: '',
+                        parentId: null,
+                      });
                     }}
                     disabled={isCreating}
                   >

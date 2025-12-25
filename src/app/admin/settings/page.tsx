@@ -24,7 +24,9 @@ export default function SiteSettingsPage() {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
-  const [currentEditingKey, setCurrentEditingKey] = useState<'favicon' | 'logo' | null>(null);
+  const [currentEditingKey, setCurrentEditingKey] = useState<
+    'favicon' | 'logo' | null
+  >(null);
 
   useEffect(() => {
     fetchSettings();
@@ -83,7 +85,9 @@ export default function SiteSettingsPage() {
   const handleMediaSelect = (urls: string[]) => {
     if (urls.length > 0 && currentEditingKey) {
       setSettings({ ...settings, [currentEditingKey]: urls[0] });
-      setSuccessMessage(`${currentEditingKey === 'favicon' ? 'فاویکون' : 'لوگو'} با موفقیت انتخاب شد`);
+      setSuccessMessage(
+        `${currentEditingKey === 'favicon' ? 'فاویکون' : 'لوگو'} با موفقیت انتخاب شد`
+      );
     }
   };
 
@@ -105,8 +109,12 @@ export default function SiteSettingsPage() {
       <Breadcrumbs items={[{ label: 'تنظیمات سایت' }]} />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-right">تنظیمات سایت</h1>
-        <p className="text-gray-600 text-right mt-2">مدیریت فاویکون، لوگو و سایر تنظیمات سایت</p>
+        <h1 className="text-2xl font-bold text-gray-900 text-right">
+          تنظیمات سایت
+        </h1>
+        <p className="text-gray-600 text-right mt-2">
+          مدیریت فاویکون، لوگو و سایر تنظیمات سایت
+        </p>
       </div>
 
       {error && (
@@ -116,7 +124,11 @@ export default function SiteSettingsPage() {
       )}
 
       {successMessage && (
-        <Alert type="success" className="mb-4" onClose={() => setSuccessMessage('')}>
+        <Alert
+          type="success"
+          className="mb-4"
+          onClose={() => setSuccessMessage('')}
+        >
           {successMessage}
         </Alert>
       )}
@@ -131,7 +143,9 @@ export default function SiteSettingsPage() {
             <input
               type="text"
               value={settings.site_name}
-              onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
+              onChange={(e) =>
+                setSettings({ ...settings, site_name: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
               placeholder="کیتیا"
             />
@@ -154,7 +168,9 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm text-gray-600 truncate">{settings.favicon}</p>
+                    <p className="text-sm text-gray-600 truncate">
+                      {settings.favicon}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -173,7 +189,8 @@ export default function SiteSettingsPage() {
                 {settings.favicon ? 'تغییر فاویکون' : 'انتخاب فاویکون از R2'}
               </Button>
               <p className="text-xs text-gray-500 text-right">
-                فاویکون آیکون کوچکی است که در تب مرورگر نمایش داده می‌شود. ابعاد توصیه شده: 32x32 یا 64x64 پیکسل
+                فاویکون آیکون کوچکی است که در تب مرورگر نمایش داده می‌شود. ابعاد
+                توصیه شده: 32x32 یا 64x64 پیکسل
               </p>
             </div>
           </div>
@@ -195,7 +212,9 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm text-gray-600 truncate">{settings.logo}</p>
+                    <p className="text-sm text-gray-600 truncate">
+                      {settings.logo}
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -214,7 +233,8 @@ export default function SiteSettingsPage() {
                 {settings.logo ? 'تغییر لوگو' : 'انتخاب لوگو از R2'}
               </Button>
               <p className="text-xs text-gray-500 text-right">
-                لوگو در هدر سایت نمایش داده می‌شود. ابعاد توصیه شده: عرض حداکثر 200 پیکسل
+                لوگو در هدر سایت نمایش داده می‌شود. ابعاد توصیه شده: عرض حداکثر
+                200 پیکسل
               </p>
             </div>
           </div>

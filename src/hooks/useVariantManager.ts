@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import type { Variant, VariantFormData, MediaItem } from '@/types/product-admin';
+import type {
+  Variant,
+  VariantFormData,
+  MediaItem,
+} from '@/types/product-admin';
 
 /**
  * Custom hook for managing product variants
@@ -39,17 +43,23 @@ export function useVariantManager(initialVariants: Variant[] = []) {
 
     if (editingVariantId) {
       // Update existing variant (preserve order)
-      setVariants(variants.map(v =>
-        v.id === editingVariantId
-          ? { ...variantForm, id: editingVariantId, order: v.order, media: variantMedia }
-          : v
-      ));
+      setVariants(
+        variants.map((v) =>
+          v.id === editingVariantId
+            ? {
+                ...variantForm,
+                id: editingVariantId,
+                order: v.order,
+                media: variantMedia,
+              }
+            : v
+        )
+      );
       setEditingVariantId(null);
     } else {
       // Add new variant at the end
-      const newOrder = variants.length > 0
-        ? Math.max(...variants.map(v => v.order)) + 1
-        : 0;
+      const newOrder =
+        variants.length > 0 ? Math.max(...variants.map((v) => v.order)) + 1 : 0;
 
       const newVariant: Variant = {
         ...variantForm,
@@ -82,13 +92,13 @@ export function useVariantManager(initialVariants: Variant[] = []) {
 
   const deleteVariant = (variantId: string) => {
     if (confirm('آیا از حذف این نوع محصول اطمینان دارید؟')) {
-      const deletedVariant = variants.find(v => v.id === variantId);
+      const deletedVariant = variants.find((v) => v.id === variantId);
       if (!deletedVariant) return;
 
       // Remove variant and renumber remaining ones
       const updatedVariants = variants
-        .filter(v => v.id !== variantId)
-        .map(v => ({
+        .filter((v) => v.id !== variantId)
+        .map((v) => ({
           ...v,
           order: v.order > deletedVariant.order ? v.order - 1 : v.order,
         }));

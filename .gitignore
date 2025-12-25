@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/tests/node_modules
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -36,6 +37,12 @@ CREDENTIALS.md
 # production sync script (contains credentials)
 sync-to-production.sh
 
+# Claude Code project instructions
+CLAUDE.md
+
+# tasks folder (project notes and planning)
+/tasks
+
 # mcp config
 .mcp.json
 
@@ -68,3 +75,6 @@ tests/dist/
 tests/*.tsbuildinfo
 tests/contracts/*.recorded.json
 tests/.vitest/
+
+# VPS connection info
+vps.txt

@@ -6,7 +6,9 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import BulkActionsToolbar, { BulkAction } from '@/components/admin/BulkActionsToolbar';
+import BulkActionsToolbar, {
+  BulkAction,
+} from '@/components/admin/BulkActionsToolbar';
 import ProductTableSkeleton from '@/components/admin/ProductTableSkeleton';
 import Pagination from '@/components/ui/Pagination';
 import { formatPrice } from '@/lib/utils/format';
@@ -118,7 +120,11 @@ function SortableProductRow({
       <td className="px-2 sm:px-4 py-3 text-right">
         <div className="flex gap-1 sm:gap-2 justify-end">
           <Link href={`/admin/products/${product.id}/edit`}>
-            <Button variant="secondary" size="sm" className="text-xs sm:text-sm px-2 sm:px-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="text-xs sm:text-sm px-2 sm:px-3"
+            >
               ویرایش
             </Button>
           </Link>
@@ -160,15 +166,18 @@ function SortableProductRow({
               {product.discountPercent}% تخفیف
             </span>
           )}
-          {!product.isFeatured && (!product.discountPercent || product.discountPercent === 0) && (
-            <span className="text-gray-400 text-xs">-</span>
-          )}
+          {!product.isFeatured &&
+            (!product.discountPercent || product.discountPercent === 0) && (
+              <span className="text-gray-400 text-xs">-</span>
+            )}
         </div>
       </td>
 
       {/* Stock */}
       <td className="px-2 sm:px-4 py-3 text-right">
-        <span className={`text-xs sm:text-sm ${product.stock === 0 ? 'text-red-600' : 'text-gray-900'}`}>
+        <span
+          className={`text-xs sm:text-sm ${product.stock === 0 ? 'text-red-600' : 'text-gray-900'}`}
+        >
           {product.stock}
         </span>
       </td>
@@ -182,11 +191,15 @@ function SortableProductRow({
                 {formatPrice(Number(product.price))}
               </span>
               <span className="font-semibold text-red-600 text-xs sm:text-sm">
-                {formatPrice(Number(product.price) * (1 - product.discountPercent / 100))}
+                {formatPrice(
+                  Number(product.price) * (1 - product.discountPercent / 100)
+                )}
               </span>
             </>
           ) : (
-            <span className="text-xs sm:text-sm">{formatPrice(Number(product.price))}</span>
+            <span className="text-xs sm:text-sm">
+              {formatPrice(Number(product.price))}
+            </span>
           )}
         </div>
       </td>
@@ -214,7 +227,9 @@ export default function AdminProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [stockFilter, setStockFilter] = useState<string>('all');
-  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(
+    new Set()
+  );
   const [hasOrderChanges, setHasOrderChanges] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
@@ -250,11 +265,16 @@ export default function AdminProductsPage() {
   const fetchProducts = useCallback(async () => {
     try {
       setIsLoading(true);
-      const searchParam = searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '';
-      const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
+      const searchParam = searchQuery
+        ? `&search=${encodeURIComponent(searchQuery)}`
+        : '';
+      const statusParam =
+        statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const stockParam = stockFilter !== 'all' ? `&stock=${stockFilter}` : '';
 
-      const response = await fetch(`/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`);
+      const response = await fetch(
+        `/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`
+      );
 
       if (!response.ok) throw new Error('خطا در دریافت محصولات');
       const result = await response.json();
@@ -383,7 +403,7 @@ export default function AdminProductsPage() {
     if (selectedProducts.size === data.data.length) {
       setSelectedProducts(new Set());
     } else {
-      setSelectedProducts(new Set(data.data.map(p => p.id)));
+      setSelectedProducts(new Set(data.data.map((p) => p.id)));
     }
   };
 
@@ -493,7 +513,13 @@ export default function AdminProductsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
           <Link href="/admin/products/new" className="w-full sm:w-auto">
-            <Button variant="primary" size="sm" className="w-full sm:w-auto text-sm">افزودن محصول جدید</Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto text-sm"
+            >
+              افزودن محصول جدید
+            </Button>
           </Link>
           {hasOrderChanges && (
             <>
@@ -518,7 +544,9 @@ export default function AdminProductsPage() {
             </>
           )}
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 order-1 sm:order-2">مدیریت محصولات</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 order-1 sm:order-2">
+          مدیریت محصولات
+        </h1>
       </div>
 
       {error && (
@@ -528,14 +556,21 @@ export default function AdminProductsPage() {
       )}
 
       {successMessage && (
-        <Alert type="success" className="mb-4" onClose={() => setSuccessMessage('')}>
+        <Alert
+          type="success"
+          className="mb-4"
+          onClose={() => setSuccessMessage('')}
+        >
           {successMessage}
         </Alert>
       )}
 
       {/* Search Bar */}
       <Card className="mb-4 sm:mb-6" padding="sm">
-        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
+        <form
+          onSubmit={handleSearch}
+          className="flex flex-col sm:flex-row gap-2"
+        >
           <input
             type="text"
             value={searchQuery}
@@ -543,7 +578,12 @@ export default function AdminProductsPage() {
             placeholder="جستجو بر اساس نام محصول..."
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
           />
-          <Button type="submit" variant="primary" size="sm" className="w-full sm:w-auto order-1 sm:order-2">
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            className="w-full sm:w-auto order-1 sm:order-2"
+          >
             جستجو
           </Button>
         </form>
@@ -567,7 +607,9 @@ export default function AdminProductsPage() {
                 <option value="active">فعال</option>
                 <option value="inactive">غیرفعال</option>
               </select>
-              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">وضعیت:</label>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">
+                وضعیت:
+              </label>
             </div>
 
             {/* Stock Filter */}
@@ -584,7 +626,9 @@ export default function AdminProductsPage() {
                 <option value="in-stock">موجود</option>
                 <option value="out-of-stock">ناموجود</option>
               </select>
-              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">موجودی:</label>
+              <label className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">
+                موجودی:
+              </label>
             </div>
           </div>
 
@@ -599,101 +643,121 @@ export default function AdminProductsPage() {
         </div>
       </Card>
 
-      {(isLoading || !minLoadTimeElapsed) ? (
+      {isLoading || !minLoadTimeElapsed ? (
         <Card padding="sm">
           <ProductTableSkeleton rows={20} />
         </Card>
-      ) : data && (
-        <>
-          <Card padding="sm">
-            <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                <div className="text-xs sm:text-sm text-gray-600">
-                  نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
-                  {data.total.toLocaleString('fa-IR')} محصول
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600">
-                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
-                  {data.totalPages.toLocaleString('fa-IR')}
+      ) : (
+        data && (
+          <>
+            <Card padding="sm">
+              <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
+                    {data.total.toLocaleString('fa-IR')} محصول
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600">
+                    صفحه {data.page.toLocaleString('fa-IR')} از{' '}
+                    {data.totalPages.toLocaleString('fa-IR')}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="overflow-x-auto">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <table className="w-full min-w-[650px]">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mx-auto"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-                        </svg>
-                      </th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
-                        <input
-                          type="checkbox"
-                          checked={data.data.length > 0 && selectedProducts.size === data.data.length}
-                          onChange={toggleSelectAll}
-                          className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                      </th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">عملیات</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">وضعیت</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">ویژگی‌ها</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">موجودی</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">قیمت</th>
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">نام محصول</th>
-                    </tr>
-                  </thead>
-                  <SortableContext
-                    items={data.data.map(p => p.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    <tbody className="divide-y divide-gray-200">
-                      {data.data.map((product) => (
-                        <SortableProductRow
-                          key={product.id}
-                          product={product}
-                          selectedProducts={selectedProducts}
-                          onToggleSelect={toggleSelectProduct}
-                          onToggleActive={toggleActive}
-                          onDelete={handleDelete}
-                        />
-                      ))}
-                    </tbody>
-                  </SortableContext>
-                </table>
-              </DndContext>
+              <div className="overflow-x-auto">
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <table className="w-full min-w-[650px]">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
+                          <svg
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 mx-auto"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              d="M8 9l4-4 4 4m0 6l-4 4-4-4"
+                            />
+                          </svg>
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-center w-8 sm:w-12">
+                          <input
+                            type="checkbox"
+                            checked={
+                              data.data.length > 0 &&
+                              selectedProducts.size === data.data.length
+                            }
+                            onChange={toggleSelectAll}
+                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                          عملیات
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                          وضعیت
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden md:table-cell">
+                          ویژگی‌ها
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                          موجودی
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                          قیمت
+                        </th>
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                          نام محصول
+                        </th>
+                      </tr>
+                    </thead>
+                    <SortableContext
+                      items={data.data.map((p) => p.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <tbody className="divide-y divide-gray-200">
+                        {data.data.map((product) => (
+                          <SortableProductRow
+                            key={product.id}
+                            product={product}
+                            selectedProducts={selectedProducts}
+                            onToggleSelect={toggleSelectProduct}
+                            onToggleActive={toggleActive}
+                            onDelete={handleDelete}
+                          />
+                        ))}
+                      </tbody>
+                    </SortableContext>
+                  </table>
+                </DndContext>
 
-              {data.data.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  هیچ محصولی یافت نشد
-                </div>
-              )}
-            </div>
-          </Card>
+                {data.data.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    هیچ محصولی یافت نشد
+                  </div>
+                )}
+              </div>
+            </Card>
 
-          {/* Pagination */}
-          {data.totalPages > 1 && (
-            <div className="mt-6">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={data.totalPages}
-                onPageChange={setCurrentPage}
-              />
-            </div>
-          )}
-        </>
+            {/* Pagination */}
+            {data.totalPages > 1 && (
+              <div className="mt-6">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={data.totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            )}
+          </>
+        )
       )}
 
       {/* Bulk Actions Toolbar */}

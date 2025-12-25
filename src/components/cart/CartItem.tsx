@@ -7,11 +7,19 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface CartItemProps {
   item: CartItemType;
-  onUpdateQuantity: (productId: string, quantity: number, variantId?: string) => void;
+  onUpdateQuantity: (
+    productId: string,
+    quantity: number,
+    variantId?: string
+  ) => void;
   onRemove: (productId: string, variantId?: string) => void;
 }
 
-export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
+export default function CartItem({
+  item,
+  onUpdateQuantity,
+  onRemove,
+}: CartItemProps) {
   const handleIncrement = () => {
     if (item.quantity < item.stock) {
       onUpdateQuantity(item.productId, item.quantity + 1, item.variantId);
@@ -86,9 +94,7 @@ export default function CartItem({ item, onUpdateQuantity, onRemove }: CartItemP
           </button>
 
           {item.quantity >= item.stock && (
-            <span className="text-xs text-orange-600 mr-2">
-              حداکثر موجودی
-            </span>
+            <span className="text-xs text-orange-600 mr-2">حداکثر موجودی</span>
           )}
         </div>
       </div>

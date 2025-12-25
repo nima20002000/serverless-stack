@@ -23,15 +23,14 @@ async function getHandler() {
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, uid, name, email, phone, shippingAddress, postalCode, isVerified, role, createdAt, password')
+      .select(
+        'id, uid, name, email, phone, shippingAddress, postalCode, isVerified, role, createdAt, password'
+      )
       .eq('id', session.user.id)
       .single();
 
     if (error || !user) {
-      return NextResponse.json(
-        { error: 'کاربر یافت نشد' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
     }
 
     // Return user info with hasPassword flag (don't send actual password)
@@ -82,7 +81,10 @@ async function patchHandler(req: Request) {
   } catch (error) {
     console.error('Error updating user profile:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در به‌روزرسانی پروفایل' },
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در به‌روزرسانی پروفایل',
+      },
       { status: 500 }
     );
   }

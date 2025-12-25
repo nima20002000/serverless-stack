@@ -17,7 +17,11 @@ interface CartStore {
   items: CartItem[];
   addItem: (product: Omit<CartItem, 'quantity'>, quantity: number) => void;
   removeItem: (productId: string, variantId?: string) => void;
-  updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
+  updateQuantity: (
+    productId: string,
+    quantity: number,
+    variantId?: string
+  ) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;

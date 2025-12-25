@@ -4,7 +4,13 @@
 
 import { FileValidation, MediaType } from './types';
 
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
@@ -19,7 +25,8 @@ export function validateFile(file: File): FileValidation {
   if (!isImage && !isVideo) {
     return {
       valid: false,
-      error: 'فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM',
+      error:
+        'فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM',
     };
   }
 
@@ -41,7 +48,10 @@ export function validateFile(file: File): FileValidation {
 /**
  * Generate unique file path for storage
  */
-export function generateFilePath(fileName: string, mediaType: MediaType): string {
+export function generateFilePath(
+  fileName: string,
+  mediaType: MediaType
+): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   const ext = fileName.split('.').pop();
@@ -53,7 +63,10 @@ export function generateFilePath(fileName: string, mediaType: MediaType): string
 /**
  * Generate unique file path for media library
  */
-export function generateMediaLibraryPath(fileName: string, mediaType: MediaType): string {
+export function generateMediaLibraryPath(
+  fileName: string,
+  mediaType: MediaType
+): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
   const ext = fileName.split('.').pop();

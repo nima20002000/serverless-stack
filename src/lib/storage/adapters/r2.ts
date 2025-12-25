@@ -4,10 +4,23 @@
  * Uses AWS S3-compatible API to interact with Cloudflare R2
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { Agent as HttpsAgent } from 'https';
-import { StorageAdapter, UploadOptions, UploadResult, DeleteResult, ListObjectsOptions, ListObjectsResult } from '../types';
+import {
+  StorageAdapter,
+  UploadOptions,
+  UploadResult,
+  DeleteResult,
+  ListObjectsOptions,
+  ListObjectsResult,
+} from '../types';
 import { log } from '@/lib/logger';
 
 export class R2StorageAdapter implements StorageAdapter {
@@ -23,7 +36,9 @@ export class R2StorageAdapter implements StorageAdapter {
     this.publicUrl = process.env.R2_PUBLIC_URL || '';
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
-      throw new Error('R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
+      throw new Error(
+        'R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY'
+      );
     }
 
     // Configure S3 client for R2 with proper timeout and connection settings
@@ -38,10 +53,10 @@ export class R2StorageAdapter implements StorageAdapter {
         httpsAgent: new HttpsAgent({
           keepAlive: true,
           maxSockets: 50,
-          family: 4,                // Force IPv4 to avoid IPv6 connection issues
+          family: 4, // Force IPv4 to avoid IPv6 connection issues
         }),
-        requestTimeout: 30000,      // 30 seconds timeout for receiving response
-        connectionTimeout: 10000,    // 10 seconds timeout for establishing connection
+        requestTimeout: 30000, // 30 seconds timeout for receiving response
+        connectionTimeout: 10000, // 10 seconds timeout for establishing connection
       }),
     });
 
@@ -60,7 +75,10 @@ export class R2StorageAdapter implements StorageAdapter {
         // Already a Buffer
         body = file;
         log.info('File is already a Buffer', { size: body.length });
-      } else if (file instanceof Blob || (file && typeof (file as unknown as Blob).arrayBuffer === 'function')) {
+      } else if (
+        file instanceof Blob ||
+        (file && typeof (file as unknown as Blob).arrayBuffer === 'function')
+      ) {
         // File or Blob (works for both browser File and Next.js FormData File)
         log.info('Converting File/Blob to Buffer');
         const arrayBuffer = await file.arrayBuffer();
@@ -71,7 +89,11 @@ export class R2StorageAdapter implements StorageAdapter {
       }
 
       // Upload to R2 using PutObjectCommand
-      log.info('Initiating R2 upload', { bucket: this.bucketName, path, size: body.length });
+      log.info('Initiating R2 upload', {
+        bucket: this.bucketName,
+        path,
+        size: body.length,
+      });
 
       const command = new PutObjectCommand({
         Bucket: this.bucketName,
@@ -86,7 +108,12 @@ export class R2StorageAdapter implements StorageAdapter {
 
       const url = this.getPublicUrl(path);
 
-      log.info('File uploaded to R2', { path, contentType, size: body.length, url });
+      log.info('File uploaded to R2', {
+        path,
+        contentType,
+        size: body.length,
+        url,
+      });
 
       return {
         success: true,
@@ -97,7 +124,7 @@ export class R2StorageAdapter implements StorageAdapter {
         error,
         path: options.path,
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       });
       return {
         success: false,
@@ -135,7 +162,9 @@ export class R2StorageAdapter implements StorageAdapter {
 
     // Otherwise use R2.dev subdomain (need to enable in Cloudflare dashboard)
     // Format: https://pub-{hash}.r2.dev/{path}
-    log.warn('R2_PUBLIC_URL not configured, file may not be publicly accessible');
+    log.warn(
+      'R2_PUBLIC_URL not configured, file may not be publicly accessible'
+    );
     return `https://${this.bucketName}.r2.dev/${path}`;
   }
 
@@ -188,7 +217,8 @@ export class R2StorageAdapter implements StorageAdapter {
       log.error('R2 list error', { error, options });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
+        error:
+          error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
       };
     }
   }

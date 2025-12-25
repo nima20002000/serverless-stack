@@ -13,7 +13,14 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(req: NextRequest) {
   try {
-    const { phone, email, otp, name, password, purpose = 'register' } = await req.json();
+    const {
+      phone,
+      email,
+      otp,
+      name,
+      password,
+      purpose = 'register',
+    } = await req.json();
 
     // Must provide either phone or email
     const identifier = phone || email;
@@ -35,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: result.error,
-          attemptsLeft: result.attemptsLeft
+          attemptsLeft: result.attemptsLeft,
         },
         { status: 400 }
       );
@@ -57,7 +64,10 @@ export async function POST(req: NextRequest) {
 
       const user = await createUser(userData);
 
-      log.info('User registered successfully via OTP', { identifier, userId: user.id });
+      log.info('User registered successfully via OTP', {
+        identifier,
+        userId: user.id,
+      });
 
       return NextResponse.json({
         success: true,
@@ -67,8 +77,8 @@ export async function POST(req: NextRequest) {
           phone: user.phone,
           email: user.email,
           name: user.name,
-          role: user.role
-        }
+          role: user.role,
+        },
       });
     }
 
@@ -87,7 +97,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      log.info('User logged in successfully via OTP', { identifier, userId: user.id });
+      log.info('User logged in successfully via OTP', {
+        identifier,
+        userId: user.id,
+      });
 
       return NextResponse.json({
         success: true,
@@ -97,14 +110,14 @@ export async function POST(req: NextRequest) {
           phone: user.phone,
           email: user.email,
           name: user.name,
-          role: user.role
-        }
+          role: user.role,
+        },
       });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'کد تایید معتبر است'
+      message: 'کد تایید معتبر است',
     });
   } catch (error) {
     log.error('Verify OTP error', { error });
