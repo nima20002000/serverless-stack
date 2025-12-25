@@ -1,0 +1,71 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --omit=dev
+
+      - name: Run verification
+        run: npm run verify:routes
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.VPS_APP_PATH }}
+
+            # Pull latest code
+            git fetch origin
+            git reset --hard origin/main
+
+            # Install dependencies
+            npm ci --omit=dev
+
+            # Build application
+            npm run build
+
+            # Reload PM2 (zero-downtime)
+            pm2 reload ecosystem.config.js --update-env
+
+            # Wait for application to start
+            sleep 5
+
+            # Health check
+            if ! curl -f -s http://localhost:3001/api/health > /dev/null; then
+              echo "Health check failed!"
+              pm2 logs kitia --lines 50 --nostream
+              exit 1
+            fi
+
+            echo "Deployment successful!"
+            pm2 status
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Deployment failed! Check logs above."
