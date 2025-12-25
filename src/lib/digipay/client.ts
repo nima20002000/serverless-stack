@@ -3,6 +3,7 @@
  * High-level wrapper for Digipay payment operations
  */
 
+import 'server-only';
 import {
   obtainAccessToken,
   createTicket as createDigipayTicket,

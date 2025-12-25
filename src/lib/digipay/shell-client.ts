@@ -3,6 +3,7 @@
  * Executes Digipay API calls via curl shell commands
  */
 
+import 'server-only';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { log } from '@/lib/logger';
