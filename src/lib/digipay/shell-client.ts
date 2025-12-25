@@ -115,10 +115,24 @@ interface ReverseResponse {
 }
 
 /**
+ * Check if running in sandbox/UAT mode
+ */
+export function isSandboxMode(): boolean {
+  return process.env.DIGIPAY_SANDBOX === 'true';
+}
+
+/**
  * Get Digipay configuration from environment
+ * Uses correct API URLs based on sandbox mode:
+ * - Sandbox: https://uat.mydigipay.info
+ * - Production: https://api.mydigipay.com
  */
 function getDigipayConfig(): DigipayConfig {
-  const baseUrl = process.env.DIGIPAY_BASE_URL || 'https://uat.mydigipay.info';
+  const sandbox = isSandboxMode();
+  const baseUrl = sandbox
+    ? 'https://uat.mydigipay.info'
+    : 'https://api.mydigipay.com';
+
   const clientId = process.env.DIGIPAY_CLIENT_ID || '';
   const clientSecret = process.env.DIGIPAY_CLIENT_SECRET || '';
   const username = process.env.DIGIPAY_USERNAME || '';
@@ -394,11 +408,4 @@ export async function reversePurchase(
 
     throw new Error('خطا در برگشت تراکنش');
   }
-}
-
-/**
- * Check if running in sandbox/UAT mode
- */
-export function isSandboxMode(): boolean {
-  return process.env.DIGIPAY_SANDBOX !== 'false';
 }

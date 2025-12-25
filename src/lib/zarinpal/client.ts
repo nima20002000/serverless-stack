@@ -1,23 +1,33 @@
 /**
  * Zarinpal Payment Gateway Client
- * Wrapper for zarinpal-node-sdk
+ * Direct axios implementation to bypass proxy issues with the SDK
  */
 
 import 'server-only';
-import ZarinPal from 'zarinpal-node-sdk';
+import axios from 'axios';
 import { log } from '@/lib/logger';
 
-// Create new client on every call to ensure fresh env vars
-function getZarinpalClient(): ZarinPal {
+// Configuration
+function getConfig() {
   const merchantId = process.env.ZARINPAL_MERCHANT_ID || 'test';
   const sandbox = process.env.ZARINPAL_SANDBOX === 'true';
+  const baseURL = sandbox
+    ? 'https://sandbox.zarinpal.com'
+    : 'https://payment.zarinpal.com';
 
-  console.log('Creating Zarinpal client with merchant ID:', merchantId);
-  console.log('Sandbox mode:', sandbox);
+  return { merchantId, sandbox, baseURL };
+}
 
-  return new ZarinPal({
-    merchantId,
-    sandbox,
+// Create axios client with proxy disabled to avoid system proxy interference
+function createHttpClient(baseURL: string) {
+  return axios.create({
+    baseURL,
+    proxy: false, // Disable proxy to avoid HTTP/HTTPS mismatch issues
+    headers: {
+      'User-Agent': 'ZarinPalClient/v1 (Node.js)',
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
   });
 }
 
@@ -51,6 +61,7 @@ export async function createPaymentRequest(
   request: PaymentRequest
 ): Promise<PaymentRequestResponse> {
   const startTime = Date.now();
+  const config = getConfig();
 
   // Convert Tomans to Rials (1 Toman = 10 Rials)
   const amountInRials = request.amount * 10;
@@ -61,12 +72,13 @@ export async function createPaymentRequest(
     mobile: request.mobile,
     email: request.email,
     callbackUrl: request.callbackUrl,
-    sandbox: isSandboxMode(),
+    sandbox: config.sandbox,
   });
 
   try {
-    const client = getZarinpalClient();
-    const response = await client.payments.create({
+    const httpClient = createHttpClient(config.baseURL);
+    const response = await httpClient.post('/pg/v4/payment/request.json', {
+      merchant_id: config.merchantId,
       amount: amountInRials, // Zarinpal expects Rials
       callback_url: request.callbackUrl,
       description: request.description,
@@ -75,14 +87,14 @@ export async function createPaymentRequest(
     });
 
     log.info('Zarinpal payment request response', {
-      responseData: response.data,
-      responseErrors: response.errors,
+      responseData: response.data?.data,
+      responseErrors: response.data?.errors,
       elapsedMs: Date.now() - startTime,
     });
 
-    if (response.data && response.data.authority) {
-      const authority = response.data.authority;
-      const url = client.payments.getRedirectUrl(authority);
+    if (response.data?.data?.authority) {
+      const authority = response.data.data.authority;
+      const url = `${config.baseURL}/pg/StartPay/${authority}`;
 
       log.info('Payment request created successfully', {
         authority,
@@ -98,7 +110,7 @@ export async function createPaymentRequest(
     }
 
     log.error('Zarinpal payment request failed - no authority returned', {
-      response,
+      response: response.data,
       elapsedMs: Date.now() - startTime,
     });
 
@@ -127,6 +139,7 @@ export async function verifyPayment(
   amount: number
 ): Promise<PaymentVerification> {
   const startTime = Date.now();
+  const config = getConfig();
 
   // Convert Tomans to Rials (1 Toman = 10 Rials)
   const amountInRials = amount * 10;
@@ -135,40 +148,41 @@ export async function verifyPayment(
     authority,
     amountInTomans: amount,
     amountInRials: amountInRials,
-    sandbox: isSandboxMode(),
-    merchantId: process.env.ZARINPAL_MERCHANT_ID || 'test',
+    sandbox: config.sandbox,
+    merchantId: config.merchantId,
   });
 
   try {
-    const client = getZarinpalClient();
-    const response = await client.verifications.verify({
+    const httpClient = createHttpClient(config.baseURL);
+    const response = await httpClient.post('/pg/v4/payment/verify.json', {
+      merchant_id: config.merchantId,
       amount: amountInRials, // Must match original amount in Rials
       authority: authority,
     });
 
     log.info('Zarinpal verify API response received', {
       authority,
-      responseData: response.data,
-      responseErrors: response.errors,
+      responseData: response.data?.data,
+      responseErrors: response.data?.errors,
       elapsedMs: Date.now() - startTime,
     });
 
-    if (response.data && response.data.ref_id) {
+    if (response.data?.data?.ref_id) {
       log.info('Payment verification successful', {
         authority,
-        refId: response.data.ref_id,
+        refId: response.data.data.ref_id,
         elapsedMs: Date.now() - startTime,
       });
 
       return {
         status: 100,
-        refId: response.data.ref_id,
+        refId: response.data.data.ref_id,
       };
     }
 
     log.error('Zarinpal verification failed - no ref_id returned', {
       authority,
-      response,
+      response: response.data,
       elapsedMs: Date.now() - startTime,
     });
 
@@ -178,8 +192,6 @@ export async function verifyPayment(
       authority,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      // Log the full error object to see Zarinpal's error details
-      errorObject: error,
       elapsedMs: Date.now() - startTime,
     });
 
