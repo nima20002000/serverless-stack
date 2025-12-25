@@ -37,6 +37,9 @@ CREDENTIALS.md
 # production sync script (contains credentials)
 sync-to-production.sh
 
+# Claude Code project instructions
+CLAUDE.md
+
 # mcp config
 .mcp.json
 
@@ -59,3 +62,6 @@ next-env.d.ts
 # Prevent routing conflicts - products route is at /src/app/products, not (public)/products
 /src/app/(public)/products/
 tests/node_modules/
+
+# VPS connection info
+vps.txt
