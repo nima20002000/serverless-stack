@@ -2,7 +2,7 @@
 
 ## ✅ CURRENT STATUS
 
-### Completed Tests (3/12):
+### Completed Tests (4/12):
 - ✅ **auth-service.test.ts** - 16/16 tests passing
   - User Registration (4 tests)
   - Password Authentication (5 tests)
@@ -26,9 +26,17 @@
   - Guest Transaction Linking (2 tests)
   - Edge Cases and Error Scenarios (3 tests)
   - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
+- ⚠️ **otp-service.test.ts** - 7 tests (NOT TESTED YET)
+  - Email OTP Sending and Storage (1 test)
+  - SMS OTP Sending and Storage (1 test)
+  - Rate Limiting (1 test)
+  - OTP Verification Success (1 test)
+  - Attempt Tracking (1 test)
+  - Max Attempts Enforcement (1 test)
+  - Expiration Handling (1 test)
+  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 
-### Remaining Tests (9/12):
-- ⏳ otp-service.test.ts
+### Remaining Tests (8/12):
 - ⏳ user-service.test.ts
 - ⏳ category-service.test.ts
 - ⏳ promo-service.test.ts
@@ -43,6 +51,7 @@
 2. **Fixed test field name bug** - Corrected `totalAmount` to `amount` in transaction test (database field mismatch).
 3. **Created transaction-service.test.ts** - Comprehensive 22-test suite covering all transaction flows, stock management, payment tracking, and edge cases.
 4. **All cleanup functions optimized** - Added logging, error handling, and batch operations for Redis cleanup.
+5. **Created otp-service.test.ts** - Added 7-test suite covering OTP sending, rate limiting, verification, attempt limits, and expiration handling (not run yet).
 
 ---
 
