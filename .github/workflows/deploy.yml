@@ -28,10 +28,8 @@ jobs:
       - name: Run verification
         run: npm run verify:routes
 
-      - name: Build application
-        run: npm run build
-        env:
-          NODE_ENV: production
+      - name: Type check
+        run: npx tsc --noEmit
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
