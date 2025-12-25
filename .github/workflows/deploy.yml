@@ -44,8 +44,8 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            # Install dependencies
-            npm ci --omit=dev
+            # Install dependencies (including dev deps for build)
+            npm ci
 
             # Build application
             npm run build
