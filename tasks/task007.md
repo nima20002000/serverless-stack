@@ -4,6 +4,8 @@
 **Risk**: Low
 **Goal**: Maximize performance and reliability
 
+**STATUS**: ⏳ PENDING (Optional, can be done after 7-day stability period)
+
 ### 7.1 CDN Configuration (Cloudflare)
 
 **Already using Cloudflare as proxy**, optimize settings:

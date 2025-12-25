@@ -4,6 +4,10 @@
 **Risk**: Low (VPS proven stable)
 **Rollback**: N/A (can re-deploy to Vercel if needed)
 
+**STATUS**: ⏳ WAITING (Start date: 2025-12-25, Can proceed after: 2026-01-01)
+
+**NOTE**: VPS migration complete. Wait 7 days to confirm stability before archiving Vercel project.
+
 ### 6.1 Final Verification Before Decommission
 
 ```bash

@@ -4,6 +4,21 @@
 **Risk**: Low (production is live on VPS)
 **Rollback**: Revert DNS if severe issues
 
+**STATUS**: ✅ BASIC SETUP COMPLETE (2025-12-25)
+
+**COMPLETED**:
+
+- ✅ PM2 log rotation installed (100MB max, 7 days retention)
+- ✅ PM2 configuration saved for auto-start
+- ✅ System resources healthy:
+  - Disk: 26% used (25GB available)
+  - Memory: 617Mi used / 3.8Gi total (3.2Gi available)
+  - Load average: 0.32 (excellent)
+- ✅ Both services running stable:
+  - kitia: online, 0 restarts
+  - payment-proxy: online, 7 restarts over 14+ hours
+- ✅ Health endpoint responding: https://kitia.ir/api/health
+
 ### 5.1 Install Monitoring Tools
 
 ```bash
