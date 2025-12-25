@@ -4,13 +4,16 @@
 **Risk**: Low (VPS not yet in DNS)
 **Rollback**: Delete Nginx config, restart Nginx
 
-**STATUS**: ⚠️ PARTIALLY COMPLETE (payment proxy configured)
+**STATUS**: ✅ COMPLETED (2025-12-25)
 
 **CURRENT STATE**:
 
 - ✅ Nginx installed and running
 - ✅ SSL configured for `payment.kitia.ir`
-- ❌ No configuration for `kitia.ir` yet
+- ✅ Nginx config created for `kitia.ir` (HTTP only for now)
+- ✅ Site enabled in `/etc/nginx/sites-enabled/`
+- ✅ Nginx config test passed
+- ⏳ SSL certificate pending (after DNS cutover)
 
 **IMPORTANT**: Payment proxy already uses port 3000. Kitia must use port 3001.
 
@@ -173,19 +176,20 @@ systemctl status certbot.timer
 
 ### 2.4 Verification Checklist
 
-**COMPLETED**:
+**COMPLETED (2025-12-25)**:
 
 - [x] Certbot installed
 - [x] SSL certificate exists for payment.kitia.ir
 - [x] Nginx running successfully
 - [x] Payment proxy nginx config active
+- [x] Nginx config created: `/etc/nginx/sites-available/kitia.ir`
+- [x] Symlink created: `/etc/nginx/sites-enabled/kitia.ir`
+- [x] Nginx config test passed: `nginx -t`
+- [x] Nginx reloaded successfully
 
-**PENDING**:
+**PENDING (after DNS cutover)**:
 
-- [ ] Nginx config created: `/etc/nginx/sites-available/kitia.ir`
-- [ ] Symlink created: `/etc/nginx/sites-enabled/kitia.ir`
-- [ ] Nginx config test passed: `nginx -t`
+- [ ] SSL certificate for kitia.ir obtained via Certbot
 - [ ] Certbot auto-renewal timer verified
-- [ ] SSL certificate for kitia.ir obtained (after DNS switch)
 
 ---

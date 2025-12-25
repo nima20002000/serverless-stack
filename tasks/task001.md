@@ -2,7 +2,7 @@
 
 **Created**: 2025-12-25
 **Branch**: `migration/vercel-to-vps`
-**Status**: Planning
+**Status**: ✅ COMPLETED (2025-12-25)
 **Goal**: Migrate Kitia e-commerce platform from Vercel to self-hosted VPS with zero downtime and full rollback capability
 
 ---
@@ -274,18 +274,23 @@ AWS_EC2_METADATA_DISABLED="true"
 - [x] SSL certificate exists (for payment.kitia.ir)
 - [x] Payment proxy service running stable
 
-**PENDING**:
+**COMPLETED (2025-12-25)**:
 
-- [ ] System packages updated
-- [ ] Firewall configured (ports 22, 80, 443)
-- [ ] Fail2ban enabled
-- [ ] Application user `kitia` created (OR use dexter user)
-- [ ] Kitia repository cloned
-- [ ] Dependencies installed (`node_modules`)
-- [ ] Production build successful (`.next` directory created)
-- [ ] `.env.production` file created with all credentials
-- [ ] PM2 configured for auto-start (for Kitia)
-- [ ] PM2 log rotation configured
+- [x] System packages updated (Node.js, npm verified)
+- [x] Using dexter user (Option B - faster, sufficient for VPS migration)
+- [x] Kitia repository cloned from GitHub
+- [x] Dependencies installed (`npm ci`)
+- [x] Production build successful (`.next` directory created)
+- [x] `.env.production` file created with all production credentials
+- [x] `ecosystem.config.js` created for PM2
+- [x] `/api/health` endpoint added for monitoring
+- [x] Logs directory created at `/home/dexter/logs`
+
+**DEFERRED (not blocking for migration)**:
+
+- [ ] Firewall configured (ports 22, 80, 443) - can be done post-migration
+- [ ] Fail2ban enabled - can be done post-migration
+- [ ] PM2 log rotation configured - can be done post-migration
 
 ---
 

@@ -4,13 +4,18 @@
 **Risk**: Low (local testing only)
 **Rollback**: `pm2 delete kitia`
 
-**STATUS**: ⚠️ PARTIALLY COMPLETE (payment proxy configured)
+**STATUS**: ✅ COMPLETED (2025-12-25)
 
 **CURRENT STATE**:
 
 - ✅ PM2 installed globally
 - ✅ Payment proxy running in cluster mode (1 instance, port 3000)
-- ❌ Kitia app not yet configured
+- ✅ Kitia app running in cluster mode (1 instance, port 3001)
+- ✅ ecosystem.config.js configured
+- ✅ PM2 startup systemd service enabled
+- ✅ PM2 process list saved for auto-resurrect on reboot
+- ✅ Health endpoint responds: `curl http://localhost:3001/api/health`
+- ✅ Homepage responds: `curl http://localhost:3001/` returns 200
 
 **IMPORTANT**: Use different process name and port for Kitia to avoid conflicts.
 
@@ -113,19 +118,18 @@ pm2 delete kitia
 
 ### 3.5 Verification Checklist
 
-**COMPLETED**:
+**COMPLETED (2025-12-25)**:
 
 - [x] PM2 installed and running
 - [x] Payment proxy service stable
-
-**PENDING**:
-
-- [ ] PM2 ecosystem file created for Kitia
-- [ ] Logs directory created: `/home/dexter/logs` (or `/home/kitia/logs`)
-- [ ] Kitia application started: `pm2 status` shows "kitia-test: online"
-- [ ] Local access works: `curl http://localhost:3001` returns HTML
-- [ ] PM2 process saved for auto-start
-- [ ] No errors in logs: `pm2 logs kitia-test`
-- [ ] Payment proxy still running: `pm2 list` shows both services
+- [x] PM2 ecosystem file created for Kitia (`ecosystem.config.js`)
+- [x] Logs directory created: `/home/dexter/logs`
+- [x] Kitia application started: `pm2 status` shows "kitia: online"
+- [x] Local access works: `curl http://localhost:3001` returns HTML
+- [x] Health endpoint works: `curl http://localhost:3001/api/health` returns JSON
+- [x] PM2 process saved for auto-start (`pm2 save`)
+- [x] PM2 startup systemd service enabled (`pm2 startup`)
+- [x] No errors in logs: `pm2 logs kitia`
+- [x] Payment proxy still running: `pm2 list` shows both services
 
 ---
