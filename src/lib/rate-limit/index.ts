@@ -2,44 +2,87 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { log } from '@/lib/logger';
 
-// Validate required environment variables
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+// Lazy initialization to avoid build-time errors
+let redis: Redis | null = null;
+let _strictLimiter: Ratelimit | null = null;
+let _apiLimiter: Ratelimit | null = null;
+let _publicLimiter: Ratelimit | null = null;
 
-if (!redisUrl || !redisToken) {
-  throw new Error(
-    'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required'
-  );
+function getRedis(): Redis {
+  if (!redis) {
+    const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+    const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    if (!redisUrl || !redisToken) {
+      throw new Error(
+        'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required'
+      );
+    }
+
+    redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
+  }
+  return redis;
 }
 
-// Initialize Redis client
-const redis = new Redis({
-  url: redisUrl,
-  token: redisToken,
-});
-
 // Strict rate limiter for authentication endpoints (prevent brute force)
-export const strictLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(5, '2 m'), // 5 requests per 2 minutes
-  analytics: true,
-  prefix: 'ratelimit:strict',
-});
+export function getStrictLimiter(): Ratelimit {
+  if (!_strictLimiter) {
+    _strictLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(5, '2 m'), // 5 requests per 2 minutes
+      analytics: true,
+      prefix: 'ratelimit:strict',
+    });
+  }
+  return _strictLimiter;
+}
 
 // Moderate rate limiter for general API endpoints
-export const apiLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
-  analytics: true,
-  prefix: 'ratelimit:api',
-});
+export function getApiLimiter(): Ratelimit {
+  if (!_apiLimiter) {
+    _apiLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
+      analytics: true,
+      prefix: 'ratelimit:api',
+    });
+  }
+  return _apiLimiter;
+}
 
 // Generous rate limiter for public endpoints (product browsing)
-export const publicLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(1000, '1 m'), // 1000 requests per minute
-  analytics: true,
-  prefix: 'ratelimit:public',
+export function getPublicLimiter(): Ratelimit {
+  if (!_publicLimiter) {
+    _publicLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(1000, '1 m'), // 1000 requests per minute
+      analytics: true,
+      prefix: 'ratelimit:public',
+    });
+  }
+  return _publicLimiter;
+}
+
+// Backward compatible exports - these are getters that return the limiter on first access
+export const strictLimiter = new Proxy({} as Ratelimit, {
+  get(_, prop) {
+    return getStrictLimiter()[prop as keyof Ratelimit];
+  },
+});
+
+export const apiLimiter = new Proxy({} as Ratelimit, {
+  get(_, prop) {
+    return getApiLimiter()[prop as keyof Ratelimit];
+  },
+});
+
+export const publicLimiter = new Proxy({} as Ratelimit, {
+  get(_, prop) {
+    return getPublicLimiter()[prop as keyof Ratelimit];
+  },
 });
 
 /**
