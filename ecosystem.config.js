@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'kitia',
-      script: 'npm',
-      args: 'start',
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3001',
       cwd: '/home/dexter/kitia',
       instances: 2, // 2 instances for zero-downtime rolling reloads
       exec_mode: 'cluster',
