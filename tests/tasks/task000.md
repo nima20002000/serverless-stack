@@ -2,7 +2,7 @@
 
 ## ✅ CURRENT STATUS
 
-### Completed Tests (5/12):
+### Completed Tests (6/12):
 - ✅ **auth-service.test.ts** - 16/16 tests passing
   - User Registration (4 tests)
   - Password Authentication (5 tests)
@@ -46,9 +46,18 @@
   - Reset Password via OTP (1 test)
   - Orphaned Transaction Linking (1 test)
   - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
+- ⚠️ **category-service.test.ts** - 8 tests (NOT TESTED YET)
+  - Root Category Creation (1 test)
+  - Parent/Child Linking (1 test)
+  - Slug Uniqueness Enforcement (1 test)
+  - Category Updates (1 test)
+  - Active Category Lookup (1 test)
+  - Delete Protection: Products (1 test)
+  - Delete Protection: Children (1 test)
+  - Deletion Success (1 test)
+  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 
-### Remaining Tests (7/12):
-- ⏳ category-service.test.ts
+### Remaining Tests (6/12):
 - ⏳ promo-service.test.ts
 - ⏳ cache-invalidation.test.ts
 - ⏳ rate-limiting.test.ts
@@ -63,6 +72,7 @@
 4. **All cleanup functions optimized** - Added logging, error handling, and batch operations for Redis cleanup.
 5. **Created otp-service.test.ts** - Added 7-test suite covering OTP sending, rate limiting, verification, attempt limits, and expiration handling (not run yet).
 6. **Created user-service.test.ts** - Added 10-test suite covering user creation, profile updates, password flows, and orphaned transaction linking (not run yet).
+7. **Created category-service.test.ts** - Added 8-test suite covering category creation, hierarchy, slug uniqueness, updates, and deletion constraints (not run yet).
 
 ---
 
