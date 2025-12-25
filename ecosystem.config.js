@@ -5,7 +5,7 @@ module.exports = {
       script: 'npm',
       args: 'start',
       cwd: '/home/dexter/kitia',
-      instances: 1, // Start with 1, can scale to 2 after stability confirmed
+      instances: 2, // 2 instances for zero-downtime rolling reloads
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
