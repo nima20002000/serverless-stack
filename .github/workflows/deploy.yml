@@ -47,6 +47,9 @@ jobs:
             # Install dependencies (including dev deps for build)
             npm ci
 
+            # Remove previous build cache to ensure fresh build
+            rm -rf .next
+
             # Build application
             npm run build
 
