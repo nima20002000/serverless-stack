@@ -53,6 +53,9 @@ jobs:
             # Build application
             npm run build
 
+            # Prune devDependencies to reduce attack surface
+            npm prune --omit=dev
+
             # Reload PM2 (zero-downtime)
             pm2 reload ecosystem.config.js --update-env
 
