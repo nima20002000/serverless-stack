@@ -35,16 +35,16 @@ describe('user-service', () => {
     const supabase = createSupabaseMock();
     const query = createQueryMock({ data: { uid: 'U-000123' }, error: null });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(userService.generateNextUID()).resolves.toBe('U-000124');
   });
 
   it('rejects createUser when no identifier is provided', async () => {
     const userService = await loadUserService();
-    await expect(
-      userService.createUser({ name: 'Test User' })
-    ).rejects.toThrow('ایمیل یا شماره تلفن الزامی است');
+    await expect(userService.createUser({ name: 'Test User' })).rejects.toThrow(
+      'ایمیل یا شماره تلفن الزامی است'
+    );
   });
 
   it('rejects createUser when user already exists', async () => {
@@ -57,7 +57,9 @@ describe('user-service', () => {
         email: 'user@example.com',
         password: 'password123',
       })
-    ).rejects.toThrow('کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است');
+    ).rejects.toThrow(
+      'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+    );
   });
 
   it('creates user and returns sanitized data', async () => {
@@ -90,7 +92,7 @@ describe('user-service', () => {
       .mockReturnValueOnce(insertQuery)
       .mockReturnValueOnce(cleanupQuery);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(false);
     vi.spyOn(password, 'hashPassword').mockResolvedValue('hashed');
@@ -139,7 +141,7 @@ describe('user-service', () => {
     });
 
     supabase.from.mockReturnValue(updateQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     vi.spyOn(validation, 'validateEmailUniqueness').mockResolvedValue();
     vi.spyOn(validation, 'validatePhoneUniqueness').mockResolvedValue();
@@ -147,7 +149,7 @@ describe('user-service', () => {
     const result = await userService.updateUserProfile('user-1', {
       name: 'New Name',
       email: 'new@example.com',
-      phone: null,
+      phone: '',
       shippingAddress: 'Address',
       postalCode: '12345',
     });
@@ -178,9 +180,12 @@ describe('user-service', () => {
   it('does not throw when updating shipping info fails', async () => {
     const userService = await loadUserService();
     const supabase = createSupabaseMock();
-    const updateQuery = createQueryMock({ data: null, error: { message: 'x' } });
+    const updateQuery = createQueryMock({
+      data: null,
+      error: { message: 'x' },
+    });
     supabase.from.mockReturnValue(updateQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(
       userService.updateUserShippingInfo('user-1', {
@@ -195,9 +200,7 @@ describe('user-service', () => {
     const verifySpy = vi
       .spyOn(password, 'verifyCurrentPassword')
       .mockResolvedValue(true);
-    const updateSpy = vi
-      .spyOn(password, 'updatePassword')
-      .mockResolvedValue();
+    const updateSpy = vi.spyOn(password, 'updatePassword').mockResolvedValue();
 
     await userService.changeUserPassword('user-1', 'old', 'newpassword');
 
@@ -219,9 +222,7 @@ describe('user-service', () => {
     const ensureSpy = vi
       .spyOn(password, 'ensureNoPassword')
       .mockResolvedValue();
-    const updateSpy = vi
-      .spyOn(password, 'updatePassword')
-      .mockResolvedValue();
+    const updateSpy = vi.spyOn(password, 'updatePassword').mockResolvedValue();
 
     await userService.setUserPassword('user-1', 'newpassword');
 
@@ -245,20 +246,22 @@ describe('user-service', () => {
     const fetchPromise = Promise.resolve(fetchResponse);
     const updatePromise = Promise.resolve(updateResponse);
 
-    const fetchQuery: any = Object.assign(fetchPromise, {
+    const fetchQuery: unknown = Object.assign(fetchPromise, {
       select: vi.fn(() => fetchQuery),
       eq: vi.fn(() => fetchQuery),
       is: vi.fn(() => fetchQuery),
     });
 
-    const updateQuery: any = Object.assign(updatePromise, {
+    const updateQuery: unknown = Object.assign(updatePromise, {
       update: vi.fn(() => updateQuery),
       eq: vi.fn(() => updateQuery),
       is: vi.fn(() => updateQuery),
     });
 
-    supabase.from.mockReturnValueOnce(fetchQuery).mockReturnValueOnce(updateQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    supabase.from
+      .mockReturnValueOnce(fetchQuery)
+      .mockReturnValueOnce(updateQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await userService.linkOrphanedTransactions(
       'user-1',

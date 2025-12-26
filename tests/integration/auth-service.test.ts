@@ -14,25 +14,18 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { createTestSupabaseClient, generateTestUID } from '../utils/test-client';
 import {
-  cleanupTestUsers,
-  cleanupTestTransactions,
-  deleteTestUserByEmail,
-  deleteTestUserByPhone,
-} from '../utils/cleanup';
+  createTestSupabaseClient,
+  generateTestUID,
+} from '../utils/test-client';
+import { cleanupTestUsers, cleanupTestTransactions } from '../utils/cleanup';
 import {
   expectValidUserObject,
   expectValidEmail,
   expectValidIranianPhone,
   expectValidBcryptHash,
-  expectValidUUID,
 } from '../utils/assertions';
-import { testUsers, generateUniqueTestUser } from '../fixtures';
-
-// Import services from main application
-// Note: We need to import from the compiled source, so we'll access via path
-import type { AuthUser } from '../../src/services/auth-service';
+import { generateUniqueTestUser } from '../fixtures';
 
 // Since we can't directly import server-side services in tests, we'll test via API endpoints
 // However, we can test the database layer directly using Supabase client
@@ -78,6 +71,9 @@ describe('Auth Service Integration Tests', () => {
       // MEANINGFUL ASSERTIONS (NOT just toBeDefined)
       expect(error).toBeNull();
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Validate user object shape and contracts
       expectValidUserObject(createdUser);
@@ -88,10 +84,14 @@ describe('Auth Service Integration Tests', () => {
 
       // Verify password was hashed (not stored in plain text)
       expect(createdUser.password).not.toBe(testUser.password);
-      expectValidBcryptHash(createdUser.password!);
+      expect(createdUser.password).toBeDefined();
+      expectValidBcryptHash(createdUser.password as string);
 
       // Verify password hash can be verified
-      const isPasswordValid = await bcrypt.compare(testUser.password, createdUser.password!);
+      const isPasswordValid = await bcrypt.compare(
+        testUser.password,
+        createdUser.password as string
+      );
       expect(isPasswordValid).toBe(true);
     });
 
@@ -103,17 +103,15 @@ describe('Auth Service Integration Tests', () => {
       const uid1 = await generateTestUID();
 
       // Create first user
-      const { error: firstError } = await supabase
-        .from('users')
-        .insert({
-          id: randomUUID(),
-          uid: uid1,
-          name: testUser.name,
-          email: testUser.email,
-          password: hashedPassword,
-          role: 'USER',
-          updatedAt: now,
-        });
+      const { error: firstError } = await supabase.from('users').insert({
+        id: randomUUID(),
+        uid: uid1,
+        name: testUser.name,
+        email: testUser.email,
+        password: hashedPassword,
+        role: 'USER',
+        updatedAt: now,
+      });
 
       expect(firstError).toBeNull();
 
@@ -137,8 +135,8 @@ describe('Auth Service Integration Tests', () => {
       // VALIDATE ERROR PATH
       expect(duplicateUser).toBeNull();
       expect(duplicateError).not.toBeNull();
-      expect(duplicateError!.code).toBe('23505'); // Unique constraint violation
-      expect(duplicateError!.message).toContain('email');
+      expect(duplicateError?.code).toBe('23505'); // Unique constraint violation
+      expect(duplicateError?.message).toContain('email');
     });
 
     it('should generate sequential UIDs for multiple users', async () => {
@@ -148,10 +146,6 @@ describe('Auth Service Integration Tests', () => {
       for (let i = 0; i < 3; i++) {
         const testUser = generateUniqueTestUser(`sequential-${i}`);
         const hashedPassword = await bcrypt.hash(testUser.password, 10);
-
-        
-
-        
 
         const { data: createdUser, error } = await supabase
           .from('users')
@@ -169,11 +163,17 @@ describe('Auth Service Integration Tests', () => {
 
         expect(error).toBeNull();
         expect(createdUser).not.toBeNull();
-        users.push(createdUser!);
+        if (createdUser) {
+          users.push(createdUser);
+        }
       }
 
       // Verify UIDs are sequential (extract numbers and compare)
-      const extractNumber = (uid: string) => parseInt(uid.match(/^U-(\d+)$/)![1], 10);
+      const extractNumber = (uid: string) => {
+        const match = uid.match(/^U-(\d+)$/);
+        expect(match).not.toBeNull();
+        return parseInt(match?.[1] as string, 10);
+      };
       expect(extractNumber(users[1].uid)).toBe(extractNumber(users[0].uid) + 1);
       expect(extractNumber(users[2].uid)).toBe(extractNumber(users[1].uid) + 1);
     });
@@ -185,22 +185,18 @@ describe('Auth Service Integration Tests', () => {
       const testUser1 = generateUniqueTestUser('race-1');
       const testUser2 = generateUniqueTestUser('race-2');
 
-      
-
       const conflictingUid = await generateTestUID();
 
       // Create first user with this UID
-      const { error: error1 } = await supabase
-        .from('users')
-        .insert({
-          id: randomUUID(),
-          uid: conflictingUid,
-          name: testUser1.name,
-          email: testUser1.email,
-          password: await bcrypt.hash(testUser1.password, 10),
-          role: 'USER',
-          updatedAt: new Date().toISOString(),
-        });
+      const { error: error1 } = await supabase.from('users').insert({
+        id: randomUUID(),
+        uid: conflictingUid,
+        name: testUser1.name,
+        email: testUser1.email,
+        password: await bcrypt.hash(testUser1.password, 10),
+        role: 'USER',
+        updatedAt: new Date().toISOString(),
+      });
 
       expect(error1).toBeNull();
 
@@ -222,8 +218,8 @@ describe('Auth Service Integration Tests', () => {
       // VALIDATE UID CONFLICT ERROR
       expect(user2).toBeNull();
       expect(error2).not.toBeNull();
-      expect(error2!.code).toBe('23505'); // Unique constraint violation
-      expect(error2!.message).toContain('uid');
+      expect(error2?.code).toBe('23505'); // Unique constraint violation
+      expect(error2?.message).toContain('uid');
 
       // Retry with next UID should succeed
       const nextUid = await generateTestUID();
@@ -243,7 +239,7 @@ describe('Auth Service Integration Tests', () => {
 
       expect(retryError).toBeNull();
       expect(retriedUser).not.toBeNull();
-      expect(retriedUser!.uid).toBe(nextUid);
+      expect(retriedUser?.uid).toBe(nextUid);
     });
   });
 
@@ -252,8 +248,6 @@ describe('Auth Service Integration Tests', () => {
       // Create test user
       const testUser = generateUniqueTestUser('email-auth');
       const hashedPassword = await bcrypt.hash(testUser.password, 10);
-
-      
 
       const { data: createdUser } = await supabase
         .from('users')
@@ -270,6 +264,9 @@ describe('Auth Service Integration Tests', () => {
         .single();
 
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Authenticate (simulate authenticateUser function)
       const { data: authenticatedUser, error } = await supabase
@@ -280,24 +277,29 @@ describe('Auth Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(authenticatedUser).not.toBeNull();
+      if (!authenticatedUser) {
+        throw new Error('Expected authenticated user to be returned');
+      }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(testUser.password, authenticatedUser!.password!);
+      expect(authenticatedUser.password).toBeDefined();
+      const isPasswordValid = await bcrypt.compare(
+        testUser.password,
+        authenticatedUser.password as string
+      );
       expect(isPasswordValid).toBe(true);
 
       // Validate authenticated user object
       expectValidUserObject(authenticatedUser);
-      expect(authenticatedUser!.id).toBe(createdUser!.id);
-      expect(authenticatedUser!.email).toBe(testUser.email);
-      expect(authenticatedUser!.name).toBe(testUser.name);
-      expect(authenticatedUser!.role).toBe('USER');
+      expect(authenticatedUser.id).toBe(createdUser.id);
+      expect(authenticatedUser.email).toBe(testUser.email);
+      expect(authenticatedUser.name).toBe(testUser.name);
+      expect(authenticatedUser.role).toBe('USER');
     });
 
     it('should authenticate user with phone and correct password', async () => {
       const testUser = generateUniqueTestUser('phone-auth');
       const hashedPassword = await bcrypt.hash(testUser.password, 10);
-
-      
 
       const { data: createdUser } = await supabase
         .from('users')
@@ -314,6 +316,9 @@ describe('Auth Service Integration Tests', () => {
         .single();
 
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Authenticate by phone
       const { data: authenticatedUser, error } = await supabase
@@ -324,15 +329,23 @@ describe('Auth Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(authenticatedUser).not.toBeNull();
+      if (!authenticatedUser) {
+        throw new Error('Expected authenticated user to be returned');
+      }
 
       // Verify password
-      const isPasswordValid = await bcrypt.compare(testUser.password, authenticatedUser!.password!);
+      expect(authenticatedUser.password).toBeDefined();
+      const isPasswordValid = await bcrypt.compare(
+        testUser.password,
+        authenticatedUser.password as string
+      );
       expect(isPasswordValid).toBe(true);
 
       // Validate
       expectValidUserObject(authenticatedUser);
-      expectValidIranianPhone(authenticatedUser!.phone!);
-      expect(authenticatedUser!.id).toBe(createdUser!.id);
+      expect(authenticatedUser.phone).toBeDefined();
+      expectValidIranianPhone(authenticatedUser.phone as string);
+      expect(authenticatedUser.id).toBe(createdUser.id);
     });
 
     it('should fail authentication with incorrect password', async () => {
@@ -340,8 +353,6 @@ describe('Auth Service Integration Tests', () => {
       const correctPassword = testUser.password;
       const wrongPassword = 'WrongPassword123!';
       const hashedPassword = await bcrypt.hash(correctPassword, 10);
-
-      
 
       const { data: createdUser } = await supabase
         .from('users')
@@ -358,6 +369,9 @@ describe('Auth Service Integration Tests', () => {
         .single();
 
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Try to authenticate with wrong password
       const { data: user, error } = await supabase
@@ -370,7 +384,11 @@ describe('Auth Service Integration Tests', () => {
       expect(user).not.toBeNull();
 
       // Verify wrong password fails
-      const isPasswordValid = await bcrypt.compare(wrongPassword, user!.password!);
+      expect(user?.password).toBeDefined();
+      const isPasswordValid = await bcrypt.compare(
+        wrongPassword,
+        user?.password as string
+      );
       expect(isPasswordValid).toBe(false);
     });
 
@@ -386,13 +404,11 @@ describe('Auth Service Integration Tests', () => {
       // VALIDATE ERROR PATH - user not found
       expect(user).toBeNull();
       expect(error).not.toBeNull();
-      expect(error!.code).toBe('PGRST116'); // No rows returned
+      expect(error?.code).toBe('PGRST116'); // No rows returned
     });
 
     it('should fail authentication for user without password (OTP-only user)', async () => {
       const testUser = generateUniqueTestUser('otp-only');
-
-      
 
       // Create user WITHOUT password (OTP-only)
       const { data: createdUser, error } = await supabase
@@ -411,19 +427,20 @@ describe('Auth Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(createdUser).not.toBeNull();
-      expect(createdUser!.password).toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
+      expect(createdUser.password).toBeNull();
 
       // This user should NOT be able to authenticate with password
       // Service should detect null password and reject
-      expect(createdUser!.password).toBeNull();
+      expect(createdUser.password).toBeNull();
     });
   });
 
   describe('OTP Authentication', () => {
     it('should authenticate user by phone (OTP-verified)', async () => {
       const testUser = generateUniqueTestUser('phone-otp');
-
-      
 
       // Create phone-only user (OTP registration)
       const { data: createdUser, error } = await supabase
@@ -441,6 +458,9 @@ describe('Auth Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Simulate OTP authentication (authenticateUserByPhone)
       const { data: authenticatedUser, error: authError } = await supabase
@@ -451,18 +471,19 @@ describe('Auth Service Integration Tests', () => {
 
       expect(authError).toBeNull();
       expect(authenticatedUser).not.toBeNull();
+      if (!authenticatedUser) {
+        throw new Error('Expected authenticated user to be returned');
+      }
 
       // Validate user object
       expectValidUserObject(authenticatedUser);
-      expect(authenticatedUser!.phone).toBe(testUser.phone);
-      expect(authenticatedUser!.id).toBe(createdUser!.id);
-      expect(authenticatedUser!.password).toBeNull();
+      expect(authenticatedUser.phone).toBe(testUser.phone);
+      expect(authenticatedUser.id).toBe(createdUser.id);
+      expect(authenticatedUser.password).toBeNull();
     });
 
     it('should authenticate user by email (OTP-verified)', async () => {
       const testUser = generateUniqueTestUser('email-otp');
-
-      
 
       // Create email-only user (OTP registration)
       const { data: createdUser, error } = await supabase
@@ -480,6 +501,9 @@ describe('Auth Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Simulate OTP authentication (authenticateUserByEmail)
       const { data: authenticatedUser, error: authError } = await supabase
@@ -490,19 +514,21 @@ describe('Auth Service Integration Tests', () => {
 
       expect(authError).toBeNull();
       expect(authenticatedUser).not.toBeNull();
+      if (!authenticatedUser) {
+        throw new Error('Expected authenticated user to be returned');
+      }
 
       expectValidUserObject(authenticatedUser);
-      expectValidEmail(authenticatedUser!.email!);
-      expect(authenticatedUser!.id).toBe(createdUser!.id);
-      expect(authenticatedUser!.password).toBeNull();
+      expect(authenticatedUser.email).toBeDefined();
+      expectValidEmail(authenticatedUser.email as string);
+      expect(authenticatedUser.id).toBe(createdUser.id);
+      expect(authenticatedUser.password).toBeNull();
     });
   });
 
   describe('Orphaned Transaction Linking', () => {
     it('should link orphaned guest transactions when user logs in by phone', async () => {
       const testUser = generateUniqueTestUser('orphan-link');
-
-      
 
       // Create user
       const { data: createdUser, error: userError } = await supabase
@@ -520,6 +546,9 @@ describe('Auth Service Integration Tests', () => {
 
       expect(userError).toBeNull();
       expect(createdUser).not.toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
 
       // Create orphaned guest transaction with this phone
       const now = new Date().toISOString();
@@ -542,12 +571,15 @@ describe('Auth Service Integration Tests', () => {
 
       expect(txError).toBeNull();
       expect(guestTransaction).not.toBeNull();
-      expect(guestTransaction!.userId).toBeNull();
+      if (!guestTransaction) {
+        throw new Error('Expected guest transaction to be returned');
+      }
+      expect(guestTransaction.userId).toBeNull();
 
       // Simulate linking orphaned transactions (part of authenticateUserByPhone)
       const { error: updateError } = await supabase
         .from('transactions')
-        .update({ userId: createdUser!.id })
+        .update({ userId: createdUser.id })
         .is('userId', null)
         .eq('phone', testUser.phone);
 
@@ -557,13 +589,16 @@ describe('Auth Service Integration Tests', () => {
       const { data: linkedTransaction, error: verifyError } = await supabase
         .from('transactions')
         .select('*')
-        .eq('id', guestTransaction!.id)
+        .eq('id', guestTransaction.id)
         .single();
 
       expect(verifyError).toBeNull();
       expect(linkedTransaction).not.toBeNull();
-      expect(linkedTransaction!.userId).toBe(createdUser!.id);
-      expect(linkedTransaction!.userId).not.toBeNull();
+      if (!linkedTransaction) {
+        throw new Error('Expected linked transaction to be returned');
+      }
+      expect(linkedTransaction.userId).toBe(createdUser.id);
+      expect(linkedTransaction.userId).not.toBeNull();
     });
   });
 
@@ -586,8 +621,6 @@ describe('Auth Service Integration Tests', () => {
     it('should handle null password during registration', async () => {
       const testUser = generateUniqueTestUser('null-pass');
 
-      
-
       // Try to create user with null password (allowed for OTP-only users)
       const { data: createdUser, error } = await supabase
         .from('users')
@@ -606,7 +639,10 @@ describe('Auth Service Integration Tests', () => {
       // Should succeed - OTP-only users are valid
       expect(error).toBeNull();
       expect(createdUser).not.toBeNull();
-      expect(createdUser!.password).toBeNull();
+      if (!createdUser) {
+        throw new Error('Expected created user to be returned');
+      }
+      expect(createdUser.password).toBeNull();
     });
 
     it('should handle invalid email format in identifier detection', async () => {

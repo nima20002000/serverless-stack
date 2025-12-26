@@ -29,7 +29,7 @@ describe('Storage Service Integration Tests', () => {
     expect(existsAfterUpload).toBe(true);
 
     const listing = await storage.list({ prefix: 'test/integration/' });
-    const keys = listing.objects.map((item) => item.key);
+    const keys = (listing.objects ?? []).map((item) => item.key);
     expect(keys).toContain(fileKey);
 
     const deletion = await storage.delete(fileKey);

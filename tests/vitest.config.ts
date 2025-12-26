@@ -31,18 +31,6 @@ export default defineConfig({
       ],
     },
   },
-  deps: {
-    optimizer: {
-      ssr: {
-        include: ['@upstash/redis'],
-      },
-    },
-  },
-  server: {
-    deps: {
-      inline: ['@upstash/redis'],
-    },
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../src'),

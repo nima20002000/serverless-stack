@@ -28,7 +28,6 @@ import {
 } from '../utils/assertions';
 import {
   createUser,
-  getUserById,
   getUserByEmail,
   getUserByPhone,
   getUserByIdentifier,
@@ -119,8 +118,11 @@ describe('User Service Integration Tests', () => {
     const storedPassword = await fetchUserPassword(user.id);
     expect(typeof storedPassword).toBe('string');
     expect(storedPassword).not.toBe('TestPassword123!');
-    expectValidBcryptHash(storedPassword!);
-    expect(await bcrypt.compare('TestPassword123!', storedPassword!)).toBe(true);
+    expect(storedPassword).toBeDefined();
+    expectValidBcryptHash(storedPassword as string);
+    expect(
+      await bcrypt.compare('TestPassword123!', storedPassword as string)
+    ).toBe(true);
 
     const promo = await fetchLatestPromoCode(user.id);
     expect(promo.userId).toBe(user.id);
@@ -140,7 +142,8 @@ describe('User Service Integration Tests', () => {
     expectValidUUID(user.id);
     expect(user.email).toBeNull();
     expect(user.phone).toBe(phone);
-    expectValidIranianPhone(user.phone!);
+    expect(user.phone).toBeDefined();
+    expectValidIranianPhone(user.phone as string);
     expect(user.isVerified).toBe(true);
 
     const storedPassword = await fetchUserPassword(user.id);
@@ -163,11 +166,13 @@ describe('User Service Integration Tests', () => {
 
     const byEmail = await getUserByEmail(email);
     expect(byEmail?.id).toBe(user.id);
-    expectValidEmail(byEmail!.email!);
+    expect(byEmail?.email).toBeDefined();
+    expectValidEmail(byEmail?.email as string);
 
     const byPhone = await getUserByPhone(phone);
     expect(byPhone?.id).toBe(user.id);
-    expectValidIranianPhone(byPhone!.phone!);
+    expect(byPhone?.phone).toBeDefined();
+    expectValidIranianPhone(byPhone?.phone as string);
 
     const byIdentifierEmail = await getUserByIdentifier(email);
     expect(byIdentifierEmail?.id).toBe(user.id);
@@ -194,7 +199,9 @@ describe('User Service Integration Tests', () => {
         password: 'DuplicatePassword123!',
         name: 'کاربر دوم',
       })
-    ).rejects.toThrow('کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است');
+    ).rejects.toThrow(
+      'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+    );
   });
 
   it('should update user profile fields and persist changes', async () => {
@@ -218,8 +225,10 @@ describe('User Service Integration Tests', () => {
 
     expect(updated.id).toBe(user.id);
     expect(updated.name).toBe('کاربر به‌روز');
-    expectValidEmail(updated.email!);
-    expectValidIranianPhone(updated.phone!);
+    expect(updated.email).toBeDefined();
+    expectValidEmail(updated.email as string);
+    expect(updated.phone).toBeDefined();
+    expectValidIranianPhone(updated.phone as string);
     expect(updated.shippingAddress).toContain('تهران');
     expect(updated.postalCode).toBe('1234567890');
     expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
@@ -243,9 +252,10 @@ describe('User Service Integration Tests', () => {
       name: 'کاربر B',
     });
 
+    expect(userA.email).toBeDefined();
     await expect(
       updateUserProfile(userB.id, {
-        email: userA.email!,
+        email: userA.email as string,
       })
     ).rejects.toThrow('این ایمیل قبلاً استفاده شده است');
   });
@@ -263,7 +273,10 @@ describe('User Service Integration Tests', () => {
 
     const updatedHash = await fetchUserPassword(user.id);
     expect(typeof updatedHash).toBe('string');
-    expect(await bcrypt.compare('NewPassword123!', updatedHash!)).toBe(true);
+    expect(updatedHash).toBeDefined();
+    expect(await bcrypt.compare('NewPassword123!', updatedHash as string)).toBe(
+      true
+    );
   });
 
   it('should reject password change with incorrect current password', async () => {
@@ -292,9 +305,14 @@ describe('User Service Integration Tests', () => {
 
     const storedPassword = await fetchUserPassword(user.id);
     expect(typeof storedPassword).toBe('string');
-    expect(await bcrypt.compare('SetPassword123!', storedPassword!)).toBe(true);
+    expect(storedPassword).toBeDefined();
+    expect(
+      await bcrypt.compare('SetPassword123!', storedPassword as string)
+    ).toBe(true);
 
-    await expect(setUserPassword(user.id, 'AnotherPassword123!')).rejects.toThrow(
+    await expect(
+      setUserPassword(user.id, 'AnotherPassword123!')
+    ).rejects.toThrow(
       'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
     );
   });
@@ -312,7 +330,10 @@ describe('User Service Integration Tests', () => {
 
     const updatedHash = await fetchUserPassword(user.id);
     expect(typeof updatedHash).toBe('string');
-    expect(await bcrypt.compare('ResetPassword123!', updatedHash!)).toBe(true);
+    expect(updatedHash).toBeDefined();
+    expect(
+      await bcrypt.compare('ResetPassword123!', updatedHash as string)
+    ).toBe(true);
   });
 
   it('should link orphaned guest transactions to the user', async () => {
@@ -326,22 +347,20 @@ describe('User Service Integration Tests', () => {
     const transactionId = randomUUID();
     const transactionCode = `TEST-${Date.now()}`;
 
-    const { error: txError } = await supabase
-      .from('transactions')
-      .insert({
-        id: transactionId,
-        userId: null,
-        amount: 250000,
-        status: 'PENDING',
-        transactionCode,
-        paymentMethod: 'ZARINPAL',
-        isGuest: true,
-        fullName: 'مهمان تست',
-        phone,
-        shippingAddress: 'آدرس تست',
-        postalCode: '1234567890',
-        updatedAt: new Date().toISOString(),
-      });
+    const { error: txError } = await supabase.from('transactions').insert({
+      id: transactionId,
+      userId: null,
+      amount: 250000,
+      status: 'PENDING',
+      transactionCode,
+      paymentMethod: 'ZARINPAL',
+      isGuest: true,
+      fullName: 'مهمان تست',
+      phone,
+      shippingAddress: 'آدرس تست',
+      postalCode: '1234567890',
+      updatedAt: new Date().toISOString(),
+    });
 
     expect(txError).toBeNull();
 
@@ -356,6 +375,6 @@ describe('User Service Integration Tests', () => {
 
     expect(fetchError).toBeNull();
     expect(updatedTx?.userId).toBe(user.id);
-    expect(updatedTx!.isGuest).toBe(true);
+    expect(updatedTx?.isGuest).toBe(true);
   });
 });

@@ -7,7 +7,7 @@ type SupabaseResponse<T> = {
 };
 
 export function createQueryMock<T>(response: SupabaseResponse<T>) {
-  const query: any = {
+  const query: Record<string, unknown> = {
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
@@ -19,6 +19,7 @@ export function createQueryMock<T>(response: SupabaseResponse<T>) {
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
+    gt: vi.fn().mockReturnThis(),
     lt: vi.fn().mockReturnThis(),
     or: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -26,8 +27,10 @@ export function createQueryMock<T>(response: SupabaseResponse<T>) {
     maybeSingle: vi.fn().mockResolvedValue(response),
   };
 
-  query.then = (resolve: any, reject: any) =>
-    Promise.resolve(response).then(resolve, reject);
+  query.then = (
+    resolve: (value: SupabaseResponse<T>) => void,
+    reject: (reason?: unknown) => void
+  ) => Promise.resolve(response).then(resolve, reject);
 
   return query;
 }
@@ -35,5 +38,6 @@ export function createQueryMock<T>(response: SupabaseResponse<T>) {
 export function createSupabaseMock() {
   return {
     from: vi.fn(),
+    rpc: vi.fn(),
   };
 }

@@ -1,4 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  type MockedFunction,
+} from 'vitest';
 import {
   validatePassword,
   hashPassword,
@@ -34,8 +41,12 @@ vi.mock('bcryptjs', () => ({
 
 describe('user-service password', () => {
   const createClientMock = vi.mocked(createClient);
-  const hashMock = vi.mocked(bcrypt.hash);
-  const compareMock = vi.mocked(bcrypt.compare);
+  const hashMock = vi.mocked(bcrypt.hash) as unknown as MockedFunction<
+    (data: string, salt: number) => Promise<string>
+  >;
+  const compareMock = vi.mocked(bcrypt.compare) as unknown as MockedFunction<
+    (data: string, hash: string) => Promise<boolean>
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -61,7 +72,7 @@ describe('user-service password', () => {
     const supabase = createSupabaseMock();
     const query = createQueryMock({ data: null, error: { message: 'no' } });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await getUserWithPassword('user-1');
     expect(result).toBeNull();
@@ -71,7 +82,7 @@ describe('user-service password', () => {
     const supabase = createSupabaseMock();
     const query = createQueryMock({ data: null, error: null });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
     hashMock.mockResolvedValue('hashed');
 
     await updatePassword('user-1', 'newpassword');
@@ -93,12 +104,12 @@ describe('user-service password', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
     compareMock.mockResolvedValue(false);
 
-    await expect(
-      verifyCurrentPassword('user-1', 'wrong')
-    ).rejects.toThrow('رمز عبور فعلی نادرست است');
+    await expect(verifyCurrentPassword('user-1', 'wrong')).rejects.toThrow(
+      'رمز عبور فعلی نادرست است'
+    );
   });
 
   it('allows password change when no password exists', async () => {
@@ -108,7 +119,7 @@ describe('user-service password', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(verifyCurrentPassword('user-1', '')).resolves.toBe(true);
   });
@@ -120,7 +131,7 @@ describe('user-service password', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(ensureNoPassword('user-1')).rejects.toThrow(
       'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
