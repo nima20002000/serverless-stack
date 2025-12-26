@@ -30,17 +30,12 @@ export default defineConfig({
         '**/fixtures/**',
       ],
     },
-  },
-  deps: {
-    optimizer: {
-      ssr: {
-        include: ['@upstash/redis'],
-      },
-    },
-  },
-  server: {
     deps: {
-      inline: ['@upstash/redis'],
+      optimizer: {
+        ssr: {
+          include: ['@upstash/redis'],
+        },
+      },
     },
   },
   resolve: {

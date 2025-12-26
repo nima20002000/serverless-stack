@@ -158,7 +158,10 @@ export async function sendOTP(
     // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
       if (forceSendFail === 'sms') {
-        await supabase.from('otp_verifications').delete().eq('id', otpRecord.id);
+        await supabase
+          .from('otp_verifications')
+          .delete()
+          .eq('id', otpRecord.id);
         log.warn('Forced OTP SMS failure for tests', {
           identifier,
           otpRecordId: otpRecord.id,
@@ -193,7 +196,10 @@ export async function sendOTP(
       }
     } else if (identifier.includes('@')) {
       if (forceSendFail === 'email') {
-        await supabase.from('otp_verifications').delete().eq('id', otpRecord.id);
+        await supabase
+          .from('otp_verifications')
+          .delete()
+          .eq('id', otpRecord.id);
         log.warn('Forced OTP email failure for tests', {
           identifier,
           otpRecordId: otpRecord.id,
