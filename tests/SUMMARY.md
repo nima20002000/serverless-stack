@@ -8,6 +8,38 @@ A comprehensive integration testing infrastructure for the Kitia e-commerce plat
 3. Prevent AI reward hacking with strict anti-gaming guidelines
 4. Maintain separation from main codebase with independent package
 
+## Unit Test Kit (Task 001)
+
+Unit test suites were added under `tests/unit/` to validate core logic without real network calls. External services are mocked at module boundaries (Supabase, Redis, Kavenegar, Resend, R2).
+
+### Unit Suite Coverage
+
+- `tests/unit/services/auth-service.test.ts` - Identifier validation, password checks, OTP login flows
+- `tests/unit/services/user-service.test.ts` - UID generation, user creation, profile updates, password flows, orphaned linking
+- `tests/unit/services/user-service-validation.test.ts` - Email/phone validation and uniqueness guards
+- `tests/unit/services/user-service-password.test.ts` - Password hashing/verifying and guard rails
+- `tests/unit/services/product-service.test.ts` - Stock updates, discount logic, media management, variant ordering
+- `tests/unit/services/transaction-service.test.ts` - Transaction creation failures, status updates, stock verification
+- `tests/unit/services/otp-service.test.ts` - Rate limits, delivery failures, verification attempts
+- `tests/unit/services/category-service.test.ts` - Bulk delete/update constraints and cache invalidation
+- `tests/unit/services/promo-service.test.ts` - Promo generation, expiration/use rules
+- `tests/unit/services/sms-service.test.ts` - SMS validation and provider error handling
+- `tests/unit/services/settings-service.test.ts` - Settings CRUD behaviors
+
+- `tests/unit/lib/rate-limit.test.ts` - Client identifiers, limiter fail-open behavior
+- `tests/unit/lib/redis-client.test.ts` - Cache hits/misses, fallback behavior, key clearing
+- `tests/unit/lib/email-client.test.ts` - Resend/SMTP paths, buyer/admin notifications
+- `tests/unit/lib/storage.test.ts` - Storage adapter selection and routing
+- `tests/unit/lib/storage-r2-adapter.test.ts` - R2 upload path and error handling
+- `tests/unit/lib/storage-validators.test.ts` - File validation and path generation
+- `tests/unit/lib/logger.test.ts` - Log wrapper dispatch
+- `tests/unit/lib/supabase.test.ts` - Server/client env validation
+
+- `tests/unit/utils/format.test.ts` - Price formatting and discounts
+- `tests/unit/utils/persian.test.ts` - Persian digit/name normalization
+- `tests/unit/utils/url.test.ts` - Base URL and redirect creation
+- `tests/unit/utils/password-validation.test.ts` - Password validation rules
+
 ## Directory Structure
 
 ```
