@@ -33,6 +33,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      '@': path.resolve(__dirname, '../src'),
       '@tests': path.resolve(__dirname, './'),
       '@mocks': path.resolve(__dirname, './mocks'),
       '@fixtures': path.resolve(__dirname, './fixtures'),

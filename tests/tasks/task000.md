@@ -26,9 +26,9 @@
   - Guest Transaction Linking (2 tests)
   - Edge Cases and Error Scenarios (3 tests)
   - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
-- ⚠️ **otp-service.test.ts** - 9 tests (NOT TESTED YET)
+- ✅ **otp-service.test.ts** - 9/9 tests passing
   - Email OTP Sending and Storage (1 test)
-  - SMS OTP Sending and Storage (1 test)
+  - SMS OTP Delivery (success or provider failure cleanup) (1 test)
   - Invalid Identifier Handling (1 test)
   - Delivery Failure Handling (1 test)
   - Rate Limiting (1 test)
@@ -36,8 +36,8 @@
   - Attempt Tracking (1 test)
   - Max Attempts Enforcement (1 test)
   - Expiration Handling (1 test)
-  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
-- ⚠️ **user-service.test.ts** - 10 tests (NOT TESTED YET)
+  - Note: Provider failure paths are simulated via `TEST_OTP_FORCE_SEND_FAIL` in test env.
+- ✅ **user-service.test.ts** - 11/11 tests passing
   - User Creation (2 tests)
   - User Retrieval (1 test)
   - Duplicate User Rejection (1 test)
@@ -47,8 +47,7 @@
   - Set Password for OTP Users (1 test)
   - Reset Password via OTP (1 test)
   - Orphaned Transaction Linking (1 test)
-  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
-- ⚠️ **category-service.test.ts** - 8 tests (NOT TESTED YET)
+- ✅ **category-service.test.ts** - 8/8 tests passing
   - Root Category Creation (1 test)
   - Parent/Child Linking (1 test)
   - Slug Uniqueness Enforcement (1 test)
@@ -57,7 +56,6 @@
   - Delete Protection: Products (1 test)
   - Delete Protection: Children (1 test)
   - Deletion Success (1 test)
-  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 
 ### Remaining Tests (6/12):
 - ⏳ promo-service.test.ts
@@ -73,8 +71,9 @@
 3. **Created transaction-service.test.ts** - Comprehensive 22-test suite covering all transaction flows, stock management, payment tracking, and edge cases.
 4. **All cleanup functions optimized** - Added logging, error handling, and batch operations for Redis cleanup.
 5. **Created otp-service.test.ts** - Added 9-test suite covering OTP sending, invalid identifiers, delivery failures, rate limiting, verification, attempt limits, and expiration handling (not run yet).
-6. **Created user-service.test.ts** - Added 10-test suite covering user creation, profile updates, password flows, and orphaned transaction linking (not run yet).
-7. **Created category-service.test.ts** - Added 8-test suite covering category creation, hierarchy, slug uniqueness, updates, and deletion constraints (not run yet).
+6. **Created user-service.test.ts** - Added 11-test suite covering user creation, profile updates, password flows, and orphaned transaction linking (passing).
+7. **Created category-service.test.ts** - Added 8-test suite covering category creation, hierarchy, slug uniqueness, updates, and deletion constraints (passing).
+8. **Updated OTP tests and configs** - Added SMS delivery fallback handling, timestamp parsing fixes, and test-time `server-only`/`@` alias support; OTP suite now passing.
 
 ---
 

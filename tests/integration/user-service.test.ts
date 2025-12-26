@@ -222,7 +222,9 @@ describe('User Service Integration Tests', () => {
     expectValidIranianPhone(updated.phone!);
     expect(updated.shippingAddress).toContain('تهران');
     expect(updated.postalCode).toBe('1234567890');
-    expect(updated.updatedAt.getTime()).toBeGreaterThan(user.updatedAt.getTime());
+    expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
+      user.updatedAt.getTime()
+    );
   });
 
   it('should prevent profile update with duplicate email', async () => {

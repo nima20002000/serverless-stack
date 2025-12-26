@@ -13,6 +13,7 @@
     "types": ["vitest/globals", "node"],
     "baseUrl": ".",
     "paths": {
+      "@/*": ["../src/*"],
       "@tests/*": ["./*"],
       "@mocks/*": ["./mocks/*"],
       "@fixtures/*": ["./fixtures/*"],

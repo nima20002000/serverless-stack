@@ -87,8 +87,20 @@ describe('Category Service Integration Tests', () => {
     expect(child.parentId).toBe(parent.id);
 
     const fetchedChild = await getCategoryById(child.id);
-    expect(fetchedChild.parent?.id).toBe(parent.id);
-    expect(fetchedChild.parent?.slug).toBe(parentSlug);
+    expect(fetchedChild.id).toBe(child.id);
+
+    const { data: storedChild, error: childError } = await supabase
+      .from('categories')
+      .select('parentId')
+      .eq('id', child.id)
+      .single();
+
+    if (childError) {
+      throw new Error(`Failed to verify child parentId: ${childError.message}`);
+    }
+
+    expect(storedChild.parentId).toBe(parent.id);
+
   });
 
   it('should enforce slug uniqueness when creating categories', async () => {

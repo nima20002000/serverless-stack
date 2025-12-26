@@ -5,9 +5,13 @@
 
 import { config } from 'dotenv';
 import { resolve } from 'path';
+import { vi } from 'vitest';
 
 // Load test environment variables
 config({ path: resolve(__dirname, '.env') });
+
+// Allow server-only modules to load in Node test environment
+vi.mock('server-only', () => ({}));
 
 // Global test timeout
 const DEFAULT_TIMEOUT = 30000;
