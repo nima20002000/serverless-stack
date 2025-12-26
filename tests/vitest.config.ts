@@ -31,6 +31,13 @@ export default defineConfig({
       ],
     },
   },
+  deps: {
+    optimizer: {
+      ssr: {
+        include: ['@upstash/redis'],
+      },
+    },
+  },
   server: {
     deps: {
       inline: ['@upstash/redis'],

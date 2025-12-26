@@ -119,7 +119,7 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 
 #### Libraries
 - `tests/unit/lib/rate-limit.test.ts` (6)
-- `tests/unit/lib/redis-client.test.ts` (3)
+- `tests/unit/lib/redis-client.test.ts` (6)
 - `tests/unit/lib/email-client.test.ts` (5)
 - `tests/unit/lib/storage.test.ts` (2)
 - `tests/unit/lib/storage-r2-adapter.test.ts` (3)
@@ -136,7 +136,7 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 ### Known Gaps / Deferred Areas
 - Not all functions in `src/services/product-service.ts` and `src/services/transaction-service.ts` are unit-tested (CRUD, search, pagination). The unit suite covers core logic paths; integration tests still cover end-to-end behavior.
 - `tests/utils/*` helpers are not unit-tested since they are test-only and not used by unit tests directly. Add coverage if needed.
- - Redis positive-path caching behavior is not unit-tested; the suite covers the no-redis fallback and no-op invalidation paths only.
+ - Redis positive-path caching behavior is covered with module-boundary mocks; verify with live Redis via integration tests as needed.
 
 ---
 
