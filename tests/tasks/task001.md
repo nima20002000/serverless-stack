@@ -1,8 +1,8 @@
 # Task 001: Comprehensive Unit Test Kit
 
 ## Status
-- Status: COMPLETE
-- Owner: Codex (unit test pass)
+- Status: PARTIAL
+- Owner: Codex (unit test pass; gaps remain)
 - Goal: Build a comprehensive, high-signal unit test kit that covers core logic across services, utils, and libraries.
 
 ---
@@ -26,6 +26,9 @@ This task is separate from integration tests and should NOT rely on live Supabas
 - promo-service
 - sms-service
 - settings-service
+- admin-service
+- tag-service
+- search-service
 
 ### Libraries / Utilities
 - src/lib/rate-limit
@@ -134,9 +137,11 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 - `tests/unit/utils/password-validation.test.ts` (2)
 
 ### Known Gaps / Deferred Areas
+- Missing unit suites for `src/services/admin-service.ts`, `src/services/tag-service.ts`, and `src/services/search-service.ts`.
 - Not all functions in `src/services/product-service.ts` and `src/services/transaction-service.ts` are unit-tested (CRUD, search, pagination). The unit suite covers core logic paths; integration tests still cover end-to-end behavior.
 - `tests/utils/*` helpers are not unit-tested since they are test-only and not used by unit tests directly. Add coverage if needed.
- - Redis positive-path caching behavior is covered with module-boundary mocks; verify with live Redis via integration tests as needed.
+- Redis positive-path caching behavior is covered with module-boundary mocks; verify with live Redis via integration tests as needed.
+- Redis unit mocks may not fully match Upstash SDK response shapes; revisit `tests/unit/lib/redis-client.test.ts` to align responses with production behavior.
 
 ---
 
