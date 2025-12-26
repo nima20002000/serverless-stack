@@ -56,7 +56,9 @@ describe('Category Service Integration Tests', () => {
     });
 
     expectValidCategoryObject(category);
-    expect(category.parentId).toBeNull();
+    if (category.parentId !== null) {
+      throw new Error('Root category should not have a parentId');
+    }
     expect(category.isActive).toBe(true);
     expect(category.slug).toBe(slug);
 
@@ -149,11 +151,13 @@ describe('Category Service Integration Tests', () => {
     });
 
     const fetchedActive = await getCategoryBySlug(activeSlug);
-    expect(fetchedActive).not.toBeNull();
-    expect(fetchedActive!.id).toBe(active.id);
+    expect(fetchedActive?.id).toBe(active.id);
+    expect(fetchedActive?.slug).toBe(activeSlug);
 
     const fetchedInactive = await getCategoryBySlug(inactiveSlug);
-    expect(fetchedInactive).toBeNull();
+    if (fetchedInactive !== null) {
+      throw new Error('Inactive categories should not be returned by slug');
+    }
   });
 
   it('should prevent deleting category that has products', async () => {
@@ -164,10 +168,11 @@ describe('Category Service Integration Tests', () => {
       slug,
     });
 
+    const productId = randomUUID();
     const { error: productError } = await supabase
       .from('products')
       .insert({
-        id: randomUUID(),
+        id: productId,
         name: `TEST-Product-${Date.now()}`,
         description: 'محصول تستی',
         price: 150000,
@@ -176,8 +181,20 @@ describe('Category Service Integration Tests', () => {
         categoryId: category.id,
         updatedAt: new Date().toISOString(),
       });
+    if (productError) {
+      throw new Error(`Failed to seed product for test: ${productError.message}`);
+    }
 
-    expect(productError).toBeNull();
+    const { count: productCount, error: productCountError } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('id', productId);
+
+    if (productCountError) {
+      throw new Error(`Failed to verify seeded product: ${productCountError.message}`);
+    }
+
+    expect(productCount).toBe(1);
 
     await expect(deleteCategory(category.id)).rejects.toThrow(
       'امکان حذف دسته‌بندی که محصول دارد وجود ندارد'
@@ -215,13 +232,15 @@ describe('Category Service Integration Tests', () => {
     const result = await deleteCategory(category.id);
     expect(result.success).toBe(true);
 
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('categories')
-      .select('id')
-      .eq('id', category.id)
-      .maybeSingle();
+      .select('id', { count: 'exact', head: true })
+      .eq('id', category.id);
 
-    expect(error).toBeNull();
-    expect(data).toBeNull();
+    if (error) {
+      throw new Error(`Failed to verify category deletion: ${error.message}`);
+    }
+
+    expect(count).toBe(0);
   });
 });
