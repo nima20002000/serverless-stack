@@ -29,9 +29,8 @@ function createTestEmail(label: string) {
 }
 
 function createTestPhone() {
-  const seed = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
-  const suffix = seed.slice(-9);
-  return `09${suffix}`; // 11 digits, matches cleanup prefix
+  const suffix = String(Math.floor(Math.random() * 100)).padStart(2, '0');
+  return `091200000${suffix}`; // 11 digits, matches cleanup prefix
 }
 
 async function fetchLatestOTP(identifier: string, purpose: OTPPurpose) {
@@ -132,7 +131,7 @@ describe('OTP Service Integration Tests', () => {
     );
   });
 
-  it('should attempt SMS delivery and persist or clean up OTP accordingly', async () => {
+  it('should send OTP via SMS and store a valid OTP record', async () => {
     const phone =
       process.env.TEST_SMS_PHONE ||
       process.env.TEST_USER_PHONE ||
@@ -141,29 +140,36 @@ describe('OTP Service Integration Tests', () => {
 
     const result = await sendOTP(phone, 'register');
 
-    if (result.success) {
-      expect(result.expiresAt).toBeGreaterThan(startTime);
+    if (!result.success) {
+      if (process.env.TEST_SMS_ALLOW_FAIL === 'true') {
+        expect(result.errorCode).toBe('SEND_FAILED');
+        expect(result.error).toContain('پیامک');
+        const otpCount = await countOTPs(phone, 'register');
+        expect(otpCount).toBe(0);
+        return;
+      }
 
-      const record = await fetchLatestOTP(phone, 'register');
-
-      expect(record.identifier).toBe(phone);
-      expect(record.purpose).toBe('register');
-      expectValidOTPCode(record.code);
-      expect(record.attempts).toBe(0);
-      expect(record.maxAttempts).toBe(3);
-
-      const expiresAtMs = new Date(record.expiresAt + 'Z').getTime();
-      expectInRange(
-        expiresAtMs,
-        startTime + 4 * 60 * 1000,
-        startTime + 6 * 60 * 1000
+      throw new Error(
+        `SMS delivery failed unexpectedly: ${result.error || 'unknown error'}`
       );
-    } else {
-      expect(result.errorCode).toBe('SEND_FAILED');
-      expect(result.error).toContain('پیامک');
-      const otpCount = await countOTPs(phone, 'register');
-      expect(otpCount).toBe(0);
     }
+
+    expect(result.expiresAt).toBeGreaterThan(startTime);
+
+    const record = await fetchLatestOTP(phone, 'register');
+
+    expect(record.identifier).toBe(phone);
+    expect(record.purpose).toBe('register');
+    expectValidOTPCode(record.code);
+    expect(record.attempts).toBe(0);
+    expect(record.maxAttempts).toBe(3);
+
+    const expiresAtMs = new Date(record.expiresAt + 'Z').getTime();
+    expectInRange(
+      expiresAtMs,
+      startTime + 4 * 60 * 1000,
+      startTime + 6 * 60 * 1000
+    );
   });
 
   it('should reject invalid identifiers and remove OTP records', async () => {

@@ -100,7 +100,16 @@ describe('Category Service Integration Tests', () => {
     }
 
     expect(storedChild.parentId).toBe(parent.id);
+    const parentRelation = Array.isArray(fetchedChild.parent)
+      ? fetchedChild.parent[0]
+      : fetchedChild.parent;
 
+    if (!parentRelation) {
+      throw new Error('Parent relation missing from getCategoryById result');
+    }
+
+    expect(parentRelation.id).toBe(parent.id);
+    expect(parentRelation.slug).toBe(parentSlug);
   });
 
   it('should enforce slug uniqueness when creating categories', async () => {

@@ -37,6 +37,7 @@
   - Max Attempts Enforcement (1 test)
   - Expiration Handling (1 test)
   - Note: Provider failure paths are simulated via `TEST_OTP_FORCE_SEND_FAIL` in test env.
+  - Note: SMS delivery must succeed unless `TEST_SMS_ALLOW_FAIL=true`.
 - ✅ **user-service.test.ts** - 11/11 tests passing
   - User Creation (2 tests)
   - User Retrieval (1 test)
@@ -70,10 +71,11 @@
 2. **Fixed test field name bug** - Corrected `totalAmount` to `amount` in transaction test (database field mismatch).
 3. **Created transaction-service.test.ts** - Comprehensive 22-test suite covering all transaction flows, stock management, payment tracking, and edge cases.
 4. **All cleanup functions optimized** - Added logging, error handling, and batch operations for Redis cleanup.
-5. **Created otp-service.test.ts** - Added 9-test suite covering OTP sending, invalid identifiers, delivery failures, rate limiting, verification, attempt limits, and expiration handling (not run yet).
+5. **Created otp-service.test.ts** - Added 9-test suite covering OTP sending, invalid identifiers, delivery failures, rate limiting, verification, attempt limits, and expiration handling (passing).
 6. **Created user-service.test.ts** - Added 11-test suite covering user creation, profile updates, password flows, and orphaned transaction linking (passing).
 7. **Created category-service.test.ts** - Added 8-test suite covering category creation, hierarchy, slug uniqueness, updates, and deletion constraints (passing).
-8. **Updated OTP tests and configs** - Added SMS delivery fallback handling, timestamp parsing fixes, and test-time `server-only`/`@` alias support; OTP suite now passing.
+8. **Updated OTP tests and configs** - Added SMS delivery handling, timestamp parsing fixes, and test-time `server-only`/`@` alias support; OTP suite now passing.
+9. **Hardened category relations** - Added parent hydration in `getCategoryById`/`getCategoryBySlug` to ensure parent relations are returned (passing).
 
 ---
 

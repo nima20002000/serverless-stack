@@ -260,6 +260,24 @@ export async function getCategoryById(
     throw new Error('دسته‌بندی یافت نشد');
   }
 
+  // If parent relation is missing, fetch it explicitly (self-join can be flaky)
+  const parentRelation = Array.isArray(data.parent)
+    ? data.parent[0]
+    : data.parent;
+
+  if (data.parentId && !parentRelation) {
+    const { data: parentData } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', data.parentId)
+      .single();
+
+    if (parentData) {
+      // @ts-expect-error - augmenting response with parent relation
+      data.parent = parentData;
+    }
+  }
+
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
   return data;
 }
@@ -282,6 +300,24 @@ export async function getCategoryBySlug(
   if (error) {
     log.error('Category not found by slug', { slug, error });
     return null;
+  }
+
+  // If parent relation is missing, fetch it explicitly (self-join can be flaky)
+  const parentRelation = Array.isArray(data.parent)
+    ? data.parent[0]
+    : data.parent;
+
+  if (data.parentId && !parentRelation) {
+    const { data: parentData } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('id', data.parentId)
+      .single();
+
+    if (parentData) {
+      // @ts-expect-error - augmenting response with parent relation
+      data.parent = parentData;
+    }
   }
 
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
