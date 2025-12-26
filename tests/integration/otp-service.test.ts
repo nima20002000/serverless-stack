@@ -47,9 +47,15 @@ async function fetchLatestOTP(identifier: string, purpose: OTPPurpose) {
     .limit(1)
     .single();
 
-  expect(error).toBeNull();
-  expect(data).not.toBeNull();
-  return data!;
+  if (error) {
+    throw new Error(`Failed to fetch OTP record: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('OTP record not found');
+  }
+
+  return data;
 }
 
 async function countOTPs(identifier: string, purpose: OTPPurpose) {
@@ -59,7 +65,9 @@ async function countOTPs(identifier: string, purpose: OTPPurpose) {
     .eq('identifier', identifier)
     .eq('purpose', purpose);
 
-  expect(error).toBeNull();
+  if (error) {
+    throw new Error(`Failed to count OTP records: ${error.message}`);
+  }
   return count || 0;
 }
 
@@ -85,7 +93,9 @@ async function insertOTPRecord(params: {
       maxAttempts: params.maxAttempts ?? 3,
     });
 
-  expect(error).toBeNull();
+  if (error) {
+    throw new Error(`Failed to seed OTP record: ${error.message}`);
+  }
 }
 
 describe('OTP Service Integration Tests', () => {
@@ -146,6 +156,43 @@ describe('OTP Service Integration Tests', () => {
       startTime + 4 * 60 * 1000,
       startTime + 6 * 60 * 1000
     );
+  });
+
+  it('should reject invalid identifiers and remove OTP records', async () => {
+    const identifier = 'invalid-identifier';
+
+    const result = await sendOTP(identifier, 'register');
+
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('SEND_FAILED');
+    expect(result.error).toContain('فرمت');
+
+    const otpCount = await countOTPs(identifier, 'register');
+    expect(otpCount).toBe(0);
+  });
+
+  it('should return SEND_FAILED when email delivery fails', async () => {
+    const email = createTestEmail('send-fail');
+    const previous = process.env.TEST_OTP_FORCE_SEND_FAIL;
+
+    process.env.TEST_OTP_FORCE_SEND_FAIL = 'email';
+
+    try {
+      const result = await sendOTP(email, 'login');
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('SEND_FAILED');
+      expect(result.error).toContain('ایمیل');
+
+      const otpCount = await countOTPs(email, 'login');
+      expect(otpCount).toBe(0);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.TEST_OTP_FORCE_SEND_FAIL;
+      } else {
+        process.env.TEST_OTP_FORCE_SEND_FAIL = previous;
+      }
+    }
   });
 
   it('should enforce rate limiting when a recent OTP exists', async () => {

@@ -149,8 +149,25 @@ export async function sendOTP(
       createdAt: otpRecord.createdAt,
     });
 
+    // Test hook: force delivery failures for integration tests
+    const forceSendFail = process.env.TEST_OTP_FORCE_SEND_FAIL;
+
     // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
+      if (forceSendFail === 'sms') {
+        await supabase.from('otp_verifications').delete().eq('id', otpRecord.id);
+        log.warn('Forced OTP SMS failure for tests', {
+          identifier,
+          otpRecordId: otpRecord.id,
+        });
+        return {
+          success: false,
+          expiresAt: expiresAt.getTime(),
+          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED',
+        };
+      }
+
       // Phone number: Send SMS via Kavenegar
       const result = await sendOTPSMS(identifier, code);
       if (!result.success) {
@@ -172,6 +189,20 @@ export async function sendOTP(
         };
       }
     } else if (identifier.includes('@')) {
+      if (forceSendFail === 'email') {
+        await supabase.from('otp_verifications').delete().eq('id', otpRecord.id);
+        log.warn('Forced OTP email failure for tests', {
+          identifier,
+          otpRecordId: otpRecord.id,
+        });
+        return {
+          success: false,
+          expiresAt: expiresAt.getTime(),
+          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.',
+          errorCode: 'SEND_FAILED',
+        };
+      }
+
       // Email address: Send email
       log.info('🔵 Attempting to send OTP email', {
         identifier,
