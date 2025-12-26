@@ -13,6 +13,7 @@ import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
 import { log } from '@/lib/logger';
+import { DIGIPAY_CONFIG } from '@/config/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -258,11 +259,28 @@ async function postHandler(req: NextRequest) {
     const validPaymentMethod =
       paymentMethod === 'DIGIPAY' ? 'DIGIPAY' : 'ZARINPAL';
 
+    // Calculate surcharge for Digipay payments (12%)
+    const digipaySurcharge =
+      validPaymentMethod === 'DIGIPAY'
+        ? Math.round(totalAmount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
+        : 0;
+    const finalPaymentAmount = totalAmount + digipaySurcharge;
+
+    log.info('Payment amount calculation', {
+      baseAmount: totalAmount,
+      digipaySurcharge,
+      finalPaymentAmount,
+      paymentMethod: validPaymentMethod,
+      surchargePercent:
+        validPaymentMethod === 'DIGIPAY' ? DIGIPAY_CONFIG.SURCHARGE_PERCENT : 0,
+    });
+
     // Create transaction in database with shipping info
+    // Note: We store the final amount including surcharge for Digipay
     const transaction = await createTransaction({
       userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
-      amount: totalAmount,
+      amount: finalPaymentAmount, // Includes surcharge for Digipay
       paymentMethod: validPaymentMethod,
       shippingInfo: {
         fullName: finalFullName,
@@ -337,7 +355,7 @@ async function postHandler(req: NextRequest) {
       const digipayClient = await import('@/lib/digipay/client');
 
       const digipayRequest = await digipayClient.createPaymentRequest({
-        amount: totalAmount, // In Tomans
+        amount: finalPaymentAmount, // In Tomans - includes 12% surcharge
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         cellNumber: finalPhone,
         providerId: transaction.transactionCode, // Use transactionCode as unique providerId
@@ -359,7 +377,9 @@ async function postHandler(req: NextRequest) {
       log.info('Digipay transaction created successfully', {
         transactionId: transaction.id,
         transactionCode: transaction.transactionCode,
-        amount: totalAmount,
+        baseAmount: totalAmount,
+        surcharge: digipaySurcharge,
+        finalAmount: finalPaymentAmount,
         ticket: digipayRequest.ticket,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
@@ -367,7 +387,7 @@ async function postHandler(req: NextRequest) {
     } else {
       // Zarinpal payment flow (default)
       const paymentRequest = await createPaymentRequest({
-        amount: totalAmount, // In Tomans
+        amount: finalPaymentAmount, // In Tomans (no surcharge for Zarinpal)
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         email: finalEmail,
         mobile: finalPhone,
@@ -387,7 +407,7 @@ async function postHandler(req: NextRequest) {
       log.info('Zarinpal transaction created successfully', {
         transactionId: transaction.id,
         transactionCode: transaction.transactionCode,
-        amount: totalAmount,
+        amount: finalPaymentAmount,
         authority: paymentRequest.authority,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
@@ -398,7 +418,7 @@ async function postHandler(req: NextRequest) {
       success: true,
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
-      amount: totalAmount,
+      amount: finalPaymentAmount,
       paymentMethod: validPaymentMethod,
       paymentUrl,
       // For compatibility, include both identifiers (one will be undefined)

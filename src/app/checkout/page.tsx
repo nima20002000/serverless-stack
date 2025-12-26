@@ -11,6 +11,7 @@ import {
   selectTotal,
   selectItemCount,
 } from '@/store/cart-store';
+import { DIGIPAY_CONFIG } from '@/config/constants';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
@@ -28,6 +29,13 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>(
     'zarinpal'
   );
+
+  // Calculate surcharge for Digipay
+  const digipaySurcharge =
+    paymentMethod === 'digipay'
+      ? Math.round(total * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
+      : 0;
+  const finalTotal = total + digipaySurcharge;
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -194,9 +202,20 @@ export default function CheckoutPage() {
                     <span className="text-gray-600">جمع جزء</span>
                   </div>
 
+                  {/* Digipay Surcharge - Only show when Digipay is selected */}
+                  {paymentMethod === 'digipay' && digipaySurcharge > 0 && (
+                    <div className="flex justify-between text-sm text-purple-700 bg-purple-50 rounded-lg px-3 py-2 -mx-1">
+                      <span dir="rtl">+ {formatPrice(digipaySurcharge)}</span>
+                      <span>
+                        هزینه درگاه دیجی‌پی ({DIGIPAY_CONFIG.SURCHARGE_PERCENT}
+                        ٪)
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-lg font-bold border-t pt-3">
                     <span className="text-gray-900" dir="rtl">
-                      {formatPrice(total)}
+                      {formatPrice(finalTotal)}
                     </span>
                     <span className="text-gray-900">مبلغ قابل پرداخت</span>
                   </div>
@@ -253,6 +272,9 @@ export default function CheckoutPage() {
                     <div className="flex-1 text-right">
                       <div className="font-medium text-gray-900">دیجی پی</div>
                       <div className="text-sm text-gray-600">پرداخت اقساطی</div>
+                      <div className="text-xs text-purple-600 mt-1">
+                        + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ هزینه درگاه
+                      </div>
                     </div>
                     <div className="flex-shrink-0">
                       <DigipayBadge />

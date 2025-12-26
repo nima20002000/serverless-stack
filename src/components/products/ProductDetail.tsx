@@ -9,6 +9,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';
 import VariantSelector from './VariantSelector';
+import DigipaySurchargeBadge from '@/components/payment/DigipaySurchargeBadge';
 
 interface MediaItem {
   id: string;
@@ -320,8 +321,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             )}
           </div>
 
-          {/* Stock Status */}
-          <div className="mb-6">
+          {/* Stock Status and Payment Info */}
+          <div className="mb-6 flex items-center gap-3 flex-wrap">
             {isOutOfStock ? (
               <span className="inline-block bg-red-100 text-red-800 px-4 py-2 rounded-lg font-medium">
                 ناموجود
@@ -331,6 +332,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 موجود ({effectiveStock} عدد)
               </span>
             )}
+            <DigipaySurchargeBadge />
           </div>
 
           {/* Variant Selector */}
