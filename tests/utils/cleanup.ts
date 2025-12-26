@@ -233,7 +233,8 @@ export async function cleanupTestPromoCodes() {
   const { error: userPromoError } = await supabase
     .from('promo_codes')
     .delete()
-    .in('userId', userIds);
+    .in('userId', userIds)
+    .like('code', 'WELCOME-%');
 
   if (userPromoError && userPromoError.code !== 'PGRST116') {
     console.warn('Failed to cleanup test promo codes by user:', userPromoError);

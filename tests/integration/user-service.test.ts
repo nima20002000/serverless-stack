@@ -60,8 +60,10 @@ async function fetchUserPassword(userId: string) {
     .single();
 
   expect(error).toBeNull();
-  expect(data).not.toBeNull();
-  return data!.password as string | null;
+  if (!data || !('password' in data)) {
+    throw new Error('User password not found for test user');
+  }
+  return data.password as string | null;
 }
 
 async function fetchLatestPromoCode(userId: string) {
@@ -74,8 +76,10 @@ async function fetchLatestPromoCode(userId: string) {
     .single();
 
   expect(error).toBeNull();
-  expect(data).not.toBeNull();
-  return data!;
+  if (!data) {
+    throw new Error('Promo code not found for test user');
+  }
+  return data;
 }
 
 describe('User Service Integration Tests', () => {
@@ -113,7 +117,7 @@ describe('User Service Integration Tests', () => {
     expect(user.createdAt).toBeInstanceOf(Date);
 
     const storedPassword = await fetchUserPassword(user.id);
-    expect(storedPassword).not.toBeNull();
+    expect(typeof storedPassword).toBe('string');
     expect(storedPassword).not.toBe('TestPassword123!');
     expectValidBcryptHash(storedPassword!);
     expect(await bcrypt.compare('TestPassword123!', storedPassword!)).toBe(true);
@@ -143,8 +147,7 @@ describe('User Service Integration Tests', () => {
     expect(storedPassword).toBeNull();
 
     const fetched = await getUserByPhone(phone);
-    expect(fetched).not.toBeNull();
-    expect(fetched!.id).toBe(user.id);
+    expect(fetched?.id).toBe(user.id);
   });
 
   it('should retrieve user by email, phone, and identifier', async () => {
@@ -159,22 +162,18 @@ describe('User Service Integration Tests', () => {
     });
 
     const byEmail = await getUserByEmail(email);
-    expect(byEmail).not.toBeNull();
-    expect(byEmail!.id).toBe(user.id);
+    expect(byEmail?.id).toBe(user.id);
     expectValidEmail(byEmail!.email!);
 
     const byPhone = await getUserByPhone(phone);
-    expect(byPhone).not.toBeNull();
-    expect(byPhone!.id).toBe(user.id);
+    expect(byPhone?.id).toBe(user.id);
     expectValidIranianPhone(byPhone!.phone!);
 
     const byIdentifierEmail = await getUserByIdentifier(email);
-    expect(byIdentifierEmail).not.toBeNull();
-    expect(byIdentifierEmail!.id).toBe(user.id);
+    expect(byIdentifierEmail?.id).toBe(user.id);
 
     const byIdentifierPhone = await getUserByIdentifier(phone);
-    expect(byIdentifierPhone).not.toBeNull();
-    expect(byIdentifierPhone!.id).toBe(user.id);
+    expect(byIdentifierPhone?.id).toBe(user.id);
 
     const invalidIdentifier = await getUserByIdentifier('not-valid');
     expect(invalidIdentifier).toBeNull();
@@ -261,7 +260,7 @@ describe('User Service Integration Tests', () => {
     await changeUserPassword(user.id, 'OldPassword123!', 'NewPassword123!');
 
     const updatedHash = await fetchUserPassword(user.id);
-    expect(updatedHash).not.toBeNull();
+    expect(typeof updatedHash).toBe('string');
     expect(await bcrypt.compare('NewPassword123!', updatedHash!)).toBe(true);
   });
 
@@ -290,7 +289,7 @@ describe('User Service Integration Tests', () => {
     await setUserPassword(user.id, 'SetPassword123!');
 
     const storedPassword = await fetchUserPassword(user.id);
-    expect(storedPassword).not.toBeNull();
+    expect(typeof storedPassword).toBe('string');
     expect(await bcrypt.compare('SetPassword123!', storedPassword!)).toBe(true);
 
     await expect(setUserPassword(user.id, 'AnotherPassword123!')).rejects.toThrow(
@@ -310,7 +309,7 @@ describe('User Service Integration Tests', () => {
     await resetPasswordWithOTP(user.id, 'ResetPassword123!');
 
     const updatedHash = await fetchUserPassword(user.id);
-    expect(updatedHash).not.toBeNull();
+    expect(typeof updatedHash).toBe('string');
     expect(await bcrypt.compare('ResetPassword123!', updatedHash!)).toBe(true);
   });
 
@@ -354,8 +353,7 @@ describe('User Service Integration Tests', () => {
       .single();
 
     expect(fetchError).toBeNull();
-    expect(updatedTx).not.toBeNull();
-    expect(updatedTx!.userId).toBe(user.id);
+    expect(updatedTx?.userId).toBe(user.id);
     expect(updatedTx!.isGuest).toBe(true);
   });
 });
