@@ -141,7 +141,6 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 - Not all functions in `src/services/product-service.ts` and `src/services/transaction-service.ts` are unit-tested (CRUD, search, pagination). The unit suite covers core logic paths; integration tests still cover end-to-end behavior.
 - `tests/utils/*` helpers are not unit-tested since they are test-only and not used by unit tests directly. Add coverage if needed.
 - Redis positive-path caching behavior is covered with module-boundary mocks; verify with live Redis via integration tests as needed.
-- Redis unit mocks may not fully match Upstash SDK response shapes; revisit `tests/unit/lib/redis-client.test.ts` to align responses with production behavior.
 
 ---
 
