@@ -2,7 +2,7 @@
 
 ## ✅ CURRENT STATUS
 
-### Completed Tests (12/12):
+### Completed Tests (11/12):
 - ✅ **auth-service.test.ts** - 16/16 tests passing
   - User Registration (4 tests)
   - Password Authentication (5 tests)
@@ -18,14 +18,6 @@
   - Pagination and Ordering (2 tests)
   - **FIXED**: Resolved cleanup hang issue (Supabase subquery incompatibility)
   - **FIXED**: Corrected field name in test (amount vs totalAmount)
-- ⚠️ **transaction-service.test.ts** - 22 tests (NOT TESTED YET)
-  - Transaction Creation (5 tests)
-  - Transaction Status Updates (3 tests)
-  - Stock Management (5 tests)
-  - Transaction Retrieval (4 tests)
-  - Guest Transaction Linking (2 tests)
-  - Edge Cases and Error Scenarios (3 tests)
-  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 - ✅ **otp-service.test.ts** - 9/9 tests passing
   - Email OTP Sending and Storage (1 test)
   - SMS OTP Delivery (success or provider failure cleanup) (1 test)
@@ -79,11 +71,19 @@
 - ✅ **sms-service.test.ts** - 2/2 tests passing
   - Invalid phone rejection (1 test)
   - Order confirmation SMS delivery (1 test)
+  - Note: If `TEST_SMS_ALLOW_FAIL=true` is used, record that in this task file.
 - ✅ **storage-service.test.ts** - 1/1 tests passing
   - R2 upload/list/delete lifecycle (1 test)
 
-### Remaining Tests (0/12):
-All tests implemented and passing.
+### Remaining Tests (1/12):
+- ⏳ **transaction-service.test.ts** - 22 tests (NOT TESTED YET)
+  - Transaction Creation (5 tests)
+  - Transaction Status Updates (3 tests)
+  - Stock Management (5 tests)
+  - Transaction Retrieval (4 tests)
+  - Guest Transaction Linking (2 tests)
+  - Edge Cases and Error Scenarios (3 tests)
+  - **⚠️ IMPORTANT**: Tests written but NOT run yet. Next agent must verify all tests pass.
 
 ### Recent Work (Session Summary):
 1. **Fixed product-service tests** - Resolved cleanup function hang caused by Supabase PostgREST not supporting SQL subqueries in filters. Rewrote cleanup to use two-step approach (query IDs → filter with .in()).
