@@ -31,6 +31,11 @@ export default defineConfig({
       ],
     },
   },
+  server: {
+    deps: {
+      inline: ['@upstash/redis'],
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '../src'),

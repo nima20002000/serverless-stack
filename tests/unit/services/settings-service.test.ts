@@ -63,8 +63,8 @@ describe('settings-service', () => {
 
     supabase.from
       .mockReturnValueOnce(selectExisting)
-      .mockReturnValueOnce(updateExisting)
       .mockReturnValueOnce(selectMissing)
+      .mockReturnValueOnce(updateExisting)
       .mockReturnValueOnce(insertNew);
 
     createClientMock.mockReturnValue(supabase as any);

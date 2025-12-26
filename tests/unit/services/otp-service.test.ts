@@ -121,7 +121,10 @@ describe('otp-service', () => {
     const result = await sendOTP('user@example.com', 'login');
 
     expect(result.success).toBe(true);
-    expect(sendEmailMock).toHaveBeenCalledWith('user@example.com', '654321');
+    const insertedCode = (insertOtp.insert.mock.calls[0]?.[0] as { code?: string })
+      ?.code;
+    expect(insertedCode).toMatch(/^\d{6}$/);
+    expect(sendEmailMock).toHaveBeenCalledWith('user@example.com', insertedCode);
   });
 
   it('rejects expired OTPs', async () => {

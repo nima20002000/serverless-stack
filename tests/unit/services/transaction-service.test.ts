@@ -139,13 +139,17 @@ describe('transaction-service', () => {
 
   it('refuses to reduce stock for non-completed transactions', async () => {
     const supabase = createSupabaseMock();
-    createClientMock.mockReturnValue(supabase as any);
+    const fetchQuery = createQueryMock({
+      data: {
+        id: 'tx-1',
+        status: 'PENDING',
+        items: [],
+      },
+      error: null,
+    });
 
-    vi.spyOn(transactionService, 'getTransactionById').mockResolvedValue({
-      id: 'tx-1',
-      status: 'PENDING',
-      items: [],
-    } as any);
+    supabase.from.mockReturnValue(fetchQuery);
+    createClientMock.mockReturnValue(supabase as any);
 
     await expect(transactionService.reduceProductStock('tx-1')).rejects.toThrow(
       'فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد'

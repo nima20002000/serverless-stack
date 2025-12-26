@@ -143,6 +143,8 @@ describe('email client', () => {
   });
 
   it('skips admin confirmation when ADMIN_EMAIL is missing', async () => {
+    delete process.env.ADMIN_EMAIL;
+
     const { sendAdminOrderConfirmation } = await import('@/lib/email/client');
 
     const result = await sendAdminOrderConfirmation({

@@ -41,8 +41,14 @@ describe('storage', () => {
   it('throws on unknown storage provider', async () => {
     process.env.STORAGE_PROVIDER = 'unknown';
 
-    await expect(import('@/lib/storage')).rejects.toThrow(
-      'Unknown storage provider: unknown'
-    );
+    const { storage } = await import('@/lib/storage');
+
+    await expect(
+      storage.upload({
+        file: Buffer.from('data'),
+        path: 'products/img.jpg',
+        contentType: 'image/jpeg',
+      })
+    ).rejects.toThrow('Unknown storage provider: unknown');
   });
 });

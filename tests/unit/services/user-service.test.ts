@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createSupabaseMock, createQueryMock } from '../helpers/supabase-mock';
 import { createClient } from '@/lib/supabase/server';
-import * as userService from '@/services/user-service';
 import * as queries from '@/services/user-service/queries';
 import * as password from '@/services/user-service/password';
 import * as validation from '@/services/user-service/validation';
@@ -25,12 +24,14 @@ vi.mock('@/services/promo-service', () => ({
 
 describe('user-service', () => {
   const createClientMock = vi.mocked(createClient);
+  const loadUserService = () => import('@/services/user-service');
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('generates next UID based on highest UID', async () => {
+    const userService = await loadUserService();
     const supabase = createSupabaseMock();
     const query = createQueryMock({ data: { uid: 'U-000123' }, error: null });
     supabase.from.mockReturnValue(query);
@@ -40,12 +41,14 @@ describe('user-service', () => {
   });
 
   it('rejects createUser when no identifier is provided', async () => {
+    const userService = await loadUserService();
     await expect(
       userService.createUser({ name: 'Test User' })
     ).rejects.toThrow('ایمیل یا شماره تلفن الزامی است');
   });
 
   it('rejects createUser when user already exists', async () => {
+    const userService = await loadUserService();
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(true);
 
     await expect(
@@ -58,8 +61,13 @@ describe('user-service', () => {
   });
 
   it('creates user and returns sanitized data', async () => {
+    const userService = await loadUserService();
     const supabase = createSupabaseMock();
 
+    const uidQuery = createQueryMock({
+      data: { uid: 'U-000998' },
+      error: null,
+    });
     const insertQuery = createQueryMock({
       data: {
         id: 'user-1',
@@ -78,12 +86,12 @@ describe('user-service', () => {
     const cleanupQuery = createQueryMock({ data: null, error: null });
 
     supabase.from
+      .mockReturnValueOnce(uidQuery)
       .mockReturnValueOnce(insertQuery)
       .mockReturnValueOnce(cleanupQuery);
 
     createClientMock.mockReturnValue(supabase as any);
 
-    vi.spyOn(userService, 'generateNextUID').mockResolvedValue('U-000999');
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(false);
     vi.spyOn(password, 'hashPassword').mockResolvedValue('hashed');
     vi.spyOn(userService, 'linkOrphanedTransactions').mockResolvedValue(0);
@@ -111,6 +119,7 @@ describe('user-service', () => {
   });
 
   it('updates user profile and normalizes dates', async () => {
+    const userService = await loadUserService();
     const supabase = createSupabaseMock();
     const updateQuery = createQueryMock({
       data: {
@@ -167,6 +176,7 @@ describe('user-service', () => {
   });
 
   it('does not throw when updating shipping info fails', async () => {
+    const userService = await loadUserService();
     const supabase = createSupabaseMock();
     const updateQuery = createQueryMock({ data: null, error: { message: 'x' } });
     supabase.from.mockReturnValue(updateQuery);
@@ -181,6 +191,7 @@ describe('user-service', () => {
   });
 
   it('changes user password via validation and update', async () => {
+    const userService = await loadUserService();
     const verifySpy = vi
       .spyOn(password, 'verifyCurrentPassword')
       .mockResolvedValue(true);
@@ -195,6 +206,7 @@ describe('user-service', () => {
   });
 
   it('rejects resetPasswordWithOTP when user is missing', async () => {
+    const userService = await loadUserService();
     vi.spyOn(password, 'getUserWithPassword').mockResolvedValue(null);
 
     await expect(
@@ -203,6 +215,7 @@ describe('user-service', () => {
   });
 
   it('sets password after ensuring user has none', async () => {
+    const userService = await loadUserService();
     const ensureSpy = vi
       .spyOn(password, 'ensureNoPassword')
       .mockResolvedValue();
@@ -217,17 +230,32 @@ describe('user-service', () => {
   });
 
   it('links orphaned transactions and returns count', async () => {
+    const userService = await loadUserService();
     const supabase = createSupabaseMock();
 
-    const fetchQuery = createQueryMock({
+    const fetchResponse = {
       data: [
         { id: 't1', transactionCode: 'KT-AAA111' },
         { id: 't2', transactionCode: 'KT-BBB222' },
       ],
       error: null,
+    };
+    const updateResponse = { data: null, error: null };
+
+    const fetchPromise = Promise.resolve(fetchResponse);
+    const updatePromise = Promise.resolve(updateResponse);
+
+    const fetchQuery: any = Object.assign(fetchPromise, {
+      select: vi.fn(() => fetchQuery),
+      eq: vi.fn(() => fetchQuery),
+      is: vi.fn(() => fetchQuery),
     });
 
-    const updateQuery = createQueryMock({ data: null, error: null });
+    const updateQuery: any = Object.assign(updatePromise, {
+      update: vi.fn(() => updateQuery),
+      eq: vi.fn(() => updateQuery),
+      is: vi.fn(() => updateQuery),
+    });
 
     supabase.from.mockReturnValueOnce(fetchQuery).mockReturnValueOnce(updateQuery);
     createClientMock.mockReturnValue(supabase as any);

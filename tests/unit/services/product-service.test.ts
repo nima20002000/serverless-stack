@@ -165,11 +165,18 @@ describe('product-service', () => {
       data: { id: 'v1', order: 3 },
       error: null,
     });
+    const variantsQuery = createQueryMock({
+      data: [{ stock: 2 }, { stock: 3 }],
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
 
     supabase.from
       .mockReturnValueOnce(skuQuery)
       .mockReturnValueOnce(maxOrderQuery)
-      .mockReturnValueOnce(insertQuery);
+      .mockReturnValueOnce(insertQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateProductQuery);
 
     createClientMock.mockReturnValue(supabase as any);
 
