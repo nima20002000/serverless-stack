@@ -261,23 +261,6 @@ export async function getCategoryById(
   }
 
   // If parent relation is missing, fetch it explicitly (self-join can be flaky)
-  const parentRelation = Array.isArray(data.parent)
-    ? data.parent[0]
-    : data.parent;
-
-  if (data.parentId && !parentRelation) {
-    const { data: parentData } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('id', data.parentId)
-      .single();
-
-    if (parentData) {
-      // @ts-expect-error - augmenting response with parent relation
-      data.parent = parentData;
-    }
-  }
-
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
   return data;
 }
@@ -303,23 +286,6 @@ export async function getCategoryBySlug(
   }
 
   // If parent relation is missing, fetch it explicitly (self-join can be flaky)
-  const parentRelation = Array.isArray(data.parent)
-    ? data.parent[0]
-    : data.parent;
-
-  if (data.parentId && !parentRelation) {
-    const { data: parentData } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('id', data.parentId)
-      .single();
-
-    if (parentData) {
-      // @ts-expect-error - augmenting response with parent relation
-      data.parent = parentData;
-    }
-  }
-
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
   return data;
 }

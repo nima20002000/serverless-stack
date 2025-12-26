@@ -38,6 +38,7 @@
   - Expiration Handling (1 test)
   - Note: Provider failure paths are simulated via `TEST_OTP_FORCE_SEND_FAIL` in test env.
   - Note: SMS delivery must succeed unless `TEST_SMS_ALLOW_FAIL=true`.
+  - Note: Latest run did not use `TEST_SMS_ALLOW_FAIL` (SMS delivery succeeded).
 - ✅ **user-service.test.ts** - 11/11 tests passing
   - User Creation (2 tests)
   - User Retrieval (1 test)
@@ -57,6 +58,7 @@
   - Delete Protection: Products (1 test)
   - Delete Protection: Children (1 test)
   - Deletion Success (1 test)
+  - Note: Parent relation join is flaky; this suite may fail intermittently until fixed.
 
 ### Remaining Tests (6/12):
 - ⏳ promo-service.test.ts
