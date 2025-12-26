@@ -150,7 +150,10 @@ export async function sendOTP(
     });
 
     // Test hook: force delivery failures for integration tests
-    const forceSendFail = process.env.TEST_OTP_FORCE_SEND_FAIL;
+    const forceSendFail =
+      process.env.NODE_ENV === 'test'
+        ? process.env.TEST_OTP_FORCE_SEND_FAIL
+        : undefined;
 
     // Send OTP via appropriate channel based on identifier type
     if (identifier.startsWith('09')) {
