@@ -25,14 +25,16 @@ export const dynamic = 'force-dynamic';
 async function getHandler(req: NextRequest) {
   const startTime = Date.now();
 
+  // Declare variables at function scope so they're accessible in catch block
+  let trackingCode: string | null = null;
+  let status: string | null = null;
+  let ticket: string | null = null;
+  let providerId: string | null = null;
+
   try {
     // Digipay sends POST with form-encoded body (application/x-www-form-urlencoded)
     // Format: result=SUCCESS&trackingCode=xxx&providerId=xxx&amount=xxx
     // Also support GET with query params for manual testing
-    let trackingCode: string | null = null;
-    let status: string | null = null;
-    let ticket: string | null = null;
-    let providerId: string | null = null;
 
     if (req.method === 'POST') {
       // Parse form-encoded POST body from Digipay
@@ -161,7 +163,7 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Check if transaction is already completed
+    // Check if transaction is already completed or failed (prevent duplicate processing)
     if (transaction.status === 'COMPLETED') {
       log.info('Transaction already completed, skipping verification', {
         transactionId: transaction.id,
@@ -173,6 +175,23 @@ async function getHandler(req: NextRequest) {
       return NextResponse.redirect(
         createRedirectUrl(
           `/payment/success?code=${transaction.transactionCode}`
+        ),
+        303
+      );
+    }
+
+    // Prevent re-processing of failed transactions (idempotency)
+    if (transaction.status === 'FAILED') {
+      log.info('Transaction already failed, skipping verification', {
+        transactionId: transaction.id,
+        ticket,
+        elapsedMs: Date.now() - startTime,
+      });
+
+      // Use 303 (See Other) to force browser to use GET for the redirect
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
         ),
         303
       );
@@ -200,9 +219,10 @@ async function getHandler(req: NextRequest) {
     });
 
     // Update transaction status with Digipay tracking code
+    // CRITICAL: Check for errors before proceeding with notifications
     const supabase = createClient();
     const now = new Date().toISOString();
-    await supabase
+    const { error: updateError } = await supabase
       .from('transactions')
       .update({
         status: 'COMPLETED',
@@ -210,6 +230,37 @@ async function getHandler(req: NextRequest) {
         updatedAt: now,
       })
       .eq('id', transaction.id);
+
+    if (updateError) {
+      log.error('Failed to update transaction status to COMPLETED', {
+        transactionId: transaction.id,
+        trackingCode: verification.trackingCode,
+        error: updateError.message,
+      });
+      throw new Error('خطا در به‌روزرسانی وضعیت تراکنش');
+    }
+
+    // Verify the update was successful by re-fetching the transaction
+    const { data: updatedTransaction, error: fetchError } = await supabase
+      .from('transactions')
+      .select('status')
+      .eq('id', transaction.id)
+      .single();
+
+    if (fetchError || updatedTransaction?.status !== 'COMPLETED') {
+      log.error('Transaction status not updated to COMPLETED', {
+        transactionId: transaction.id,
+        expectedStatus: 'COMPLETED',
+        actualStatus: updatedTransaction?.status || 'unknown',
+        fetchError: fetchError?.message,
+      });
+      throw new Error('وضعیت تراکنش به‌روزرسانی نشد');
+    }
+
+    log.info('Transaction status confirmed COMPLETED', {
+      transactionId: transaction.id,
+      trackingCode: verification.trackingCode,
+    });
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
@@ -404,19 +455,23 @@ async function getHandler(req: NextRequest) {
     const errorMessage =
       error instanceof Error ? error.message : 'خطا در تأیید پرداخت';
 
-    // Try to get transaction code for error page
-    const searchParams = req.nextUrl.searchParams;
-    const ticket = searchParams.get('ticket');
-    const trackingCode = searchParams.get('trackingCode');
+    // Use the already-parsed values from the try block (they're in scope here)
+    // For POST: ticket comes from query params, trackingCode from body
+    // For GET: both come from query params
+    // The variables 'ticket' and 'trackingCode' are declared in the try block scope
+    // and are accessible here
+    const failTicket = ticket || req.nextUrl.searchParams.get('ticket');
+    const failTrackingCode =
+      trackingCode || req.nextUrl.searchParams.get('trackingCode');
 
     try {
-      if (ticket) {
-        const transaction = await getTransactionById(ticket);
+      if (failTicket) {
+        const failedTransaction = await getTransactionById(failTicket);
 
         log.warn('Marking transaction as failed', {
-          transactionId: transaction.id,
-          ticket,
-          trackingCode,
+          transactionId: failedTransaction.id,
+          ticket: failTicket,
+          trackingCode: failTrackingCode,
           error: errorMessage,
         });
 
@@ -426,22 +481,22 @@ async function getHandler(req: NextRequest) {
           .from('transactions')
           .update({
             status: 'FAILED',
-            digipayTrackingCode: trackingCode || undefined,
+            digipayTrackingCode: failTrackingCode || undefined,
             updatedAt: now,
           })
-          .eq('id', transaction.id);
+          .eq('id', failedTransaction.id);
 
         // Use 303 (See Other) to force browser to use GET for the redirect
         return NextResponse.redirect(
           createRedirectUrl(
-            `/payment/failure?code=${transaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`
+            `/payment/failure?code=${failedTransaction.transactionCode}&error=${encodeURIComponent(errorMessage)}`
           ),
           303
         );
       }
     } catch (nestedError) {
       log.error('Failed to mark transaction as failed', {
-        ticket,
+        ticket: failTicket,
         error:
           nestedError instanceof Error ? nestedError.message : 'Unknown error',
       });

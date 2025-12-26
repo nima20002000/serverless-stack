@@ -76,7 +76,7 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Check if transaction is already completed
+    // Check if transaction is already completed or failed (prevent duplicate processing)
     if (transaction.status === 'COMPLETED') {
       log.info('Transaction already completed, skipping verification', {
         transactionId: transaction.id,
@@ -87,6 +87,21 @@ async function getHandler(req: NextRequest) {
       return NextResponse.redirect(
         createRedirectUrl(
           `/payment/success?code=${transaction.transactionCode}`
+        )
+      );
+    }
+
+    // Prevent re-processing of failed transactions (idempotency)
+    if (transaction.status === 'FAILED') {
+      log.info('Transaction already failed, skipping verification', {
+        transactionId: transaction.id,
+        authority,
+        elapsedMs: Date.now() - startTime,
+      });
+
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
         )
       );
     }
