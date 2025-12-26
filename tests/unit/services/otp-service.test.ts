@@ -54,7 +54,7 @@ describe('otp-service', () => {
       .mockReturnValueOnce(deleteExpired)
       .mockReturnValueOnce(recentOtpQuery);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await sendOTP('09123456789', 'login');
 
@@ -70,12 +70,21 @@ describe('otp-service', () => {
     const supabase = createSupabaseMock();
 
     const deleteExpired = createQueryMock({ count: 0, error: null });
-    const recentOtpQuery = createQueryMock({ data: null, error: { code: 'PGRST116' } });
+    const recentOtpQuery = createQueryMock({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
     const deleteRemaining = createQueryMock({ count: 0, error: null });
     const insertOtp = createQueryMock({
-      data: { id: 'otp-2', code: '123456', createdAt: '2024-01-01T00:01:00.000' },
+      data: {
+        id: 'otp-2',
+        code: '123456',
+        createdAt: '2024-01-01T00:01:00.000',
+      },
       error: null,
-    });
+    }) as ReturnType<typeof createQueryMock> & {
+      insert: ReturnType<typeof vi.fn>;
+    };
     const deleteInvalid = createQueryMock({ data: null, error: null });
 
     supabase.from
@@ -85,7 +94,7 @@ describe('otp-service', () => {
       .mockReturnValueOnce(insertOtp)
       .mockReturnValueOnce(deleteInvalid);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await sendOTP('invalid-identifier', 'register');
 
@@ -102,12 +111,21 @@ describe('otp-service', () => {
     const supabase = createSupabaseMock();
 
     const deleteExpired = createQueryMock({ count: 0, error: null });
-    const recentOtpQuery = createQueryMock({ data: null, error: { code: 'PGRST116' } });
+    const recentOtpQuery = createQueryMock({
+      data: null,
+      error: { code: 'PGRST116' },
+    });
     const deleteRemaining = createQueryMock({ count: 0, error: null });
     const insertOtp = createQueryMock({
-      data: { id: 'otp-3', code: '654321', createdAt: '2024-01-01T00:01:00.000' },
+      data: {
+        id: 'otp-3',
+        code: '654321',
+        createdAt: '2024-01-01T00:01:00.000',
+      },
       error: null,
-    });
+    }) as ReturnType<typeof createQueryMock> & {
+      insert: ReturnType<typeof vi.fn>;
+    };
 
     supabase.from
       .mockReturnValueOnce(deleteExpired)
@@ -115,16 +133,20 @@ describe('otp-service', () => {
       .mockReturnValueOnce(deleteRemaining)
       .mockReturnValueOnce(insertOtp);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
     sendEmailMock.mockResolvedValue({ success: true, messageId: 'msg-1' });
 
     const result = await sendOTP('user@example.com', 'login');
 
     expect(result.success).toBe(true);
-    const insertedCode = (insertOtp.insert.mock.calls[0]?.[0] as { code?: string })
-      ?.code;
+    const insertedCode = (
+      insertOtp.insert.mock.calls[0]?.[0] as { code?: string }
+    )?.code;
     expect(insertedCode).toMatch(/^\d{6}$/);
-    expect(sendEmailMock).toHaveBeenCalledWith('user@example.com', insertedCode);
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      'user@example.com',
+      insertedCode
+    );
   });
 
   it('rejects expired OTPs', async () => {
@@ -142,8 +164,10 @@ describe('otp-service', () => {
     });
     const deleteQuery = createQueryMock({ data: null, error: null });
 
-    supabase.from.mockReturnValueOnce(fetchQuery).mockReturnValueOnce(deleteQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    supabase.from
+      .mockReturnValueOnce(fetchQuery)
+      .mockReturnValueOnce(deleteQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await verifyOTP('09123456789', '111111', 'login');
 
@@ -169,8 +193,10 @@ describe('otp-service', () => {
     });
     const updateQuery = createQueryMock({ data: null, error: null });
 
-    supabase.from.mockReturnValueOnce(fetchQuery).mockReturnValueOnce(updateQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    supabase.from
+      .mockReturnValueOnce(fetchQuery)
+      .mockReturnValueOnce(updateQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await verifyOTP('09123456789', '000000', 'login');
 
@@ -202,7 +228,7 @@ describe('otp-service', () => {
       .mockReturnValueOnce(fetchQuery)
       .mockReturnValueOnce(updateQuery)
       .mockReturnValueOnce(deleteQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await verifyOTP('09123456789', '333333', 'login');
 

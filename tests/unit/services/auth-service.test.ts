@@ -1,6 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  type MockedFunction,
+} from 'vitest';
 import { createQueryMock, createSupabaseMock } from '../helpers/supabase-mock';
-import { authenticateUser, authenticateUserByEmail, authenticateUserByPhone } from '@/services/auth-service';
+import {
+  authenticateUser,
+  authenticateUserByEmail,
+  authenticateUserByPhone,
+} from '@/services/auth-service';
 import { createClient } from '@/lib/supabase/server';
 import * as userService from '@/services/user-service';
 import bcrypt from 'bcryptjs';
@@ -26,7 +37,9 @@ vi.mock('bcryptjs', () => ({
 
 describe('auth-service', () => {
   const createClientMock = vi.mocked(createClient);
-  const compareMock = vi.mocked(bcrypt.compare);
+  const compareMock = vi.mocked(bcrypt.compare) as unknown as MockedFunction<
+    (data: string, hash: string) => Promise<boolean>
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -62,7 +75,7 @@ describe('auth-service', () => {
     });
 
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(
       authenticateUser('user@example.com', 'password123')
@@ -85,7 +98,7 @@ describe('auth-service', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
     compareMock.mockResolvedValue(false);
 
     await expect(
@@ -107,7 +120,7 @@ describe('auth-service', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
     compareMock.mockResolvedValue(true);
 
     const result = await authenticateUser('user@example.com', 'password123');
@@ -134,7 +147,7 @@ describe('auth-service', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const linkSpy = vi
       .spyOn(userService, 'linkOrphanedTransactions')
@@ -165,7 +178,7 @@ describe('auth-service', () => {
       error: null,
     });
     supabase.from.mockReturnValue(query);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await authenticateUserByEmail('otp@example.com');
 

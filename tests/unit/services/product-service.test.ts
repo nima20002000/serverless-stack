@@ -6,6 +6,11 @@ import {
   deleteProductMedia,
   updateProductStockFromVariants,
   createProductVariant,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getAllProducts,
+  searchProducts,
 } from '@/services/product-service';
 import { createClient } from '@/lib/supabase/server';
 import { createSupabaseMock, createQueryMock } from '../helpers/supabase-mock';
@@ -19,6 +24,10 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
+vi.mock('@/lib/redis/client', () => ({
+  clearCachePattern: vi.fn(),
+}));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
@@ -28,6 +37,267 @@ describe('product-service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  const queueFetchProductRelations = (
+    supabase: ReturnType<typeof createSupabaseMock>
+  ) => {
+    const productQuery = createQueryMock({
+      data: {
+        id: 'prod-1',
+        name: 'Test Product',
+        description: 'Desc',
+        price: 100,
+        discountPercent: null,
+        stock: 3,
+        images: [],
+        categoryId: null,
+        hasVariants: false,
+        isFeatured: false,
+        isActive: true,
+      },
+      error: null,
+    });
+    const productTagsQuery = createQueryMock({
+      data: [{ B: 'tag-1' }, { B: 'tag-2' }],
+      error: null,
+    });
+    const tagsQuery = createQueryMock({
+      data: [
+        { id: 'tag-1', name: 'Tag 1' },
+        { id: 'tag-2', name: 'Tag 2' },
+      ],
+      error: null,
+    });
+    const mediaQuery = createQueryMock({ data: [], error: null });
+    const variantsQuery = createQueryMock({ data: [], error: null });
+    const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+    supabase.from
+      .mockReturnValueOnce(productQuery)
+      .mockReturnValueOnce(productTagsQuery)
+      .mockReturnValueOnce(tagsQuery)
+      .mockReturnValueOnce(mediaQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(variantMediaQuery);
+  };
+
+  it('creates a product and connects tags', async () => {
+    const supabase = createSupabaseMock();
+
+    const insertProductQuery = createQueryMock({
+      data: {
+        id: 'prod-1',
+        name: 'Test Product',
+        description: 'Desc',
+        price: 100,
+        discountPercent: null,
+        stock: 3,
+        images: [],
+        categoryId: null,
+        hasVariants: false,
+        isFeatured: false,
+        isActive: true,
+      },
+      error: null,
+    });
+    const insertTagsQuery = createQueryMock({
+      data: null,
+      error: null,
+    }) as ReturnType<typeof createQueryMock> & {
+      insert: ReturnType<typeof vi.fn>;
+    };
+
+    supabase.from
+      .mockReturnValueOnce(insertProductQuery)
+      .mockReturnValueOnce(insertTagsQuery);
+
+    queueFetchProductRelations(supabase);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await createProduct({
+      name: 'Test Product',
+      description: 'Desc',
+      price: 100,
+      stock: 3,
+      tagIds: ['tag-1', 'tag-2'],
+    });
+
+    const tagConnections = insertTagsQuery.insert.mock.calls[0][0] as Array<{
+      A: string;
+      B: string;
+    }>;
+
+    expect(result.id).toBe('prod-1');
+    expect(insertProductQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Test Product',
+        description: 'Desc',
+        price: 100,
+        stock: 3,
+      })
+    );
+    expect(tagConnections).toHaveLength(2);
+    expect(new Set(tagConnections.map((tag) => tag.A)).size).toBe(1);
+    expect(tagConnections.map((tag) => tag.B)).toEqual(['tag-1', 'tag-2']);
+  });
+
+  it('updates product data and tag connections', async () => {
+    const supabase = createSupabaseMock();
+
+    const existingProductQuery = createQueryMock({
+      data: { id: 'prod-1' },
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
+    const deleteTagsQuery = createQueryMock({ data: null, error: null });
+    const insertTagsQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(existingProductQuery)
+      .mockReturnValueOnce(updateProductQuery)
+      .mockReturnValueOnce(deleteTagsQuery)
+      .mockReturnValueOnce(insertTagsQuery);
+
+    queueFetchProductRelations(supabase);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await updateProduct('prod-1', {
+      name: 'Updated',
+      price: 250,
+      tagIds: ['tag-1'],
+    });
+
+    expect(result.name).toBe('Test Product');
+    expect(updateProductQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Updated', price: 250 })
+    );
+    expect(deleteTagsQuery.delete).toHaveBeenCalled();
+    expect(insertTagsQuery.insert).toHaveBeenCalledWith([
+      { A: 'prod-1', B: 'tag-1' },
+    ]);
+  });
+
+  it('deletes product when no transaction history exists', async () => {
+    const supabase = createSupabaseMock();
+
+    const fetchProductQuery = createQueryMock({
+      data: { id: 'prod-1' },
+      error: null,
+    });
+    const transactionCountQuery = createQueryMock({
+      data: null,
+      error: null,
+      count: 0,
+    });
+    const deleteProductQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(fetchProductQuery)
+      .mockReturnValueOnce(transactionCountQuery)
+      .mockReturnValueOnce(deleteProductQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await deleteProduct('prod-1');
+
+    expect(result).toEqual({ success: true });
+    expect(deleteProductQuery.delete).toHaveBeenCalled();
+  });
+
+  it('returns paginated products with search and stock filters', async () => {
+    const supabase = createSupabaseMock();
+
+    const productsQuery = createQueryMock({
+      data: [
+        {
+          id: 'p1',
+          name: 'Test',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 5,
+          images: ['img'],
+          categoryId: null,
+          hasVariants: false,
+          isFeatured: false,
+          isActive: true,
+        },
+      ],
+      error: null,
+      count: 1,
+    });
+
+    supabase.from.mockReturnValue(productsQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await getAllProducts({
+      page: 2,
+      perPage: 1,
+      search: 'Test',
+      stock: 'in-stock',
+      includeRelations: false,
+    });
+
+    expect(productsQuery.or).toHaveBeenCalledWith(
+      'name.ilike.%Test%,description.ilike.%Test%'
+    );
+    expect(productsQuery.gt).toHaveBeenCalledWith('stock', 0);
+    expect(productsQuery.range).toHaveBeenCalledWith(1, 1);
+    expect(result).toEqual({
+      data: [
+        {
+          id: 'p1',
+          name: 'Test',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 5,
+          images: ['img'],
+          categoryId: null,
+          hasVariants: false,
+          isFeatured: false,
+          isActive: true,
+          category: null,
+          tags: [],
+          media: [],
+          variants: [],
+        },
+      ],
+      total: 1,
+      page: 2,
+      perPage: 1,
+      totalPages: 1,
+    });
+  });
+
+  it('searches products with pagination and returns metadata', async () => {
+    const supabase = createSupabaseMock();
+
+    const searchQuery = createQueryMock({
+      data: [{ id: 'p1', name: 'Match' }],
+      error: null,
+      count: 3,
+    });
+
+    supabase.from.mockReturnValue(searchQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await searchProducts('Match', { page: 2, perPage: 2 });
+
+    expect(searchQuery.or).toHaveBeenCalledWith(
+      'name.ilike.%Match%,description.ilike.%Match%'
+    );
+    expect(searchQuery.range).toHaveBeenCalledWith(2, 3);
+    expect(result).toEqual({
+      data: [{ id: 'p1', name: 'Match' }],
+      total: 3,
+      page: 2,
+      perPage: 2,
+      totalPages: 2,
+    });
   });
 
   it('updates stock when quantity is available', async () => {
@@ -45,7 +315,7 @@ describe('product-service', () => {
     supabase.from
       .mockReturnValueOnce(fetchQuery)
       .mockReturnValueOnce(updateQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await updateStock('p1', 2);
 
@@ -64,7 +334,7 @@ describe('product-service', () => {
     });
 
     supabase.from.mockReturnValue(fetchQuery);
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(updateStock('p1', -5)).rejects.toThrow('موجودی کافی نیست');
   });
@@ -94,7 +364,7 @@ describe('product-service', () => {
       .mockReturnValueOnce(unsetDefaultQuery)
       .mockReturnValueOnce(insertQuery);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await addProductMedia({
       productId: 'p1',
@@ -126,7 +396,7 @@ describe('product-service', () => {
       .mockReturnValueOnce(selectRemaining)
       .mockReturnValueOnce(updateRemaining);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await deleteProductMedia('m1');
 
@@ -147,7 +417,7 @@ describe('product-service', () => {
       .mockReturnValueOnce(variantsQuery)
       .mockReturnValueOnce(updateQuery);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     await updateProductStockFromVariants('p1');
 
@@ -178,7 +448,7 @@ describe('product-service', () => {
       .mockReturnValueOnce(variantsQuery)
       .mockReturnValueOnce(updateProductQuery);
 
-    createClientMock.mockReturnValue(supabase as any);
+    createClientMock.mockReturnValue(supabase as unknown);
 
     const result = await createProductVariant({
       productId: 'p1',

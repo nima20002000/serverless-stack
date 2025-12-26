@@ -17,7 +17,7 @@ const base64 = (value: string) => Buffer.from(value, 'utf8').toString('base64');
 
 const mockFetch = (responses: Array<{ result: unknown }>) => {
   const queue = [...responses];
-  const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+  const fetchMock = vi.fn(async (url: string) => {
     const response = queue.shift();
     if (!response) {
       throw new Error('Mock fetch response queue exhausted');

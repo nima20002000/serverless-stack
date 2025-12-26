@@ -21,13 +21,9 @@ import {
   cleanupTestUsers,
   cleanupTestCache,
 } from '../utils/cleanup';
-import {
-  expectValidUUID,
-} from '../utils/assertions';
 import { generateUniqueTestProduct } from '../fixtures';
 
 const supabase = createTestSupabaseClient();
-
 describe('Transaction Service Integration Tests', () => {
   beforeEach(async () => {
     // Clean up before each test to ensure isolation
@@ -90,6 +86,9 @@ describe('Transaction Service Integration Tests', () => {
 
       expect(txError).toBeNull();
       expect(transaction).toBeDefined();
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
       expect(transaction.id).toBe(transactionId);
       expect(transaction.transactionCode).toBe(transactionCode);
       expect(transaction.status).toBe('PENDING');
@@ -118,10 +117,14 @@ describe('Transaction Service Integration Tests', () => {
         .select('*')
         .eq('transactionId', transactionId);
 
+      expect(items).toBeDefined();
+      if (!items) {
+        throw new Error('Expected transaction items to be returned');
+      }
       expect(items).toHaveLength(1);
-      expect(items![0].productId).toBe(productId);
-      expect(items![0].quantity).toBe(1);
-      expect(items![0].price).toBe(productData.price);
+      expect(items[0]?.productId).toBe(productId);
+      expect(items[0]?.quantity).toBe(1);
+      expect(items[0]?.price).toBe(productData.price);
     });
 
     it('should create transaction for authenticated user', async () => {
@@ -129,6 +132,7 @@ describe('Transaction Service Integration Tests', () => {
       const userId = randomUUID();
       await supabase.from('users').insert({
         id: userId,
+        uid: `U-${Date.now()}`,
         email: `test-${Date.now()}@example.com`,
         name: 'کاربر تستی',
         role: 'USER',
@@ -141,6 +145,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: productData.name,
+        description: productData.description,
         price: productData.price,
         stock: 10,
         isActive: true,
@@ -169,6 +174,9 @@ describe('Transaction Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(transaction).toBeDefined();
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
       expect(transaction.userId).toBe(userId);
       expect(transaction.isGuest).toBe(false);
       expect(transaction.status).toBe('PENDING');
@@ -199,7 +207,7 @@ describe('Transaction Service Integration Tests', () => {
       expect(codes.size).toBe(10);
 
       // Verify format: should start with TEST-
-      codes.forEach(code => {
+      codes.forEach((code) => {
         expect(code).toMatch(/^TEST-/);
       });
     });
@@ -215,6 +223,7 @@ describe('Transaction Service Integration Tests', () => {
         {
           id: product1Id,
           name: `TEST-Product-1-${Date.now()}`,
+          description: 'Test product 1',
           price: price1,
           stock: 10,
           isActive: true,
@@ -223,6 +232,7 @@ describe('Transaction Service Integration Tests', () => {
         {
           id: product2Id,
           name: `TEST-Product-2-${Date.now()}`,
+          description: 'Test product 2',
           price: price2,
           stock: 5,
           isActive: true,
@@ -270,11 +280,15 @@ describe('Transaction Service Integration Tests', () => {
         .eq('transactionId', transactionId)
         .order('price', { ascending: true });
 
+      expect(items).toBeDefined();
+      if (!items) {
+        throw new Error('Expected transaction items to be returned');
+      }
       expect(items).toHaveLength(2);
-      expect(items![0].productId).toBe(product1Id);
-      expect(items![0].quantity).toBe(2);
-      expect(items![1].productId).toBe(product2Id);
-      expect(items![1].quantity).toBe(1);
+      expect(items[0]?.productId).toBe(product1Id);
+      expect(items[0]?.quantity).toBe(2);
+      expect(items[1]?.productId).toBe(product2Id);
+      expect(items[1]?.quantity).toBe(1);
 
       // Verify total amount
       const { data: transaction } = await supabase
@@ -283,7 +297,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.amount).toBe(totalAmount);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.amount).toBe(totalAmount);
     });
 
     it('should reject empty cart (no items)', async () => {
@@ -350,8 +367,11 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.status).toBe('COMPLETED');
-      expect(transaction!.zarinpalRefId).toBe('REF123456');
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.status).toBe('COMPLETED');
+      expect(transaction.zarinpalRefId).toBe('REF123456');
     });
 
     it('should update transaction status to FAILED', async () => {
@@ -384,7 +404,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.status).toBe('FAILED');
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.status).toBe('FAILED');
     });
 
     it('should track Zarinpal authority', async () => {
@@ -410,7 +433,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.zarinpalAuthority).toBe(authority);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.zarinpalAuthority).toBe(authority);
     });
   });
 
@@ -424,6 +450,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: initialStock,
         isActive: true,
@@ -464,8 +491,11 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(initialStock - orderQuantity);
-      expect(product!.stock).toBe(7);
+      if (!product) {
+        throw new Error('Expected product to be returned');
+      }
+      expect(product.stock).toBe(initialStock - orderQuantity);
+      expect(product.stock).toBe(7);
     });
 
     it('should not reduce stock for PENDING transactions', async () => {
@@ -475,6 +505,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: initialStock,
         isActive: true,
@@ -509,7 +540,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(initialStock);
+      if (!product) {
+        throw new Error('Expected product to be returned');
+      }
+      expect(product.stock).toBe(initialStock);
     });
 
     it('should detect insufficient stock', async () => {
@@ -520,6 +554,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: availableStock,
         isActive: true,
@@ -533,8 +568,11 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBeLessThan(requestedQuantity);
-      expect(product!.stock).toBe(availableStock);
+      if (!product) {
+        throw new Error('Expected product to be returned');
+      }
+      expect(product.stock).toBeLessThan(requestedQuantity);
+      expect(product.stock).toBe(availableStock);
 
       // In real implementation, this would throw an error
       // Here we verify the condition exists
@@ -546,6 +584,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: 20, // Will be recalculated from variants
         isActive: true,
@@ -559,18 +598,22 @@ describe('Transaction Service Integration Tests', () => {
         {
           id: variant1Id,
           productId,
+          name: 'Variant M',
           size: 'M',
           color: 'قرمز',
           stock: 10,
-          displayOrder: 1,
+          order: 1,
+          updatedAt: new Date().toISOString(),
         },
         {
           id: variant2Id,
           productId,
+          name: 'Variant L',
           size: 'L',
           color: 'آبی',
           stock: 10,
-          displayOrder: 2,
+          order: 2,
+          updatedAt: new Date().toISOString(),
         },
       ]);
 
@@ -608,7 +651,11 @@ describe('Transaction Service Integration Tests', () => {
         .select('stock')
         .eq('productId', productId);
 
-      const totalStock = variants!.reduce((sum, v) => sum + v.stock, 0);
+      expect(variants).toBeDefined();
+      if (!variants) {
+        throw new Error('Expected variants to be returned');
+      }
+      const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
       await supabase
         .from('products')
         .update({ stock: totalStock })
@@ -621,7 +668,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', variant1Id)
         .single();
 
-      expect(variant!.stock).toBe(7);
+      if (!variant) {
+        throw new Error('Expected variant to be returned');
+      }
+      expect(variant.stock).toBe(7);
 
       // Verify parent product stock
       const { data: product } = await supabase
@@ -630,7 +680,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(17); // 7 + 10
+      if (!product) {
+        throw new Error('Expected product to be returned');
+      }
+      expect(product.stock).toBe(17); // 7 + 10
     });
   });
 
@@ -641,6 +694,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: 10,
         isActive: true,
@@ -672,17 +726,22 @@ describe('Transaction Service Integration Tests', () => {
       // Retrieve transaction with items
       const { data: transaction } = await supabase
         .from('transactions')
-        .select(`
+        .select(
+          `
           *,
           transaction_items (
             *,
             products (*)
           )
-        `)
+        `
+        )
         .eq('id', transactionId)
         .single();
 
       expect(transaction).toBeDefined();
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
       expect(transaction.id).toBe(transactionId);
       expect(transaction.transactionCode).toBe(transactionCode);
       expect(transaction.transaction_items).toHaveLength(1);
@@ -712,8 +771,11 @@ describe('Transaction Service Integration Tests', () => {
         .single();
 
       expect(transaction).toBeDefined();
-      expect(transaction!.id).toBe(transactionId);
-      expect(transaction!.transactionCode).toBe(transactionCode);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.id).toBe(transactionId);
+      expect(transaction.transactionCode).toBe(transactionCode);
     });
 
     it('should retrieve transaction by Zarinpal authority', async () => {
@@ -740,8 +802,11 @@ describe('Transaction Service Integration Tests', () => {
         .single();
 
       expect(transaction).toBeDefined();
-      expect(transaction!.id).toBe(transactionId);
-      expect(transaction!.zarinpalAuthority).toBe(authority);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.id).toBe(transactionId);
+      expect(transaction.zarinpalAuthority).toBe(authority);
     });
 
     it('should retrieve user transaction history with pagination', async () => {
@@ -750,6 +815,7 @@ describe('Transaction Service Integration Tests', () => {
       // Create user
       await supabase.from('users').insert({
         id: userId,
+        uid: `U-${Date.now()}`,
         email: `test-${Date.now()}@example.com`,
         name: 'Test User',
         role: 'USER',
@@ -774,7 +840,7 @@ describe('Transaction Service Integration Tests', () => {
         });
 
         // Add small delay to ensure different timestamps
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       // Retrieve first page (2 items)
@@ -785,6 +851,10 @@ describe('Transaction Service Integration Tests', () => {
         .order('createdAt', { ascending: false })
         .range(0, 1);
 
+      expect(page1).toBeDefined();
+      if (!page1) {
+        throw new Error('Expected transactions to be returned');
+      }
       expect(count).toBe(5);
       expect(page1).toHaveLength(2);
 
@@ -796,12 +866,16 @@ describe('Transaction Service Integration Tests', () => {
         .order('createdAt', { ascending: false })
         .range(2, 3);
 
+      expect(page2).toBeDefined();
+      if (!page2) {
+        throw new Error('Expected transactions to be returned');
+      }
       expect(page2).toHaveLength(2);
 
       // Verify no overlap
-      const page1Ids = page1!.map(t => t.id);
-      const page2Ids = page2!.map(t => t.id);
-      const overlap = page1Ids.filter(id => page2Ids.includes(id));
+      const page1Ids = page1.map((t) => t.id);
+      const page2Ids = page2.map((t) => t.id);
+      const overlap = page1Ids.filter((id) => page2Ids.includes(id));
       expect(overlap).toHaveLength(0);
     });
   });
@@ -829,6 +903,7 @@ describe('Transaction Service Integration Tests', () => {
       const userId = randomUUID();
       await supabase.from('users').insert({
         id: userId,
+        uid: `U-${Date.now()}`,
         phone,
         name: 'Test User',
         role: 'USER',
@@ -852,8 +927,11 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.userId).toBe(userId);
-      expect(transaction!.isGuest).toBe(false);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.userId).toBe(userId);
+      expect(transaction.isGuest).toBe(false);
     });
 
     it('should handle guest checkout with createAccount flag', async () => {
@@ -882,9 +960,12 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', transactionId)
         .single();
 
-      expect(transaction!.createAccount).toBe(true);
-      expect(transaction!.email).toBe(email);
-      expect(transaction!.phone).toBe(phone);
+      if (!transaction) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(transaction.createAccount).toBe(true);
+      expect(transaction.email).toBe(email);
+      expect(transaction.phone).toBe(phone);
     });
   });
 
@@ -895,6 +976,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: 10,
         isActive: true,
@@ -905,10 +987,12 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId,
+        name: 'Variant L',
         size: 'L',
         color: 'سفید',
         stock: 5,
-        displayOrder: 1,
+        order: 1,
+        updatedAt: new Date().toISOString(),
       });
 
       // Create transaction with variant
@@ -940,7 +1024,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('transactionId', transactionId)
         .single();
 
-      expect(item!.variantId).toBe(variantId);
+      if (!item) {
+        throw new Error('Expected transaction item to be returned');
+      }
+      expect(item.variantId).toBe(variantId);
     });
 
     it('should handle transaction without variant (base product)', async () => {
@@ -948,6 +1035,7 @@ describe('Transaction Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: `TEST-Product-${Date.now()}`,
+        description: 'Test product',
         price: 10000,
         stock: 10,
         isActive: true,
@@ -982,7 +1070,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('transactionId', transactionId)
         .single();
 
-      expect(item!.variantId).toBeNull();
+      if (!item) {
+        throw new Error('Expected transaction item to be returned');
+      }
+      expect(item.variantId).toBeNull();
     });
 
     it('should ensure transaction code uniqueness', async () => {
@@ -1002,9 +1093,8 @@ describe('Transaction Service Integration Tests', () => {
       });
 
       // Try to create second transaction with same code
-      const tx2Id = randomUUID();
       const { error } = await supabase.from('transactions').insert({
-        id: tx2Id,
+        id: randomUUID(),
         amount: 20000,
         status: 'PENDING',
         transactionCode: code, // Duplicate code
@@ -1016,12 +1106,14 @@ describe('Transaction Service Integration Tests', () => {
 
       // Should fail due to unique constraint
       expect(error).not.toBeNull();
-      expect(error!.code).toBe('23505'); // Unique violation
+      if (!error) {
+        throw new Error('Expected unique constraint error');
+      }
+      expect(error.code).toBe('23505'); // Unique violation
     });
 
     it('should track payment method (ZARINPAL vs DIGIPAY)', async () => {
       const tx1Id = randomUUID();
-      const tx2Id = randomUUID();
 
       // Create ZARINPAL transaction
       await supabase.from('transactions').insert({
@@ -1046,7 +1138,10 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', tx1Id)
         .single();
 
-      expect(tx1!.paymentMethod).toBe('ZARINPAL');
+      if (!tx1) {
+        throw new Error('Expected transaction to be returned');
+      }
+      expect(tx1.paymentMethod).toBe('ZARINPAL');
     });
   });
 });

@@ -1,6 +1,7 @@
 # Task 001: Comprehensive Unit Test Kit
 
 ## Status
+
 - Status: PARTIAL
 - Owner: Codex (unit test pass; gaps remain)
 - Goal: Build a comprehensive, high-signal unit test kit that covers core logic across services, utils, and libraries.
@@ -8,6 +9,7 @@
 ---
 
 ## Objective
+
 Create unit tests that provide high confidence in core business logic without relying on external services. Tests must be deterministic, fast, and focused on contracts and edge cases.
 
 This task is separate from integration tests and should NOT rely on live Supabase/Redis/Resend/Kavenegar/R2 credentials.
@@ -17,6 +19,7 @@ This task is separate from integration tests and should NOT rely on live Supabas
 ## Scope (Must Cover)
 
 ### Services (src/services)
+
 - auth-service
 - product-service
 - transaction-service
@@ -31,6 +34,7 @@ This task is separate from integration tests and should NOT rely on live Supabas
 - search-service
 
 ### Libraries / Utilities
+
 - src/lib/rate-limit
 - src/lib/redis/client
 - src/lib/email/client
@@ -39,6 +43,7 @@ This task is separate from integration tests and should NOT rely on live Supabas
 - src/lib/supabase (any logic helpers)
 
 ### Shared helpers
+
 - src/utils (all exported functions)
 - tests/utils (assertions and helper logic only if used by tests)
 
@@ -74,6 +79,7 @@ This task is separate from integration tests and should NOT rely on live Supabas
 ---
 
 ## Anti-Reward-Hacking Rules (Must Follow)
+
 - Do not weaken tests to make them pass.
 - Do not change production code unless explicitly requested.
 - Do not rely on implementation details that are unstable.
@@ -82,15 +88,17 @@ This task is separate from integration tests and should NOT rely on live Supabas
 ---
 
 ## Suggested Structure
-- tests/unit/services/*.test.ts
-- tests/unit/lib/*.test.ts
-- tests/unit/utils/*.test.ts
+
+- tests/unit/services/\*.test.ts
+- tests/unit/lib/\*.test.ts
+- tests/unit/utils/\*.test.ts
 
 Add or update test setup files if needed, but keep changes minimal and isolated to the test environment.
 
 ---
 
 ## Deliverables
+
 1. Unit test suites for all scoped modules.
 2. Clear documentation in tests/SUMMARY.md (or create a new section) that lists unit suites and what they cover.
 3. Update this task file with:
@@ -103,11 +111,13 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 ## Completion Summary
 
 ### Total Unit Suites Completed
+
 - 23 unit test suites under `tests/unit/`
 
 ### Test Counts Per Suite
 
 #### Services
+
 - `tests/unit/services/auth-service.test.ts` (7)
 - `tests/unit/services/user-service.test.ts` (10)
 - `tests/unit/services/user-service-validation.test.ts` (5)
@@ -121,6 +131,7 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 - `tests/unit/services/settings-service.test.ts` (4)
 
 #### Libraries
+
 - `tests/unit/lib/rate-limit.test.ts` (6)
 - `tests/unit/lib/redis-client.test.ts` (6)
 - `tests/unit/lib/email-client.test.ts` (5)
@@ -131,20 +142,30 @@ Add or update test setup files if needed, but keep changes minimal and isolated 
 - `tests/unit/lib/supabase.test.ts` (4)
 
 #### Utils
+
 - `tests/unit/utils/format.test.ts` (2)
 - `tests/unit/utils/persian.test.ts` (4)
 - `tests/unit/utils/url.test.ts` (2)
 - `tests/unit/utils/password-validation.test.ts` (2)
 
 ### Known Gaps / Deferred Areas
+
 - Missing unit suites for `src/services/admin-service.ts`, `src/services/tag-service.ts`, and `src/services/search-service.ts`.
 - Not all functions in `src/services/product-service.ts` and `src/services/transaction-service.ts` are unit-tested (CRUD, search, pagination). The unit suite covers core logic paths; integration tests still cover end-to-end behavior.
+- `src/services/user-service/queries.ts` has no dedicated unit coverage; add tests for `queryUser` and `checkUserExists` or confirm coverage in `tests/unit/services/user-service.test.ts`.
 - `tests/utils/*` helpers are not unit-tested since they are test-only and not used by unit tests directly. Add coverage if needed.
 - Redis positive-path caching behavior is covered with module-boundary mocks; verify with live Redis via integration tests as needed.
+
+### Coverage Snapshot (Suite-Level)
+
+- Services: 9/12 suites implemented (missing admin, tag, search).
+- Libraries: 6/6 suites implemented.
+- Utils: 4/4 suites implemented for `src/lib/utils` (note: `src/utils` does not exist in this repo).
 
 ---
 
 ## Notes
+
 - Prefer mocking at module boundaries (e.g., mock Supabase client, Redis client).
 - Keep test runtime under 1-2 minutes for the full unit suite.
 - If a module is too tightly coupled to external services, create a thin wrapper and test it with mocks.

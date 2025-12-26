@@ -20,11 +20,8 @@ import {
   cleanupTestCategories,
   cleanupTestTags,
   cleanupTestCache,
-  deleteTestProductById,
 } from '../utils/cleanup';
-import {
-  expectValidUUID,
-} from '../utils/assertions';
+import { expectValidUUID } from '../utils/assertions';
 import { generateUniqueTestProduct, testProductMedia } from '../fixtures';
 
 const supabase = createTestSupabaseClient();
@@ -81,84 +78,86 @@ describe('Product Service Integration Tests', () => {
       expect(product).not.toBeNull();
 
       // Validate product object structure and values
-      expectValidUUID(product!.id);
-      expect(product!.name).toBe(productData.name);
-      expect(product!.description).toBe(productData.description);
-      expect(product!.price).toBe(productData.price);
-      expect(product!.stock).toBe(productData.stock);
-      expect(product!.isActive).toBe(productData.isActive);
-      expect(product!.isFeatured).toBe(productData.isFeatured);
-      expect(product!.discountPercent).toBe(productData.discountPercent);
-      expect(product!.hasVariants).toBe(false);
+      expect(product).toBeDefined();
+      expectValidUUID(product?.id as string);
+      expect(product?.name).toBe(productData.name);
+      expect(product?.description).toBe(productData.description);
+      expect(product?.price).toBe(productData.price);
+      expect(product?.stock).toBe(productData.stock);
+      expect(product?.isActive).toBe(productData.isActive);
+      expect(product?.isFeatured).toBe(productData.isFeatured);
+      expect(product?.discountPercent).toBe(productData.discountPercent);
+      expect(product?.hasVariants).toBe(false);
 
       // Verify timestamps exist
-      expect(product!.createdAt).toBeDefined();
-      expect(product!.updatedAt).toBeDefined();
-      expect(new Date(product!.createdAt!).getTime()).toBeGreaterThan(0);
+      expect(product?.createdAt).toBeDefined();
+      expect(product?.updatedAt).toBeDefined();
+      expect(new Date(product?.createdAt as string).getTime()).toBeGreaterThan(
+        0
+      );
     });
 
     it('should retrieve product by ID with all relations', async () => {
       // Create category
       const categoryId = randomUUID();
-      await supabase
-        .from('categories')
-        .insert({
-          id: categoryId,
-          name: 'TEST-دسته‌بندی',
-          slug: `test-category-${Date.now()}`,
-          isActive: true,
-        });
+      await supabase.from('categories').insert({
+        id: categoryId,
+        name: 'TEST-دسته‌بندی',
+        slug: `test-category-${Date.now()}`,
+        isActive: true,
+      });
 
       // Create tag
       const tagId = randomUUID();
-      await supabase
-        .from('tags')
-        .insert({
-          id: tagId,
-          name: 'TEST-برچسب',
-          slug: `test-tag-${Date.now()}`,
-        });
+      await supabase.from('tags').insert({
+        id: tagId,
+        name: 'TEST-برچسب',
+        slug: `test-tag-${Date.now()}`,
+      });
 
       // Create product
       const productData = generateUniqueTestProduct('INTEGRATION');
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          stock: productData.stock,
-          categoryId: categoryId,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        categoryId: categoryId,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Link tag to product
-      await supabase
-        .from('_ProductToTag')
-        .insert({
-          A: productId,
-          B: tagId,
-        });
+      await supabase.from('_ProductToTag').insert({
+        A: productId,
+        B: tagId,
+      });
 
       // Retrieve product with category
       const { data: product, error } = await supabase
         .from('products')
-        .select(`
+        .select(
+          `
           *,
           category:categories(*)
-        `)
+        `
+        )
         .eq('id', productId)
         .single();
 
       expect(error).toBeNull();
       expect(product).not.toBeNull();
-      expect(product!.id).toBe(productId);
-      expect(product!.category).not.toBeNull();
-      expect(product!.category.id).toBe(categoryId);
-      expect(product!.category.name).toBe('TEST-دسته‌بندی');
+      if (!product) {
+        throw new Error('Expected product to be returned');
+      }
+      if (!product.category) {
+        throw new Error('Expected product category to be returned');
+      }
+      expect(product.id).toBe(productId);
+      expect(product.category.id).toBe(categoryId);
+      expect(product.category.name).toBe('TEST-دسته‌بندی');
 
       // Retrieve tags via junction table
       const { data: productToTags } = await supabase
@@ -167,25 +166,23 @@ describe('Product Service Integration Tests', () => {
         .eq('A', productId);
 
       expect(productToTags).not.toBeNull();
-      expect(productToTags!.length).toBe(1);
-      expect(productToTags![0].B).toBe(tagId);
+      expect(productToTags?.length).toBe(1);
+      expect(productToTags?.[0].B).toBe(tagId);
     });
 
     it('should update product fields correctly', async () => {
       // Create product
       const productData = generateUniqueTestProduct('INTEGRATION');
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          stock: productData.stock,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Update product
       const updatedName = `${productData.name}-UPDATED`;
@@ -207,27 +204,25 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(updated).not.toBeNull();
-      expect(updated!.name).toBe(updatedName);
-      expect(updated!.price).toBe(updatedPrice);
-      expect(updated!.stock).toBe(updatedStock);
-      expect(updated!.discountPercent).toBe(20);
+      expect(updated?.name).toBe(updatedName);
+      expect(updated?.price).toBe(updatedPrice);
+      expect(updated?.stock).toBe(updatedStock);
+      expect(updated?.discountPercent).toBe(20);
     });
 
     it('should delete product without transaction history', async () => {
       // Create product
       const productData = generateUniqueTestProduct('INTEGRATION');
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          stock: productData.stock,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Delete product
       const { error } = await supabase
@@ -250,31 +245,27 @@ describe('Product Service Integration Tests', () => {
     it('should prevent deletion of product with transaction items', async () => {
       // Create user
       const userId = randomUUID();
-      await supabase
-        .from('users')
-        .insert({
-          id: userId,
-          uid: Date.now(),
-          email: `test-${Date.now()}@example.com`,
-          name: 'Test User',
-          role: 'USER',
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('users').insert({
+        id: userId,
+        uid: `U-${Date.now()}`,
+        email: `test-${Date.now()}@example.com`,
+        name: 'Test User',
+        role: 'USER',
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create product
       const productData = generateUniqueTestProduct('INTEGRATION');
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          stock: productData.stock,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create transaction
       const transactionId = randomUUID();
@@ -285,7 +276,7 @@ describe('Product Service Integration Tests', () => {
           userId: userId,
           transactionCode: `TEST-${Date.now()}`,
           status: 'COMPLETED',
-          amount: productData.price,  // Fixed: changed from totalAmount to amount
+          amount: productData.price, // Fixed: changed from totalAmount to amount
           updatedAt: new Date().toISOString(),
         });
 
@@ -324,7 +315,10 @@ describe('Product Service Integration Tests', () => {
       expect(count).toBe(1);
 
       // Clean up transaction and user
-      await supabase.from('transaction_items').delete().eq('transactionId', transactionId);
+      await supabase
+        .from('transaction_items')
+        .delete()
+        .eq('transactionId', transactionId);
       await supabase.from('transactions').delete().eq('id', transactionId);
       await supabase.from('users').delete().eq('id', userId);
     });
@@ -334,31 +328,27 @@ describe('Product Service Integration Tests', () => {
     it('should retrieve active products only', async () => {
       // Create active product
       const activeProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: activeProductId,
-          name: 'TEST-محصول-فعال',
-          description: 'محصول فعال',
-          price: 100000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: activeProductId,
+        name: 'TEST-محصول-فعال',
+        description: 'محصول فعال',
+        price: 100000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create inactive product
       const inactiveProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: inactiveProductId,
-          name: 'TEST-محصول-غیرفعال',
-          description: 'محصول غیرفعال',
-          price: 100000,
-          stock: 10,
-          isActive: false,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: inactiveProductId,
+        name: 'TEST-محصول-غیرفعال',
+        description: 'محصول غیرفعال',
+        price: 100000,
+        stock: 10,
+        isActive: false,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Query only active products
       const { data: activeProducts, error } = await supabase
@@ -369,48 +359,46 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(activeProducts).not.toBeNull();
-      expect(activeProducts!.length).toBeGreaterThanOrEqual(1);
+      expect(activeProducts?.length).toBeGreaterThanOrEqual(1);
 
       // Verify all returned products are active
-      activeProducts!.forEach(product => {
+      activeProducts?.forEach((product) => {
         expect(product.isActive).toBe(true);
       });
 
       // Verify inactive product is not in results
-      const inactiveInResults = activeProducts!.find(p => p.id === inactiveProductId);
+      const inactiveInResults = activeProducts?.find(
+        (p) => p.id === inactiveProductId
+      );
       expect(inactiveInResults).toBeUndefined();
     });
 
     it('should retrieve featured products only', async () => {
       // Create featured product
       const featuredProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: featuredProductId,
-          name: 'TEST-محصول-ویژه',
-          description: 'محصول ویژه',
-          price: 200000,
-          stock: 5,
-          isActive: true,
-          isFeatured: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: featuredProductId,
+        name: 'TEST-محصول-ویژه',
+        description: 'محصول ویژه',
+        price: 200000,
+        stock: 5,
+        isActive: true,
+        isFeatured: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create non-featured product
       const normalProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: normalProductId,
-          name: 'TEST-محصول-عادی',
-          description: 'محصول عادی',
-          price: 100000,
-          stock: 10,
-          isActive: true,
-          isFeatured: false,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: normalProductId,
+        name: 'TEST-محصول-عادی',
+        description: 'محصول عادی',
+        price: 100000,
+        stock: 10,
+        isActive: true,
+        isFeatured: false,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Query only featured products
       const { data: featuredProducts, error } = await supabase
@@ -422,48 +410,46 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(featuredProducts).not.toBeNull();
-      expect(featuredProducts!.length).toBeGreaterThanOrEqual(1);
+      expect(featuredProducts?.length).toBeGreaterThanOrEqual(1);
 
       // Verify all returned products are featured
-      featuredProducts!.forEach(product => {
+      featuredProducts?.forEach((product) => {
         expect(product.isFeatured).toBe(true);
       });
 
       // Verify normal product is not in results
-      const normalInResults = featuredProducts!.find(p => p.id === normalProductId);
+      const normalInResults = featuredProducts?.find(
+        (p) => p.id === normalProductId
+      );
       expect(normalInResults).toBeUndefined();
     });
 
     it('should retrieve discounted products only', async () => {
       // Create discounted product
       const discountedProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: discountedProductId,
-          name: 'TEST-محصول-تخفیف‌دار',
-          description: 'محصول با تخفیف',
-          price: 300000,
-          stock: 20,
-          isActive: true,
-          discountPercent: 25,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: discountedProductId,
+        name: 'TEST-محصول-تخفیف‌دار',
+        description: 'محصول با تخفیف',
+        price: 300000,
+        stock: 20,
+        isActive: true,
+        discountPercent: 25,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create non-discounted product
       const normalProductId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: normalProductId,
-          name: 'TEST-محصول-بدون-تخفیف',
-          description: 'محصول بدون تخفیف',
-          price: 100000,
-          stock: 10,
-          isActive: true,
-          discountPercent: 0,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: normalProductId,
+        name: 'TEST-محصول-بدون-تخفیف',
+        description: 'محصول بدون تخفیف',
+        price: 100000,
+        stock: 10,
+        isActive: true,
+        discountPercent: 0,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Query only discounted products
       const { data: discountedProducts, error } = await supabase
@@ -475,15 +461,17 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(discountedProducts).not.toBeNull();
-      expect(discountedProducts!.length).toBeGreaterThanOrEqual(1);
+      expect(discountedProducts?.length).toBeGreaterThanOrEqual(1);
 
       // Verify all returned products have discount
-      discountedProducts!.forEach(product => {
+      discountedProducts?.forEach((product) => {
         expect(product.discountPercent).toBeGreaterThan(0);
       });
 
       // Verify normal product is not in results
-      const normalInResults = discountedProducts!.find(p => p.id === normalProductId);
+      const normalInResults = discountedProducts?.find(
+        (p) => p.id === normalProductId
+      );
       expect(normalInResults).toBeUndefined();
     });
 
@@ -492,30 +480,26 @@ describe('Product Service Integration Tests', () => {
 
       // Create products with searchable names
       const product1Id = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: product1Id,
-          name: `TEST-${searchTerm}-اول`,
-          description: 'محصول جستجو اول',
-          price: 100000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: product1Id,
+        name: `TEST-${searchTerm}-اول`,
+        description: 'محصول جستجو اول',
+        price: 100000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const product2Id = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: product2Id,
-          name: `TEST-${searchTerm}-دوم`,
-          description: 'محصول جستجو دوم',
-          price: 150000,
-          stock: 5,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: product2Id,
+        name: `TEST-${searchTerm}-دوم`,
+        description: 'محصول جستجو دوم',
+        price: 150000,
+        stock: 5,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Search by partial name
       const { data: searchResults, error } = await supabase
@@ -526,10 +510,10 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(searchResults).not.toBeNull();
-      expect(searchResults!.length).toBe(2);
+      expect(searchResults?.length).toBe(2);
 
       // Verify both products are in results
-      const ids = searchResults!.map(p => p.id);
+      const ids = searchResults?.map((p) => p.id) ?? [];
       expect(ids).toContain(product1Id);
       expect(ids).toContain(product2Id);
     });
@@ -537,31 +521,27 @@ describe('Product Service Integration Tests', () => {
     it('should filter products by stock status', async () => {
       // Create in-stock product
       const inStockId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: inStockId,
-          name: 'TEST-موجود',
-          description: 'محصول موجود',
-          price: 100000,
-          stock: 15,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: inStockId,
+        name: 'TEST-موجود',
+        description: 'محصول موجود',
+        price: 100000,
+        stock: 15,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create out-of-stock product
       const outOfStockId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: outOfStockId,
-          name: 'TEST-ناموجود',
-          description: 'محصول ناموجود',
-          price: 100000,
-          stock: 0,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: outOfStockId,
+        name: 'TEST-ناموجود',
+        description: 'محصول ناموجود',
+        price: 100000,
+        stock: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Query in-stock products
       const { data: inStockProducts, error: inStockError } = await supabase
@@ -575,23 +555,24 @@ describe('Product Service Integration Tests', () => {
       expect(inStockProducts).not.toBeNull();
 
       // Verify all have stock > 0
-      inStockProducts!.forEach(product => {
+      inStockProducts?.forEach((product) => {
         expect(product.stock).toBeGreaterThan(0);
       });
 
       // Query out-of-stock products
-      const { data: outOfStockProducts, error: outOfStockError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('isActive', true)
-        .eq('stock', 0)
-        .like('name', 'TEST-%');
+      const { data: outOfStockProducts, error: outOfStockError } =
+        await supabase
+          .from('products')
+          .select('*')
+          .eq('isActive', true)
+          .eq('stock', 0)
+          .like('name', 'TEST-%');
 
       expect(outOfStockError).toBeNull();
       expect(outOfStockProducts).not.toBeNull();
 
       // Verify all have stock = 0
-      outOfStockProducts!.forEach(product => {
+      outOfStockProducts?.forEach((product) => {
         expect(product.stock).toBe(0);
       });
     });
@@ -601,18 +582,16 @@ describe('Product Service Integration Tests', () => {
     it('should create product variant and update parent stock', async () => {
       // Create product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-محصول-با-واریانت',
-          description: 'محصول با واریانت',
-          price: 200000,
-          stock: 0, // Will be calculated from variants
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-محصول-با-واریانت',
+        description: 'محصول با واریانت',
+        price: 200000,
+        stock: 0, // Will be calculated from variants
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create variant
       const variantId = randomUUID();
@@ -635,8 +614,8 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(variant).not.toBeNull();
-      expect(variant!.productId).toBe(productId);
-      expect(variant!.stock).toBe(variantStock);
+      expect(variant?.productId).toBe(productId);
+      expect(variant?.stock).toBe(variantStock);
 
       // Manually update parent product stock (simulating service layer behavior)
       await supabase
@@ -651,67 +630,63 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(variantStock);
+      expect(product?.stock).toBe(variantStock);
     });
 
     it('should calculate total stock from multiple variants', async () => {
       // Create product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-محصول-چند-واریانت',
-          description: 'محصول با چند واریانت',
-          price: 200000,
-          stock: 0,
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-محصول-چند-واریانت',
+        description: 'محصول با چند واریانت',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create multiple variants
       const variant1Stock = 10;
       const variant2Stock = 15;
       const variant3Stock = 20;
 
-      await supabase
-        .from('product_variants')
-        .insert([
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'کوچک',
-            size: 'S',
-            stock: variant1Stock,
-            priceAdjust: -5000,
-            order: 0,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'متوسط',
-            size: 'M',
-            stock: variant2Stock,
-            priceAdjust: 0,
-            order: 1,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'بزرگ',
-            size: 'L',
-            stock: variant3Stock,
-            priceAdjust: 10000,
-            order: 2,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'کوچک',
+          size: 'S',
+          stock: variant1Stock,
+          priceAdjust: -5000,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'متوسط',
+          size: 'M',
+          stock: variant2Stock,
+          priceAdjust: 0,
+          order: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'بزرگ',
+          size: 'L',
+          stock: variant3Stock,
+          priceAdjust: 10000,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
 
       // Calculate total stock
       const { data: variants } = await supabase
@@ -719,7 +694,7 @@ describe('Product Service Integration Tests', () => {
         .select('stock')
         .eq('productId', productId);
 
-      const totalStock = variants!.reduce((sum, v) => sum + v.stock, 0);
+      const totalStock = variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
       expect(totalStock).toBe(variant1Stock + variant2Stock + variant3Stock);
 
       // Update parent product stock
@@ -735,58 +710,51 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(totalStock);
+      expect(product?.stock).toBe(totalStock);
     });
 
     it('should delete variant and recalculate parent stock', async () => {
       // Create product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-محصول-حذف-واریانت',
-          description: 'تست حذف واریانت',
-          price: 200000,
-          stock: 50,
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-محصول-حذف-واریانت',
+        description: 'تست حذف واریانت',
+        price: 200000,
+        stock: 50,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create two variants
       const variant1Id = randomUUID();
       const variant2Id = randomUUID();
-      await supabase
-        .from('product_variants')
-        .insert([
-          {
-            id: variant1Id,
-            productId: productId,
-            name: 'واریانت 1',
-            stock: 20,
-            priceAdjust: 0,
-            order: 0,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: variant2Id,
-            productId: productId,
-            name: 'واریانت 2',
-            stock: 30,
-            priceAdjust: 0,
-            order: 1,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
+      await supabase.from('product_variants').insert([
+        {
+          id: variant1Id,
+          productId: productId,
+          name: 'واریانت 1',
+          stock: 20,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: variant2Id,
+          productId: productId,
+          name: 'واریانت 2',
+          stock: 30,
+          priceAdjust: 0,
+          order: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
 
       // Delete first variant
-      await supabase
-        .from('product_variants')
-        .delete()
-        .eq('id', variant1Id);
+      await supabase.from('product_variants').delete().eq('id', variant1Id);
 
       // Recalculate stock
       const { data: remainingVariants } = await supabase
@@ -794,7 +762,8 @@ describe('Product Service Integration Tests', () => {
         .select('stock')
         .eq('productId', productId);
 
-      const newTotalStock = remainingVariants!.reduce((sum, v) => sum + v.stock, 0);
+      const newTotalStock =
+        remainingVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
       expect(newTotalStock).toBe(30);
 
       // Update parent stock
@@ -810,38 +779,34 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(30);
+      expect(product?.stock).toBe(30);
     });
 
     it('should update variant stock and recalculate parent', async () => {
       // Create product with variant
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-بروزرسانی-واریانت',
-          description: 'تست بروزرسانی موجودی واریانت',
-          price: 200000,
-          stock: 10,
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-بروزرسانی-واریانت',
+        description: 'تست بروزرسانی موجودی واریانت',
+        price: 200000,
+        stock: 10,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const variantId = randomUUID();
-      await supabase
-        .from('product_variants')
-        .insert({
-          id: variantId,
-          productId: productId,
-          name: 'واریانت تست',
-          stock: 10,
-          priceAdjust: 0,
-          order: 0,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('product_variants').insert({
+        id: variantId,
+        productId: productId,
+        name: 'واریانت تست',
+        stock: 10,
+        priceAdjust: 0,
+        order: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Update variant stock
       const newVariantStock = 25;
@@ -856,7 +821,7 @@ describe('Product Service Integration Tests', () => {
         .select('stock')
         .eq('productId', productId);
 
-      const totalStock = variants!.reduce((sum, v) => sum + v.stock, 0);
+      const totalStock = variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
       await supabase
         .from('products')
         .update({ stock: totalStock })
@@ -869,60 +834,56 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(newVariantStock);
+      expect(product?.stock).toBe(newVariantStock);
     });
 
     it('should maintain variant order correctly', async () => {
       // Create product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-ترتیب-واریانت',
-          description: 'تست ترتیب واریانت‌ها',
-          price: 200000,
-          stock: 0,
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-ترتیب-واریانت',
+        description: 'تست ترتیب واریانت‌ها',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Create variants with specific order
-      await supabase
-        .from('product_variants')
-        .insert([
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'اول',
-            stock: 10,
-            priceAdjust: 0,
-            order: 0,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'دوم',
-            stock: 10,
-            priceAdjust: 0,
-            order: 1,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: randomUUID(),
-            productId: productId,
-            name: 'سوم',
-            stock: 10,
-            priceAdjust: 0,
-            order: 2,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'اول',
+          stock: 10,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'دوم',
+          stock: 10,
+          priceAdjust: 0,
+          order: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'سوم',
+          stock: 10,
+          priceAdjust: 0,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
 
       // Retrieve variants ordered by order field
       const { data: orderedVariants } = await supabase
@@ -932,13 +893,13 @@ describe('Product Service Integration Tests', () => {
         .order('order', { ascending: true });
 
       expect(orderedVariants).not.toBeNull();
-      expect(orderedVariants!.length).toBe(3);
-      expect(orderedVariants![0].name).toBe('اول');
-      expect(orderedVariants![1].name).toBe('دوم');
-      expect(orderedVariants![2].name).toBe('سوم');
-      expect(orderedVariants![0].order).toBe(0);
-      expect(orderedVariants![1].order).toBe(1);
-      expect(orderedVariants![2].order).toBe(2);
+      expect(orderedVariants?.length).toBe(3);
+      expect(orderedVariants?.[0].name).toBe('اول');
+      expect(orderedVariants?.[1].name).toBe('دوم');
+      expect(orderedVariants?.[2].name).toBe('سوم');
+      expect(orderedVariants?.[0].order).toBe(0);
+      expect(orderedVariants?.[1].order).toBe(1);
+      expect(orderedVariants?.[2].order).toBe(2);
     });
   });
 
@@ -946,17 +907,15 @@ describe('Product Service Integration Tests', () => {
     it('should add media to product and set first as default', async () => {
       // Create product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-محصول-رسانه',
-          description: 'محصول با رسانه',
-          price: 200000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-محصول-رسانه',
+        description: 'محصول با رسانه',
+        price: 200000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Add first media (should be default automatically)
       const media1Id = randomUUID();
@@ -976,7 +935,7 @@ describe('Product Service Integration Tests', () => {
 
       expect(error1).toBeNull();
       expect(media1).not.toBeNull();
-      expect(media1!.isDefault).toBe(true);
+      expect(media1?.isDefault).toBe(true);
 
       // Add second media
       const media2Id = randomUUID();
@@ -996,7 +955,7 @@ describe('Product Service Integration Tests', () => {
 
       expect(error2).toBeNull();
       expect(media2).not.toBeNull();
-      expect(media2!.isDefault).toBe(false);
+      expect(media2?.isDefault).toBe(false);
 
       // Verify both media exist
       const { data: allMedia } = await supabase
@@ -1006,48 +965,44 @@ describe('Product Service Integration Tests', () => {
         .order('order', { ascending: true });
 
       expect(allMedia).not.toBeNull();
-      expect(allMedia!.length).toBe(2);
-      expect(allMedia![0].isDefault).toBe(true);
-      expect(allMedia![1].isDefault).toBe(false);
+      expect(allMedia?.length).toBe(2);
+      expect(allMedia?.[0].isDefault).toBe(true);
+      expect(allMedia?.[1].isDefault).toBe(false);
     });
 
     it('should change default media correctly', async () => {
       // Create product with two media
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-تغییر-پیش‌فرض',
-          description: 'تست تغییر رسانه پیش‌فرض',
-          price: 200000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-تغییر-پیش‌فرض',
+        description: 'تست تغییر رسانه پیش‌فرض',
+        price: 200000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const media1Id = randomUUID();
       const media2Id = randomUUID();
-      await supabase
-        .from('product_media')
-        .insert([
-          {
-            id: media1Id,
-            productId: productId,
-            type: 'IMAGE',
-            url: 'https://cdn.kitia.ir/test/img1.jpg',
-            order: 0,
-            isDefault: true,
-          },
-          {
-            id: media2Id,
-            productId: productId,
-            type: 'IMAGE',
-            url: 'https://cdn.kitia.ir/test/img2.jpg',
-            order: 1,
-            isDefault: false,
-          },
-        ]);
+      await supabase.from('product_media').insert([
+        {
+          id: media1Id,
+          productId: productId,
+          type: 'IMAGE',
+          url: 'https://cdn.kitia.ir/test/img1.jpg',
+          order: 0,
+          isDefault: true,
+        },
+        {
+          id: media2Id,
+          productId: productId,
+          type: 'IMAGE',
+          url: 'https://cdn.kitia.ir/test/img2.jpg',
+          order: 1,
+          isDefault: false,
+        },
+      ]);
 
       // Change default to second media
       // First, unset current default
@@ -1070,40 +1025,36 @@ describe('Product Service Integration Tests', () => {
         .eq('productId', productId)
         .order('order', { ascending: true });
 
-      expect(media![0].isDefault).toBe(false);
-      expect(media![1].isDefault).toBe(true);
+      expect(media?.[0].isDefault).toBe(false);
+      expect(media?.[1].isDefault).toBe(true);
     });
 
     it('should add media to specific variant', async () => {
       // Create product and variant
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-رسانه-واریانت',
-          description: 'محصول با رسانه واریانت',
-          price: 200000,
-          stock: 10,
-          hasVariants: true,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-رسانه-واریانت',
+        description: 'محصول با رسانه واریانت',
+        price: 200000,
+        stock: 10,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const variantId = randomUUID();
-      await supabase
-        .from('product_variants')
-        .insert({
-          id: variantId,
-          productId: productId,
-          name: 'قرمز',
-          color: 'red',
-          stock: 10,
-          priceAdjust: 0,
-          order: 0,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('product_variants').insert({
+        id: variantId,
+        productId: productId,
+        name: 'قرمز',
+        color: 'red',
+        stock: 10,
+        priceAdjust: 0,
+        order: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Add media to variant
       const mediaId = randomUUID();
@@ -1124,8 +1075,8 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(media).not.toBeNull();
-      expect(media!.variantId).toBe(variantId);
-      expect(media!.productId).toBe(productId);
+      expect(media?.variantId).toBe(variantId);
+      expect(media?.productId).toBe(productId);
 
       // Verify media is linked to variant
       const { data: variantMedia } = await supabase
@@ -1134,53 +1085,46 @@ describe('Product Service Integration Tests', () => {
         .eq('variantId', variantId);
 
       expect(variantMedia).not.toBeNull();
-      expect(variantMedia!.length).toBe(1);
-      expect(variantMedia![0].id).toBe(mediaId);
+      expect(variantMedia?.length).toBe(1);
+      expect(variantMedia?.[0].id).toBe(mediaId);
     });
 
     it('should delete media and reassign default if needed', async () => {
       // Create product with two media
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-حذف-رسانه',
-          description: 'تست حذف رسانه',
-          price: 200000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-حذف-رسانه',
+        description: 'تست حذف رسانه',
+        price: 200000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const media1Id = randomUUID();
       const media2Id = randomUUID();
-      await supabase
-        .from('product_media')
-        .insert([
-          {
-            id: media1Id,
-            productId: productId,
-            type: 'IMAGE',
-            url: 'https://cdn.kitia.ir/test/img1.jpg',
-            order: 0,
-            isDefault: true,
-          },
-          {
-            id: media2Id,
-            productId: productId,
-            type: 'IMAGE',
-            url: 'https://cdn.kitia.ir/test/img2.jpg',
-            order: 1,
-            isDefault: false,
-          },
-        ]);
+      await supabase.from('product_media').insert([
+        {
+          id: media1Id,
+          productId: productId,
+          type: 'IMAGE',
+          url: 'https://cdn.kitia.ir/test/img1.jpg',
+          order: 0,
+          isDefault: true,
+        },
+        {
+          id: media2Id,
+          productId: productId,
+          type: 'IMAGE',
+          url: 'https://cdn.kitia.ir/test/img2.jpg',
+          order: 1,
+          isDefault: false,
+        },
+      ]);
 
       // Delete default media
-      await supabase
-        .from('product_media')
-        .delete()
-        .eq('id', media1Id);
+      await supabase.from('product_media').delete().eq('id', media1Id);
 
       // Manually set remaining media as default (simulating service layer)
       await supabase
@@ -1195,9 +1139,9 @@ describe('Product Service Integration Tests', () => {
         .eq('productId', productId);
 
       expect(remainingMedia).not.toBeNull();
-      expect(remainingMedia!.length).toBe(1);
-      expect(remainingMedia![0].id).toBe(media2Id);
-      expect(remainingMedia![0].isDefault).toBe(true);
+      expect(remainingMedia?.length).toBe(1);
+      expect(remainingMedia?.[0].id).toBe(media2Id);
+      expect(remainingMedia?.[0].isDefault).toBe(true);
     });
   });
 
@@ -1206,7 +1150,7 @@ describe('Product Service Integration Tests', () => {
       const productData = generateUniqueTestProduct('INTEGRATION');
 
       // Attempt to create with negative price
-      const { data, error } = await supabase
+      await supabase
         .from('products')
         .insert({
           id: randomUUID(),
@@ -1226,8 +1170,6 @@ describe('Product Service Integration Tests', () => {
     });
 
     it('should reject product creation with negative stock', async () => {
-      const productData = generateUniqueTestProduct('INTEGRATION');
-
       // Negative stock should be rejected by business logic
       const invalidStock = -5;
       expect(invalidStock).toBeLessThan(0);
@@ -1254,24 +1196,22 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(product).not.toBeNull();
-      expect(product!.categoryId).toBeNull();
+      expect(product?.categoryId).toBeNull();
     });
 
     it('should handle product without tags gracefully', async () => {
       const productData = generateUniqueTestProduct('INTEGRATION');
       const productId = randomUUID();
 
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          stock: productData.stock,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: productData.name,
+        description: productData.description,
+        price: productData.price,
+        stock: productData.stock,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Query tags (should be empty)
       const { data: productToTags } = await supabase
@@ -1280,25 +1220,23 @@ describe('Product Service Integration Tests', () => {
         .eq('A', productId);
 
       expect(productToTags).not.toBeNull();
-      expect(productToTags!.length).toBe(0);
+      expect(productToTags?.length).toBe(0);
     });
 
     it('should handle product without variants (stock managed directly)', async () => {
       const productId = randomUUID();
       const directStock = 50;
 
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-بدون-واریانت',
-          description: 'محصول بدون واریانت',
-          price: 200000,
-          stock: directStock,
-          hasVariants: false,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-بدون-واریانت',
+        description: 'محصول بدون واریانت',
+        price: 200000,
+        stock: directStock,
+        hasVariants: false,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Verify no variants exist
       const { data: variants } = await supabase
@@ -1306,7 +1244,7 @@ describe('Product Service Integration Tests', () => {
         .select('*')
         .eq('productId', productId);
 
-      expect(variants!.length).toBe(0);
+      expect(variants?.length).toBe(0);
 
       // Verify stock is managed directly
       const { data: product } = await supabase
@@ -1315,23 +1253,21 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.stock).toBe(directStock);
+      expect(product?.stock).toBe(directStock);
     });
 
     it('should handle empty search query', async () => {
       // Create test product
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-جستجو-خالی',
-          description: 'تست جستجوی خالی',
-          price: 100000,
-          stock: 10,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-جستجو-خالی',
+        description: 'تست جستجوی خالی',
+        price: 100000,
+        stock: 10,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       // Search with empty string (should return all active products)
       const { data: products, error } = await supabase
@@ -1342,23 +1278,21 @@ describe('Product Service Integration Tests', () => {
 
       expect(error).toBeNull();
       expect(products).not.toBeNull();
-      expect(products!.length).toBeGreaterThanOrEqual(1);
+      expect(products?.length).toBeGreaterThanOrEqual(1);
     });
 
     it('should handle product with zero discount', async () => {
       const productId = randomUUID();
-      await supabase
-        .from('products')
-        .insert({
-          id: productId,
-          name: 'TEST-بدون-تخفیف',
-          description: 'محصول بدون تخفیف',
-          price: 100000,
-          stock: 10,
-          discountPercent: 0,
-          isActive: true,
-          updatedAt: new Date().toISOString(),
-        });
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-بدون-تخفیف',
+        description: 'محصول بدون تخفیف',
+        price: 100000,
+        stock: 10,
+        discountPercent: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       const { data: product } = await supabase
         .from('products')
@@ -1366,7 +1300,7 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .single();
 
-      expect(product!.discountPercent).toBe(0);
+      expect(product?.discountPercent).toBe(0);
 
       // Verify not returned in discounted products query
       const { data: discounted } = await supabase
@@ -1375,7 +1309,7 @@ describe('Product Service Integration Tests', () => {
         .eq('id', productId)
         .gt('discountPercent', 0);
 
-      expect(discounted!.length).toBe(0);
+      expect(discounted?.length).toBe(0);
     });
   });
 
@@ -1386,40 +1320,38 @@ describe('Product Service Integration Tests', () => {
       const product2Id = randomUUID();
       const product3Id = randomUUID();
 
-      await supabase
-        .from('products')
-        .insert([
-          {
-            id: product1Id,
-            name: 'TEST-ترتیب-3',
-            description: 'سومین محصول',
-            price: 100000,
-            stock: 10,
-            displayOrder: 2,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: product2Id,
-            name: 'TEST-ترتیب-1',
-            description: 'اولین محصول',
-            price: 100000,
-            stock: 10,
-            displayOrder: 0,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-          {
-            id: product3Id,
-            name: 'TEST-ترتیب-2',
-            description: 'دومین محصول',
-            price: 100000,
-            stock: 10,
-            displayOrder: 1,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          },
-        ]);
+      await supabase.from('products').insert([
+        {
+          id: product1Id,
+          name: 'TEST-ترتیب-3',
+          description: 'سومین محصول',
+          price: 100000,
+          stock: 10,
+          displayOrder: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: product2Id,
+          name: 'TEST-ترتیب-1',
+          description: 'اولین محصول',
+          price: 100000,
+          stock: 10,
+          displayOrder: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: product3Id,
+          name: 'TEST-ترتیب-2',
+          description: 'دومین محصول',
+          price: 100000,
+          stock: 10,
+          displayOrder: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
 
       // Fetch ordered by displayOrder
       const { data: orderedProducts } = await supabase
@@ -1429,10 +1361,10 @@ describe('Product Service Integration Tests', () => {
         .order('displayOrder', { ascending: true });
 
       expect(orderedProducts).not.toBeNull();
-      expect(orderedProducts!.length).toBe(3);
-      expect(orderedProducts![0].displayOrder).toBe(0);
-      expect(orderedProducts![1].displayOrder).toBe(1);
-      expect(orderedProducts![2].displayOrder).toBe(2);
+      expect(orderedProducts?.length).toBe(3);
+      expect(orderedProducts?.[0].displayOrder).toBe(0);
+      expect(orderedProducts?.[1].displayOrder).toBe(1);
+      expect(orderedProducts?.[2].displayOrder).toBe(2);
     });
 
     it('should paginate products correctly', async () => {
@@ -1441,17 +1373,15 @@ describe('Product Service Integration Tests', () => {
       for (let i = 0; i < 5; i++) {
         const id = randomUUID();
         productIds.push(id);
-        await supabase
-          .from('products')
-          .insert({
-            id: id,
-            name: `TEST-صفحه‌بندی-${i}`,
-            description: `محصول ${i + 1}`,
-            price: 100000 + (i * 10000),
-            stock: 10,
-            isActive: true,
-            updatedAt: new Date().toISOString(),
-          });
+        await supabase.from('products').insert({
+          id: id,
+          name: `TEST-صفحه‌بندی-${i}`,
+          description: `محصول ${i + 1}`,
+          price: 100000 + i * 10000,
+          stock: 10,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        });
       }
 
       // Fetch first page (limit 2)
@@ -1462,7 +1392,7 @@ describe('Product Service Integration Tests', () => {
         .range(0, 1); // 0-indexed: items 0 and 1
 
       expect(page1).not.toBeNull();
-      expect(page1!.length).toBe(2);
+      expect(page1?.length).toBe(2);
       expect(total).toBe(5);
 
       // Fetch second page (limit 2, offset 2)
@@ -1473,12 +1403,12 @@ describe('Product Service Integration Tests', () => {
         .range(2, 3); // Items 2 and 3
 
       expect(page2).not.toBeNull();
-      expect(page2!.length).toBe(2);
+      expect(page2?.length).toBe(2);
 
       // Verify no overlap
-      const page1Ids = page1!.map(p => p.id);
-      const page2Ids = page2!.map(p => p.id);
-      const hasOverlap = page1Ids.some(id => page2Ids.includes(id));
+      const page1Ids = page1?.map((p) => p.id) ?? [];
+      const page2Ids = page2?.map((p) => p.id) ?? [];
+      const hasOverlap = page1Ids.some((id) => page2Ids.includes(id));
       expect(hasOverlap).toBe(false);
     });
   });
