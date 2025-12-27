@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/utils/format';
+import { DIGIPAY_CONFIG } from '@/config/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';
@@ -343,7 +344,14 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <div className="text-right text-purple-100 text-sm leading-relaxed">
               <span>پرداخت فقط </span>
               <span className="font-bold text-white text-base">
-                {formatPrice(Math.round((effectivePrice * quantity) / 4))}
+                {formatPrice(
+                  Math.round(
+                    (effectivePrice *
+                      quantity *
+                      (1 + DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100)) /
+                      4
+                  )
+                )}
               </span>
               <span> الان + مابقی طی </span>
               <span className="font-bold text-white">۳ قسط ماهانه</span>
