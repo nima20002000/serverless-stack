@@ -60,10 +60,7 @@ export async function verifySupabaseConnection() {
   const supabase = createTestSupabaseClient();
 
   try {
-    const { error } = await supabase
-      .from('users')
-      .select('id')
-      .limit(1);
+    const { error } = await supabase.from('users').select('id').limit(1);
 
     if (error) throw error;
 
@@ -106,22 +103,34 @@ export async function verifyRedisConnection() {
 export async function generateTestUID(): Promise<string> {
   const supabase = createTestSupabaseClient();
 
-  // Get the user with the highest UID number (ordered DESC by uid field)
-  const { data, error } = await supabase
+  // Query for the highest UID, matching only 6-digit UIDs to avoid timestamp-based ones
+  // Use maybeSingle() to handle case when no rows are returned
+  const { data } = await supabase
     .from('users')
     .select('uid')
+    .like('uid', 'U-______') // Match exactly 8 characters (U- + 6 digits)
     .order('uid', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   let nextNumber = 1;
 
-  if (!error && data?.uid) {
+  if (data?.uid) {
     // Extract number from UID (e.g., "U-000123" -> 123)
-    const match = data.uid.match(/^U-(\d+)$/);
+    const match = data.uid.match(/^U-(\d{6})$/);
     if (match) {
-      nextNumber = parseInt(match[1], 10) + 1;
+      const currentNumber = parseInt(match[1], 10);
+      // For test users, start from 100000 to avoid conflicts with production users
+      nextNumber = Math.max(currentNumber + 1, 100000);
     }
+  } else {
+    // No existing UIDs found, start from 100000 for tests
+    nextNumber = 100000;
+  }
+
+  // Ensure we stay within 6-digit range (max 999999)
+  if (nextNumber > 999999) {
+    nextNumber = 100000; // Wrap around
   }
 
   // Format as U-{6-digit number}

@@ -13,17 +13,23 @@ const INTEGRATION_PREFIX = 'INTEGRATION-';
 /**
  * Delete all test users
  * Matches users with email starting with "test-" or phone starting with "091200000"
+ * Also matches common test prefixes: register-, duplicate-, sequential-, race-, etc.
  */
 export async function cleanupTestUsers() {
   const supabase = createTestSupabaseClient();
 
   // Delete users created during tests
+  // Match various test patterns used in generateUniqueTestUser
+  // Note: We match phones with timestamp pattern (091217xxxxxxx where 17 is from 2025 epoch)
   const { error } = await supabase
     .from('users')
     .delete()
-    .or(`email.like.test-%@%,phone.like.091200000%`);
+    .or(
+      `email.like.%-%-%@example.com,email.like.test-%@%,phone.like.091200000%,phone.like.091217%`
+    );
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows deleted
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows deleted
     console.warn('Failed to cleanup test users:', error);
   }
 }
@@ -48,28 +54,19 @@ export async function cleanupTestProducts() {
     return; // No test products to clean up
   }
 
-  const productIds = testProducts.map(p => p.id);
+  const productIds = testProducts.map((p) => p.id);
 
   console.log('    [cleanup] Deleting product media...');
   // Delete product media
-  await supabase
-    .from('product_media')
-    .delete()
-    .in('productId', productIds);
+  await supabase.from('product_media').delete().in('productId', productIds);
 
   console.log('    [cleanup] Deleting product variants...');
   // Delete product variants
-  await supabase
-    .from('product_variants')
-    .delete()
-    .in('productId', productIds);
+  await supabase.from('product_variants').delete().in('productId', productIds);
 
   console.log('    [cleanup] Deleting product-tag relationships...');
   // Delete product-tag relationships
-  await supabase
-    .from('_ProductToTag')
-    .delete()
-    .in('A', productIds);
+  await supabase.from('_ProductToTag').delete().in('A', productIds);
 
   console.log('    [cleanup] Deleting products...');
   // Finally delete products
@@ -102,7 +99,7 @@ export async function cleanupTestTransactions() {
     return; // No test transactions to clean up
   }
 
-  const transactionIds = testTransactions.map(t => t.id);
+  const transactionIds = testTransactions.map((t) => t.id);
 
   // Delete transaction items
   await supabase
@@ -111,10 +108,7 @@ export async function cleanupTestTransactions() {
     .in('transactionId', transactionIds);
 
   // Delete invoices
-  await supabase
-    .from('invoices')
-    .delete()
-    .in('transactionId', transactionIds);
+  await supabase.from('invoices').delete().in('transactionId', transactionIds);
 
   // Delete transactions
   const { error } = await supabase
@@ -161,19 +155,13 @@ export async function cleanupTestTags() {
     return; // No test tags to clean up
   }
 
-  const tagIds = testTags.map(t => t.id);
+  const tagIds = testTags.map((t) => t.id);
 
   // Delete tag relationships
-  await supabase
-    .from('_ProductToTag')
-    .delete()
-    .in('B', tagIds);
+  await supabase.from('_ProductToTag').delete().in('B', tagIds);
 
   // Delete tags
-  const { error } = await supabase
-    .from('tags')
-    .delete()
-    .in('id', tagIds);
+  const { error } = await supabase.from('tags').delete().in('id', tagIds);
 
   if (error && error.code !== 'PGRST116') {
     console.warn('Failed to cleanup test tags:', error);
@@ -220,7 +208,10 @@ export async function cleanupTestPromoCodes() {
     .or(`email.like.test-%@%,phone.like.091200000%`);
 
   if (userFetchError && userFetchError.code !== 'PGRST116') {
-    console.warn('Failed to fetch test users for promo cleanup:', userFetchError);
+    console.warn(
+      'Failed to fetch test users for promo cleanup:',
+      userFetchError
+    );
     return;
   }
 
@@ -280,10 +271,16 @@ export async function cleanupTestCache() {
     const batchSize = 10;
     for (let i = 0; i < allKeys.length; i += batchSize) {
       const batch = allKeys.slice(i, i + batchSize);
-      console.log(`    [cleanup] Deleting batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allKeys.length / batchSize)}...`);
-      await Promise.all(batch.map(key => redis.del(key).catch((err) => {
-        console.log(`    [cleanup] Failed to delete ${key}:`, err.message);
-      })));
+      console.log(
+        `    [cleanup] Deleting batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(allKeys.length / batchSize)}...`
+      );
+      await Promise.all(
+        batch.map((key) =>
+          redis.del(key).catch((err) => {
+            console.log(`    [cleanup] Failed to delete ${key}:`, err.message);
+          })
+        )
+      );
     }
 
     console.log('    [cleanup] Redis cleanup complete');
@@ -314,10 +311,7 @@ export async function cleanupAllTestData() {
 export async function deleteTestUserByEmail(email: string) {
   const supabase = createTestSupabaseClient();
 
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('email', email);
+  const { error } = await supabase.from('users').delete().eq('email', email);
 
   if (error && error.code !== 'PGRST116') {
     throw error;
@@ -330,10 +324,7 @@ export async function deleteTestUserByEmail(email: string) {
 export async function deleteTestUserByPhone(phone: string) {
   const supabase = createTestSupabaseClient();
 
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('phone', phone);
+  const { error } = await supabase.from('users').delete().eq('phone', phone);
 
   if (error && error.code !== 'PGRST116') {
     throw error;
@@ -347,28 +338,16 @@ export async function deleteTestProductById(id: string) {
   const supabase = createTestSupabaseClient();
 
   // Delete media first
-  await supabase
-    .from('product_media')
-    .delete()
-    .eq('productId', id);
+  await supabase.from('product_media').delete().eq('productId', id);
 
   // Delete variants
-  await supabase
-    .from('product_variants')
-    .delete()
-    .eq('productId', id);
+  await supabase.from('product_variants').delete().eq('productId', id);
 
   // Delete tag relationships
-  await supabase
-    .from('_ProductToTag')
-    .delete()
-    .eq('A', id);
+  await supabase.from('_ProductToTag').delete().eq('A', id);
 
   // Delete product
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
+  const { error } = await supabase.from('products').delete().eq('id', id);
 
   if (error && error.code !== 'PGRST116') {
     throw error;

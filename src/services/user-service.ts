@@ -61,13 +61,14 @@ export async function generateNextUID(): Promise<string> {
     .select('uid')
     .order('uid', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows gracefully
 
   let nextNumber = 1;
 
   if (!error && data?.uid) {
     // Extract number from UID (e.g., "U-000123" -> 123)
-    const match = data.uid.match(/^U-(\d+)$/);
+    // Only match exactly 6-digit UIDs to avoid timestamp-based UIDs
+    const match = data.uid.match(/^U-(\d{6})$/);
     if (match) {
       nextNumber = parseInt(match[1], 10) + 1;
     }
