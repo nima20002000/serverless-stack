@@ -304,21 +304,26 @@ export default function CheckoutPage() {
                   {/* Digipay Installment Details */}
                   {paymentMethod === 'digipay' && (
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-right">
-                      <div className="text-sm text-purple-800 font-medium mb-2">
+                      <div className="text-sm text-purple-800 font-medium mb-4">
                         جزئیات اقساط:
                       </div>
-                      <div className="text-sm text-purple-700">
-                        <span className="font-bold">
-                          {formatPrice(Math.round(finalTotal / 4))}
-                        </span>
-                        <span className="mx-1">پیش‌پرداخت</span>
-                        <span className="text-purple-600">+</span>
-                        <span className="mx-1">مابقی طی</span>
-                        <span className="font-bold">۳ قسط</span>
-                        <span className="mx-1">ماهانه</span>
-                        <span className="font-bold">
-                          {formatPrice(Math.round(finalTotal / 4))}
-                        </span>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center gap-4">
+                          <span className="text-sm text-purple-700">
+                            پیش‌پرداخت
+                          </span>
+                          <span className="font-bold text-purple-900 text-base whitespace-nowrap">
+                            {formatPrice(Math.round(finalTotal / 4))}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center gap-4">
+                          <span className="text-sm text-purple-700 whitespace-nowrap">
+                            ۳ قسط ماهانه
+                          </span>
+                          <span className="font-bold text-purple-900 text-base whitespace-nowrap">
+                            {formatPrice(Math.round(finalTotal / 4))}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -2,7 +2,7 @@
  * Format price in Persian format with Toman currency
  */
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
+  return new Intl.NumberFormat('fa-IR').format(price) + ' تومن';
 }
 
 /**
