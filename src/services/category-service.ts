@@ -222,23 +222,61 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
 export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // First get root categories (parentId is null)
+  const { data: rootCategories, error: rootError } = await supabase
     .from('categories')
-    .select(
-      '*, children:categories!parentId!inner(*, children:categories!parentId!inner(*))'
-    )
+    .select('*')
     .is('parentId', null)
     .eq('isActive', true)
-    .eq('children.isActive', true)
     .order('name', { ascending: true });
 
-  if (error) {
-    log.error('Error fetching category tree', { error });
+  if (rootError) {
+    log.error('Error fetching root categories', { error: rootError });
     throw new Error('خطا در دریافت درخت دسته‌بندی‌ها');
   }
 
-  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
-  return data || [];
+  if (!rootCategories || rootCategories.length === 0) {
+    return [];
+  }
+
+  // Then get all active child categories
+  const { data: allChildren, error: childError } = await supabase
+    .from('categories')
+    .select('*')
+    .not('parentId', 'is', null)
+    .eq('isActive', true)
+    .order('name', { ascending: true });
+
+  if (childError) {
+    log.error('Error fetching child categories', { error: childError });
+    throw new Error('خطا در دریافت درخت دسته‌بندی‌ها');
+  }
+
+  // Build tree structure manually
+  const childrenByParentId = new Map<string, CategoryWithRelations[]>();
+  for (const child of allChildren || []) {
+    if (child.parentId) {
+      const siblings = childrenByParentId.get(child.parentId) || [];
+      siblings.push({ ...child, children: [] });
+      childrenByParentId.set(child.parentId, siblings);
+    }
+  }
+
+  // Attach children to root categories (supports 2 levels deep)
+  const tree: CategoryWithRelations[] = rootCategories.map((root) => {
+    const level1Children = childrenByParentId.get(root.id) || [];
+    // Attach level 2 children to level 1 children
+    const childrenWithGrandchildren = level1Children.map((child) => ({
+      ...child,
+      children: childrenByParentId.get(child.id) || [],
+    }));
+    return {
+      ...root,
+      children: childrenWithGrandchildren,
+    };
+  });
+
+  return tree;
 }
 
 /**
