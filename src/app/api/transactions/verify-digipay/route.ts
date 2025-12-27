@@ -132,6 +132,47 @@ async function getHandler(req: NextRequest) {
       ticket,
     });
 
+    // IMPORTANT: Check idempotency FIRST - before processing any callback status
+    // This prevents a late FAILURE callback from overwriting an already COMPLETED transaction
+    // (e.g., when Digipay sends duplicate callbacks due to timeout/retry)
+
+    // If transaction is already completed, redirect to success (regardless of callback status)
+    if (transaction.status === 'COMPLETED') {
+      log.info('Transaction already completed, skipping verification', {
+        transactionId: transaction.id,
+        ticket,
+        callbackStatus: status,
+        elapsedMs: Date.now() - startTime,
+      });
+
+      // Use 303 (See Other) to force browser to use GET for the redirect
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}`
+        ),
+        303
+      );
+    }
+
+    // If transaction is already failed, redirect to failure (regardless of callback status)
+    if (transaction.status === 'FAILED') {
+      log.info('Transaction already failed, skipping verification', {
+        transactionId: transaction.id,
+        ticket,
+        callbackStatus: status,
+        elapsedMs: Date.now() - startTime,
+      });
+
+      // Use 303 (See Other) to force browser to use GET for the redirect
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
+        ),
+        303
+      );
+    }
+
+    // Now safe to process callback status - transaction is still PENDING
     // Check if payment was cancelled/failed by user
     // Digipay sends result='SUCCESS' or result='FAILURE'
     if (status && status.toUpperCase() !== 'SUCCESS') {
@@ -155,40 +196,6 @@ async function getHandler(req: NextRequest) {
 
       // Use 303 (See Other) to force browser to use GET for the redirect
       // 307 preserves POST method which causes 405 on page routes
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/failure?code=${transaction.transactionCode}`
-        ),
-        303
-      );
-    }
-
-    // Check if transaction is already completed or failed (prevent duplicate processing)
-    if (transaction.status === 'COMPLETED') {
-      log.info('Transaction already completed, skipping verification', {
-        transactionId: transaction.id,
-        ticket,
-        elapsedMs: Date.now() - startTime,
-      });
-
-      // Use 303 (See Other) to force browser to use GET for the redirect
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/success?code=${transaction.transactionCode}`
-        ),
-        303
-      );
-    }
-
-    // Prevent re-processing of failed transactions (idempotency)
-    if (transaction.status === 'FAILED') {
-      log.info('Transaction already failed, skipping verification', {
-        transactionId: transaction.id,
-        ticket,
-        elapsedMs: Date.now() - startTime,
-      });
-
-      // Use 303 (See Other) to force browser to use GET for the redirect
       return NextResponse.redirect(
         createRedirectUrl(
           `/payment/failure?code=${transaction.transactionCode}`
@@ -467,6 +474,27 @@ async function getHandler(req: NextRequest) {
     try {
       if (failTicket) {
         const failedTransaction = await getTransactionById(failTicket);
+
+        // IMPORTANT: Don't mark as FAILED if already COMPLETED
+        // This protects completed transactions from being incorrectly marked failed due to errors
+        if (failedTransaction.status === 'COMPLETED') {
+          log.info(
+            'Transaction already completed, not marking as failed despite error',
+            {
+              transactionId: failedTransaction.id,
+              ticket: failTicket,
+              error: errorMessage,
+            }
+          );
+
+          // Redirect to success page since payment was already successful
+          return NextResponse.redirect(
+            createRedirectUrl(
+              `/payment/success?code=${failedTransaction.transactionCode}`
+            ),
+            303
+          );
+        }
 
         log.warn('Marking transaction as failed', {
           transactionId: failedTransaction.id,

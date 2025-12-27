@@ -59,28 +59,16 @@ async function getHandler(req: NextRequest) {
       authority,
     });
 
-    // Check if payment was cancelled by user
-    if (status !== 'OK') {
-      log.warn('Payment cancelled by user', {
-        authority,
-        transactionId: transaction.id,
-        status,
-      });
+    // IMPORTANT: Check idempotency FIRST - before processing any callback status
+    // This prevents duplicate callbacks from overwriting transaction state
+    // (e.g., when Zarinpal sends multiple callbacks due to timeout/retry)
 
-      await updateTransactionStatus(transaction.id, 'FAILED', authority);
-
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/failure?code=${transaction.transactionCode}`
-        )
-      );
-    }
-
-    // Check if transaction is already completed or failed (prevent duplicate processing)
+    // If transaction is already completed, redirect to success (regardless of callback status)
     if (transaction.status === 'COMPLETED') {
       log.info('Transaction already completed, skipping verification', {
         transactionId: transaction.id,
         authority,
+        callbackStatus: status,
         elapsedMs: Date.now() - startTime,
       });
 
@@ -91,13 +79,32 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Prevent re-processing of failed transactions (idempotency)
+    // If transaction is already failed, redirect to failure (regardless of callback status)
     if (transaction.status === 'FAILED') {
       log.info('Transaction already failed, skipping verification', {
         transactionId: transaction.id,
         authority,
+        callbackStatus: status,
         elapsedMs: Date.now() - startTime,
       });
+
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
+        )
+      );
+    }
+
+    // Now safe to process callback status - transaction is still PENDING
+    // Check if payment was cancelled by user
+    if (status !== 'OK') {
+      log.warn('Payment cancelled by user', {
+        authority,
+        transactionId: transaction.id,
+        status,
+      });
+
+      await updateTransactionStatus(transaction.id, 'FAILED', authority);
 
       return NextResponse.redirect(
         createRedirectUrl(
@@ -331,6 +338,26 @@ async function getHandler(req: NextRequest) {
     try {
       if (authority) {
         const transaction = await getTransactionByAuthority(authority);
+
+        // IMPORTANT: Don't mark as FAILED if already COMPLETED
+        // This protects completed transactions from being incorrectly marked failed due to errors
+        if (transaction.status === 'COMPLETED') {
+          log.info(
+            'Transaction already completed, not marking as failed despite error',
+            {
+              transactionId: transaction.id,
+              authority,
+              error: errorMessage,
+            }
+          );
+
+          // Redirect to success page since payment was already successful
+          return NextResponse.redirect(
+            createRedirectUrl(
+              `/payment/success?code=${transaction.transactionCode}`
+            )
+          );
+        }
 
         log.warn('Marking transaction as failed', {
           transactionId: transaction.id,
