@@ -51,7 +51,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
   return (
     <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-[70]" onClose={onClose}>
         {/* Backdrop */}
         <Transition.Child
           as={Fragment}
