@@ -8,7 +8,6 @@ import Button from '@/components/ui/Button';
 import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
-import DigipaySurchargeBadge from '@/components/payment/DigipaySurchargeBadge';
 
 interface Variant {
   id: string;
@@ -345,10 +344,6 @@ function ProductCard({ product }: ProductCardProps) {
                 {discountPercent}% تخفیف
               </span>
             )}
-          </div>
-          {/* Digipay Surcharge Badge - Top Left */}
-          <div className="absolute top-2 left-2">
-            <DigipaySurchargeBadge />
           </div>
           {isOutOfStock && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">

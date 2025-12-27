@@ -207,7 +207,7 @@ export default function CheckoutPage() {
                     <div className="flex justify-between text-sm text-purple-700 bg-purple-50 rounded-lg px-3 py-2 -mx-1">
                       <span dir="rtl">+ {formatPrice(digipaySurcharge)}</span>
                       <span>
-                        هزینه درگاه دیجی‌پی ({DIGIPAY_CONFIG.SURCHARGE_PERCENT}
+                        کارمزد درگاه دیجی‌پی ({DIGIPAY_CONFIG.SURCHARGE_PERCENT}
                         ٪)
                       </span>
                     </div>
@@ -273,7 +273,7 @@ export default function CheckoutPage() {
                       <div className="font-medium text-gray-900">دیجی پی</div>
                       <div className="text-sm text-gray-600">پرداخت اقساطی</div>
                       <div className="text-xs text-purple-600 mt-1">
-                        + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ هزینه درگاه
+                        + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ کارمزد درگاه
                       </div>
                     </div>
                     <div className="flex-shrink-0">
