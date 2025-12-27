@@ -320,6 +320,36 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             )}
           </div>
 
+          {/* Installment Purchase Banner */}
+          <div className="mb-6 bg-gradient-to-l from-purple-600 to-purple-700 rounded-xl p-4 text-white shadow-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-white/20 rounded-full p-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                  />
+                </svg>
+              </div>
+              <span className="font-bold text-lg">خرید اقساطی با دیجی‌پی</span>
+            </div>
+            <div className="text-right text-purple-100 text-sm leading-relaxed">
+              <span>پرداخت فقط </span>
+              <span className="font-bold text-white text-base">
+                {formatPrice(Math.round((effectivePrice * quantity) / 4))}
+              </span>
+              <span> الان + مابقی طی </span>
+              <span className="font-bold text-white">۳ قسط ماهانه</span>
+            </div>
+          </div>
+
           {/* Stock Status */}
           <div className="mb-6">
             {isOutOfStock ? (
