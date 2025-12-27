@@ -430,7 +430,7 @@ export default function ProfilePage() {
         <div className="flex gap-4 justify-end">
           <Button
             variant="danger"
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => signOut({ callbackUrl: '/' })}
           >
             خروج از حساب کاربری
           </Button>
