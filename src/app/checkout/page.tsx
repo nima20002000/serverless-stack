@@ -12,9 +12,11 @@ import {
   selectItemCount,
 } from '@/store/cart-store';
 import { DIGIPAY_CONFIG } from '@/config/constants';
+import Image from 'next/image';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 import DigipayBadge from '@/components/payment/DigipayBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 
@@ -153,7 +155,21 @@ export default function CheckoutPage() {
                     key={`${item.productId}-${item.variantId || 'no-variant'}`}
                     className="flex items-center gap-4 py-3 border-b last:border-b-0"
                   >
-                    <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg" />
+                    <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+                      {item.image ? (
+                        <Image
+                          src={optimizeImage.cartItem(item.image)}
+                          alt={item.name}
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <span className="text-xs">بدون تصویر</span>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex-1 text-right">
                       <h3 className="font-medium text-gray-900">{item.name}</h3>
                       {item.variantName && (
