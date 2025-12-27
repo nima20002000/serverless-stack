@@ -58,13 +58,6 @@ export default function CartSummary({
             ادامه فرآیند خرید
           </Button>
         )}
-
-        {/* Info */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-          <p className="text-xs text-blue-800 text-right">
-            هزینه ارسال در مرحله بعد محاسبه خواهد شد
-          </p>
-        </div>
       </div>
     </Card>
   );
