@@ -301,6 +301,28 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
+                  {/* Digipay Installment Details */}
+                  {paymentMethod === 'digipay' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-right">
+                      <div className="text-sm text-purple-800 font-medium mb-2">
+                        جزئیات اقساط:
+                      </div>
+                      <div className="text-sm text-purple-700">
+                        <span className="font-bold">
+                          {formatPrice(Math.round(finalTotal / 4))}
+                        </span>
+                        <span className="mx-1">پیش‌پرداخت</span>
+                        <span className="text-purple-600">+</span>
+                        <span className="mx-1">مابقی طی</span>
+                        <span className="font-bold">۳ قسط</span>
+                        <span className="mx-1">ماهانه</span>
+                        <span className="font-bold">
+                          {formatPrice(Math.round(finalTotal / 4))}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   <div
                     className={`${
                       paymentMethod === 'digipay'
