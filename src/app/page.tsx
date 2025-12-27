@@ -300,7 +300,7 @@ export default async function Home() {
             </div>
           </Card>
 
-          {/* Feature 3 - Support */}
+          {/* Feature 3 - Installment Purchase */}
           <Card className="text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
             <div className="flex flex-col items-center">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-purple-200 rounded-full flex items-center justify-center mb-6">
@@ -314,15 +314,15 @@ export default async function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                   />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">
-                پشتیبانی ۲۴ ساعته
+                امکان خرید قسطی
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                پاسخگویی سریع به سوالات شما در تمام ساعات شبانه‌روز
+                خرید آسان با امکان پرداخت اقساطی و بدون نیاز به ضامن
               </p>
             </div>
           </Card>
