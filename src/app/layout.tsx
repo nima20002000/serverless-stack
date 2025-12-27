@@ -3,6 +3,7 @@ import './globals.css';
 import { SessionProvider } from '@/components/providers/SessionProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import InstallmentBanner from '@/components/layout/InstallmentBanner';
 import {
   generateOrganizationSchema,
   generateWebSiteSchema,
@@ -63,6 +64,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased flex flex-col min-h-screen">
         <SessionProvider>
+          <InstallmentBanner />
           <Header />
           {children}
           <Footer />

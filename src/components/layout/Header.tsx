@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '@/components/ui/Button';
@@ -9,11 +10,19 @@ import CartIcon from '@/components/cart/CartIcon';
 import CartDrawer from '@/components/cart/CartDrawer';
 import SearchBar from '@/components/ui/SearchBar';
 
+const BANNER_HIDDEN_PATHS = ['/cart', '/checkout'];
+
 export default function Header() {
   const { data: session, status } = useSession();
+  const pathname = usePathname();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Check if banner is visible (not on cart/checkout pages)
+  const isBannerVisible = !BANNER_HIDDEN_PATHS.some((path) =>
+    pathname.startsWith(path)
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,9 +36,9 @@ export default function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 transition-shadow duration-300 ${
+        className={`fixed left-0 right-0 z-50 bg-white border-b border-gray-200 transition-shadow duration-300 ${
           isScrolled ? 'shadow-md' : 'shadow-sm'
-        }`}
+        } ${isBannerVisible ? 'top-9 sm:top-10' : 'top-0'}`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
