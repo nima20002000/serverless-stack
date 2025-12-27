@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Combobox, Transition } from '@headlessui/react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { TagIcon, FolderIcon } from '@heroicons/react/24/solid';
@@ -225,15 +226,17 @@ export default function SearchBar({
                             <div className="flex items-center gap-3">
                               {/* Product Image */}
                               <div
-                                className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border ${
+                                className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border ${
                                   active ? 'border-blue-200' : 'border-gray-200'
                                 }`}
                               >
                                 {product.images && product.images.length > 0 ? (
-                                  <img
+                                  <Image
                                     src={product.images[0]}
                                     alt={product.name}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    className="object-cover"
+                                    sizes="48px"
                                   />
                                 ) : (
                                   <div className="w-full h-full bg-gray-100 flex items-center justify-center">

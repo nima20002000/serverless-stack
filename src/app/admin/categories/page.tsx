@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -407,10 +408,12 @@ export default function CategoriesManagementPage() {
                 <div className="space-y-2">
                   {formData.image && (
                     <div className="relative w-full aspect-[4/5] border border-gray-300 rounded-lg overflow-hidden">
-                      <img
+                      <Image
                         src={formData.image}
                         alt="پیش‌نمایش تصویر"
-                        className="w-full h-full object-cover object-center"
+                        fill
+                        className="object-cover object-center"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                       />
                       <button
                         type="button"

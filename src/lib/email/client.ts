@@ -143,15 +143,10 @@ async function sendEmail(options: {
       if (previewUrl) {
         log.info('📧 Email sent (Ethereal)', {
           to: options.to,
+          subject: options.subject,
           previewUrl,
           messageId: info.messageId,
         });
-        console.log('\n==========================================');
-        console.log('📧 EMAIL PREVIEW (Ethereal Test Mode)');
-        console.log(`To: ${options.to}`);
-        console.log(`Subject: ${options.subject}`);
-        console.log(`Preview URL: ${previewUrl}`);
-        console.log('==========================================\n');
       }
     }
 

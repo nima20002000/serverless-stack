@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 export default function ZarinpalFooterBadge() {
   const showZPTrust = () => {
     window.open(
@@ -16,10 +18,13 @@ export default function ZarinpalFooterBadge() {
       className="inline-block"
       title="دروازه پرداخت معتبر"
     >
-      <img
+      <Image
         src="https://cdn.zarinpal.com/badges/trustLogo/1.svg"
         alt="دروازه پرداخت معتبر"
-        style={{ width: '96px', height: '144px', cursor: 'pointer' }}
+        width={96}
+        height={144}
+        className="cursor-pointer"
+        unoptimized
       />
     </button>
   );

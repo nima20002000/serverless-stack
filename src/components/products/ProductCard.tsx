@@ -47,8 +47,11 @@ function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
 
-  // Get active variants
-  const activeVariants = product.variants?.filter((v) => v.isActive) || [];
+  // Get active variants - memoized to prevent dependency changes on every render
+  const activeVariants = useMemo(
+    () => product.variants?.filter((v) => v.isActive) || [],
+    [product.variants]
+  );
   const hasVariants = product.hasVariants && activeVariants.length > 0;
 
   // Auto-select first active variant with media if available

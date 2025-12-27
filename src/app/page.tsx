@@ -126,14 +126,13 @@ export default async function Home() {
               </div>
               {/* Image Container */}
               <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
-                <img
+                <Image
                   src={HERO_IMAGE_OPTIMIZED}
                   alt="کیتیا - فروشگاه آنلاین"
-                  fetchPriority="high"
-                  decoding="async"
-                  className="object-cover absolute inset-0 w-full h-full"
-                  width="640"
-                  height="640"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
             </div>

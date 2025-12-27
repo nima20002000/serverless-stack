@@ -103,7 +103,7 @@ export default function CheckoutPage() {
         setIsProcessing(false);
       }
     },
-    [items, session, paymentMethod]
+    [items, paymentMethod]
   );
 
   if (status === 'loading') {
