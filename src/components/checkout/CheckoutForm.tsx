@@ -25,12 +25,16 @@ interface CheckoutFormProps {
     phoneVerified: boolean;
   }) => void;
   isProcessing: boolean;
+  hideSubmitButton?: boolean;
+  formRef?: React.RefObject<HTMLFormElement>;
 }
 
 export default function CheckoutForm({
   session,
   onSubmit,
   isProcessing,
+  hideSubmitButton = false,
+  formRef,
 }: CheckoutFormProps) {
   const { update: updateSession } = useSession();
   const [fullName, setFullName] = useState('');
@@ -346,7 +350,7 @@ export default function CheckoutForm({
         اطلاعات ارسال
       </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         {/* Form-level Error Message - shown for validation errors or when createAccount is off */}
         {otpError && (!createAccount || (createAccount && phoneVerified)) && (
           <Alert type="error" onClose={() => setOtpError('')}>
@@ -584,20 +588,22 @@ export default function CheckoutForm({
           </div>
         )}
 
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          variant="primary"
-          className="w-full"
-          isLoading={isProcessing}
-          disabled={
-            isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
-          }
-        >
-          {!isLoggedIn && createAccount && !phoneVerified
-            ? 'ابتدا شماره تلفن را تایید کنید'
-            : 'پرداخت'}
-        </Button>
+        {/* Submit Button - hidden on mobile when hideSubmitButton is true */}
+        {!hideSubmitButton && (
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full"
+            isLoading={isProcessing}
+            disabled={
+              isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
+            }
+          >
+            {!isLoggedIn && createAccount && !phoneVerified
+              ? 'ابتدا شماره تلفن را تایید کنید'
+              : 'پرداخت'}
+          </Button>
+        )}
       </form>
     </Card>
   );

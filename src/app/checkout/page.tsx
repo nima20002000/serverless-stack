@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import {
 import { DIGIPAY_CONFIG } from '@/config/constants';
 import Image from 'next/image';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
@@ -31,6 +32,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>(
     'zarinpal'
   );
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Calculate surcharge for Digipay
   const digipaySurcharge =
@@ -194,6 +196,8 @@ export default function CheckoutPage() {
               session={session}
               onSubmit={handleCheckout}
               isProcessing={isProcessing}
+              hideSubmitButton
+              formRef={formRef}
             />
           </div>
 
@@ -316,8 +320,32 @@ export default function CheckoutPage() {
                         : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
                     </p>
                   </div>
+
+                  {/* Submit Button - visible on desktop only */}
+                  <Button
+                    type="button"
+                    variant="primary"
+                    className="w-full mt-4 hidden lg:block"
+                    isLoading={isProcessing}
+                    disabled={isProcessing}
+                    onClick={() => formRef.current?.requestSubmit()}
+                  >
+                    پرداخت
+                  </Button>
                 </div>
               </Card>
+
+              {/* Mobile Submit Button - visible on mobile only, after payment method selection */}
+              <Button
+                type="button"
+                variant="primary"
+                className="w-full lg:hidden"
+                isLoading={isProcessing}
+                disabled={isProcessing}
+                onClick={() => formRef.current?.requestSubmit()}
+              >
+                پرداخت
+              </Button>
             </div>
           </div>
         </div>
