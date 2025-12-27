@@ -491,6 +491,13 @@ export default function CheckoutForm({
           />
         </div>
 
+        {/* Shipping Fee Notice */}
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <p className="text-sm text-amber-800 text-right">
+            📦 هزینه ارسال به صورت پس کرایه درب منزل محاسبه خواهد شد.
+          </p>
+        </div>
+
         {/* Create Account Section (Only for guest users) */}
         {!session && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
