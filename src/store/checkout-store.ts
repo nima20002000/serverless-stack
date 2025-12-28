@@ -16,8 +16,10 @@ export interface CheckoutFormData {
 
 interface CheckoutStore {
   formData: CheckoutFormData;
+  _hasHydrated: boolean;
   setFormData: (data: Partial<CheckoutFormData>) => void;
   clearFormData: () => void;
+  setHasHydrated: (state: boolean) => void;
 }
 
 const initialFormData: CheckoutFormData = {
@@ -32,6 +34,7 @@ export const useCheckoutStore = create<CheckoutStore>()(
   persist(
     (set) => ({
       formData: initialFormData,
+      _hasHydrated: false,
 
       setFormData: (data) =>
         set((state) => ({
@@ -39,10 +42,15 @@ export const useCheckoutStore = create<CheckoutStore>()(
         })),
 
       clearFormData: () => set({ formData: initialFormData }),
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'checkout-storage',
       storage: createBrowserStorage(),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

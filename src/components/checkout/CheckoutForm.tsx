@@ -38,8 +38,11 @@ export default function CheckoutForm({
   formRef,
 }: CheckoutFormProps) {
   const { update: updateSession } = useSession();
-  const { formData: savedFormData, setFormData: saveFormData } =
-    useCheckoutStore();
+  const {
+    formData: savedFormData,
+    setFormData: saveFormData,
+    _hasHydrated,
+  } = useCheckoutStore();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -70,7 +73,11 @@ export default function CheckoutForm({
   });
 
   // Load user profile data if logged in, or saved form data for guests
+  // Wait for Zustand hydration before loading saved data
   useEffect(() => {
+    // Don't load until Zustand has hydrated from localStorage
+    if (!_hasHydrated) return;
+
     const loadUserProfile = async () => {
       if (session?.user) {
         try {
@@ -117,7 +124,7 @@ export default function CheckoutForm({
 
     loadUserProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [session, _hasHydrated]);
 
   // Cooldown timer for OTP
   useEffect(() => {
@@ -367,7 +374,8 @@ export default function CheckoutForm({
     });
   };
 
-  if (isLoadingProfile && session) {
+  // Show loading while waiting for hydration or profile data
+  if (!_hasHydrated || (isLoadingProfile && session)) {
     return (
       <Card className="mt-6">
         <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>
