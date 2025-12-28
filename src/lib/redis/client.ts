@@ -1,27 +1,18 @@
 import { Redis } from '@upstash/redis';
 import { log } from '@/lib/logger';
 
-let redis: Redis | null = null;
+// Redis client instance
+const url = process.env.UPSTASH_REDIS_REST_URL;
+const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-export function getRedisClient(): Redis | null {
-  if (!redis) {
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis: Redis | null = url && token ? new Redis({ url, token }) : null;
 
-    if (!url || !token) {
-      log.warn('Redis credentials not configured, caching disabled');
-      return null;
-    }
-
-    redis = new Redis({
-      url,
-      token,
-    });
-
-    log.info('Redis client initialized');
-  }
-  return redis;
+if (!redis) {
+  log.warn('Redis credentials not configured, caching disabled');
 }
+
+// Export the redis client for direct use
+export { redis };
 
 /**
  * Get cached data or fetch from database
@@ -34,8 +25,6 @@ export async function getCached<T>(
   fetchFn: () => Promise<T>,
   ttl: number = 300
 ): Promise<T> {
-  const redis = getRedisClient();
-
   // If Redis is not configured, just fetch directly
   if (!redis) {
     return fetchFn();
@@ -75,8 +64,6 @@ export async function getCached<T>(
  * @param pattern Redis key pattern (e.g., "products:*")
  */
 export async function invalidateCache(pattern: string): Promise<void> {
-  const redis = getRedisClient();
-
   if (!redis) {
     return;
   }
@@ -99,8 +86,6 @@ export async function invalidateCache(pattern: string): Promise<void> {
  * Clear specific cache key
  */
 export async function clearCache(key: string): Promise<void> {
-  const redis = getRedisClient();
-
   if (!redis) {
     return;
   }
@@ -122,8 +107,6 @@ export async function clearCache(key: string): Promise<void> {
  * we need to specify exact keys to clear
  */
 export async function clearCachePattern(keys: string[]): Promise<void> {
-  const redis = getRedisClient();
-
   if (!redis) {
     return;
   }

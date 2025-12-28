@@ -11,10 +11,8 @@ import {
   clearCache,
   clearCachePattern,
   invalidateCache,
-  getRedisClient,
+  redis,
 } from '../../src/lib/redis/client';
-
-const redis = getRedisClient();
 
 function requireRedis() {
   if (!redis) {
@@ -72,10 +70,7 @@ describe('Cache Invalidation Integration Tests', () => {
 
   it('should clear a batch of cache keys', async () => {
     const client = requireRedis();
-    const keys = [
-      `test:cache:${randomUUID()}`,
-      `test:cache:${randomUUID()}`,
-    ];
+    const keys = [`test:cache:${randomUUID()}`, `test:cache:${randomUUID()}`];
 
     await Promise.all(keys.map((key) => client.set(key, 'value')));
     await clearCachePattern(keys);

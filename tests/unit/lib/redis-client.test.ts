@@ -43,9 +43,9 @@ describe('redis client (no-redis fallback)', () => {
   });
 
   it('returns null when redis is not configured', async () => {
-    const { getRedisClient } = await loadRedisClient();
+    const { redis } = await loadRedisClient();
 
-    expect(getRedisClient()).toBeNull();
+    expect(redis).toBeNull();
   });
 
   it('falls back to fetch function when redis is not configured', async () => {

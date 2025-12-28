@@ -43,16 +43,10 @@ export type TransactionEmailData = {
   } | null;
 };
 
-// Resend client instance (lazy initialization)
-let resendClient: Resend | null = null;
-
-function getResendClient(): Resend | null {
-  if (!process.env.RESEND_API_KEY) return null;
-  if (!resendClient) {
-    resendClient = new Resend(process.env.RESEND_API_KEY);
-  }
-  return resendClient;
-}
+// Resend client instance
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 /**
  * Send email using Resend REST API (production) or nodemailer (development)
@@ -67,7 +61,6 @@ async function sendEmail(options: {
   const from = process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>';
 
   // Production: Use Resend REST API
-  const resend = getResendClient();
   if (resend) {
     try {
       const { data, error } = await resend.emails.send({
