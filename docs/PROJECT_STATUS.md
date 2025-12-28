@@ -9,6 +9,7 @@
 ## Completed ✅
 
 ### v0.1.0 - Foundation
+
 - [x] Project architecture designed and documented
 - [x] Next.js 14 with TypeScript configured
 - [x] Tailwind CSS with RTL support configured
@@ -23,6 +24,7 @@
 - [x] Environment configuration files created
 
 ### v0.2.0 - Database & Authentication ✅ **COMPLETE**
+
 - [x] PostgreSQL database setup (Task 02 - 100% Complete)
 - [x] Database migrations run successfully
 - [x] Seed data created (admin, users, products, transactions)
@@ -38,6 +40,7 @@
 - [x] Headless UI integrated
 
 ### v0.3.0 - Product Management ✅ **COMPLETE**
+
 - [x] Product service layer with CRUD operations (Task 03 - 100% Complete)
 - [x] Public product API endpoints (GET list, GET by ID)
 - [x] Admin product API endpoints (POST, PUT, DELETE)
@@ -51,6 +54,7 @@
 - [x] RTL product cards and layouts
 
 ### v0.4.0 - Shopping Cart ✅ **COMPLETE**
+
 - [x] Cart store with Zustand (Task 04 - 100% Complete)
 - [x] Cart state management with persistence
 - [x] CartIcon component with badge
@@ -67,6 +71,7 @@
 - [x] Loading states and error handling
 
 ### v0.5.0 - Payment Integration ✅ **COMPLETE**
+
 - [x] Zarinpal SDK integration (Task 05 - 100% Complete)
 - [x] Zarinpal client wrapper (`src/lib/zarinpal/client.ts`)
 - [x] Transaction service layer (`src/services/transaction-service.ts`)
@@ -88,6 +93,7 @@
 - [x] Build optimizations (auto-clear .next cache)
 
 ### v0.6.0 - Admin Panel ✅ **COMPLETE**
+
 - [x] Admin service layer (Task 08 - 100% Complete)
 - [x] Admin API endpoints for users (GET, PUT, DELETE)
 - [x] Admin API endpoints for transactions (GET with filters)
@@ -120,6 +126,7 @@ None currently - ready to start next phase!
 ## Next Up (v0.7.0 - Invoice System)
 
 ### High Priority
+
 1. **Invoice System** (Task: `2do/06-invoice-system.md`)
    - Invoice generation after successful payment
    - Invoice PDF creation
@@ -129,62 +136,71 @@ None currently - ready to start next phase!
 
 ## Task Overview
 
-| Task | Priority | Status | File |
-|------|----------|--------|------|
-| Authentication System | High | ✅ Complete | `01-authentication-system.md` |
-| Database Setup | Critical | ✅ Complete | `02-database-setup.md` |
-| Product Management | High | ✅ Complete | `03-product-management.md` |
-| Shopping Cart | High | ✅ Complete | `04-shopping-cart.md` |
-| Payment (Zarinpal) | High | ✅ Complete | `05-payment-zarinpal.md` |
-| Invoice System | Medium | Not Started | `06-invoice-system.md` |
-| Promo Code System | Medium | 15% (Backend only) | `07-promo-code-system.md` |
-| Admin Panel | High | ✅ Complete (Core) | `08-admin-panel.md` |
-| UI Components & Layout | High | 50% (Base components only) | `09-ui-components-layout.md` |
-| Testing & Deployment | Medium | Not Started | `10-testing-deployment.md` |
+| Task                   | Priority | Status                     | File                          |
+| ---------------------- | -------- | -------------------------- | ----------------------------- |
+| Authentication System  | High     | ✅ Complete                | `01-authentication-system.md` |
+| Database Setup         | Critical | ✅ Complete                | `02-database-setup.md`        |
+| Product Management     | High     | ✅ Complete                | `03-product-management.md`    |
+| Shopping Cart          | High     | ✅ Complete                | `04-shopping-cart.md`         |
+| Payment (Zarinpal)     | High     | ✅ Complete                | `05-payment-zarinpal.md`      |
+| Invoice System         | Medium   | Not Started                | `06-invoice-system.md`        |
+| Promo Code System      | Medium   | 15% (Backend only)         | `07-promo-code-system.md`     |
+| Admin Panel            | High     | ✅ Complete (Core)         | `08-admin-panel.md`           |
+| UI Components & Layout | High     | 50% (Base components only) | `09-ui-components-layout.md`  |
+| Testing & Deployment   | Medium   | Not Started                | `10-testing-deployment.md`    |
 
 ---
 
 ## Version Roadmap
 
 ### v0.1.0 - ✅ Foundation (COMPLETE)
+
 Project setup, architecture, and planning
 
 ### v0.2.0 - ✅ Database & Auth (COMPLETE)
+
 - Database setup and seeding
 - UI component library (base components)
 - User authentication (complete flow)
 
 ### v0.3.0 - ✅ Product Management (COMPLETE)
+
 - Product management (admin)
 - Product listing (public)
 - Product detail pages
 
 ### v0.4.0 - ✅ Shopping Cart (COMPLETE)
+
 - Shopping cart functionality
 - Cart state management
 - Checkout flow
 
 ### v0.5.0 - ✅ Payment Integration (COMPLETE)
+
 - Zarinpal integration
 - Transaction processing
 - Payment verification
 
 ### v0.6.0 - ✅ Admin Panel (COMPLETE)
+
 - Admin dashboard with statistics
 - User management (CRUD)
 - Transaction management with filters
 - Product management integration
 
 ### v0.7.0 - Invoice System (NEXT)
+
 - Invoice generation
 - PDF creation
 - Invoice viewing
 
 ### v0.8.0 - Promo Code UI
+
 - First-time user promo code UI
 - Admin promo code management
 
 ### v1.0.0 - Production Ready
+
 - All features complete
 - Full testing
 - Production deployment
@@ -200,6 +216,7 @@ Project setup, architecture, and planning
    - Test users: user1@test.com / password123
 
 2. **Start Development Server**
+
    ```bash
    npm run dev
    # Visit http://localhost:3000
@@ -211,6 +228,7 @@ Project setup, architecture, and planning
    - Visit /profile to see user profile with promo code
 
 4. **View Database**
+
    ```bash
    npx prisma studio
    # Opens GUI at http://localhost:5555

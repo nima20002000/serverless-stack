@@ -236,36 +236,12 @@
       "@types/react",
       "@types/react-dom"
     ],
-    "database": [
-      "@prisma/client",
-      "prisma"
-    ],
-    "authentication": [
-      "next-auth",
-      "bcryptjs",
-      "@types/bcryptjs"
-    ],
-    "stateManagement": [
-      "zustand"
-    ],
-    "styling": [
-      "tailwindcss",
-      "postcss",
-      "autoprefixer",
-      "@heroicons/react"
-    ],
-    "payment": [
-      "zarinpal-checkout"
-    ],
-    "utilities": [
-      "date-fns",
-      "date-fns-jalali",
-      "uuid",
-      "@types/uuid"
-    ],
-    "pdf": [
-      "pdfkit",
-      "@types/pdfkit"
-    ]
+    "database": ["@prisma/client", "prisma"],
+    "authentication": ["next-auth", "bcryptjs", "@types/bcryptjs"],
+    "stateManagement": ["zustand"],
+    "styling": ["tailwindcss", "postcss", "autoprefixer", "@heroicons/react"],
+    "payment": ["zarinpal-checkout"],
+    "utilities": ["date-fns", "date-fns-jalali", "uuid", "@types/uuid"],
+    "pdf": ["pdfkit", "@types/pdfkit"]
   }
 }

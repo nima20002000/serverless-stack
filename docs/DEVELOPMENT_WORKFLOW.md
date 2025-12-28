@@ -5,11 +5,13 @@
 ### Current Configuration
 
 **Local Development (`.env`):**
+
 - Uses local PostgreSQL database
 - Test changes safely without affecting production
 - Full control over data and schema
 
 **Production (Vercel + Supabase):**
+
 - Environment variables set in Vercel dashboard
 - Automatically deploys when pushing to `main` branch
 - Uses Supabase for production database
@@ -31,6 +33,7 @@ npm run dev
 ### 2. **Make Changes**
 
 **For Code Changes Only (no database):**
+
 ```bash
 # Edit your files
 # Test locally
@@ -41,6 +44,7 @@ git push origin main
 ```
 
 **For Database Schema Changes:**
+
 ```bash
 # 1. Edit prisma/schema.prisma
 # Add/modify models
@@ -167,6 +171,7 @@ npx prisma db seed
 ## 🌿 Branch Strategy (Recommended)
 
 ### For Small Changes
+
 ```bash
 # Work directly on main
 git checkout main
@@ -176,6 +181,7 @@ git push origin main
 ```
 
 ### For Features
+
 ```bash
 # Create feature branch
 git checkout -b feature/my-feature
@@ -194,11 +200,13 @@ git push origin main
 ### Environment Variables
 
 **Local (`.env`):**
+
 - Automatically loaded by Next.js
 - Points to local PostgreSQL
 - Never committed to git
 
 **Production (Vercel Dashboard):**
+
 - Set manually in Vercel
 - Points to Supabase
 - Includes production secrets
@@ -206,12 +214,14 @@ git push origin main
 ### Migrations
 
 **Local:**
+
 ```bash
 # Create and apply migration locally
 npx prisma migrate dev --name my_migration
 ```
 
 **Production:**
+
 ```bash
 # Apply migrations to Supabase
 ./sync-to-production.sh
@@ -220,6 +230,7 @@ npx prisma migrate dev --name my_migration
 ### What Gets Deployed
 
 When you push to GitHub:
+
 1. Vercel pulls your code
 2. Runs `npm run build`
    - Executes `prisma generate` (generates client)
@@ -259,19 +270,23 @@ npx vercel ls                  # List deployments
 ## 🔍 Troubleshooting
 
 ### "Can't reach database server"
+
 - Check if PostgreSQL is running: `sudo systemctl status postgresql`
 - Start if needed: `sudo systemctl start postgresql`
 
 ### "Migration already applied"
+
 - Check migration status: `npx prisma migrate status`
 - May need to: `npx prisma migrate resolve --applied [migration_name]`
 
 ### Production not updating after push
+
 - Check Vercel deployment logs
 - Verify environment variables in Vercel
 - Check if build succeeded
 
 ### Local and production out of sync
+
 - Run `./sync-to-production.sh` to apply pending migrations
 - Check `npx prisma migrate status` on both environments
 
@@ -279,14 +294,14 @@ npx vercel ls                  # List deployments
 
 ## 📚 Quick Reference
 
-| Task | Command |
-|------|---------|
-| Start dev | `npm run dev` |
-| Create migration | `npx prisma migrate dev --name description` |
-| Sync to production | `./sync-to-production.sh` |
-| Deploy | `git push origin main` |
-| View local DB | `npx prisma studio` |
-| Check deployments | Visit vercel.com |
+| Task               | Command                                     |
+| ------------------ | ------------------------------------------- |
+| Start dev          | `npm run dev`                               |
+| Create migration   | `npx prisma migrate dev --name description` |
+| Sync to production | `./sync-to-production.sh`                   |
+| Deploy             | `git push origin main`                      |
+| View local DB      | `npx prisma studio`                         |
+| Check deployments  | Visit vercel.com                            |
 
 ---
 

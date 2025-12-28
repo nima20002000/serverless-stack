@@ -1,17 +1,20 @@
 # Payment Method & Guest Tracking Deployment Guide
 
 ## Overview
+
 This feature adds comprehensive payment gateway tracking and explicit guest status to the transaction system, enabling multi-gateway support (Zarinpal, Digipay, and future gateways).
 
 ## What Changed
 
 ### Database Changes
+
 - **New Enum**: `PaymentMethod` with values `ZARINPAL`, `DIGIPAY`
 - **New Column**: `paymentMethod` in transactions table (default: ZARINPAL)
 - **New Column**: `isGuest` in transactions table (boolean)
 - **New Indexes**: Performance indexes on `paymentMethod` and `isGuest`
 
 ### Code Changes
+
 - Updated Prisma schema with new fields
 - Modified transaction creation service to accept payment method
 - Enhanced API routes to validate and log payment methods
@@ -22,18 +25,24 @@ This feature adds comprehensive payment gateway tracking and explicit guest stat
 ## Database Migration Status
 
 ### ✅ Preview Database (gozxjxtnrbuurmstjydo)
+
 **Status**: COMPLETED
+
 - PaymentMethod enum created
 - Columns added with defaults
 - 9 existing transactions backfilled
 - Indexes created
 
 ### ⚠️ Local Database
+
 **Status**: NOT MIGRATED
+
 - Run migration manually before testing locally
 
 ### ⚠️ Production Database (tanqgnztclrucfldxhuk)
+
 **Status**: NOT MIGRATED
+
 - Apply migration when ready for production deployment
 
 ## Deployment Steps
@@ -120,29 +129,35 @@ vercel --prod
 ## Edge Cases Handled
 
 ### 1. ✅ Checkout Without Payment Method Selection
+
 - **Issue**: Checkout form doesn't send `paymentMethod` parameter
 - **Solution**: API defaults to ZARINPAL if not provided
 - **Future**: Add payment gateway selector UI when Digipay is integrated
 
 ### 2. ✅ Guest User Account Creation
+
 - **Issue**: When guest creates account after payment, `isGuest` wasn't updated
 - **Solution**: Transaction verify endpoint now sets `isGuest=false` when linking user
 
 ### 3. ✅ Existing Transactions Backfill
+
 - **Issue**: Existing transactions don't have new fields
 - **Solution**: Migration sets default values and backfills `isGuest` based on `userId`
 
 ### 4. ✅ Query Compatibility
+
 - **Issue**: Existing queries might not include new fields
 - **Solution**: Prisma automatically includes all columns; TypeScript types updated
 
 ### 5. ✅ Index Performance
+
 - **Issue**: Filtering by payment method or guest status could be slow
 - **Solution**: Created indexes on both fields
 
 ## API Behavior
 
 ### Transaction Creation
+
 ```json
 POST /api/transactions/create
 {
@@ -153,16 +168,20 @@ POST /api/transactions/create
 ```
 
 ### Admin Transaction List
+
 Returns transactions with:
+
 - `paymentMethod`: "ZARINPAL" | "DIGIPAY"
 - `isGuest`: true | false
 
 ### User Transaction History
+
 Returns user's transactions with new fields included
 
 ## Frontend Updates
 
 ### Admin Dashboard
+
 - New column: "درگاه" (Gateway) showing payment method badge
 - Enhanced user column: Gray "مهمان" badge for guest users
 - Color-coded badges:
@@ -170,23 +189,27 @@ Returns user's transactions with new fields included
   - Gray badge: Guest indicator
 
 ### User Profile
+
 - Transaction interface updated with new fields
 - No visual changes yet (can be added later)
 
 ## Future Work
 
 ### Phase 1: Add Digipay Integration
+
 1. Implement Digipay client similar to Zarinpal
 2. Add payment gateway selector UI in checkout
 3. Update transaction verify endpoint to handle Digipay callbacks
 4. Test full flow with Digipay
 
 ### Phase 2: Analytics Dashboard
+
 1. Add payment gateway breakdown charts
 2. Show guest conversion rate metrics
 3. Compare gateway performance (success rates, speed)
 
 ### Phase 3: User UID (Optional)
+
 1. Add human-readable `uid` field to users table
 2. Display in user profile ("شناسه کاربری: U-000123")
 3. Use for customer support lookups
@@ -226,6 +249,7 @@ DROP TYPE "PaymentMethod";
 ## Support
 
 For questions or issues:
+
 1. Check GitHub issues: https://github.com/nima20002000/kitia/issues
 2. Review commit: `55070d4` - feat: add payment method and guest tracking
 3. Review this deployment guide
@@ -233,16 +257,19 @@ For questions or issues:
 ## Database Connection Strings
 
 ### Local Development
+
 ```
 postgresql://kitia_user:kitia_password@localhost:5432/kitia
 ```
 
 ### Preview (gozxjxtnrbuurmstjydo)
+
 ```
 postgresql://postgres.gozxjxtnrbuurmstjydo:PawK0YK7sYbCzzMi@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 ### Production (tanqgnztclrucfldxhuk)
+
 ```
 postgresql://postgres.tanqgnztclrucfldxhuk:BHZnE4rPyZO4lSmA@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
