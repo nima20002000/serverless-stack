@@ -12,6 +12,7 @@ import {
   isValidIranianPhone,
   isValidName,
 } from '@/lib/utils/persian';
+import { useCheckoutStore } from '@/store/checkout-store';
 
 interface CheckoutFormProps {
   session: Session | null;
@@ -37,6 +38,8 @@ export default function CheckoutForm({
   formRef,
 }: CheckoutFormProps) {
   const { update: updateSession } = useSession();
+  const { formData: savedFormData, setFormData: saveFormData } =
+    useCheckoutStore();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -53,6 +56,7 @@ export default function CheckoutForm({
   const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
   const [isSendingOTP, setIsSendingOTP] = useState(false);
   const [pendingLogin, setPendingLogin] = useState(false); // Track if user needs to be logged in on payment
+  const [hasLoadedSavedData, setHasLoadedSavedData] = useState(false);
 
   // Track initial profile values loaded from database (to determine which fields should be locked)
   const [initialProfileData, setInitialProfileData] = useState<{
@@ -65,7 +69,7 @@ export default function CheckoutForm({
     email: null,
   });
 
-  // Load user profile data if logged in
+  // Load user profile data if logged in, or saved form data for guests
   useEffect(() => {
     const loadUserProfile = async () => {
       if (session?.user) {
@@ -84,8 +88,11 @@ export default function CheckoutForm({
             setFullName(data.name || '');
             setPhone(data.phone || '');
             setEmail(data.email || '');
-            setShippingAddress(data.shippingAddress || '');
-            setPostalCode(data.postalCode || '');
+            // For logged-in users, use saved shipping data if profile doesn't have it
+            setShippingAddress(
+              data.shippingAddress || savedFormData.shippingAddress || ''
+            );
+            setPostalCode(data.postalCode || savedFormData.postalCode || '');
 
             // If user already has a verified phone, mark as verified
             if (data.phone && data.isVerified) {
@@ -95,11 +102,21 @@ export default function CheckoutForm({
         } catch (error) {
           console.error('Error loading profile:', error);
         }
+      } else {
+        // Guest user: load saved form data from localStorage
+        if (savedFormData.fullName) setFullName(savedFormData.fullName);
+        if (savedFormData.phone) setPhone(savedFormData.phone);
+        if (savedFormData.email) setEmail(savedFormData.email);
+        if (savedFormData.shippingAddress)
+          setShippingAddress(savedFormData.shippingAddress);
+        if (savedFormData.postalCode) setPostalCode(savedFormData.postalCode);
       }
+      setHasLoadedSavedData(true);
       setIsLoadingProfile(false);
     };
 
     loadUserProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   // Cooldown timer for OTP
@@ -122,6 +139,28 @@ export default function CheckoutForm({
       setPendingLogin(false);
     }
   }, [createAccount, session]);
+
+  // Save form data to localStorage when fields change (for persistence after failed payments)
+  useEffect(() => {
+    // Only save after initial data is loaded to prevent overwriting with empty values
+    if (!hasLoadedSavedData) return;
+
+    saveFormData({
+      fullName,
+      phone,
+      email,
+      shippingAddress,
+      postalCode,
+    });
+  }, [
+    fullName,
+    phone,
+    email,
+    shippingAddress,
+    postalCode,
+    hasLoadedSavedData,
+    saveFormData,
+  ]);
 
   const handleSendOTP = async () => {
     // Validate phone - normalize first to handle Persian digits

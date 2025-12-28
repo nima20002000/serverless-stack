@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { useCartStore } from '@/store/cart-store';
+import { useCheckoutStore } from '@/store/checkout-store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 
@@ -12,14 +13,18 @@ function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clearCart = useCartStore((state) => state.clearCart);
+  const clearCheckoutFormData = useCheckoutStore(
+    (state) => state.clearFormData
+  );
 
   const transactionCode = searchParams.get('code');
   const refId = searchParams.get('refId');
 
   useEffect(() => {
-    // Clear cart after successful payment
+    // Clear cart and checkout form data after successful payment
     clearCart();
-  }, [clearCart]);
+    clearCheckoutFormData();
+  }, [clearCart, clearCheckoutFormData]);
 
   if (!transactionCode) {
     router.push('/');
