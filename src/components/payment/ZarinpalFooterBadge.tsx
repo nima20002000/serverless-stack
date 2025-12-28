@@ -21,8 +21,8 @@ export default function ZarinpalFooterBadge() {
       <Image
         src="https://cdn.zarinpal.com/badges/trustLogo/1.svg"
         alt="دروازه پرداخت معتبر"
-        width={96}
-        height={144}
+        width={64}
+        height={96}
         className="cursor-pointer"
         unoptimized
       />

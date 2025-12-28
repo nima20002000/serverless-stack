@@ -20,14 +20,15 @@ export default function EnamadBadge() {
 
   if (!shouldLoad) {
     // Placeholder to maintain layout
-    return <div className="w-24 h-24 bg-gray-100 animate-pulse rounded" />;
+    return <div className="w-16 h-24 bg-gray-100 animate-pulse rounded" />;
   }
 
   return (
     <div
+      className="w-16 h-24"
       dangerouslySetInnerHTML={{
         // eslint-disable-next-line quotes
-        __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0' alt='نماد اعتماد الکترونیکی' style='cursor:pointer' code='bLSyuHwqurNSiHamVBVhFYohNhVDDhi0' /></a>`,
+        __html: `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=676586&Code=bLSyuHwqurNSiHamVBVhFYohNhVDDhi0' alt='نماد اعتماد الکترونیکی' style='cursor:pointer; width: 64px; height: 96px;' code='bLSyuHwqurNSiHamVBVhFYohNhVDDhi0' /></a>`,
       }}
     />
   );
