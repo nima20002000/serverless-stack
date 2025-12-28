@@ -62,8 +62,7 @@ jobs:
             public \
             package.json \
             package-lock.json \
-            next.config.js \
-            prisma
+            next.config.js
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
