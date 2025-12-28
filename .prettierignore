@@ -1,1 +1,14 @@
-config/.prettierignore
+node_modules
+.next
+.git
+dist
+build
+coverage
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+*.log
+.env
+.env.*
+public

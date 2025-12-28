@@ -13,8 +13,7 @@
     "ecosystem.config.js",
     "tests/**/*",
     "config/**/*",
-    "scripts/**/*",
-    "zibal-nodejs/**/*"
+    "scripts/**/*"
   ],
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {
