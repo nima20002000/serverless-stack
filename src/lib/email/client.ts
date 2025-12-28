@@ -353,7 +353,11 @@ export async function sendBuyerOrderConfirmation(
 
   // Payment method label
   const paymentMethodLabel =
-    transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+    transaction.paymentMethod === 'DIGIPAY'
+      ? 'دیجی‌پی'
+      : transaction.paymentMethod === 'ZIBAL'
+        ? 'زیبال'
+        : 'زرین‌پال';
 
   const emailHTML = `
 <!DOCTYPE html>
@@ -694,7 +698,11 @@ export async function sendAdminOrderConfirmation(
 
   // Payment method label
   const paymentMethodLabel =
-    transaction.paymentMethod === 'DIGIPAY' ? 'دیجی‌پی' : 'زرین‌پال';
+    transaction.paymentMethod === 'DIGIPAY'
+      ? 'دیجی‌پی'
+      : transaction.paymentMethod === 'ZIBAL'
+        ? 'زیبال'
+        : 'زرین‌پال';
 
   const emailHTML = `
 <!DOCTYPE html>
