@@ -470,9 +470,13 @@ async function collectMonthlyDbBackupData() {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'kitia-db-backup-'));
   const dumpFile = path.join(tmpDir, 'database.sql');
 
+  // Use pg_dump 17 if available (for Supabase compatibility), otherwise fall back to system pg_dump
+  const pgDumpPath = await execSafe('test -f /usr/lib/postgresql/17/bin/pg_dump && echo "/usr/lib/postgresql/17/bin/pg_dump" || echo "pg_dump"');
+  const pgDump = (pgDumpPath || 'pg_dump').trim();
+
   try {
     // Use pg_dump to export database
-    await execAsync(`pg_dump "${databaseUrl}" --no-owner --no-acl > "${dumpFile}"`, {
+    await execAsync(`${pgDump} "${databaseUrl}" --no-owner --no-acl > "${dumpFile}"`, {
       timeout: 300000, // 5 minutes
     });
 
@@ -483,8 +487,8 @@ async function collectMonthlyDbBackupData() {
 
     // Also export schema only
     const schemaFile = path.join(tmpDir, 'schema.sql');
-    await execAsync(`pg_dump "${databaseUrl}" --schema-only --no-owner --no-acl > "${schemaFile}"`, {
-      timeout: 60000,
+    await execAsync(`${pgDump} "${databaseUrl}" --schema-only --no-owner --no-acl > "${schemaFile}"`, {
+      timeout: 300000, // 5 minutes (same as full dump)
     });
 
     const schemaContent = await fs.readFile(schemaFile, 'utf-8');
