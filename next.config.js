@@ -20,6 +20,7 @@ const nextConfig = {
         tls: false,
       };
     }
+
     return config;
   },
   images: {
