@@ -2,14 +2,19 @@ import 'server-only';
 import Kavenegar from 'kavenegar';
 import { log } from '@/lib/logger';
 
-const apiKey = process.env.KAVENEGAR_API_KEY;
-if (!apiKey) {
-  throw new Error('KAVENEGAR_API_KEY environment variable is required');
-}
+// Lazy initialization - only create client when first used (at runtime, not build time)
+let api: ReturnType<typeof Kavenegar.KavenegarApi> | null = null;
 
-const api = Kavenegar.KavenegarApi({
-  apikey: apiKey,
-});
+function getApi() {
+  if (!api) {
+    const apiKey = process.env.KAVENEGAR_API_KEY;
+    if (!apiKey) {
+      throw new Error('KAVENEGAR_API_KEY environment variable is required');
+    }
+    api = Kavenegar.KavenegarApi({ apikey: apiKey });
+  }
+  return api;
+}
 
 export interface SendOTPResult {
   success: boolean;
@@ -32,7 +37,7 @@ export async function sendOTPSMS(
   otp: string
 ): Promise<SendOTPResult> {
   return new Promise((resolve) => {
-    api.VerifyLookup(
+    getApi().VerifyLookup(
       {
         receptor: phone,
         token: otp,
@@ -76,7 +81,7 @@ export async function sendOrderConfirmationSMS(
       process.env.KAVENEGAR_ORDER_CONFIRMATION_TEMPLATE_NAME ||
       'kitia-order-confirmation';
 
-    api.VerifyLookup(
+    getApi().VerifyLookup(
       {
         receptor: phone,
         token: transactionCode, // token1: tracking number
