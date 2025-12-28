@@ -9,16 +9,23 @@ import { log } from '@/lib/logger';
 /**
  * Extract client IP address from request headers
  * Checks multiple headers in order of preference:
- * 1. x-forwarded-for (proxy/load balancer)
- * 2. x-real-ip (nginx)
- * 3. connection.remoteAddress (direct connection)
+ * 1. cf-connecting-ip (Cloudflare's verified client IP - most reliable when using Cloudflare)
+ * 2. x-forwarded-for (proxy/load balancer)
+ * 3. x-real-ip (nginx)
+ * 4. req.ip (direct connection)
  *
  * @param req Next.js request object
  * @returns IP address string or null if unavailable
  */
 export function getClientIp(req: NextRequest): string | null {
   try {
-    // Try x-forwarded-for first (most common with proxies/CDN)
+    // Cloudflare's verified client IP (most reliable when using Cloudflare CDN)
+    const cfConnectingIp = req.headers.get('cf-connecting-ip');
+    if (cfConnectingIp && cfConnectingIp !== '') {
+      return cfConnectingIp;
+    }
+
+    // Try x-forwarded-for (common with proxies/CDN)
     const forwardedFor = req.headers.get('x-forwarded-for');
     if (forwardedFor) {
       // May contain multiple IPs (client, proxy1, proxy2, ...)
@@ -76,6 +83,7 @@ export function getUserAgent(req: NextRequest): string | null {
 /**
  * Extract both IP and user agent in a single call
  * Convenience function for activity logging
+ * IP is sanitized to filter out private/local addresses
  *
  * @param req Next.js request object
  * @returns Object with ipAddress and userAgent (both nullable)
@@ -85,7 +93,7 @@ export function getClientInfo(req: NextRequest): {
   userAgent: string | null;
 } {
   return {
-    ipAddress: getClientIp(req),
+    ipAddress: sanitizeIp(getClientIp(req)),
     userAgent: getUserAgent(req),
   };
 }
@@ -123,11 +131,16 @@ export function sanitizeIp(ip: string | null): string | null {
     return null;
   }
 
-  const trimmed = ip.trim();
+  let trimmed = ip.trim();
 
   // Handle whitespace-only input
   if (trimmed === '') {
     return null;
+  }
+
+  // Handle IPv6-mapped IPv4 addresses (::ffff:192.168.1.1)
+  if (trimmed.toLowerCase().startsWith('::ffff:')) {
+    trimmed = trimmed.substring(7); // Extract the IPv4 part
   }
 
   // Skip localhost

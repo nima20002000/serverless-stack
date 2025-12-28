@@ -91,6 +91,26 @@ export async function POST(req: NextRequest) {
     const result = await sendOTP(identifier, purpose);
 
     if (!result.success) {
+      // Log failed OTP send (fire-and-forget)
+      const isEmail = identifier.includes('@');
+      logUserActivity({
+        userId: existingUser?.id || null,
+        activityType: 'OTP_SENT',
+        ipAddress,
+        userAgent,
+        success: false,
+        errorMessage: result.error,
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose,
+          errorCode: result.errorCode,
+        },
+      }).catch((err) => {
+        log.warn('Failed to log OTP send failure', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
       // Return 429 for rate limit errors, 500 for send failures
       const statusCode = result.errorCode === 'RATE_LIMIT' ? 429 : 500;
       return NextResponse.json(

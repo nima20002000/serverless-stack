@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/services/otp-service';
 import { createUser, getUserByIdentifier } from '@/services/user-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,9 @@ export const dynamic = 'force-dynamic';
  * 3. Guest verification (if createAccount=false) - just verifies OTP
  */
 export async function POST(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const { phone, email, code, purpose, createAccount, name } =
       await req.json();
@@ -40,6 +45,25 @@ export async function POST(req: NextRequest) {
     const result = await verifyOTP(identifier, code, purpose || 'login');
 
     if (!result.success) {
+      // Log failed OTP verification (fire-and-forget)
+      logUserActivity({
+        activityType: 'OTP_FAILED',
+        ipAddress,
+        userAgent,
+        success: false,
+        errorMessage: result.error || 'Checkout OTP verification failed',
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose: purpose || 'login',
+          attemptsLeft: result.attemptsLeft,
+          flow: 'checkout',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log checkout OTP failure', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
       return NextResponse.json(
         {
           error: result.error,
@@ -57,6 +81,42 @@ export async function POST(req: NextRequest) {
       log.info('Existing user verified via OTP - ready for auto-login', {
         identifier,
         userId: existingUser.id,
+      });
+
+      // Log successful OTP verification (fire-and-forget)
+      logUserActivity({
+        userId: existingUser.id,
+        activityType: 'OTP_VERIFIED',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose: purpose || 'login',
+          flow: 'checkout',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log checkout OTP verification', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // Also log the login
+      logUserActivity({
+        userId: existingUser.id,
+        activityType: 'LOGIN_SUCCESS',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          method: 'otp',
+          identifier_type: isEmail ? 'email' : 'phone',
+          flow: 'checkout',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log checkout login', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
       });
 
       return NextResponse.json({
@@ -88,6 +148,42 @@ export async function POST(req: NextRequest) {
       log.info('New user created via checkout OTP - ready for auto-login', {
         identifier,
         userId: newUser.id,
+      });
+
+      // Log successful OTP verification (fire-and-forget)
+      logUserActivity({
+        userId: newUser.id,
+        activityType: 'OTP_VERIFIED',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose: purpose || 'checkout',
+          flow: 'checkout',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log checkout OTP verification', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // Also log the registration
+      logUserActivity({
+        userId: newUser.id,
+        activityType: 'REGISTER',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          method: 'otp',
+          identifier_type: isEmail ? 'email' : 'phone',
+          flow: 'checkout',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log checkout registration', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
       });
 
       return NextResponse.json({
