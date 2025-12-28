@@ -21,6 +21,7 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 import DigipayBadge from '@/components/payment/DigipayBadge';
 import ZibalBadge from '@/components/payment/ZibalBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
+import DigipayGuidanceModal from '@/components/checkout/DigipayGuidanceModal';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -33,6 +34,16 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<
     'zarinpal' | 'digipay' | 'zibal'
   >('zarinpal');
+  const [showDigipayModal, setShowDigipayModal] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<{
+    fullName: string;
+    phone: string;
+    email: string;
+    shippingAddress: string;
+    postalCode: string;
+    createAccount: boolean;
+    phoneVerified: boolean;
+  } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Calculate surcharge for Digipay
@@ -50,7 +61,7 @@ export default function CheckoutPage() {
     }
   }, [items.length, router, status]);
 
-  const handleCheckout = useCallback(
+  const processPayment = useCallback(
     async (formData: {
       fullName: string;
       phone: string;
@@ -63,10 +74,6 @@ export default function CheckoutPage() {
       try {
         setError('');
         setIsProcessing(true);
-
-        // Phone verification is NOT required for already logged-in users
-        // They may have registered with email and don't have a phone number
-        // Only guest users creating new accounts need phone verification (handled in CheckoutForm)
 
         const response = await fetch('/api/transactions/create', {
           method: 'POST',
@@ -111,6 +118,40 @@ export default function CheckoutPage() {
     },
     [items, paymentMethod]
   );
+
+  const handleCheckout = useCallback(
+    (formData: {
+      fullName: string;
+      phone: string;
+      email: string;
+      shippingAddress: string;
+      postalCode: string;
+      createAccount: boolean;
+      phoneVerified: boolean;
+    }) => {
+      // If digipay is selected, show guidance modal first
+      if (paymentMethod === 'digipay') {
+        setPendingFormData(formData);
+        setShowDigipayModal(true);
+        return;
+      }
+
+      // For other payment methods, process immediately
+      processPayment(formData);
+    },
+    [paymentMethod, processPayment]
+  );
+
+  const handleDigipayConfirm = useCallback(() => {
+    if (pendingFormData) {
+      processPayment(pendingFormData);
+    }
+  }, [pendingFormData, processPayment]);
+
+  const handleDigipayModalClose = useCallback(() => {
+    setShowDigipayModal(false);
+    setPendingFormData(null);
+  }, []);
 
   if (status === 'loading') {
     return (
@@ -554,6 +595,14 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Digipay Guidance Modal */}
+      <DigipayGuidanceModal
+        isOpen={showDigipayModal}
+        onClose={handleDigipayModalClose}
+        onConfirm={handleDigipayConfirm}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }
