@@ -491,6 +491,7 @@ export type Database = {
           email: string | null;
           fullName: string | null;
           id: string;
+          ip_address: string | null;
           isGuest: boolean;
           paymentMethod: Database['public']['Enums']['PaymentMethod'];
           phone: string | null;
@@ -499,11 +500,12 @@ export type Database = {
           status: Database['public']['Enums']['TransactionStatus'];
           transactionCode: string;
           updatedAt: string;
+          user_agent: string | null;
           userId: string | null;
           zarinpalAuthority: string | null;
           zarinpalRefId: string | null;
-          zibalTrackId: string | null;
           zibalRefNumber: string | null;
+          zibalTrackId: string | null;
         };
         Insert: {
           amount: number;
@@ -514,6 +516,7 @@ export type Database = {
           email?: string | null;
           fullName?: string | null;
           id: string;
+          ip_address?: string | null;
           isGuest?: boolean;
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
           phone?: string | null;
@@ -522,11 +525,12 @@ export type Database = {
           status?: Database['public']['Enums']['TransactionStatus'];
           transactionCode: string;
           updatedAt: string;
+          user_agent?: string | null;
           userId?: string | null;
           zarinpalAuthority?: string | null;
           zarinpalRefId?: string | null;
-          zibalTrackId?: string | null;
           zibalRefNumber?: string | null;
+          zibalTrackId?: string | null;
         };
         Update: {
           amount?: number;
@@ -537,6 +541,7 @@ export type Database = {
           email?: string | null;
           fullName?: string | null;
           id?: string;
+          ip_address?: string | null;
           isGuest?: boolean;
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
           phone?: string | null;
@@ -545,16 +550,61 @@ export type Database = {
           status?: Database['public']['Enums']['TransactionStatus'];
           transactionCode?: string;
           updatedAt?: string;
+          user_agent?: string | null;
           userId?: string | null;
           zarinpalAuthority?: string | null;
           zarinpalRefId?: string | null;
-          zibalTrackId?: string | null;
           zibalRefNumber?: string | null;
+          zibalTrackId?: string | null;
         };
         Relationships: [
           {
             foreignKeyName: 'transactions_userId_fkey';
             columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      user_activity_logs: {
+        Row: {
+          activity_type: Database['public']['Enums']['activity_type'];
+          created_at: string | null;
+          error_message: string | null;
+          id: string;
+          ip_address: string | null;
+          metadata: Json | null;
+          success: boolean | null;
+          user_agent: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          activity_type: Database['public']['Enums']['activity_type'];
+          created_at?: string | null;
+          error_message?: string | null;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          success?: boolean | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          activity_type?: Database['public']['Enums']['activity_type'];
+          created_at?: string | null;
+          error_message?: string | null;
+          id?: string;
+          ip_address?: string | null;
+          metadata?: Json | null;
+          success?: boolean | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_activity_logs_user_id_fkey';
+            columns: ['user_id'];
             isOneToOne: false;
             referencedRelation: 'users';
             referencedColumns: ['id'];
@@ -615,6 +665,16 @@ export type Database = {
       get_total_revenue: { Args: never; Returns: number };
     };
     Enums: {
+      activity_type:
+        | 'LOGIN_SUCCESS'
+        | 'LOGIN_FAILED'
+        | 'REGISTER'
+        | 'LOGOUT'
+        | 'PASSWORD_CHANGE'
+        | 'PROFILE_UPDATE'
+        | 'OTP_SENT'
+        | 'OTP_VERIFIED'
+        | 'OTP_FAILED';
       MediaType: 'IMAGE' | 'VIDEO';
       PaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
       Role: 'USER' | 'ADMIN';
@@ -749,6 +809,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: [
+        'LOGIN_SUCCESS',
+        'LOGIN_FAILED',
+        'REGISTER',
+        'LOGOUT',
+        'PASSWORD_CHANGE',
+        'PROFILE_UPDATE',
+        'OTP_SENT',
+        'OTP_VERIFIED',
+        'OTP_FAILED',
+      ],
       MediaType: ['IMAGE', 'VIDEO'],
       PaymentMethod: ['ZARINPAL', 'DIGIPAY', 'ZIBAL'],
       Role: ['USER', 'ADMIN'],
