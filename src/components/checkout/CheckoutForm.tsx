@@ -75,7 +75,7 @@ export default function CheckoutForm({
     email: null,
   });
 
-  // Load user profile data if logged in, or saved form data for guests
+  // Load user data: use session for basic info, fetch API only for shipping data
   // Wait for Zustand hydration before loading saved data
   useEffect(() => {
     // Don't load until Zustand has hydrated from localStorage
@@ -83,47 +83,55 @@ export default function CheckoutForm({
 
     const currentUserId = session?.user?.id || null;
 
-    // Skip if we've already loaded profile for this specific user
-    // This prevents unnecessary refetches while still allowing load when user changes
+    // Skip if we've already loaded data for this specific user
     if (currentUserId && loadedProfileForUserId === currentUserId) {
       return;
     }
 
-    const loadUserProfile = async () => {
+    const loadUserData = async () => {
       if (session?.user) {
-        setIsLoadingProfile(true);
+        // Use session data directly for basic user info (no API call needed)
+        // Session already contains: name, email, phone, isVerified
+        setInitialProfileData({
+          name: session.user.name || null,
+          phone: session.user.phone || null,
+          email: session.user.email || null,
+        });
+
+        setFullName(session.user.name || '');
+        setPhone(session.user.phone || '');
+        setEmail(session.user.email || '');
+
+        // If user has a verified phone, mark as verified
+        if (session.user.phone && session.user.isVerified) {
+          setPhoneVerified(true);
+        }
+
+        // Only fetch from API if we need shipping data (not in session)
+        // Use saved form data as fallback while fetching
+        setShippingAddress(savedFormData.shippingAddress || '');
+        setPostalCode(savedFormData.postalCode || '');
+
+        // Fetch shipping data from API in background (non-blocking)
         try {
           const response = await fetch('/api/user/profile');
           if (response.ok) {
             const data = await response.json();
-
-            // Store initial values from database
-            setInitialProfileData({
-              name: data.name || null,
-              phone: data.phone || null,
-              email: data.email || null,
-            });
-
-            setFullName(data.name || '');
-            setPhone(data.phone || '');
-            setEmail(data.email || '');
-            // For logged-in users, use saved shipping data if profile doesn't have it
-            setShippingAddress(
-              data.shippingAddress || savedFormData.shippingAddress || ''
-            );
-            setPostalCode(data.postalCode || savedFormData.postalCode || '');
-
-            // If user already has a verified phone, mark as verified
-            if (data.phone && data.isVerified) {
-              setPhoneVerified(true);
+            // Only update shipping fields if API has data
+            if (data.shippingAddress) {
+              setShippingAddress(data.shippingAddress);
             }
-
-            // Mark that we've loaded profile for this user
-            setLoadedProfileForUserId(session.user.id);
+            if (data.postalCode) {
+              setPostalCode(data.postalCode);
+            }
           }
         } catch (error) {
-          console.error('Error loading profile:', error);
+          // Non-critical: shipping data fetch failed, user can still enter manually
+          console.error('Error loading shipping data:', error);
         }
+
+        // Mark that we've loaded data for this user
+        setLoadedProfileForUserId(session.user.id);
       } else if (!hasLoadedSavedData) {
         // Guest user: load saved form data from localStorage (only once)
         if (savedFormData.fullName) setFullName(savedFormData.fullName);
@@ -137,7 +145,7 @@ export default function CheckoutForm({
       setIsLoadingProfile(false);
     };
 
-    loadUserProfile();
+    loadUserData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, _hasHydrated]);
 
