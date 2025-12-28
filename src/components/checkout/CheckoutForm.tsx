@@ -60,6 +60,9 @@ export default function CheckoutForm({
   const [isSendingOTP, setIsSendingOTP] = useState(false);
   const [pendingLogin, setPendingLogin] = useState(false); // Track if user needs to be logged in on payment
   const [hasLoadedSavedData, setHasLoadedSavedData] = useState(false);
+  const [loadedProfileForUserId, setLoadedProfileForUserId] = useState<
+    string | null
+  >(null);
 
   // Track initial profile values loaded from database (to determine which fields should be locked)
   const [initialProfileData, setInitialProfileData] = useState<{
@@ -78,8 +81,17 @@ export default function CheckoutForm({
     // Don't load until Zustand has hydrated from localStorage
     if (!_hasHydrated) return;
 
+    const currentUserId = session?.user?.id || null;
+
+    // Skip if we've already loaded profile for this specific user
+    // This prevents unnecessary refetches while still allowing load when user changes
+    if (currentUserId && loadedProfileForUserId === currentUserId) {
+      return;
+    }
+
     const loadUserProfile = async () => {
       if (session?.user) {
+        setIsLoadingProfile(true);
         try {
           const response = await fetch('/api/user/profile');
           if (response.ok) {
@@ -105,12 +117,15 @@ export default function CheckoutForm({
             if (data.phone && data.isVerified) {
               setPhoneVerified(true);
             }
+
+            // Mark that we've loaded profile for this user
+            setLoadedProfileForUserId(session.user.id);
           }
         } catch (error) {
           console.error('Error loading profile:', error);
         }
-      } else {
-        // Guest user: load saved form data from localStorage
+      } else if (!hasLoadedSavedData) {
+        // Guest user: load saved form data from localStorage (only once)
         if (savedFormData.fullName) setFullName(savedFormData.fullName);
         if (savedFormData.phone) setPhone(savedFormData.phone);
         if (savedFormData.email) setEmail(savedFormData.email);
@@ -124,7 +139,7 @@ export default function CheckoutForm({
 
     loadUserProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, _hasHydrated]);
+  }, [session?.user?.id, _hasHydrated]);
 
   // Cooldown timer for OTP
   useEffect(() => {
