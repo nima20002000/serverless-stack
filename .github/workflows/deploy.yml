@@ -6,38 +6,100 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy to Production
+  build:
+    name: Build Application
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        env:
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED: ${{ secrets.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED }}
+        run: npm run build
+
+      - name: Create deployment package
+        run: |
+          # Create tarball of built application
+          tar -czf deploy.tar.gz \
+            .next \
+            public \
+            package.json \
+            package-lock.json \
+            next.config.js \
+            prisma
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: deploy.tar.gz
+          retention-days: 1
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
       - name: Deploy to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          source: deploy.tar.gz
+          target: /tmp/
+
+      - name: Extract and restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          command_timeout: 20m
+          command_timeout: 5m
           script: |
             cd ${{ secrets.VPS_APP_PATH }}
 
-            # Pull latest code
+            # Pull latest code (for any non-build files like .env, ecosystem.config.js)
             git fetch origin
             git reset --hard origin/main
 
-            # Install/update dependencies only if package-lock.json changed
+            # Extract built application
+            tar -xzf /tmp/deploy.tar.gz -C .
+            rm /tmp/deploy.tar.gz
+
+            # Install production dependencies only if package-lock.json changed
             if ! git diff --quiet HEAD~1 -- package-lock.json 2>/dev/null; then
-              echo "Dependencies changed, running npm install..."
-              npm install
+              echo "Dependencies changed, running npm ci..."
+              npm ci --production=false
             else
               echo "No dependency changes, skipping npm install"
             fi
 
-            # Build application (keeps old .next until new build succeeds)
-            npm run build
+            # Generate Prisma client (needed for runtime)
+            npx prisma generate
 
             # Reload PM2 (zero-downtime)
-            pm2 reload ecosystem.config.js --update-env
+            pm2 reload kitia --update-env
 
             # Wait for application to start
             sleep 5
