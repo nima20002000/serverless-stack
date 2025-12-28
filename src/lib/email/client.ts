@@ -14,7 +14,7 @@ export type TransactionEmailData = {
   id: string;
   transactionCode: string;
   amount: string | number;
-  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  paymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
   fullName: string | null;
   phone: string | null;
   email: string | null;

@@ -256,8 +256,12 @@ async function postHandler(req: NextRequest) {
     }
 
     // Validate payment method
-    const validPaymentMethod =
-      paymentMethod === 'DIGIPAY' ? 'DIGIPAY' : 'ZARINPAL';
+    let validPaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL' = 'ZARINPAL';
+    if (paymentMethod === 'DIGIPAY') {
+      validPaymentMethod = 'DIGIPAY';
+    } else if (paymentMethod === 'ZIBAL') {
+      validPaymentMethod = 'ZIBAL';
+    }
 
     // Calculate surcharge for Digipay payments (12%)
     const digipaySurcharge =
@@ -348,7 +352,7 @@ async function postHandler(req: NextRequest) {
 
     // Create payment request with selected payment gateway
     let paymentUrl: string;
-    let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay
+    let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay, trackId for Zibal
 
     if (validPaymentMethod === 'DIGIPAY') {
       // Digipay payment flow
@@ -381,6 +385,36 @@ async function postHandler(req: NextRequest) {
         surcharge: digipaySurcharge,
         finalAmount: finalPaymentAmount,
         ticket: digipayRequest.ticket,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    } else if (validPaymentMethod === 'ZIBAL') {
+      // Zibal payment flow
+      const zibalClient = await import('@/lib/zibal/client');
+
+      const zibalRequest = await zibalClient.createPaymentRequest({
+        amount: finalPaymentAmount, // In Tomans (no surcharge for Zibal)
+        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
+        mobile: finalPhone,
+        orderId: transaction.transactionCode, // Use transactionCode as orderId
+        callbackUrl: zibalClient.getCallbackUrl(req.url),
+      });
+
+      // Update transaction with Zibal trackId
+      const supabaseTx = createClient();
+      await supabaseTx
+        .from('transactions')
+        .update({ zibalTrackId: String(zibalRequest.trackId) })
+        .eq('id', transaction.id);
+
+      paymentUrl = zibalRequest.redirectUrl;
+      paymentIdentifier = String(zibalRequest.trackId);
+
+      log.info('Zibal transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: finalPaymentAmount,
+        trackId: zibalRequest.trackId,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
       });
@@ -421,10 +455,11 @@ async function postHandler(req: NextRequest) {
       amount: finalPaymentAmount,
       paymentMethod: validPaymentMethod,
       paymentUrl,
-      // For compatibility, include both identifiers (one will be undefined)
+      // For compatibility, include identifiers based on payment method
       authority:
         validPaymentMethod === 'ZARINPAL' ? paymentIdentifier : undefined,
       ticket: validPaymentMethod === 'DIGIPAY' ? paymentIdentifier : undefined,
+      trackId: validPaymentMethod === 'ZIBAL' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {

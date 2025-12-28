@@ -19,6 +19,7 @@ import Alert from '@/components/ui/Alert';
 import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import DigipayBadge from '@/components/payment/DigipayBadge';
+import ZibalBadge from '@/components/payment/ZibalBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 
 export default function CheckoutPage() {
@@ -29,9 +30,9 @@ export default function CheckoutPage() {
   const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'zarinpal' | 'digipay'>(
-    'zarinpal'
-  );
+  const [paymentMethod, setPaymentMethod] = useState<
+    'zarinpal' | 'digipay' | 'zibal'
+  >('zarinpal');
   const formRef = useRef<HTMLFormElement>(null);
 
   // Calculate surcharge for Digipay
@@ -78,7 +79,12 @@ export default function CheckoutPage() {
               variantId: item.variantId,
               quantity: item.quantity,
             })),
-            paymentMethod: paymentMethod === 'digipay' ? 'DIGIPAY' : 'ZARINPAL',
+            paymentMethod:
+              paymentMethod === 'digipay'
+                ? 'DIGIPAY'
+                : paymentMethod === 'zibal'
+                  ? 'ZIBAL'
+                  : 'ZARINPAL',
             shippingInfo: {
               fullName: formData.fullName,
               phone: formData.phone,
@@ -226,6 +232,32 @@ export default function CheckoutPage() {
 
                 <label
                   className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    paymentMethod === 'zibal'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="zibal"
+                    checked={paymentMethod === 'zibal'}
+                    onChange={() => setPaymentMethod('zibal')}
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                  />
+                  <div className="flex-1 text-right">
+                    <div className="font-medium text-gray-900">زیبال</div>
+                    <div className="text-sm text-gray-600">
+                      پرداخت امن با کلیه کارت‌های بانکی
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <ZibalBadge />
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
                     paymentMethod === 'digipay'
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-gray-200 bg-white hover:border-gray-300'
@@ -255,19 +287,25 @@ export default function CheckoutPage() {
                   className={`${
                     paymentMethod === 'digipay'
                       ? 'bg-purple-50 border-purple-200'
-                      : 'bg-blue-50 border-blue-200'
+                      : paymentMethod === 'zibal'
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-blue-50 border-blue-200'
                   } border rounded-lg p-3 mt-4`}
                 >
                   <p
                     className={`text-xs ${
                       paymentMethod === 'digipay'
                         ? 'text-purple-800'
-                        : 'text-blue-800'
+                        : paymentMethod === 'zibal'
+                          ? 'text-green-800'
+                          : 'text-blue-800'
                     } text-right`}
                   >
                     {paymentMethod === 'digipay'
                       ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
-                      : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
+                      : paymentMethod === 'zibal'
+                        ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زیبال هدایت می‌شوید'
+                        : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
                   </p>
                 </div>
               </div>
@@ -320,6 +358,32 @@ export default function CheckoutPage() {
 
                   <label
                     className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      paymentMethod === 'zibal'
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethodDesktop"
+                      value="zibal"
+                      checked={paymentMethod === 'zibal'}
+                      onChange={() => setPaymentMethod('zibal')}
+                      className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                    />
+                    <div className="flex-1 text-right">
+                      <div className="font-medium text-gray-900">زیبال</div>
+                      <div className="text-sm text-gray-600">
+                        پرداخت امن با کلیه کارت‌های بانکی
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ZibalBadge />
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
                       paymentMethod === 'digipay'
                         ? 'border-purple-500 bg-purple-50'
                         : 'border-gray-200 bg-white hover:border-gray-300'
@@ -349,19 +413,25 @@ export default function CheckoutPage() {
                     className={`${
                       paymentMethod === 'digipay'
                         ? 'bg-purple-50 border-purple-200'
-                        : 'bg-blue-50 border-blue-200'
+                        : paymentMethod === 'zibal'
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-blue-50 border-blue-200'
                     } border rounded-lg p-3 mt-4`}
                   >
                     <p
                       className={`text-xs ${
                         paymentMethod === 'digipay'
                           ? 'text-purple-800'
-                          : 'text-blue-800'
+                          : paymentMethod === 'zibal'
+                            ? 'text-green-800'
+                            : 'text-blue-800'
                       } text-right`}
                     >
                       {paymentMethod === 'digipay'
                         ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
-                        : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
+                        : paymentMethod === 'zibal'
+                          ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زیبال هدایت می‌شوید'
+                          : 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت زرین‌پال هدایت می‌شوید'}
                     </p>
                   </div>
                 </div>

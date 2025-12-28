@@ -502,6 +502,8 @@ export type Database = {
           userId: string | null;
           zarinpalAuthority: string | null;
           zarinpalRefId: string | null;
+          zibalTrackId: string | null;
+          zibalRefNumber: string | null;
         };
         Insert: {
           amount: number;
@@ -523,6 +525,8 @@ export type Database = {
           userId?: string | null;
           zarinpalAuthority?: string | null;
           zarinpalRefId?: string | null;
+          zibalTrackId?: string | null;
+          zibalRefNumber?: string | null;
         };
         Update: {
           amount?: number;
@@ -544,6 +548,8 @@ export type Database = {
           userId?: string | null;
           zarinpalAuthority?: string | null;
           zarinpalRefId?: string | null;
+          zibalTrackId?: string | null;
+          zibalRefNumber?: string | null;
         };
         Relationships: [
           {
@@ -610,7 +616,7 @@ export type Database = {
     };
     Enums: {
       MediaType: 'IMAGE' | 'VIDEO';
-      PaymentMethod: 'ZARINPAL' | 'DIGIPAY';
+      PaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
       Role: 'USER' | 'ADMIN';
       TransactionStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
     };
@@ -744,7 +750,7 @@ export const Constants = {
   public: {
     Enums: {
       MediaType: ['IMAGE', 'VIDEO'],
-      PaymentMethod: ['ZARINPAL', 'DIGIPAY'],
+      PaymentMethod: ['ZARINPAL', 'DIGIPAY', 'ZIBAL'],
       Role: ['USER', 'ADMIN'],
       TransactionStatus: ['PENDING', 'COMPLETED', 'FAILED'],
     },

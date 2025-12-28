@@ -31,7 +31,7 @@ export async function createTransaction(data: {
     price: number;
   }>;
   amount: number;
-  paymentMethod?: 'ZARINPAL' | 'DIGIPAY';
+  paymentMethod?: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
   shippingInfo: {
     fullName: string;
     phone: string;
@@ -351,6 +351,44 @@ export async function getTransactionByDigipayTicket(ticket: string) {
   if (error || !transaction) {
     log.error('Transaction not found by Digipay ticket', {
       ticket,
+      error,
+    });
+    throw new Error('تراکنش یافت نشد');
+  }
+
+  return transaction;
+}
+
+/**
+ * Get transaction by Zibal trackId
+ */
+export async function getTransactionByZibalTrackId(trackId: string) {
+  const supabase = createClient();
+
+  const { data: transaction, error } = await supabase
+    .from('transactions')
+    .select(
+      `
+      *,
+      items:transaction_items(
+        *,
+        product:products(*),
+        variant:product_variants(*)
+      ),
+      user:users(
+        id,
+        email,
+        name,
+        phone
+      )
+    `
+    )
+    .eq('zibalTrackId', trackId)
+    .single();
+
+  if (error || !transaction) {
+    log.error('Transaction not found by Zibal trackId', {
+      trackId,
       error,
     });
     throw new Error('تراکنش یافت نشد');
