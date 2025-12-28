@@ -3,6 +3,7 @@
 ## مراحل راه‌اندازی
 
 ### 1. نصب وابستگی‌ها
+
 ```bash
 npm install
 ```
@@ -107,6 +108,60 @@ npx prisma generate
 
 # Prisma Studio (مشاهده دیتابیس)
 npx prisma studio
+```
+
+## پشتیبان‌گیری (Backup)
+
+سیستم پشتیبان‌گیری خودکار برای فایل‌های حیاتی سرور در Cloudflare R2.
+
+### اسکریپت‌ها
+
+```bash
+# پشتیبان‌گیری روزانه (فایل‌های env، nginx، PM2)
+node scripts/backup-to-r2.mjs daily
+
+# پشتیبان‌گیری هفتگی (+ تنظیمات مانیتورینگ، DNS)
+node scripts/backup-to-r2.mjs weekly
+
+# پشتیبان‌گیری ماهانه دیتابیس
+node scripts/backup-to-r2.mjs monthly
+
+# لیست پشتیبان‌ها
+node scripts/backup-to-r2.mjs list
+
+# بازیابی پشتیبان
+node scripts/restore-from-r2.mjs download <backup-key> ./restore
+
+# تأیید سلامت پشتیبان
+node scripts/restore-from-r2.mjs verify <backup-key>
+```
+
+### رمزنگاری
+
+```bash
+# پشتیبان‌گیری با رمزنگاری AES-256-GCM
+GPG_PASSPHRASE="your-secret" node scripts/backup-to-r2.mjs daily
+```
+
+### سیاست نگهداری
+
+| نوع    | مدت نگهداری |
+| ------ | ----------- |
+| روزانه | ۱۴ روز      |
+| هفتگی  | ۸ هفته      |
+| ماهانه | ۶ ماه       |
+
+### Cron (VPS)
+
+```bash
+# روزانه ساعت ۳ صبح
+0 3 * * * GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs daily
+
+# هفتگی یکشنبه ساعت ۴ صبح
+0 4 * * 0 GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs weekly
+
+# ماهانه اول هر ماه ساعت ۵ صبح
+0 5 1 * * GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs monthly
 ```
 
 ## متغیرهای محیطی
