@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { createClient } from '@/lib/supabase/server';
 import { withLogging } from '@/lib/api/with-logging';
 import { updateUserProfile } from '@/services/user-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +54,10 @@ async function getHandler() {
 }
 
 // PATCH /api/user/profile - Update current user's profile
-async function patchHandler(req: Request) {
+async function patchHandler(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -72,6 +78,25 @@ async function patchHandler(req: Request) {
       phone,
       shippingAddress,
       postalCode,
+    });
+
+    // Log profile update (fire-and-forget)
+    logUserActivity({
+      userId: session.user.id,
+      activityType: 'PROFILE_UPDATE',
+      ipAddress,
+      userAgent,
+      success: true,
+      metadata: {
+        updated_fields: Object.keys(data).filter(
+          (key) => data[key] !== undefined
+        ),
+      },
+    }).catch((err) => {
+      log.warn('Failed to log profile update', {
+        userId: session.user.id,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
     });
 
     return NextResponse.json({

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateUser } from '@/services/auth-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +12,9 @@ export const dynamic = 'force-dynamic';
  * Returns user data which the client uses to trigger NextAuth session creation
  */
 export async function POST(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const body = await req.json();
     const { email, password } = body;
@@ -30,6 +35,23 @@ export async function POST(req: NextRequest) {
       email: user.email,
     });
 
+    // Log successful login (fire-and-forget)
+    logUserActivity({
+      userId: user.id,
+      activityType: 'LOGIN_SUCCESS',
+      ipAddress,
+      userAgent,
+      success: true,
+      metadata: {
+        identifier_type: email.includes('@') ? 'email' : 'phone',
+      },
+    }).catch((err) => {
+      log.warn('Failed to log login success', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    });
+
     // Return user data and credentials for NextAuth signIn
     return NextResponse.json({
       success: true,
@@ -46,6 +68,19 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
+    // Log failed login (fire-and-forget)
+    logUserActivity({
+      activityType: 'LOGIN_FAILED',
+      ipAddress,
+      userAgent,
+      success: false,
+      errorMessage: error instanceof Error ? error.message : 'Login failed',
+    }).catch((err) => {
+      log.warn('Failed to log login failure', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    });
+
     // Handle authentication errors
     if (error instanceof Error) {
       log.warn('Login failed', { error: error.message });

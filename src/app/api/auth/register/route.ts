@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createUser } from '@/services/user-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
 import { withLogging } from '@/lib/api/with-logging';
+import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
 async function postHandler(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const body = await req.json();
     const { email, password, name } = body;
@@ -25,6 +31,23 @@ async function postHandler(req: NextRequest) {
       name: name || '',
     });
 
+    // Log successful registration (fire-and-forget)
+    logUserActivity({
+      userId: user.id,
+      activityType: 'REGISTER',
+      ipAddress,
+      userAgent,
+      success: true,
+      metadata: {
+        has_email: !!email,
+      },
+    }).catch((err) => {
+      log.warn('Failed to log registration', {
+        userId: user.id,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -40,6 +63,20 @@ async function postHandler(req: NextRequest) {
     );
   } catch (error) {
     console.error('Registration error:', error);
+
+    // Log failed registration (fire-and-forget)
+    logUserActivity({
+      activityType: 'REGISTER',
+      ipAddress,
+      userAgent,
+      success: false,
+      errorMessage:
+        error instanceof Error ? error.message : 'Registration failed',
+    }).catch((err) => {
+      log.warn('Failed to log registration failure', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    });
 
     // Return user-friendly error message
     return NextResponse.json(

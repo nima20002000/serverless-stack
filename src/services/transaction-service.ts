@@ -40,6 +40,9 @@ export async function createTransaction(data: {
     postalCode?: string;
     createAccount?: boolean;
   };
+  // Optional client info for tracking
+  ipAddress?: string | null;
+  userAgent?: string | null;
 }) {
   const transactionCode = generateTransactionCode();
   const supabase = createClient();
@@ -71,6 +74,9 @@ export async function createTransaction(data: {
         shippingAddress: data.shippingInfo.shippingAddress,
         postalCode: data.shippingInfo.postalCode || null,
         createAccount: data.shippingInfo.createAccount || false,
+        // Client tracking info
+        ip_address: data.ipAddress || null,
+        user_agent: data.userAgent || null,
         updatedAt: now,
       })
       .select()

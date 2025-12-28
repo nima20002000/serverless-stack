@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyOTP } from '@/services/otp-service';
 import { createUser, getUserByIdentifier } from '@/services/user-service';
 import { authenticateUserByPhone } from '@/services/auth-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +14,9 @@ export const dynamic = 'force-dynamic';
  * Body: { phone?: string, email?: string, otp: string, purpose: 'register' | 'login', name?: string, password?: string }
  */
 export async function POST(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const {
       phone,
@@ -39,6 +44,24 @@ export async function POST(req: NextRequest) {
     const result = await verifyOTP(identifier, otp, purpose);
 
     if (!result.success) {
+      // Log failed OTP verification (fire-and-forget)
+      logUserActivity({
+        activityType: 'OTP_FAILED',
+        ipAddress,
+        userAgent,
+        success: false,
+        errorMessage: result.error || 'OTP verification failed',
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose,
+          attemptsLeft: result.attemptsLeft,
+        },
+      }).catch((err) => {
+        log.warn('Failed to log OTP failure', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
       return NextResponse.json(
         {
           error: result.error,
@@ -67,6 +90,40 @@ export async function POST(req: NextRequest) {
       log.info('User registered successfully via OTP', {
         identifier,
         userId: user.id,
+      });
+
+      // Log successful OTP verification and registration (fire-and-forget)
+      logUserActivity({
+        userId: user.id,
+        activityType: 'OTP_VERIFIED',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose,
+        },
+      }).catch((err) => {
+        log.warn('Failed to log OTP verification', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // Also log the registration
+      logUserActivity({
+        userId: user.id,
+        activityType: 'REGISTER',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          method: 'otp',
+          identifier_type: isEmail ? 'email' : 'phone',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log registration', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
       });
 
       return NextResponse.json({
@@ -100,6 +157,40 @@ export async function POST(req: NextRequest) {
       log.info('User logged in successfully via OTP', {
         identifier,
         userId: user.id,
+      });
+
+      // Log successful OTP verification (fire-and-forget)
+      logUserActivity({
+        userId: user.id,
+        activityType: 'OTP_VERIFIED',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          identifier_type: isEmail ? 'email' : 'phone',
+          purpose,
+        },
+      }).catch((err) => {
+        log.warn('Failed to log OTP verification', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      // Also log the login
+      logUserActivity({
+        userId: user.id,
+        activityType: 'LOGIN_SUCCESS',
+        ipAddress,
+        userAgent,
+        success: true,
+        metadata: {
+          method: 'otp',
+          identifier_type: isEmail ? 'email' : 'phone',
+        },
+      }).catch((err) => {
+        log.warn('Failed to log login', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
       });
 
       return NextResponse.json({

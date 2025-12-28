@@ -12,6 +12,7 @@ import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
+import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 import { DIGIPAY_CONFIG } from '@/config/constants';
 
@@ -20,6 +21,8 @@ export const dynamic = 'force-dynamic';
 // POST /api/transactions/create - Create transaction and initiate payment
 async function postHandler(req: NextRequest) {
   const startTime = Date.now();
+  // Extract client info for storing in transaction
+  const { ipAddress, userAgent } = getClientInfo(req);
 
   try {
     const session = await getServerSession(authOptions);
@@ -294,6 +297,9 @@ async function postHandler(req: NextRequest) {
         postalCode: postalCode || undefined,
         createAccount: createAccount && !session, // Only for guest users
       },
+      // Include client info for tracking
+      ipAddress,
+      userAgent,
     });
 
     // If logged-in user, update their profile with shipping info and any new contact info

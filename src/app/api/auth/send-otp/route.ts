@@ -5,6 +5,8 @@ import {
   validateEmail,
   getUserByIdentifier,
 } from '@/services/user-service';
+import { logUserActivity } from '@/services/activity-log-service';
+import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,9 @@ export const dynamic = 'force-dynamic';
  * Body: { phone?: string, email?: string, purpose: 'register' | 'login' }
  */
 export async function POST(req: NextRequest) {
+  // Extract client info for activity logging
+  const { ipAddress, userAgent } = getClientInfo(req);
+
   try {
     const { phone, email, purpose = 'register' } = await req.json();
 
@@ -101,6 +106,23 @@ export async function POST(req: NextRequest) {
     const message = isEmail
       ? 'کد تایید به ایمیل شما ارسال شد'
       : 'کد تایید به شماره شما ارسال شد';
+
+    // Log OTP sent (fire-and-forget)
+    logUserActivity({
+      userId: existingUser?.id || null,
+      activityType: 'OTP_SENT',
+      ipAddress,
+      userAgent,
+      success: true,
+      metadata: {
+        identifier_type: isEmail ? 'email' : 'phone',
+        purpose,
+      },
+    }).catch((err) => {
+      log.warn('Failed to log OTP sent', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    });
 
     return NextResponse.json({
       success: true,
