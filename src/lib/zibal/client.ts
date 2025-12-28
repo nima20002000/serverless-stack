@@ -12,7 +12,8 @@ import { log } from '@/lib/logger';
  */
 interface ZibalConfig {
   merchant: string;
-  baseUrl: string;
+  baseUrl: string; // API base URL (https://gateway.zibal.ir/v1)
+  gatewayUrl: string; // Gateway URL for redirects (https://gateway.zibal.ir)
 }
 
 /**
@@ -67,7 +68,8 @@ export function isSandboxMode(): boolean {
  */
 function getZibalConfig(): ZibalConfig {
   const merchant = process.env.ZIBAL_MERCHANT || '';
-  const baseUrl = 'https://gateway.zibal.ir/v1';
+  const baseUrl = 'https://gateway.zibal.ir/v1'; // API endpoints
+  const gatewayUrl = 'https://gateway.zibal.ir'; // Payment redirect URL (no /v1)
 
   if (!merchant) {
     throw new Error('Zibal merchant not configured');
@@ -76,6 +78,7 @@ function getZibalConfig(): ZibalConfig {
   return {
     merchant,
     baseUrl,
+    gatewayUrl,
   };
 }
 
@@ -195,7 +198,10 @@ export async function createPaymentRequest(
       throw new Error(errorMessage);
     }
 
-    const redirectUrl = `${config.baseUrl}/start/${zibalResponse.trackId}`;
+    // IMPORTANT: The redirect URL uses the gateway URL without /v1
+    // Correct: https://gateway.zibal.ir/start/{trackId}
+    // Wrong:   https://gateway.zibal.ir/v1/start/{trackId}
+    const redirectUrl = `${config.gatewayUrl}/start/${zibalResponse.trackId}`;
 
     log.info('Zibal payment request created successfully', {
       trackId: zibalResponse.trackId,
