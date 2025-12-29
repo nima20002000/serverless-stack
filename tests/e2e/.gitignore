@@ -1,0 +1,6 @@
+.env
+playwright-report/
+test-results/
+videos/
+screenshots/
+traces/
