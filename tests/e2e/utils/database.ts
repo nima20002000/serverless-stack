@@ -2,7 +2,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../../src/types/supabase';
 
 // Production Supabase project identifier - MUST be blocked in E2E tests
-const PRODUCTION_PROJECT_ID = 'gozxjxtnrbuurmstjydo';
+// Production: tanqgnztclrucfldxhuk (kitia production)
+// Preview:    gozxjxtnrbuurmstjydo (Kitia-preview) - OK for E2E tests
+const PRODUCTION_PROJECT_ID = 'tanqgnztclrucfldxhuk';
 
 /**
  * Create E2E test Supabase client
@@ -185,4 +187,166 @@ export async function getUserByPhone(
   }
 
   return data;
+}
+
+/**
+ * Get transaction by transaction code
+ */
+export async function getTransactionByCode(
+  code: string
+): Promise<Database['public']['Tables']['transactions']['Row'] | null> {
+  const supabase = createE2ESupabaseClient();
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('transactionCode', code)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(
+      `Failed to get transaction by code "${code}": ${error.message}`
+    );
+  }
+
+  return data;
+}
+
+/**
+ * Get transaction with items by transaction ID
+ */
+export async function getTransactionWithItems(transactionId: string): Promise<{
+  transaction: Database['public']['Tables']['transactions']['Row'];
+  items: Database['public']['Tables']['transaction_items']['Row'][];
+}> {
+  const supabase = createE2ESupabaseClient();
+
+  const { data: transaction, error: txError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', transactionId)
+    .single();
+
+  if (txError) {
+    throw new Error(
+      `Failed to get transaction "${transactionId}": ${txError.message}`
+    );
+  }
+
+  const { data: items, error: itemsError } = await supabase
+    .from('transaction_items')
+    .select('*')
+    .eq('transactionId', transactionId);
+
+  if (itemsError) {
+    throw new Error(
+      `Failed to get transaction items for "${transactionId}": ${itemsError.message}`
+    );
+  }
+
+  return { transaction, items: items || [] };
+}
+
+/**
+ * Delete test transaction by phone (for cleanup)
+ * Only deletes transactions created with E2E test phone patterns
+ */
+export async function deleteTestTransactionsByPhone(
+  phone: string
+): Promise<void> {
+  const supabase = createE2ESupabaseClient();
+
+  // First get transaction IDs to delete their items
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('phone', phone);
+
+  if (transactions && transactions.length > 0) {
+    const txIds = transactions.map((t) => t.id);
+
+    // Delete transaction items first (foreign key constraint)
+    await supabase
+      .from('transaction_items')
+      .delete()
+      .in('transactionId', txIds);
+
+    // Delete transactions
+    await supabase.from('transactions').delete().eq('phone', phone);
+  }
+}
+
+/**
+ * Delete test OTP verifications by identifier (for cleanup)
+ */
+export async function deleteTestOTPsByIdentifier(
+  identifier: string
+): Promise<void> {
+  const supabase = createE2ESupabaseClient();
+  await supabase
+    .from('otp_verifications')
+    .delete()
+    .eq('identifier', identifier);
+}
+
+/**
+ * Get an active product with stock for testing
+ */
+export async function getTestProduct(): Promise<{
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+}> {
+  const supabase = createE2ESupabaseClient();
+
+  const { data, error } = await supabase
+    .from('products')
+    .select('id, name, price, stock')
+    .eq('isActive', true)
+    .gt('stock', 0)
+    .gt('price', 0) // Ensure valid price
+    .order('stock', { ascending: false }) // Prefer products with more stock
+    .limit(1)
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to get test product: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error('No active products with stock found for testing');
+  }
+
+  return {
+    id: data.id,
+    name: data.name,
+    price: Number(data.price),
+    stock: data.stock,
+  };
+}
+
+/**
+ * Wait for OTP to appear in database (with retry)
+ */
+export async function waitForOTP(
+  identifier: string,
+  maxWaitMs: number = 10000,
+  pollIntervalMs: number = 500
+): Promise<string> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWaitMs) {
+    try {
+      const code = await getLastOTP(identifier);
+      return code;
+    } catch {
+      // OTP not found yet, wait and retry
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+  }
+
+  throw new Error(
+    `OTP not found for identifier "${identifier}" after ${maxWaitMs}ms`
+  );
 }

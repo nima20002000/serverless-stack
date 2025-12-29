@@ -1,22 +1,30 @@
 import type { Page } from '@playwright/test';
 
 /**
- * Mock Zarinpal payment gateway redirect
- * Intercepts redirect to Zarinpal and simulates success callback
+ * Mock Zarinpal payment gateway - both redirect AND verification API
+ *
+ * This mocks:
+ * 1. User redirect to Zarinpal payment page -> redirects back with Status=OK
+ * 2. Server-side verification API call -> returns successful verification response
  */
 export async function mockZarinpalSuccess(page: Page): Promise<void> {
-  await page.route('**/zarinpal.com/**', async (route) => {
+  // Mock the user-facing redirect to Zarinpal payment page (both sandbox and production)
+  await page.route('**/*zarinpal.com/pg/StartPay/**', async (route) => {
     const url = new URL(route.request().url());
-    const authority = url.searchParams.get('Authority');
+    // Authority is in the path: /pg/StartPay/{Authority}
+    const pathParts = url.pathname.split('/');
+    const authority = pathParts[pathParts.length - 1];
 
     if (!authority) {
       throw new Error(
-        'No Authority parameter found in Zarinpal redirect URL. ' +
+        'No Authority found in Zarinpal redirect URL. ' +
           `URL: ${route.request().url()}`
       );
     }
 
-    console.log(`Intercepted Zarinpal redirect, Authority: ${authority}`);
+    console.log(
+      `[E2E Mock] Intercepted Zarinpal redirect, Authority: ${authority}`
+    );
 
     const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
     await route.fulfill({
@@ -26,6 +34,71 @@ export async function mockZarinpalSuccess(page: Page): Promise<void> {
       },
     });
   });
+
+  // Mock the server-side Zarinpal verification API call
+  // This is called by our verify endpoint to confirm payment with Zarinpal
+  await page.route(
+    '**/api.zarinpal.com/pg/v4/payment/verify.json',
+    async (route) => {
+      const request = route.request();
+      const postData = request.postDataJSON();
+
+      console.log(`[E2E Mock] Intercepted Zarinpal verification API call`, {
+        authority: postData?.authority,
+        amount: postData?.amount,
+      });
+
+      // Return successful verification response
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            code: 100, // Success code
+            ref_id: `E2E-REF-${Date.now()}`, // Mock reference ID
+            card_pan: '6219***1234',
+            card_hash: 'mock-card-hash',
+            fee_type: 'Merchant',
+            fee: 0,
+          },
+          errors: [],
+        }),
+      });
+    }
+  );
+
+  // Also mock sandbox API endpoint
+  await page.route(
+    '**/sandbox.zarinpal.com/pg/v4/payment/verify.json',
+    async (route) => {
+      const request = route.request();
+      const postData = request.postDataJSON();
+
+      console.log(
+        `[E2E Mock] Intercepted Zarinpal SANDBOX verification API call`,
+        {
+          authority: postData?.authority,
+          amount: postData?.amount,
+        }
+      );
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: {
+            code: 100,
+            ref_id: `E2E-SANDBOX-REF-${Date.now()}`,
+            card_pan: '6219***1234',
+            card_hash: 'mock-card-hash',
+            fee_type: 'Merchant',
+            fee: 0,
+          },
+          errors: [],
+        }),
+      });
+    }
+  );
 }
 
 /**
@@ -93,7 +166,7 @@ export async function mockPaymentFailure(
   gateway: 'zarinpal' | 'digipay' | 'zibal'
 ): Promise<void> {
   const patterns: Record<string, string> = {
-    zarinpal: '**/zarinpal.com/**',
+    zarinpal: '**/*zarinpal.com/pg/StartPay/**', // Match both sandbox and production
     digipay: '**/mydigipay.com/**',
     zibal: '**/zibal.ir/**',
   };
@@ -105,7 +178,9 @@ export async function mockPaymentFailure(
     let identifier: string | null = null;
 
     if (gateway === 'zarinpal') {
-      identifier = url.searchParams.get('Authority');
+      // Authority is in the path: /pg/StartPay/{Authority}
+      const pathParts = url.pathname.split('/');
+      identifier = pathParts[pathParts.length - 1];
     } else if (gateway === 'digipay') {
       identifier = url.searchParams.get('trackId');
     } else if (gateway === 'zibal') {
