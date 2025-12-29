@@ -11,19 +11,31 @@ import type { Database } from '../../src/types/supabase';
 
 /**
  * Create a Supabase client for testing
- * Uses service role key for full access to bypass RLS
+ * Uses SECRET key (sb_secret_*) for full access to bypass RLS
+ *
+ * IMPORTANT: This uses the NEW Supabase API key format (sb_secret_*)
+ * NOT the deprecated JWT service_role token format (eyJ...)
  */
 export function createTestSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
       'Missing Supabase credentials. Ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY are set in tests/.env'
     );
   }
 
-  return createSupabaseClient<Database>(supabaseUrl, supabaseKey, {
+  // Validate key format (must be new API key format)
+  if (!supabaseSecretKey.startsWith('sb_secret_')) {
+    throw new Error(
+      `Invalid SUPABASE_SECRET_KEY format. Expected 'sb_secret_*' but got '${supabaseSecretKey.substring(0, 20)}...'\n` +
+        'Please update tests/.env with the new Supabase API key format.\n' +
+        'See tests/docs/GETTING_SUPABASE_KEYS.md for instructions.'
+    );
+  }
+
+  return createSupabaseClient<Database>(supabaseUrl, supabaseSecretKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
