@@ -291,4 +291,253 @@ describe('transaction-service', () => {
       'فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد'
     );
   });
+
+  // Activity tracking tests for ipAddress and userAgent
+  describe('createTransaction with activity tracking fields', () => {
+    it('creates transaction with ipAddress and userAgent stored correctly', async () => {
+      const supabase = createSupabaseMock();
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-1', transactionCode: 'KT-ABC123' },
+        error: null,
+      });
+      const insertItems = createQueryMock({
+        data: null,
+        error: null,
+      });
+      const fetchTransaction = createQueryMock({
+        data: {
+          id: 'tx-1',
+          transactionCode: 'KT-ABC123',
+          ip_address: '203.0.113.50',
+          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          items: [],
+        },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 100,
+        shippingInfo: {
+          fullName: 'Test User',
+          phone: '09123456789',
+          shippingAddress: 'Test Address',
+        },
+        ipAddress: '203.0.113.50',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip_address: '203.0.113.50',
+          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        })
+      );
+    });
+
+    it('creates transaction with ipAddress but no userAgent', async () => {
+      const supabase = createSupabaseMock();
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-2', transactionCode: 'KT-DEF456' },
+        error: null,
+      });
+      const insertItems = createQueryMock({ data: null, error: null });
+      const fetchTransaction = createQueryMock({
+        data: { id: 'tx-2', transactionCode: 'KT-DEF456', items: [] },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 200,
+        shippingInfo: {
+          fullName: 'User Two',
+          phone: '09123456780',
+          shippingAddress: 'Address Two',
+        },
+        ipAddress: '8.8.8.8',
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip_address: '8.8.8.8',
+          user_agent: null,
+        })
+      );
+    });
+
+    it('creates transaction with neither ipAddress nor userAgent', async () => {
+      const supabase = createSupabaseMock();
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-3', transactionCode: 'KT-GHI789' },
+        error: null,
+      });
+      const insertItems = createQueryMock({ data: null, error: null });
+      const fetchTransaction = createQueryMock({
+        data: { id: 'tx-3', transactionCode: 'KT-GHI789', items: [] },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 300,
+        shippingInfo: {
+          fullName: 'User Three',
+          phone: '09123456781',
+          shippingAddress: 'Address Three',
+        },
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip_address: null,
+          user_agent: null,
+        })
+      );
+    });
+
+    it('creates transaction with very long userAgent string (2000 chars)', async () => {
+      const supabase = createSupabaseMock();
+      const longUserAgent = 'Mozilla/5.0 ' + 'X'.repeat(2000);
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-4', transactionCode: 'KT-JKL012' },
+        error: null,
+      });
+      const insertItems = createQueryMock({ data: null, error: null });
+      const fetchTransaction = createQueryMock({
+        data: { id: 'tx-4', transactionCode: 'KT-JKL012', items: [] },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 400,
+        shippingInfo: {
+          fullName: 'User Four',
+          phone: '09123456782',
+          shippingAddress: 'Address Four',
+        },
+        userAgent: longUserAgent,
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_agent: longUserAgent,
+        })
+      );
+    });
+
+    it('creates transaction with IPv6 address', async () => {
+      const supabase = createSupabaseMock();
+      const ipv6Address = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-5', transactionCode: 'KT-MNO345' },
+        error: null,
+      });
+      const insertItems = createQueryMock({ data: null, error: null });
+      const fetchTransaction = createQueryMock({
+        data: { id: 'tx-5', transactionCode: 'KT-MNO345', items: [] },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 500,
+        shippingInfo: {
+          fullName: 'User Five',
+          phone: '09123456783',
+          shippingAddress: 'Address Five',
+        },
+        ipAddress: ipv6Address,
+        userAgent: 'IPv6 Test Agent',
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip_address: ipv6Address,
+          user_agent: 'IPv6 Test Agent',
+        })
+      );
+    });
+
+    it('creates transaction with null ipAddress and userAgent passed explicitly', async () => {
+      const supabase = createSupabaseMock();
+
+      const insertTransaction = createQueryMock({
+        data: { id: 'tx-6', transactionCode: 'KT-PQR678' },
+        error: null,
+      });
+      const insertItems = createQueryMock({ data: null, error: null });
+      const fetchTransaction = createQueryMock({
+        data: { id: 'tx-6', transactionCode: 'KT-PQR678', items: [] },
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(insertTransaction)
+        .mockReturnValueOnce(insertItems)
+        .mockReturnValueOnce(fetchTransaction);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      await transactionService.createTransaction({
+        items: [],
+        amount: 600,
+        shippingInfo: {
+          fullName: 'User Six',
+          phone: '09123456784',
+          shippingAddress: 'Address Six',
+        },
+        ipAddress: null,
+        userAgent: null,
+      });
+
+      expect(insertTransaction.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ip_address: null,
+          user_agent: null,
+        })
+      );
+    });
+  });
 });
