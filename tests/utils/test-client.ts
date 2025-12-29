@@ -108,43 +108,13 @@ export async function verifyRedisConnection() {
 }
 
 /**
- * Generate next UID for test user creation
- * Follows the same logic as generateNextUID in user-service.ts
+ * Generate a random UID for test user creation
+ * Uses random numbers in range 900000-999999 to avoid conflicts with production UIDs
  * Format: U-{6-digit number}
  */
 export async function generateTestUID(): Promise<string> {
-  const supabase = createTestSupabaseClient();
-
-  // Query for the highest UID, matching only 6-digit UIDs to avoid timestamp-based ones
-  // Use maybeSingle() to handle case when no rows are returned
-  const { data } = await supabase
-    .from('users')
-    .select('uid')
-    .like('uid', 'U-______') // Match exactly 8 characters (U- + 6 digits)
-    .order('uid', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  let nextNumber = 1;
-
-  if (data?.uid) {
-    // Extract number from UID (e.g., "U-000123" -> 123)
-    const match = data.uid.match(/^U-(\d{6})$/);
-    if (match) {
-      const currentNumber = parseInt(match[1], 10);
-      // For test users, start from 100000 to avoid conflicts with production users
-      nextNumber = Math.max(currentNumber + 1, 100000);
-    }
-  } else {
-    // No existing UIDs found, start from 100000 for tests
-    nextNumber = 100000;
-  }
-
-  // Ensure we stay within 6-digit range (max 999999)
-  if (nextNumber > 999999) {
-    nextNumber = 100000; // Wrap around
-  }
-
-  // Format as U-{6-digit number}
-  return `U-${nextNumber.toString().padStart(6, '0')}`;
+  // Use random UID in test range (900000-999999) to avoid conflicts with parallel tests
+  // and production data which typically uses lower numbers
+  const randomNumber = 900000 + Math.floor(Math.random() * 99999);
+  return `U-${randomNumber.toString().padStart(6, '0')}`;
 }

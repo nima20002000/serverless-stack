@@ -6,6 +6,7 @@
  */
 
 import { createTestSupabaseClient, createTestRedisClient } from './test-client';
+import { cleanupTestActivityLogs } from './activity-log-helpers';
 
 const TEST_PREFIX = 'TEST-';
 const INTEGRATION_PREFIX = 'INTEGRATION-';
@@ -295,6 +296,7 @@ export async function cleanupTestCache() {
  */
 export async function cleanupAllTestData() {
   // Order matters: delete dependent records first
+  await cleanupTestActivityLogs(); // Activity logs reference users, clean first
   await cleanupTestTransactions(); // Has foreign keys to users & products
   await cleanupTestOTPs(); // Independent
   await cleanupTestPromoCodes(); // Independent
