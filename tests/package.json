@@ -1,15 +1,17 @@
 {
-  "name": "kitia-integration-tests",
+  "name": "kitia-tests",
   "version": "1.0.0",
-  "description": "Integration and contract testing suite for Kitia e-commerce platform",
+  "description": "Test suite for Kitia e-commerce platform",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest watch",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
+    "test": "echo 'Error: Use npm run test:unit or npm run test:integration' && exit 1",
+    "test:unit": "vitest run --config vitest.config.unit.ts",
+    "test:unit:watch": "vitest watch --config vitest.config.unit.ts",
     "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:integration:watch": "vitest watch --config vitest.config.integration.ts",
+    "test:ui": "vitest --ui --config vitest.config.unit.ts",
+    "test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
     "test:contract": "vitest run --config vitest.config.contract.ts",
     "mock:record": "node scripts/record-contracts.js",
     "mock:validate": "node scripts/validate-contracts.js"
