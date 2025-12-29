@@ -683,6 +683,7 @@ export async function verifyStockAvailability(
 ): Promise<StockVerificationResult> {
   const supabase = createClient();
   const errors: string[] = [];
+  const unavailableProductIds: string[] = [];
 
   // Batch fetch all products
   const productIds = items.map((item) => item.productId);
@@ -713,11 +714,13 @@ export async function verifyStockAvailability(
 
     if (!product) {
       errors.push('محصول یافت نشد');
+      unavailableProductIds.push(item.productId);
       continue;
     }
 
     if (!product.isActive) {
       errors.push(`محصول ${product.name} غیرفعال است`);
+      unavailableProductIds.push(item.productId);
       continue;
     }
 
@@ -725,6 +728,7 @@ export async function verifyStockAvailability(
       errors.push(
         `برای محصول ${product.name} باید یک نوع (رنگ، سایز، ...) انتخاب کنید`
       );
+      unavailableProductIds.push(item.productId);
       continue;
     }
 
@@ -733,6 +737,7 @@ export async function verifyStockAvailability(
 
       if (!variant) {
         errors.push(`واریانت محصول ${product.name} یافت نشد`);
+        unavailableProductIds.push(item.productId);
         continue;
       }
 
@@ -740,6 +745,7 @@ export async function verifyStockAvailability(
         errors.push(
           `واریانت ${variant.name} از محصول ${product.name} غیرفعال است`
         );
+        unavailableProductIds.push(item.productId);
         continue;
       }
 
@@ -747,12 +753,14 @@ export async function verifyStockAvailability(
         errors.push(
           `موجودی کافی برای ${variant.name} (${product.name}) وجود ندارد (موجودی: ${variant.stock}، درخواستی: ${item.quantity})`
         );
+        unavailableProductIds.push(item.productId);
       }
     } else {
       if (!product.hasVariants && product.stock < item.quantity) {
         errors.push(
           `موجودی کافی برای ${product.name} وجود ندارد (موجودی: ${product.stock}، درخواستی: ${item.quantity})`
         );
+        unavailableProductIds.push(item.productId);
       }
     }
   }
@@ -760,5 +768,6 @@ export async function verifyStockAvailability(
   return {
     available: errors.length === 0,
     errors,
+    unavailableProductIds,
   };
 }

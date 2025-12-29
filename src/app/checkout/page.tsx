@@ -27,6 +27,9 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const items = useCartStore((state) => state.items);
+  const removeUnavailableItems = useCartStore(
+    (state) => state.removeUnavailableItems
+  );
   const total = useCartStore(selectTotal);
   const itemCount = useCartStore(selectItemCount);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -106,6 +109,13 @@ export default function CheckoutPage() {
         const data = await response.json();
 
         if (!response.ok) {
+          // Check if there are unavailable products that should be removed from cart
+          if (
+            data.unavailableProductIds &&
+            data.unavailableProductIds.length > 0
+          ) {
+            removeUnavailableItems(data.unavailableProductIds);
+          }
           throw new Error(data.error || 'خطا در ایجاد تراکنش');
         }
 
@@ -116,7 +126,7 @@ export default function CheckoutPage() {
         setIsProcessing(false);
       }
     },
-    [items, paymentMethod]
+    [items, paymentMethod, removeUnavailableItems]
   );
 
   const handleCheckout = useCallback(

@@ -17,6 +17,7 @@ interface CartStore {
   items: CartItem[];
   addItem: (product: Omit<CartItem, 'quantity'>, quantity: number) => void;
   removeItem: (productId: string, variantId?: string) => void;
+  removeUnavailableItems: (productIds: string[]) => void;
   updateQuantity: (
     productId: string,
     quantity: number,
@@ -78,6 +79,18 @@ export const useCartStore = create<CartStore>()(
         const newItems = get().items.filter(
           (item) =>
             !(item.productId === productId && item.variantId === variantId)
+        );
+        set({
+          items: newItems,
+        });
+      },
+
+      removeUnavailableItems: (productIds) => {
+        if (!productIds || productIds.length === 0) return;
+
+        const productIdSet = new Set(productIds);
+        const newItems = get().items.filter(
+          (item) => !productIdSet.has(item.productId)
         );
         set({
           items: newItems,

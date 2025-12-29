@@ -151,6 +151,7 @@ async function postHandler(req: NextRequest) {
       log.warn('Stock verification failed', {
         userId: session?.user?.id || 'guest',
         errors: stockCheck.errors,
+        unavailableProductIds: stockCheck.unavailableProductIds,
         items: items.map((i) => ({
           productId: i.productId,
           variantId: i.variantId,
@@ -161,6 +162,7 @@ async function postHandler(req: NextRequest) {
         {
           error: 'موجودی کافی نیست',
           details: stockCheck.errors,
+          unavailableProductIds: stockCheck.unavailableProductIds,
         },
         { status: 400 }
       );

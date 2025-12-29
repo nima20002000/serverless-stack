@@ -74,4 +74,6 @@ export interface DashboardStats {
 export interface StockVerificationResult {
   available: boolean;
   errors: string[];
+  /** Product IDs that are unavailable (inactive, out of stock, or not found) */
+  unavailableProductIds: string[];
 }
