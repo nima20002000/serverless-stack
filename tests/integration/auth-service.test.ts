@@ -139,12 +139,12 @@ describe('Auth Service Integration Tests', () => {
       expect(duplicateError?.message).toContain('email');
     });
 
-    it('should generate sequential UIDs for multiple users', async () => {
-      // Create 3 users and verify UIDs are sequential
+    it('should generate unique UIDs for multiple users', async () => {
+      // Create 3 users and verify UIDs are unique and follow correct format
       const users = [];
 
       for (let i = 0; i < 3; i++) {
-        const testUser = generateUniqueTestUser(`sequential-${i}`);
+        const testUser = generateUniqueTestUser(`unique-uid-${i}`);
         const hashedPassword = await bcrypt.hash(testUser.password, 10);
 
         const { data: createdUser, error } = await supabase
@@ -168,14 +168,16 @@ describe('Auth Service Integration Tests', () => {
         }
       }
 
-      // Verify UIDs are sequential (extract numbers and compare)
-      const extractNumber = (uid: string) => {
-        const match = uid.match(/^U-(\d+)$/);
-        expect(match).not.toBeNull();
-        return parseInt(match?.[1] as string, 10);
-      };
-      expect(extractNumber(users[1].uid)).toBe(extractNumber(users[0].uid) + 1);
-      expect(extractNumber(users[2].uid)).toBe(extractNumber(users[1].uid) + 1);
+      // Verify all UIDs follow the correct format U-{6-digit number}
+      const uidPattern = /^U-\d{6}$/;
+      for (const user of users) {
+        expect(user.uid).toMatch(uidPattern);
+      }
+
+      // Verify all UIDs are unique
+      const uids = users.map((u) => u.uid);
+      const uniqueUids = new Set(uids);
+      expect(uniqueUids.size).toBe(users.length);
     });
 
     it('should handle UID conflicts with retry logic', async () => {

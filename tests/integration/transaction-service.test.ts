@@ -882,56 +882,92 @@ describe('Transaction Service Integration Tests', () => {
 
   describe('Guest Transaction Linking', () => {
     it('should link guest transaction to registered user', async () => {
-      const phone = '09123456789';
+      const phone = '09910258259';
       const transactionId = randomUUID();
+      let userId: string | null = null;
 
-      // Create guest transaction
-      await supabase.from('transactions').insert({
-        id: transactionId,
-        userId: null,
-        amount: 10000,
-        status: 'COMPLETED',
-        transactionCode: `TEST-${Date.now()}`,
-        isGuest: true,
-        fullName: 'Test User',
-        phone,
-        shippingAddress: 'Address',
-        updatedAt: new Date().toISOString(),
-      });
+      try {
+        // Clean up any existing user with this phone first
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('id')
+          .eq('phone', phone)
+          .single();
 
-      // Create user with same phone
-      const userId = randomUUID();
-      await supabase.from('users').insert({
-        id: userId,
-        uid: `U-${Date.now()}`,
-        phone,
-        name: 'Test User',
-        role: 'USER',
-        updatedAt: new Date().toISOString(),
-      });
+        if (existingUser) {
+          await supabase
+            .from('transactions')
+            .delete()
+            .eq('userId', existingUser.id);
+          await supabase.from('users').delete().eq('id', existingUser.id);
+        }
 
-      // Link transaction to user
-      await supabase
-        .from('transactions')
-        .update({
-          userId,
-          isGuest: false,
+        // Create guest transaction
+        await supabase.from('transactions').insert({
+          id: transactionId,
+          userId: null,
+          amount: 10000,
+          status: 'COMPLETED',
+          transactionCode: `TEST-${Date.now()}`,
+          isGuest: true,
+          fullName: 'Test User',
+          phone,
+          shippingAddress: 'Address',
           updatedAt: new Date().toISOString(),
-        })
-        .eq('id', transactionId);
+        });
 
-      // Verify linking
-      const { data: transaction } = await supabase
-        .from('transactions')
-        .select('userId, isGuest')
-        .eq('id', transactionId)
-        .single();
+        // Create user with same phone
+        userId = randomUUID();
+        const { error: userError } = await supabase.from('users').insert({
+          id: userId,
+          uid: `U-${Date.now()}`,
+          phone,
+          name: 'Test User',
+          role: 'USER',
+          updatedAt: new Date().toISOString(),
+        });
 
-      if (!transaction) {
-        throw new Error('Expected transaction to be returned');
+        if (userError) {
+          throw new Error(
+            `Failed to create user: ${userError.message} (code: ${userError.code})`
+          );
+        }
+
+        // Link transaction to user
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({
+            userId,
+            isGuest: false,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq('id', transactionId);
+
+        if (updateError) {
+          throw new Error(
+            `Failed to link transaction: ${updateError.message} (code: ${updateError.code})`
+          );
+        }
+
+        // Verify linking
+        const { data: transaction } = await supabase
+          .from('transactions')
+          .select('userId, isGuest')
+          .eq('id', transactionId)
+          .single();
+
+        if (!transaction) {
+          throw new Error('Expected transaction to be returned');
+        }
+        expect(transaction.userId).toBe(userId);
+        expect(transaction.isGuest).toBe(false);
+      } finally {
+        // Clean up: delete transaction first (has FK to user), then user
+        await supabase.from('transactions').delete().eq('id', transactionId);
+        if (userId) {
+          await supabase.from('users').delete().eq('id', userId);
+        }
       }
-      expect(transaction.userId).toBe(userId);
-      expect(transaction.isGuest).toBe(false);
     });
 
     it('should handle guest checkout with createAccount flag', async () => {
