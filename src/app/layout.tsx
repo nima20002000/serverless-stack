@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SessionProvider } from '@/components/providers/SessionProvider';
+import { VersionProvider } from '@/components/providers/VersionProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import InstallmentBanner from '@/components/layout/InstallmentBanner';
@@ -67,10 +68,12 @@ export default function RootLayout({
       </head>
       <body className="antialiased flex flex-col min-h-screen">
         <SessionProvider>
-          <InstallmentBanner />
-          <Header />
-          {children}
-          <Footer />
+          <VersionProvider>
+            <InstallmentBanner />
+            <Header />
+            {children}
+            <Footer />
+          </VersionProvider>
         </SessionProvider>
       </body>
     </html>

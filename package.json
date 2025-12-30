@@ -14,7 +14,7 @@
     "verify:routes": "bash scripts/verify-api-routes.sh",
     "verify:config": "bash scripts/verify-config-files.sh",
     "verify": "npm run verify:config && npm run verify:routes",
-    "prebuild": "npm run verify",
+    "prebuild": "npm run verify && node scripts/generate-build-version.js",
     "predev": "npm run verify:config",
     "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
     "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
