@@ -78,3 +78,6 @@ tests/.vitest/
 
 # VPS connection info
 vps.txt
+
+*storybook.log
+storybook-static

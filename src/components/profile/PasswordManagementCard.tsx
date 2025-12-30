@@ -100,7 +100,11 @@ export default function PasswordManagementCard({
         </Alert>
       )}
       {formState.error && (
-        <Alert type="error" className="mb-4">
+        <Alert
+          type="error"
+          className="mb-4"
+          onClose={() => formActions.setError('')}
+        >
           {formState.error}
         </Alert>
       )}

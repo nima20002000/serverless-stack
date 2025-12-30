@@ -277,7 +277,11 @@ export default function ProfilePage() {
           </Alert>
         )}
         {editFormState.error && (
-          <Alert type="error" className="mb-6">
+          <Alert
+            type="error"
+            className="mb-6"
+            onClose={() => editFormActions.setError('')}
+          >
             {editFormState.error}
           </Alert>
         )}

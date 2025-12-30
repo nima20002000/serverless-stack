@@ -13,6 +13,7 @@ export default function RateLimitError({
   className = '',
 }: RateLimitErrorProps) {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [initialTime, setInitialTime] = useState<number>(0);
 
   useEffect(() => {
     const calculateTimeRemaining = () => {
@@ -27,6 +28,7 @@ export default function RateLimitError({
 
     // Initial calculation
     calculateTimeRemaining();
+    setInitialTime(Math.max(0, Math.ceil((retryAfter - Date.now()) / 1000)));
 
     // Update every second
     const interval = setInterval(calculateTimeRemaining, 1000);
@@ -50,32 +52,23 @@ export default function RateLimitError({
     return null;
   }
 
+  const progressPercentage =
+    initialTime > 0
+      ? Math.max(0, ((initialTime - timeRemaining) / initialTime) * 100)
+      : 0;
+
   return (
-    <Alert type="warning" className={className}>
+    <Alert
+      type="warning"
+      title="تعداد درخواست‌های شما بیش از حد مجاز است"
+      className={className}
+    >
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <svg
-            className="h-5 w-5 text-yellow-600"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <strong>تعداد درخواست‌های شما بیش از حد مجاز است</strong>
-        </div>
-        <p className="text-sm">
-          لطفاً {formatTime(timeRemaining)} صبر کنید و دوباره تلاش نمایید.
-        </p>
-        <div className="mt-2 bg-yellow-100 rounded-full h-2 overflow-hidden">
+        <p>لطفاً {formatTime(timeRemaining)} صبر کنید و دوباره تلاش نمایید.</p>
+        <div className="mt-1 bg-yellow-100 rounded-full h-2 overflow-hidden">
           <div
             className="bg-yellow-600 h-full transition-all duration-1000 ease-linear"
-            style={{
-              width: `${Math.max(0, 100 - (timeRemaining / Math.ceil((retryAfter - Date.now() + timeRemaining * 1000) / 1000)) * 100)}%`,
-            }}
+            style={{ width: `${progressPercentage}%` }}
           />
         </div>
       </div>
