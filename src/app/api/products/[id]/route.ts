@@ -9,7 +9,7 @@ import { authOptions } from '@/lib/auth/options';
 
 export const dynamic = 'force-dynamic';
 
-// GET /api/products/[id] - Get single product (public)
+// GET /api/products/[id] - Get single product (public, or admin with inactive variants)
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -17,8 +17,22 @@ export async function GET(
   try {
     const { searchParams } = new URL(req.url);
     const includeRelations = searchParams.get('includeRelations') === 'true';
+    const includeInactiveParam = searchParams.get('includeInactive') === 'true';
 
-    const product = await getProductById(params.id, includeRelations);
+    // Only allow includeInactive for admin users
+    let includeInactive = false;
+    if (includeInactiveParam) {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.role === 'ADMIN') {
+        includeInactive = true;
+      }
+    }
+
+    const product = await getProductById(
+      params.id,
+      includeRelations,
+      includeInactive
+    );
 
     // Serialize Decimal to number and handle nested relations
     const serializedProduct = {

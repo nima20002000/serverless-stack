@@ -112,9 +112,12 @@ async function invalidateProductCache(): Promise<void> {
 
 /**
  * Fetch product with all relations
+ * @param productId - Product ID
+ * @param includeInactiveVariants - Whether to include inactive variants (default: false, for public access)
  */
 async function fetchProductWithRelations(
-  productId: string
+  productId: string,
+  includeInactiveVariants = false
 ): Promise<ProductWithRelations | null> {
   const supabase = createClient();
 
@@ -161,11 +164,19 @@ async function fetchProductWithRelations(
     .order('order', { ascending: true });
 
   // Get variants with their media
-  const { data: variants } = await supabase
+  // Filter by isActive unless includeInactiveVariants is true (admin access)
+  let variantsQuery = supabase
     .from('product_variants')
     .select('*')
-    .eq('productId', productId)
-    .order('order', { ascending: true });
+    .eq('productId', productId);
+
+  if (!includeInactiveVariants) {
+    variantsQuery = variantsQuery.eq('isActive', true);
+  }
+
+  const { data: variants } = await variantsQuery.order('order', {
+    ascending: true,
+  });
 
   // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
@@ -441,11 +452,13 @@ async function batchFetchProductRelations(products: Product[]): Promise<{
   }
 
   // Query 4 & 5: Get all variants + their media (2 queries total)
+  // Only fetch active variants for public access
   const variantsMap = new Map<string, VariantWithMedia[]>();
   const { data: allVariants } = await supabase
     .from('product_variants')
     .select('*')
     .in('productId', productIds)
+    .eq('isActive', true)
     .order('order', { ascending: true });
 
   if (allVariants && allVariants.length > 0) {
@@ -713,7 +726,7 @@ export async function getDiscountedProducts(options?: {
  * Get product by ID
  * @param id - Product ID
  * @param includeRelations - Whether to include related data (category, tags, media, variants)
- * @param includeInactive - Whether to include inactive products (default: false, for public access)
+ * @param includeInactive - Whether to include inactive products AND inactive variants (default: false, for public access)
  */
 export async function getProductById(
   id: string,
@@ -743,7 +756,8 @@ export async function getProductById(
   }
 
   // Fetch with all relations
-  const product = await fetchProductWithRelations(id);
+  // Pass includeInactive to control variant filtering
+  const product = await fetchProductWithRelations(id, includeInactive);
 
   if (!product) {
     throw new Error('محصول یافت نشد');

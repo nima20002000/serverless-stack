@@ -51,8 +51,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   const fetchProduct = async () => {
     try {
+      // includeInactive=true to show all variants including inactive ones for admin editing
       const response = await fetch(
-        `/api/products/${params.id}?includeRelations=true`
+        `/api/products/${params.id}?includeRelations=true&includeInactive=true`
       );
       if (!response.ok) throw new Error('محصول یافت نشد');
 
