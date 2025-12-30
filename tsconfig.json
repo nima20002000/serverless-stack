@@ -30,7 +30,13 @@
     "node_modules",
     "tests",
     "**/*.stories.tsx",
+    "**/*.stories.ts",
+    "**/*.test.tsx",
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.spec.ts",
     "vitest.config.ts",
-    ".storybook"
+    ".storybook",
+    "storybook-static"
   ]
 }
