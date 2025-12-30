@@ -25,13 +25,13 @@ jobs:
 
       - name: Build application
         env:
-          # Public env vars (embedded at build time) - staging URL
+          # Public env vars (embedded at build time) - staging/preview values
           NEXT_PUBLIC_APP_URL: "https://staging.kitia.ir"
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: "https://gozxjxtnrbuurmstjydo.supabase.co"
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_Rq9gEQnL6ntOnSsjZtQqmQ_0o6Zy3m6"
           NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED: ${{ secrets.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED }}
-          # Server env vars (needed for static generation)
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          # Server env vars (needed for static generation) - using preview Supabase
+          SUPABASE_SECRET_KEY: "sb_secret__jK6cznYH7XoCupQbeC7Xw_mGdhSeVn"
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: "https://staging.kitia.ir"
           KAVENEGAR_API_KEY: ${{ secrets.KAVENEGAR_API_KEY }}
