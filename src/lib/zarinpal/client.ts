@@ -141,6 +141,19 @@ export async function verifyPayment(
   const startTime = Date.now();
   const config = getConfig();
 
+  // E2E Test Mode: Skip actual Zarinpal API call and return mock success
+  // This allows E2E tests to verify the full checkout flow without hitting real payment APIs
+  if (process.env.E2E_MOCK_PAYMENTS === 'true') {
+    log.info('E2E Mock Mode: Simulating successful payment verification', {
+      authority,
+      amount,
+    });
+    return {
+      status: 100,
+      refId: Date.now(), // Mock reference ID
+    };
+  }
+
   // Convert Tomans to Rials (1 Toman = 10 Rials)
   const amountInRials = amount * 10;
 
