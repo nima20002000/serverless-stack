@@ -93,7 +93,7 @@ test.describe('User Login Journey', () => {
     await page.locator('button[type="submit"]').click();
 
     // Wait for redirect (successful login redirects to home)
-    await page.waitForURL(/^\/$/, { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 20000 });
 
     // ============================================================
     // VERIFY AUTHENTICATION: Can access protected route
@@ -127,7 +127,7 @@ test.describe('User Login Journey', () => {
     await page.locator('button[type="submit"]').click();
 
     // Wait for successful login
-    await page.waitForURL(/^\/$/, { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 20000 });
 
     // Verify can access protected route
     await page.goto('/profile');
@@ -274,7 +274,7 @@ test.describe('User Login Journey', () => {
     await page.locator('input[name="password"]').fill(registeredUser.password);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL(/^\/$/, { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 20000 });
 
     // Reload page
     await page.reload();
@@ -301,7 +301,7 @@ test.describe('User Login Journey', () => {
     await page.locator('input[name="password"]').fill(registeredUser.password);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL(/^\/$/, { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 20000 });
 
     // Go to profile
     await page.goto('/profile');
