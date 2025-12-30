@@ -1,6 +1,18 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
 
+/**
+ * Unit Tests Configuration - Fully Parallelized
+ *
+ * Unit tests use mocks (vi.mock) and don't access real databases,
+ * so they can safely run in parallel across multiple threads.
+ *
+ * Key settings:
+ * - pool: 'threads' - Use thread-based parallelization (faster than forks)
+ * - singleThread: false - Allow multiple threads
+ * - isolate: true - Each test file runs in isolation
+ * - fileParallelism: true - Run test files in parallel
+ */
 export default defineConfig({
   test: {
     globals: true,
@@ -11,11 +23,19 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 30000,
     teardownTimeout: 10000,
-    isolate: true,
+    // Enable file-level parallelism
+    fileParallelism: true,
+    // Use threads pool for parallel execution (faster than forks for mocked tests)
+    pool: 'threads',
     poolOptions: {
       threads: {
+        // Allow multiple threads for parallel execution
         singleThread: false,
+        // Isolate each test file
         isolate: true,
+        // Use available CPU cores (default behavior)
+        minThreads: 1,
+        maxThreads: undefined, // Uses number of CPUs
       },
     },
     coverage: {
