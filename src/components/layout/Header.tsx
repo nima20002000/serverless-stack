@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import CartIcon from '@/components/cart/CartIcon';
 import CartDrawer from '@/components/cart/CartDrawer';
 import SearchBar from '@/components/ui/SearchBar';
+import { WishlistIcon } from '@/components/wishlist/WishlistIcon';
 
 const BANNER_HIDDEN_PATHS = ['/cart', '/checkout'];
 
@@ -61,6 +62,9 @@ export default function Header() {
                 محصولات
               </Link>
 
+              {/* Wishlist Icon */}
+              <WishlistIcon />
+
               {/* Cart Icon */}
               <CartIcon onClick={() => setIsCartOpen(true)} />
 
@@ -108,6 +112,7 @@ export default function Header() {
 
             {/* Mobile Menu Button & Cart */}
             <div className="flex md:hidden items-center gap-2">
+              <WishlistIcon />
               <CartIcon onClick={() => setIsCartOpen(true)} />
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
+import { WishlistButton } from '@/components/wishlist/WishlistButton';
 
 interface Variant {
   id: string;
@@ -335,6 +336,26 @@ function ProductCard({ product }: ProductCardProps) {
               <div className="text-gray-400 text-4xl">📦</div>
             </div>
           )}
+          {/* Wishlist Button - Left side (RTL: visually on right) */}
+          <div className="absolute top-2 left-2 z-10">
+            <WishlistButton
+              product={{
+                id: product.id,
+                name: product.name,
+                price: discountedPrice,
+                images: product.images,
+                stock: effectiveStock,
+                discountPercent: product.discountPercent,
+              }}
+              variant={
+                selectedVariant
+                  ? { id: selectedVariant.id, name: selectedVariant.name }
+                  : null
+              }
+              size="md"
+              className="bg-white/80 shadow-md backdrop-blur-sm"
+            />
+          </div>
           {/* Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-2">
             {product.isFeatured && (

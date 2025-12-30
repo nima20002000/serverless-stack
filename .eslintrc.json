@@ -2,8 +2,7 @@
   "extends": [
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
-    "plugin:prettier/recommended",
-    "plugin:storybook/recommended"
+    "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -14,7 +13,8 @@
     "ecosystem.config.js",
     "tests/**/*",
     "config/**/*",
-    "scripts/**/*"
+    "scripts/**/*",
+    "**/*.stories.tsx"
   ],
   "plugins": ["@typescript-eslint", "prettier"],
   "rules": {

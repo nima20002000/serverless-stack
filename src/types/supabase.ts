@@ -656,6 +656,52 @@ export type Database = {
         };
         Relationships: [];
       };
+      wishlists: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          product_id: string;
+          user_id: string;
+          variant_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          product_id: string;
+          user_id: string;
+          variant_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          product_id?: string;
+          user_id?: string;
+          variant_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'wishlists_product_id_fkey';
+            columns: ['product_id'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'wishlists_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'wishlists_variant_id_fkey';
+            columns: ['variant_id'];
+            isOneToOne: false;
+            referencedRelation: 'product_variants';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
