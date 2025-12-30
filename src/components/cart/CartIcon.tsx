@@ -2,6 +2,7 @@
 
 import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
+import { useHydration } from '@/hooks/useHydration';
 
 interface CartIconProps {
   onClick?: () => void;
@@ -9,10 +10,14 @@ interface CartIconProps {
 }
 
 export default function CartIcon({ onClick, className = '' }: CartIconProps) {
+  const isHydrated = useHydration();
   // Compute itemCount directly from items to ensure reactivity
   const itemCount = useCartStore((state) =>
     state.items.reduce((count, item) => count + item.quantity, 0)
   );
+
+  // Only show count after hydration to prevent SSR mismatch
+  const displayCount = isHydrated ? itemCount : 0;
 
   return (
     <button
@@ -21,9 +26,9 @@ export default function CartIcon({ onClick, className = '' }: CartIconProps) {
       aria-label="سبد خرید"
     >
       <ShoppingCartIcon className="w-6 h-6 text-gray-700" />
-      {itemCount > 0 && (
+      {displayCount > 0 && (
         <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-          {itemCount > 9 ? '9+' : itemCount}
+          {displayCount > 9 ? '9+' : displayCount}
         </span>
       )}
     </button>
