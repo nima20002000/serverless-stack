@@ -405,7 +405,7 @@ describe('product-service', () => {
     expect(updateRemaining.update).toHaveBeenCalledWith({ isDefault: true });
   });
 
-  it('updates product stock from variant totals', async () => {
+  it('updates product stock from variant totals and sets hasVariants true', async () => {
     const supabase = createSupabaseMock();
 
     const variantsQuery = createQueryMock({
@@ -423,11 +423,33 @@ describe('product-service', () => {
     await updateProductStockFromVariants('p1');
 
     expect(updateQuery.update).toHaveBeenCalledWith(
-      expect.objectContaining({ stock: 5 })
+      expect.objectContaining({ stock: 5, hasVariants: true })
     );
   });
 
-  it('creates product variant with auto order', async () => {
+  it('sets hasVariants to false when no variants exist', async () => {
+    const supabase = createSupabaseMock();
+
+    const variantsQuery = createQueryMock({
+      data: [], // No variants
+      error: null,
+    });
+    const updateQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await updateProductStockFromVariants('p1');
+
+    expect(updateQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({ hasVariants: false })
+    );
+  });
+
+  it('creates product variant with auto order and updates hasVariants', async () => {
     const supabase = createSupabaseMock();
 
     const skuQuery = createQueryMock({ data: null, error: null });
@@ -461,6 +483,10 @@ describe('product-service', () => {
     expect(result.order).toBe(3);
     expect(insertQuery.insert).toHaveBeenCalledWith(
       expect.objectContaining({ order: 3, sku: 'SKU-1' })
+    );
+    // Verify hasVariants is set to true when variant is created
+    expect(updateProductQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({ hasVariants: true })
     );
   });
 

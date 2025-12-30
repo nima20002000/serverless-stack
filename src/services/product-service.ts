@@ -1697,8 +1697,10 @@ export async function updateProductStockFromVariants(
     return;
   }
 
-  // Only update if product has variants
-  if (variants && variants.length > 0) {
+  // Determine hasVariants based on whether variants exist
+  const hasVariants = variants && variants.length > 0;
+
+  if (hasVariants) {
     const totalStock = variants.reduce(
       (sum, variant) => sum + variant.stock,
       0
@@ -1708,14 +1710,30 @@ export async function updateProductStockFromVariants(
       .from('products')
       .update({
         stock: totalStock,
+        hasVariants: true,
         updatedAt: new Date().toISOString(),
       })
       .eq('id', productId);
 
-    log.info('Product stock updated from variants', {
+    log.info('Product stock and hasVariants updated from variants', {
       productId,
       variantCount: variants.length,
       totalStock,
+      hasVariants: true,
+    });
+  } else {
+    // No variants - ensure hasVariants is false
+    await supabase
+      .from('products')
+      .update({
+        hasVariants: false,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', productId);
+
+    log.info('Product hasVariants set to false (no variants)', {
+      productId,
+      hasVariants: false,
     });
   }
 }

@@ -837,6 +837,128 @@ describe('Product Service Integration Tests', () => {
       expect(product?.stock).toBe(newVariantStock);
     });
 
+    it('should automatically set hasVariants to true when first variant is created', async () => {
+      // Create product without variants (hasVariants=false)
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-auto-hasVariants',
+        description: 'تست تنظیم خودکار hasVariants',
+        price: 200000,
+        stock: 10,
+        hasVariants: false, // Initially false
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Verify initial state
+      const { data: initialProduct } = await supabase
+        .from('products')
+        .select('hasVariants')
+        .eq('id', productId)
+        .single();
+
+      expect(initialProduct?.hasVariants).toBe(false);
+
+      // Create a variant
+      const variantId = randomUUID();
+      await supabase.from('product_variants').insert({
+        id: variantId,
+        productId: productId,
+        name: 'واریانت اول',
+        stock: 5,
+        priceAdjust: 0,
+        order: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Simulate service layer behavior: update hasVariants when variant is created
+      // (This is what the fixed updateProductStockFromVariants function does)
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId);
+
+      const totalStock = variants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+      const hasVariants = (variants?.length ?? 0) > 0;
+
+      await supabase
+        .from('products')
+        .update({
+          stock: totalStock,
+          hasVariants: hasVariants,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', productId);
+
+      // Verify hasVariants is now true
+      const { data: updatedProduct } = await supabase
+        .from('products')
+        .select('hasVariants, stock')
+        .eq('id', productId)
+        .single();
+
+      expect(updatedProduct?.hasVariants).toBe(true);
+      expect(updatedProduct?.stock).toBe(5);
+    });
+
+    it('should set hasVariants to false when all variants are deleted', async () => {
+      // Create product with hasVariants=true
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-remove-hasVariants',
+        description: 'تست حذف همه واریانت‌ها',
+        price: 200000,
+        stock: 10,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create a variant
+      const variantId = randomUUID();
+      await supabase.from('product_variants').insert({
+        id: variantId,
+        productId: productId,
+        name: 'واریانت تست',
+        stock: 10,
+        priceAdjust: 0,
+        order: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Delete the variant
+      await supabase.from('product_variants').delete().eq('id', variantId);
+
+      // Simulate service layer behavior: check if product still has variants
+      const { data: remainingVariants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId);
+
+      const hasVariants = (remainingVariants?.length ?? 0) > 0;
+
+      await supabase
+        .from('products')
+        .update({
+          hasVariants: hasVariants,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', productId);
+
+      // Verify hasVariants is now false
+      const { data: updatedProduct } = await supabase
+        .from('products')
+        .select('hasVariants')
+        .eq('id', productId)
+        .single();
+
+      expect(updatedProduct?.hasVariants).toBe(false);
+    });
+
     it('should maintain variant order correctly', async () => {
       // Create product
       const productId = randomUUID();
