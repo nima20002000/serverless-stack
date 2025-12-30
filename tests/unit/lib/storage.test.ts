@@ -41,14 +41,10 @@ describe('storage', () => {
   it('throws on unknown storage provider', async () => {
     process.env.STORAGE_PROVIDER = 'unknown';
 
-    const { storage } = await import('@/lib/storage');
-
-    await expect(
-      storage.upload({
-        file: Buffer.from('data'),
-        path: 'products/img.jpg',
-        contentType: 'image/jpeg',
-      })
-    ).rejects.toThrow('Unknown storage provider: unknown');
+    // The storage module throws at initialization time (module load),
+    // not during method calls, so we need to expect the import itself to throw
+    await expect(import('@/lib/storage')).rejects.toThrow(
+      'Unknown storage provider: unknown'
+    );
   });
 });
