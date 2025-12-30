@@ -19,7 +19,7 @@ export function WishlistIcon({ className = '' }: WishlistIconProps) {
 
   return (
     <Link
-      href="/profile/wishlist"
+      href="/wishlist"
       className={`relative p-2 text-gray-700 hover:text-red-500 transition-colors ${className}`}
       aria-label="علاقه‌مندی‌ها"
       data-testid="wishlist-icon"

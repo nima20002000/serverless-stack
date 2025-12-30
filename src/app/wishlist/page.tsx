@@ -1,0 +1,34 @@
+import { Metadata } from 'next';
+import { WishlistPage } from '@/components/wishlist/WishlistPage';
+
+export const metadata: Metadata = {
+  title: 'علاقه‌مندی‌ها - کیتیا',
+  description:
+    'مشاهده و مدیریت لیست علاقه‌مندی‌های شما. محصولات مورد علاقه خود را ذخیره کنید و هر زمان به سبد خرید اضافه کنید.',
+  openGraph: {
+    title: 'علاقه‌مندی‌ها - کیتیا',
+    description: 'لیست محصولات مورد علاقه شما در فروشگاه کیتیا',
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: 'کیتیا',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'علاقه‌مندی‌ها - کیتیا',
+    description: 'لیست محصولات مورد علاقه شما',
+  },
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
+export default function WishlistPageRoute() {
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        <WishlistPage />
+      </div>
+    </div>
+  );
+}

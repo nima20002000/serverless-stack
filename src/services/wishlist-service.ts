@@ -661,6 +661,116 @@ export async function clearWishlist(
 }
 
 /**
+ * Merge local (guest) wishlist items with server wishlist
+ * Called when a guest user logs in to transfer their local wishlist
+ * Only adds items that don't already exist in server wishlist
+ */
+export async function mergeWishlist(
+  userId: string,
+  localItems: Array<{ productId: string; variantId?: string | null }>
+): Promise<{ added: number; skipped: number }> {
+  log.info('Merging local wishlist with server', {
+    userId,
+    localItemCount: localItems.length,
+  });
+
+  if (!userId || !localItems || localItems.length === 0) {
+    return { added: 0, skipped: 0 };
+  }
+
+  const supabase = createClient();
+
+  let added = 0;
+  let skipped = 0;
+
+  try {
+    // Get existing wishlist items for user
+    const { data: existingItems } = await supabase
+      .from('wishlists')
+      .select('product_id, variant_id')
+      .eq('user_id', userId);
+
+    // Create a set of existing items for quick lookup
+    const existingSet = new Set<string>();
+    if (existingItems) {
+      for (const item of existingItems) {
+        const key = item.variant_id
+          ? `${item.product_id}:${item.variant_id}`
+          : item.product_id;
+        existingSet.add(key);
+      }
+    }
+
+    // Process each local item
+    for (const localItem of localItems) {
+      const itemKey = localItem.variantId
+        ? `${localItem.productId}:${localItem.variantId}`
+        : localItem.productId;
+
+      // Skip if already exists
+      if (existingSet.has(itemKey)) {
+        skipped++;
+        continue;
+      }
+
+      // Validate product exists and is active
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, isActive')
+        .eq('id', localItem.productId)
+        .single();
+
+      if (!product || !product.isActive) {
+        skipped++;
+        continue;
+      }
+
+      // Validate variant if provided
+      if (localItem.variantId) {
+        const { data: variant } = await supabase
+          .from('product_variants')
+          .select('id, isActive')
+          .eq('id', localItem.variantId)
+          .eq('productId', localItem.productId)
+          .single();
+
+        if (!variant || !variant.isActive) {
+          skipped++;
+          continue;
+        }
+      }
+
+      // Insert the item
+      const { error: insertError } = await supabase.from('wishlists').insert({
+        user_id: userId,
+        product_id: localItem.productId,
+        variant_id: localItem.variantId || null,
+      });
+
+      if (insertError) {
+        log.warn('Failed to merge wishlist item', {
+          userId,
+          productId: localItem.productId,
+          error: insertError.message,
+        });
+        skipped++;
+      } else {
+        added++;
+      }
+    }
+
+    log.info('Wishlist merge completed', { userId, added, skipped });
+    return { added, skipped };
+  } catch (error) {
+    log.error('Error in mergeWishlist', {
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    throw error;
+  }
+}
+
+/**
  * Prepare wishlist item for cart
  * Validates product is in stock and returns data for cart store to add
  */

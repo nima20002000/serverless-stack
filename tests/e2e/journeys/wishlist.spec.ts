@@ -12,12 +12,14 @@ import { cleanupE2ETestData } from '../fixtures/cleanup';
  * Wishlist Journey E2E Tests
  *
  * Tests the complete wishlist functionality:
- * - Adding products to wishlist (authenticated)
+ * - Guest wishlist support (local storage)
+ * - Adding products to wishlist
  * - Viewing wishlist page
  * - Removing products from wishlist
  * - Adding wishlist items to cart
  * - Wishlist button toggle on product pages
  * - Wishlist persistence across sessions
+ * - Wishlist merge on login
  */
 
 // Make tests in this file run serially on a single worker
@@ -139,22 +141,78 @@ test.describe('Wishlist Journey', () => {
     await page.waitForURL('/', { timeout: 20000 });
   }
 
-  test('should require authentication to view wishlist page', async ({
+  test('should allow guests to view wishlist page with info banner', async ({
     page,
   }) => {
-    // Try to access wishlist page without authentication
-    await page.goto('/profile/wishlist');
+    // Visit wishlist page without authentication
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
-    // Should redirect to login
-    await expect(page).toHaveURL(/\/login/);
+    // Should show empty wishlist or info banner (depending on if guest has items)
+    // Clear local storage first to ensure clean state
+    await page.evaluate(() => {
+      localStorage.removeItem('wishlist-storage');
+    });
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    // Should show empty wishlist message for new guest
+    await expect(
+      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
+    ).toBeVisible({ timeout: 10000 });
+  });
+
+  test('should allow guests to add products to wishlist', async ({ page }) => {
+    // Clear wishlist storage to start fresh
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.removeItem('wishlist-storage');
+    });
+
+    // Navigate to a product page as guest
+    await page.goto(`/products/${testProduct.id}`);
+    await page.waitForLoadState('networkidle');
+
+    // Find and click the wishlist button (heart icon)
+    const wishlistButton = page
+      .locator('[data-testid="wishlist-button"]')
+      .first();
+    await expect(wishlistButton).toBeVisible({ timeout: 10000 });
+    await expect(wishlistButton).toBeEnabled({ timeout: 5000 });
+
+    // Click to add to wishlist
+    await wishlistButton.click();
+
+    // Wait for the button state to change (should be pressed/filled)
+    await expect(wishlistButton).toHaveAttribute('aria-pressed', 'true', {
+      timeout: 10000,
+    });
+
+    // Navigate to wishlist page
+    await page.goto('/wishlist');
+    await page.waitForLoadState('networkidle');
+
+    // Should show the product in wishlist
+    await expect(
+      page.locator('[data-testid="wishlist-item"]').first()
+    ).toBeVisible({ timeout: 10000 });
+
+    // Should show guest info banner
+    await expect(
+      page.locator('text=لیست علاقه‌مندی‌ها روی این دستگاه ذخیره شده است')
+    ).toBeVisible({ timeout: 10000 });
+
+    // Clean up - clear the wishlist storage
+    await page.evaluate(() => {
+      localStorage.removeItem('wishlist-storage');
+    });
   });
 
   test('should show empty wishlist for new user', async ({ page }) => {
     await loginUser(page);
 
     // Navigate to wishlist page
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Should show empty wishlist message
@@ -194,7 +252,7 @@ test.describe('Wishlist Journey', () => {
     });
 
     // Navigate to wishlist page
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Should show the product in wishlist - just verify the item card is there
@@ -233,7 +291,7 @@ test.describe('Wishlist Journey', () => {
     }
 
     // Navigate to wishlist page
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Wait for wishlist to load
@@ -320,7 +378,7 @@ test.describe('Wishlist Journey', () => {
     }
 
     // Navigate to wishlist page
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Wait for wishlist to load
@@ -416,7 +474,7 @@ test.describe('Wishlist Journey', () => {
     );
 
     // Navigate to wishlist page and verify item is still there
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     await expect(
@@ -448,7 +506,7 @@ test.describe('Wishlist Journey', () => {
     }
 
     // Navigate to wishlist page
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Wait for wishlist to load
@@ -511,7 +569,7 @@ test.describe('Wishlist Journey', () => {
     });
 
     // Verify wishlist is empty
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     await expect(
@@ -523,7 +581,7 @@ test.describe('Wishlist Journey', () => {
     await loginUser(page);
 
     // Navigate to wishlist to check it's empty
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // Add product to wishlist
@@ -546,7 +604,7 @@ test.describe('Wishlist Journey', () => {
     }
 
     // Navigate to wishlist page and check count
-    await page.goto('/profile/wishlist');
+    await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
     // The title should show the count

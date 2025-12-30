@@ -166,6 +166,38 @@ export function WishlistPage() {
 
   return (
     <div>
+      {/* Guest user info banner */}
+      {status === 'unauthenticated' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+              />
+            </svg>
+            <div>
+              <p className="text-blue-800 text-sm">
+                لیست علاقه‌مندی‌ها روی این دستگاه ذخیره شده است.{' '}
+                <Link href="/login" className="font-medium underline">
+                  وارد شوید
+                </Link>{' '}
+                تا لیست شما در حساب کاربری‌تان ذخیره شود و از هر دستگاهی به آن
+                دسترسی داشته باشید.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">
           علاقه‌مندی‌ها ({itemCount})
