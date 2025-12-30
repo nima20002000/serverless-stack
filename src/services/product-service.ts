@@ -627,8 +627,8 @@ export async function getActiveProducts(options?: {
         continue;
       }
 
-      // Case 2: Product is out of stock (either direct stock=0 or all variants stock=0)
-      if (actualStock === 0) {
+      // Case 2: Product is out of stock or has invalid stock (stock <= 0)
+      if (actualStock <= 0) {
         continue;
       }
     }
@@ -714,9 +714,9 @@ export async function getFeaturedProducts(options?: {
       actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
     }
 
-    // Skip products that are effectively unavailable
+    // Skip products that are effectively unavailable (stock <= 0 includes negative stock)
     if (product.hasVariants && variants.length === 0) continue;
-    if (actualStock === 0) continue;
+    if (actualStock <= 0) continue;
 
     // Get category from map
     let category: Category | null = null;
@@ -787,9 +787,9 @@ export async function getDiscountedProducts(options?: {
       actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
     }
 
-    // Skip products that are effectively unavailable
+    // Skip products that are effectively unavailable (stock <= 0 includes negative stock)
     if (product.hasVariants && variants.length === 0) continue;
-    if (actualStock === 0) continue;
+    if (actualStock <= 0) continue;
 
     // Get category from map
     let category: Category | null = null;
@@ -1022,8 +1022,8 @@ export async function getRelatedProducts(
         continue;
       }
 
-      // Case 2: Product is out of stock (either direct stock=0 or all variants stock=0)
-      if (actualStock === 0) {
+      // Case 2: Product is out of stock or has invalid stock (stock <= 0)
+      if (actualStock <= 0) {
         continue;
       }
 
