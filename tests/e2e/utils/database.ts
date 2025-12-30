@@ -350,3 +350,184 @@ export async function waitForOTP(
     `OTP not found for identifier "${identifier}" after ${maxWaitMs}ms`
   );
 }
+
+/**
+ * Create a test user directly in the database
+ * Password is hashed using bcrypt before storing
+ */
+export async function createTestUserInDB(userData: {
+  id: string;
+  uid: string;
+  email?: string;
+  phone?: string;
+  name: string;
+  password: string;
+  isVerified?: boolean;
+  role?: 'USER' | 'ADMIN';
+  shippingAddress?: string;
+  postalCode?: string;
+}): Promise<Database['public']['Tables']['users']['Row']> {
+  const bcrypt = await import('bcryptjs');
+  const supabase = createE2ESupabaseClient();
+
+  const hashedPassword = await bcrypt.default.hash(userData.password, 10);
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      id: userData.id,
+      uid: userData.uid,
+      email: userData.email || null,
+      phone: userData.phone || null,
+      name: userData.name,
+      password: hashedPassword,
+      isVerified: userData.isVerified ?? true,
+      role: userData.role || 'USER',
+      shippingAddress: userData.shippingAddress || null,
+      postalCode: userData.postalCode || null,
+      updatedAt: now,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create test user: ${error.message}`);
+  }
+
+  return data;
+}
+
+/**
+ * Delete a test user by ID
+ * Only deletes users with e2e-user- prefix for safety
+ */
+export async function deleteTestUserById(userId: string): Promise<void> {
+  if (!userId.startsWith('e2e-user-')) {
+    throw new Error(
+      `Cannot delete non-E2E user: ${userId}. Only users with e2e-user- prefix can be deleted.`
+    );
+  }
+
+  const supabase = createE2ESupabaseClient();
+
+  // Delete user's promo codes first (foreign key constraint)
+  await supabase.from('promo_codes').delete().eq('userId', userId);
+
+  // Delete user's transactions
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('userId', userId);
+
+  if (transactions && transactions.length > 0) {
+    const txIds = transactions.map((t) => t.id);
+    await supabase
+      .from('transaction_items')
+      .delete()
+      .in('transactionId', txIds);
+    await supabase.from('transactions').delete().eq('userId', userId);
+  }
+
+  // Delete the user
+  await supabase.from('users').delete().eq('id', userId);
+}
+
+/**
+ * Delete a test user by email
+ */
+export async function deleteTestUserByEmail(email: string): Promise<void> {
+  const supabase = createE2ESupabaseClient();
+
+  // Find user first
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .single();
+
+  if (user && user.id.startsWith('e2e-user-')) {
+    await deleteTestUserById(user.id);
+  }
+}
+
+/**
+ * Delete a test user by phone
+ */
+export async function deleteTestUserByPhone(phone: string): Promise<void> {
+  const supabase = createE2ESupabaseClient();
+
+  // Find user first
+  const { data: user } = await supabase
+    .from('users')
+    .select('id')
+    .eq('phone', phone)
+    .single();
+
+  if (user && user.id.startsWith('e2e-user-')) {
+    await deleteTestUserById(user.id);
+  }
+}
+
+/**
+ * Wait for user to appear in database (with retry)
+ * Useful after registration to verify user was created
+ */
+export async function waitForUserByEmail(
+  email: string,
+  maxWaitMs: number = 10000,
+  pollIntervalMs: number = 500
+): Promise<Database['public']['Tables']['users']['Row']> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const user = await getUserByEmail(email);
+    if (user) {
+      return user;
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+
+  throw new Error(`User not found for email "${email}" after ${maxWaitMs}ms`);
+}
+
+/**
+ * Wait for user to appear in database by phone (with retry)
+ */
+export async function waitForUserByPhone(
+  phone: string,
+  maxWaitMs: number = 10000,
+  pollIntervalMs: number = 500
+): Promise<Database['public']['Tables']['users']['Row']> {
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const user = await getUserByPhone(phone);
+    if (user) {
+      return user;
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+  }
+
+  throw new Error(`User not found for phone "${phone}" after ${maxWaitMs}ms`);
+}
+
+/**
+ * Expire an OTP code in the database (for testing expired OTP scenarios)
+ */
+export async function expireOTP(identifier: string): Promise<void> {
+  const supabase = createE2ESupabaseClient();
+
+  const { error } = await supabase
+    .from('otp_verifications')
+    .update({
+      expiresAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
+    })
+    .eq('identifier', identifier);
+
+  if (error) {
+    throw new Error(
+      `Failed to expire OTP for "${identifier}": ${error.message}`
+    );
+  }
+}

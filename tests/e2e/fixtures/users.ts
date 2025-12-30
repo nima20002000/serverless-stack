@@ -6,10 +6,14 @@ export interface E2ETestUser {
   email: string;
   phone: string;
   name: string;
+  firstName: string;
+  lastName: string;
   password: string;
   isVerified: boolean;
   role: 'USER' | 'ADMIN';
   updatedAt: string;
+  shippingAddress?: string;
+  postalCode?: string;
 }
 
 /**
@@ -40,6 +44,8 @@ export function createTestUser(overrides?: Partial<E2ETestUser>): E2ETestUser {
     email: `e2e-test-${randomSuffix}@example.com`,
     phone: generateRandomPhone(),
     name: 'کاربر تست',
+    firstName: 'کاربر',
+    lastName: 'تست',
     password: 'Test1234!@#$',
     isVerified: false,
     role: 'USER',
