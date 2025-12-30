@@ -75,6 +75,12 @@ tests/dist/
 tests/*.tsbuildinfo
 tests/contracts/*.recorded.json
 tests/.vitest/
+tests/test-results/
+tests/e2e/test-results/
+
+# Generated cache busting files (created at build time)
+public/build-version.json
+public/sw.js
 
 # VPS connection info
 vps.txt
