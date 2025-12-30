@@ -112,7 +112,7 @@ describe('User Service Integration Tests', () => {
     expect(user.phone).toBeNull();
     expect(user.name).toBe(name);
     expect(user.role).toBe('USER');
-    expect(user.isVerified).toBe(false);
+    expect(user.isVerified).toBe(true); // All users are verified via OTP before creation
     expect(user.createdAt).toBeInstanceOf(Date);
 
     const storedPassword = await fetchUserPassword(user.id);

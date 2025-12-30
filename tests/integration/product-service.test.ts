@@ -1291,10 +1291,38 @@ describe('Product Service Integration Tests', () => {
       expect(-100).toBeLessThan(0); // Validates our test logic
     });
 
-    it('should reject product creation with negative stock', async () => {
-      // Negative stock should be rejected by business logic
-      const invalidStock = -5;
-      expect(invalidStock).toBeLessThan(0);
+    it('should handle negative stock values at database level', async () => {
+      // Note: Stock validation happens at the SERVICE LAYER (createProduct function)
+      // The database does NOT have a CHECK constraint for stock >= 0
+      // This test verifies the database behavior and documents the architecture
+      const productData = generateUniqueTestProduct('INTEGRATION');
+      const productId = randomUUID();
+
+      // Insert with negative stock - database allows this
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert({
+          id: productId,
+          name: productData.name,
+          description: productData.description,
+          price: productData.price,
+          stock: -5,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      // Database does NOT enforce stock >= 0 (no CHECK constraint)
+      // Validation is done at the service layer
+      expect(error).toBeNull();
+      expect(product).not.toBeNull();
+      expect(product?.stock).toBe(-5);
+
+      // Clean up
+      if (product) {
+        await supabase.from('products').delete().eq('id', productId);
+      }
     });
 
     it('should handle product without category gracefully', async () => {

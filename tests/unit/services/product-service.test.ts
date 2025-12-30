@@ -83,6 +83,42 @@ describe('product-service', () => {
       .mockReturnValueOnce(variantMediaQuery);
   };
 
+  it('rejects product creation with negative stock', async () => {
+    // The createProduct function should validate that stock >= 0
+    await expect(
+      createProduct({
+        name: 'Test Product',
+        description: 'Desc',
+        price: 100,
+        stock: -5, // Negative stock should be rejected
+      })
+    ).rejects.toThrow('موجودی نمی‌تواند منفی باشد');
+  });
+
+  it('rejects product creation with negative price', async () => {
+    // The createProduct function should validate that price > 0
+    await expect(
+      createProduct({
+        name: 'Test Product',
+        description: 'Desc',
+        price: -100, // Negative price should be rejected
+        stock: 10,
+      })
+    ).rejects.toThrow('قیمت باید بیشتر از صفر باشد');
+  });
+
+  it('rejects product creation with zero price', async () => {
+    // The createProduct function should validate that price > 0
+    await expect(
+      createProduct({
+        name: 'Test Product',
+        description: 'Desc',
+        price: 0, // Zero price should be rejected
+        stock: 10,
+      })
+    ).rejects.toThrow('قیمت باید بیشتر از صفر باشد');
+  });
+
   it('creates a product and connects tags', async () => {
     const supabase = createSupabaseMock();
 
