@@ -152,7 +152,7 @@ export async function createUser(data: {
             password: hashedPassword,
             name,
             role: 'USER',
-            isVerified: !!phone, // Phone users are verified via OTP
+            isVerified: true, // All users are verified via OTP (email or phone)
             updatedAt: now,
           })
           .select()
