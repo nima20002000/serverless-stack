@@ -92,6 +92,18 @@ export async function cleanupE2ETestData(): Promise<void> {
     );
   }
 
+  // Delete test wishlist items
+  const { error: wishlistError } = await supabase
+    .from('wishlists')
+    .delete()
+    .like('user_id', 'e2e-user-%');
+
+  if (wishlistError) {
+    console.warn(
+      `Warning: Could not cleanup wishlist items: ${wishlistError.message}`
+    );
+  }
+
   // Delete test users (last, due to foreign key constraints)
   const { error: userError } = await supabase
     .from('users')
@@ -152,6 +164,9 @@ export async function cleanupUser(userId: string): Promise<void> {
   }
 
   const supabase = createE2ESupabaseClient();
+
+  // Delete user's wishlists
+  await supabase.from('wishlists').delete().eq('user_id', userId);
 
   // Delete user's transactions
   await supabase.from('transactions').delete().eq('userId', userId);
