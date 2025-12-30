@@ -11,6 +11,7 @@ import {
   deleteProduct,
   getAllProducts,
   searchProducts,
+  getProductById,
 } from '@/services/product-service';
 import { createClient } from '@/lib/supabase/server';
 import { createSupabaseMock, createQueryMock } from '../helpers/supabase-mock';
@@ -461,5 +462,260 @@ describe('product-service', () => {
     expect(insertQuery.insert).toHaveBeenCalledWith(
       expect.objectContaining({ order: 3, sku: 'SKU-1' })
     );
+  });
+
+  describe('variant filtering (hide unavailable variants)', () => {
+    /**
+     * Tests for the feature that filters out inactive variants from public product listings.
+     * When includeInactiveVariants=false (default), only active variants are returned.
+     * When includeInactiveVariants=true (admin access), all variants are returned.
+     */
+
+    it('filters out inactive variants by default (public access)', async () => {
+      const supabase = createSupabaseMock();
+
+      // Product query
+      const productQuery = createQueryMock({
+        data: {
+          id: 'prod-1',
+          name: 'Test Product',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 30,
+          images: [],
+          categoryId: null,
+          hasVariants: true,
+          isFeatured: false,
+          isActive: true,
+        },
+        error: null,
+      });
+
+      // Tags query (empty)
+      const productTagsQuery = createQueryMock({
+        data: [],
+        error: null,
+      });
+
+      // Media query (empty)
+      const mediaQuery = createQueryMock({ data: [], error: null });
+
+      // Variants query - should filter by isActive=true
+      const variantsQuery = createQueryMock({
+        data: [
+          { id: 'v1', name: 'Active Variant', stock: 10, isActive: true },
+          { id: 'v2', name: 'Active Variant 2', stock: 20, isActive: true },
+        ],
+        error: null,
+      });
+
+      // Variant media query
+      const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+      supabase.from
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(productTagsQuery)
+        .mockReturnValueOnce(mediaQuery)
+        .mockReturnValueOnce(variantsQuery)
+        .mockReturnValueOnce(variantMediaQuery);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      const result = await getProductById('prod-1', true, false);
+
+      // Verify the variants query was called with isActive=true filter
+      expect(variantsQuery.eq).toHaveBeenCalledWith('isActive', true);
+
+      // Result should only contain active variants
+      expect('variants' in result && result.variants).toBeDefined();
+      if ('variants' in result && result.variants) {
+        expect(result.variants.length).toBe(2);
+        result.variants.forEach((v) => {
+          expect(v.isActive).toBe(true);
+        });
+      }
+    });
+
+    it('includes inactive variants when includeInactive=true (admin access)', async () => {
+      const supabase = createSupabaseMock();
+
+      // Product query
+      const productQuery = createQueryMock({
+        data: {
+          id: 'prod-1',
+          name: 'Test Product',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 35,
+          images: [],
+          categoryId: null,
+          hasVariants: true,
+          isFeatured: false,
+          isActive: true,
+        },
+        error: null,
+      });
+
+      // Tags query (empty)
+      const productTagsQuery = createQueryMock({
+        data: [],
+        error: null,
+      });
+
+      // Media query (empty)
+      const mediaQuery = createQueryMock({ data: [], error: null });
+
+      // Variants query - should NOT filter by isActive when includeInactive=true
+      const variantsQuery = createQueryMock({
+        data: [
+          { id: 'v1', name: 'Active Variant', stock: 10, isActive: true },
+          { id: 'v2', name: 'Inactive Variant', stock: 5, isActive: false },
+          { id: 'v3', name: 'Active Variant 2', stock: 20, isActive: true },
+        ],
+        error: null,
+      });
+
+      // Variant media query
+      const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+      supabase.from
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(productTagsQuery)
+        .mockReturnValueOnce(mediaQuery)
+        .mockReturnValueOnce(variantsQuery)
+        .mockReturnValueOnce(variantMediaQuery);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      // Call with includeInactive=true (admin access)
+      const result = await getProductById('prod-1', true, true);
+
+      // When includeInactive=true, the isActive filter should NOT be applied
+      // The variantsQuery.eq should NOT have been called with ('isActive', true)
+      const eqCalls = variantsQuery.eq.mock.calls;
+      const hasActiveFilter = eqCalls.some(
+        (call: unknown[]) => call[0] === 'isActive' && call[1] === true
+      );
+      expect(hasActiveFilter).toBe(false);
+
+      // Result should contain all variants (active and inactive)
+      expect('variants' in result && result.variants).toBeDefined();
+      if ('variants' in result && result.variants) {
+        expect(result.variants.length).toBe(3);
+      }
+    });
+
+    it('calculates stock from only active variants for public access', async () => {
+      const supabase = createSupabaseMock();
+
+      // Product query
+      const productQuery = createQueryMock({
+        data: {
+          id: 'prod-1',
+          name: 'Test Product',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 0, // Will be calculated from variants
+          images: [],
+          categoryId: null,
+          hasVariants: true,
+          isFeatured: false,
+          isActive: true,
+        },
+        error: null,
+      });
+
+      // Tags query (empty)
+      const productTagsQuery = createQueryMock({
+        data: [],
+        error: null,
+      });
+
+      // Media query (empty)
+      const mediaQuery = createQueryMock({ data: [], error: null });
+
+      // Variants query - only active variants are returned (filtered by service)
+      const variantsQuery = createQueryMock({
+        data: [
+          { id: 'v1', name: 'Active Variant 1', stock: 10, isActive: true },
+          { id: 'v2', name: 'Active Variant 2', stock: 15, isActive: true },
+        ],
+        error: null,
+      });
+
+      // Variant media query
+      const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+      supabase.from
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(productTagsQuery)
+        .mockReturnValueOnce(mediaQuery)
+        .mockReturnValueOnce(variantsQuery)
+        .mockReturnValueOnce(variantMediaQuery);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      const result = await getProductById('prod-1', true, false);
+
+      // Stock should be calculated from only the active variants (10 + 15 = 25)
+      expect(result.stock).toBe(25);
+    });
+
+    it('returns empty variants array when all variants are inactive', async () => {
+      const supabase = createSupabaseMock();
+
+      // Product query
+      const productQuery = createQueryMock({
+        data: {
+          id: 'prod-1',
+          name: 'Test Product',
+          description: 'Desc',
+          price: 100,
+          discountPercent: null,
+          stock: 0,
+          images: [],
+          categoryId: null,
+          hasVariants: true,
+          isFeatured: false,
+          isActive: true,
+        },
+        error: null,
+      });
+
+      // Tags query (empty)
+      const productTagsQuery = createQueryMock({
+        data: [],
+        error: null,
+      });
+
+      // Media query (empty)
+      const mediaQuery = createQueryMock({ data: [], error: null });
+
+      // Variants query - no active variants returned
+      const variantsQuery = createQueryMock({
+        data: [],
+        error: null,
+      });
+
+      supabase.from
+        .mockReturnValueOnce(productQuery)
+        .mockReturnValueOnce(productTagsQuery)
+        .mockReturnValueOnce(mediaQuery)
+        .mockReturnValueOnce(variantsQuery);
+
+      createClientMock.mockReturnValue(supabase as unknown);
+
+      const result = await getProductById('prod-1', true, false);
+
+      // Should return product with empty variants and stock 0
+      expect('variants' in result && result.variants).toBeDefined();
+      if ('variants' in result && result.variants) {
+        expect(result.variants.length).toBe(0);
+      }
+      expect(result.stock).toBe(0);
+    });
   });
 });

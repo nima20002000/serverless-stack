@@ -1412,4 +1412,461 @@ describe('Product Service Integration Tests', () => {
       expect(hasOverlap).toBe(false);
     });
   });
+
+  describe('Variant Filtering (Hide Unavailable Variants)', () => {
+    /**
+     * Integration tests for the feature that hides inactive variants from public product listings.
+     * Tests verify that:
+     * - Active variants are included in public queries
+     * - Inactive variants are excluded from public queries
+     * - Stock calculations only consider active variants for public access
+     * - Admin queries can include all variants (active and inactive)
+     */
+
+    it('should only return active variants when querying isActive=true', async () => {
+      // Create product with variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-واریانت-فیلتر',
+        description: 'محصول برای تست فیلتر واریانت',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create 3 variants: 2 active, 1 inactive
+      const activeVariant1Id = randomUUID();
+      const activeVariant2Id = randomUUID();
+      const inactiveVariantId = randomUUID();
+
+      await supabase.from('product_variants').insert([
+        {
+          id: activeVariant1Id,
+          productId: productId,
+          name: 'واریانت فعال ۱',
+          size: 'S',
+          stock: 10,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: inactiveVariantId,
+          productId: productId,
+          name: 'واریانت غیرفعال',
+          size: 'M',
+          stock: 5,
+          priceAdjust: 0,
+          order: 1,
+          isActive: false, // This variant is inactive
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: activeVariant2Id,
+          productId: productId,
+          name: 'واریانت فعال ۲',
+          size: 'L',
+          stock: 15,
+          priceAdjust: 10000,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query only active variants (simulates public access)
+      const { data: activeVariants, error } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true)
+        .order('order', { ascending: true });
+
+      expect(error).toBeNull();
+      expect(activeVariants).not.toBeNull();
+      expect(activeVariants?.length).toBe(2);
+
+      // Verify only active variants are returned
+      activeVariants?.forEach((variant) => {
+        expect(variant.isActive).toBe(true);
+      });
+
+      // Verify inactive variant is NOT in results
+      const inactiveInResults = activeVariants?.find(
+        (v) => v.id === inactiveVariantId
+      );
+      expect(inactiveInResults).toBeUndefined();
+
+      // Verify active variants ARE in results
+      const active1InResults = activeVariants?.find(
+        (v) => v.id === activeVariant1Id
+      );
+      const active2InResults = activeVariants?.find(
+        (v) => v.id === activeVariant2Id
+      );
+      expect(active1InResults).toBeDefined();
+      expect(active2InResults).toBeDefined();
+    });
+
+    it('should return all variants when not filtering by isActive (admin access)', async () => {
+      // Create product with variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-واریانت-ادمین',
+        description: 'محصول برای تست دسترسی ادمین',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create 3 variants: 2 active, 1 inactive
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'واریانت فعال ۱',
+          size: 'S',
+          stock: 10,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'واریانت غیرفعال',
+          size: 'M',
+          stock: 5,
+          priceAdjust: 0,
+          order: 1,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'واریانت فعال ۲',
+          size: 'L',
+          stock: 15,
+          priceAdjust: 10000,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query all variants without isActive filter (simulates admin access)
+      const { data: allVariants, error } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .order('order', { ascending: true });
+
+      expect(error).toBeNull();
+      expect(allVariants).not.toBeNull();
+      expect(allVariants?.length).toBe(3);
+
+      // Verify we have both active and inactive variants
+      const activeCount = allVariants?.filter((v) => v.isActive).length ?? 0;
+      const inactiveCount = allVariants?.filter((v) => !v.isActive).length ?? 0;
+      expect(activeCount).toBe(2);
+      expect(inactiveCount).toBe(1);
+    });
+
+    it('should calculate stock only from active variants for public access', async () => {
+      // Create product with variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-موجودی-واریانت',
+        description: 'محصول برای تست محاسبه موجودی',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create variants with different stock levels
+      const activeStock1 = 10;
+      const activeStock2 = 20;
+      const inactiveStock = 100; // This should NOT be counted in public view
+
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'فعال کوچک',
+          size: 'S',
+          stock: activeStock1,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'غیرفعال متوسط',
+          size: 'M',
+          stock: inactiveStock,
+          priceAdjust: 0,
+          order: 1,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'فعال بزرگ',
+          size: 'L',
+          stock: activeStock2,
+          priceAdjust: 10000,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Calculate stock from only active variants (public access)
+      const { data: activeVariants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      const publicStock =
+        activeVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+
+      // Should only include active variant stocks
+      expect(publicStock).toBe(activeStock1 + activeStock2);
+      expect(publicStock).not.toBe(activeStock1 + activeStock2 + inactiveStock);
+
+      // Calculate stock from all variants (admin access)
+      const { data: allVariants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId);
+
+      const totalStock = allVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+
+      // Admin should see total stock including inactive
+      expect(totalStock).toBe(activeStock1 + activeStock2 + inactiveStock);
+    });
+
+    it('should return empty array when all variants are inactive', async () => {
+      // Create product with only inactive variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-همه-غیرفعال',
+        description: 'محصول با همه واریانت‌های غیرفعال',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create only inactive variants
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'غیرفعال ۱',
+          size: 'S',
+          stock: 10,
+          priceAdjust: 0,
+          order: 0,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'غیرفعال ۲',
+          size: 'M',
+          stock: 20,
+          priceAdjust: 0,
+          order: 1,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query only active variants (public access)
+      const { data: activeVariants, error } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      expect(error).toBeNull();
+      expect(activeVariants).not.toBeNull();
+      expect(activeVariants?.length).toBe(0);
+
+      // Calculate stock from active variants (should be 0)
+      const publicStock =
+        activeVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+      expect(publicStock).toBe(0);
+    });
+
+    it('should handle toggling variant active status', async () => {
+      // Create product with one active variant
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-تغییر-وضعیت',
+        description: 'محصول برای تست تغییر وضعیت واریانت',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const variantId = randomUUID();
+      await supabase.from('product_variants').insert({
+        id: variantId,
+        productId: productId,
+        name: 'واریانت تست',
+        size: 'M',
+        stock: 15,
+        priceAdjust: 0,
+        order: 0,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Initially, variant should be returned in public query
+      const { data: beforeDeactivation } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      expect(beforeDeactivation?.length).toBe(1);
+
+      // Deactivate the variant
+      await supabase
+        .from('product_variants')
+        .update({ isActive: false, updatedAt: new Date().toISOString() })
+        .eq('id', variantId);
+
+      // After deactivation, variant should NOT be returned in public query
+      const { data: afterDeactivation } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      expect(afterDeactivation?.length).toBe(0);
+
+      // Reactivate the variant
+      await supabase
+        .from('product_variants')
+        .update({ isActive: true, updatedAt: new Date().toISOString() })
+        .eq('id', variantId);
+
+      // After reactivation, variant should be returned again
+      const { data: afterReactivation } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      expect(afterReactivation?.length).toBe(1);
+    });
+
+    it('should correctly order active variants by order field', async () => {
+      // Create product with variants in specific order
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-ترتیب-واریانت-فعال',
+        description: 'محصول برای تست ترتیب واریانت‌های فعال',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create variants with mixed active/inactive status
+      // Order: 0 (active), 1 (inactive), 2 (active), 3 (active)
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'اول',
+          size: 'XS',
+          stock: 5,
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'دوم (غیرفعال)',
+          size: 'S',
+          stock: 10,
+          priceAdjust: 0,
+          order: 1,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'سوم',
+          size: 'M',
+          stock: 15,
+          priceAdjust: 0,
+          order: 2,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'چهارم',
+          size: 'L',
+          stock: 20,
+          priceAdjust: 10000,
+          order: 3,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query only active variants, ordered by order field
+      const { data: orderedActiveVariants } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true)
+        .order('order', { ascending: true });
+
+      expect(orderedActiveVariants).not.toBeNull();
+      expect(orderedActiveVariants?.length).toBe(3);
+
+      // Verify order is maintained (skipping inactive variant at order 1)
+      expect(orderedActiveVariants?.[0].name).toBe('اول');
+      expect(orderedActiveVariants?.[0].order).toBe(0);
+      expect(orderedActiveVariants?.[1].name).toBe('سوم');
+      expect(orderedActiveVariants?.[1].order).toBe(2);
+      expect(orderedActiveVariants?.[2].name).toBe('چهارم');
+      expect(orderedActiveVariants?.[2].order).toBe(3);
+    });
+  });
 });
