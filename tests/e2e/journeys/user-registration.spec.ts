@@ -33,14 +33,9 @@ test.describe('User Registration Journey', () => {
     await cleanupE2ETestData();
   });
 
-  test.skip('should register user with email and OTP verification', async ({
+  test('should register user with email and OTP verification', async ({
     page,
   }) => {
-    // NOTE: Email registration is skipped in E2E tests because:
-    // 1. Email service (Resend) is not configured in test environment
-    // 2. Ethereal mock may not reliably store OTPs
-    // Phone registration test provides equivalent coverage of the OTP flow
-
     const testUser = createTestUser();
 
     await page.goto('/register');

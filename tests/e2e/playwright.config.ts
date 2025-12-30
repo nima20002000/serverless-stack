@@ -17,10 +17,12 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default defineConfig({
   testDir: '.',
-  fullyParallel: !process.env.CI,
+  // Run tests sequentially to avoid database state conflicts
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Single worker to ensure tests run one by one
+  workers: 1,
   timeout: 120000, // 2 minutes - checkout flow can take time
 
   expect: {

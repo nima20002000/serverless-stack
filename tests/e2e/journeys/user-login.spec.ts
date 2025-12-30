@@ -176,8 +176,7 @@ test.describe('User Login Journey', () => {
     await deleteTestOTPsByIdentifier(registeredUser.phone);
   });
 
-  test.skip('should login with email OTP (passwordless)', async ({ page }) => {
-    // NOTE: Email OTP is skipped because email service is not configured in test env
+  test('should login with email OTP (passwordless)', async ({ page }) => {
     const registeredUser = getTestUser();
 
     await page.goto('/login');
