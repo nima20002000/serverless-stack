@@ -464,11 +464,11 @@ describe('product-service', () => {
     );
   });
 
-  describe('variant filtering (hide unavailable variants)', () => {
+  describe('getProductById variant filtering', () => {
     /**
      * Tests for the feature that filters out inactive variants from public product listings.
-     * When includeInactiveVariants=false (default), only active variants are returned.
-     * When includeInactiveVariants=true (admin access), all variants are returned.
+     * When includeInactive=false (default), only active variants are returned.
+     * When includeInactive=true (admin access), all variants are returned.
      */
 
     it('filters out inactive variants by default (public access)', async () => {

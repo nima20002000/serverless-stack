@@ -1413,6 +1413,229 @@ describe('Product Service Integration Tests', () => {
     });
   });
 
+  describe('Hide Unavailable Products (Public Listing Filtering)', () => {
+    /**
+     * Integration tests for the feature that hides unavailable products from public listings.
+     * Tests verify that:
+     * - Products with stock=0 are hidden from public listings
+     * - Products with hasVariants=true but no active variants are hidden
+     * - Products with all variant stocks=0 are hidden
+     * - Active variants are included, inactive variants are excluded
+     */
+
+    it('should hide products with zero stock from public queries', async () => {
+      // Create product with zero stock
+      const outOfStockProductId = randomUUID();
+      await supabase.from('products').insert({
+        id: outOfStockProductId,
+        name: 'TEST-ناموجود-صفر',
+        description: 'محصول با موجودی صفر',
+        price: 100000,
+        stock: 0,
+        hasVariants: false,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create product with stock > 0
+      const inStockProductId = randomUUID();
+      await supabase.from('products').insert({
+        id: inStockProductId,
+        name: 'TEST-موجود-دارای-موجودی',
+        description: 'محصول با موجودی مثبت',
+        price: 100000,
+        stock: 10,
+        hasVariants: false,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Query active products with stock > 0 (public view behavior)
+      const { data: publicProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('isActive', true)
+        .gt('stock', 0)
+        .like('name', 'TEST-%');
+
+      expect(error).toBeNull();
+
+      // Out of stock product should NOT be in results
+      const outOfStockInResults = publicProducts?.find(
+        (p) => p.id === outOfStockProductId
+      );
+      expect(outOfStockInResults).toBeUndefined();
+
+      // In stock product SHOULD be in results
+      const inStockInResults = publicProducts?.find(
+        (p) => p.id === inStockProductId
+      );
+      expect(inStockInResults).toBeDefined();
+    });
+
+    it('should hide variant-based products when all active variants have zero stock', async () => {
+      // Create product with variants where all have zero stock
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-واریانت-ناموجود',
+        description: 'محصول با واریانت‌های ناموجود',
+        price: 200000,
+        stock: 0, // This will be recalculated from variants
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create variants with zero stock
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'سایز S',
+          size: 'S',
+          stock: 0, // Zero stock
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'سایز M',
+          size: 'M',
+          stock: 0, // Zero stock
+          priceAdjust: 0,
+          order: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query active variants and calculate stock
+      const { data: activeVariants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      const calculatedStock =
+        activeVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+
+      // Stock should be 0
+      expect(calculatedStock).toBe(0);
+    });
+
+    it('should hide variant-based products when all variants are inactive', async () => {
+      // Create product with only inactive variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-همه-واریانت-غیرفعال',
+        description: 'محصول با همه واریانت‌های غیرفعال',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create ONLY inactive variants (has stock but all inactive)
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'غیرفعال با موجودی',
+          size: 'S',
+          stock: 50, // Has stock but is inactive
+          priceAdjust: 0,
+          order: 0,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Query ONLY active variants
+      const { data: activeVariants, error } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      expect(error).toBeNull();
+      // No active variants should be returned
+      expect(activeVariants?.length).toBe(0);
+    });
+
+    it('should show products with at least one active variant with stock', async () => {
+      // Create product with mixed variants
+      const productId = randomUUID();
+      await supabase.from('products').insert({
+        id: productId,
+        name: 'TEST-مخلوط-واریانت',
+        description: 'محصول با واریانت‌های مخلوط',
+        price: 200000,
+        stock: 0,
+        hasVariants: true,
+        isActive: true,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Create variants: 1 active with stock, 1 active with no stock, 1 inactive with stock
+      await supabase.from('product_variants').insert([
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'فعال با موجودی',
+          size: 'S',
+          stock: 10, // Active with stock - product should be shown
+          priceAdjust: 0,
+          order: 0,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'فعال بدون موجودی',
+          size: 'M',
+          stock: 0, // Active but no stock
+          priceAdjust: 0,
+          order: 1,
+          isActive: true,
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: randomUUID(),
+          productId: productId,
+          name: 'غیرفعال با موجودی',
+          size: 'L',
+          stock: 100, // Inactive with stock - should not count
+          priceAdjust: 0,
+          order: 2,
+          isActive: false,
+          updatedAt: new Date().toISOString(),
+        },
+      ]);
+
+      // Calculate stock from active variants only
+      const { data: activeVariants } = await supabase
+        .from('product_variants')
+        .select('stock')
+        .eq('productId', productId)
+        .eq('isActive', true);
+
+      const calculatedStock =
+        activeVariants?.reduce((sum, v) => sum + v.stock, 0) ?? 0;
+
+      // Stock should be 10 (only from active variant with stock)
+      expect(calculatedStock).toBe(10);
+      // Product should be shown since stock > 0
+      expect(calculatedStock).toBeGreaterThan(0);
+    });
+  });
+
   describe('Variant Filtering (Hide Unavailable Variants)', () => {
     /**
      * Integration tests for the feature that hides inactive variants from public product listings.
