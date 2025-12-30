@@ -112,9 +112,12 @@ async function invalidateProductCache(): Promise<void> {
 
 /**
  * Fetch product with all relations
+ * @param productId - Product ID
+ * @param includeInactiveVariants - Whether to include inactive variants (default: false, for public access)
  */
 async function fetchProductWithRelations(
-  productId: string
+  productId: string,
+  includeInactiveVariants = false
 ): Promise<ProductWithRelations | null> {
   const supabase = createClient();
 
@@ -161,11 +164,19 @@ async function fetchProductWithRelations(
     .order('order', { ascending: true });
 
   // Get variants with their media
-  const { data: variants } = await supabase
+  // Filter by isActive unless includeInactiveVariants is true (admin access)
+  let variantsQuery = supabase
     .from('product_variants')
     .select('*')
-    .eq('productId', productId)
-    .order('order', { ascending: true });
+    .eq('productId', productId);
+
+  if (!includeInactiveVariants) {
+    variantsQuery = variantsQuery.eq('isActive', true);
+  }
+
+  const { data: variants } = await variantsQuery.order('order', {
+    ascending: true,
+  });
 
   // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
@@ -441,11 +452,13 @@ async function batchFetchProductRelations(products: Product[]): Promise<{
   }
 
   // Query 4 & 5: Get all variants + their media (2 queries total)
+  // Only fetch active variants for public access
   const variantsMap = new Map<string, VariantWithMedia[]>();
   const { data: allVariants } = await supabase
     .from('product_variants')
     .select('*')
     .in('productId', productIds)
+    .eq('isActive', true)
     .order('order', { ascending: true });
 
   if (allVariants && allVariants.length > 0) {
@@ -495,16 +508,23 @@ async function batchFetchProductRelations(products: Product[]): Promise<{
  * Get active products only (for public listing)
  * Supports multiple sorting options with optimized database queries
  * OPTIMIZED: Uses batch fetching to eliminate N+1 queries (5 queries total instead of N*5)
+ *
+ * Filtering behavior:
+ * - Only shows products with isActive=true
+ * - Hides products with no available stock (stock=0)
+ * - For products with variants: hides if no active variants or all active variants are out of stock
  */
 export async function getActiveProducts(options?: {
   page?: number;
   perPage?: number;
   sortBy?: ProductSortOption;
+  includeOutOfStock?: boolean; // Set to true to include out-of-stock products (for admin/special views)
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
   const offset = (page - 1) * perPage;
   const sortBy = options?.sortBy || 'popular';
+  const includeOutOfStock = options?.includeOutOfStock || false;
 
   const supabase = createClient();
 
@@ -587,46 +607,68 @@ export async function getActiveProducts(options?: {
   const { categoriesMap, tagsMap, mediaMap, variantsMap } =
     await batchFetchProductRelations(products);
 
-  // Combine products with their relations
-  const productsWithRelations: ProductWithRelations[] = products.map(
-    (product) => {
-      const variants = variantsMap.get(product.id) || [];
+  // Combine products with their relations and filter out unavailable ones
+  const productsWithRelations: ProductWithRelations[] = [];
 
-      // Calculate actual stock from variants if they exist
-      let actualStock = product.stock;
-      if (variants.length > 0) {
-        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
-      }
+  for (const product of products) {
+    const variants = variantsMap.get(product.id) || [];
 
-      // Get category from map
-      let category: Category | null = null;
-      if (product.categoryId) {
-        category = categoriesMap.get(product.categoryId) || null;
-      }
-
-      return {
-        ...product,
-        stock: actualStock,
-        category,
-        tags: tagsMap.get(product.id) || [],
-        media: mediaMap.get(product.id) || [],
-        variants,
-      };
+    // Calculate actual stock from active variants if product has variants
+    let actualStock = product.stock;
+    if (product.hasVariants) {
+      // For variant-based products, stock is sum of active variant stocks
+      actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
     }
-  );
+
+    // Skip products that are effectively unavailable (unless includeOutOfStock is true)
+    if (!includeOutOfStock) {
+      // Case 1: Product has variants but no active variants available
+      if (product.hasVariants && variants.length === 0) {
+        continue;
+      }
+
+      // Case 2: Product is out of stock or has invalid stock (stock <= 0)
+      if (actualStock <= 0) {
+        continue;
+      }
+    }
+
+    // Get category from map
+    let category: Category | null = null;
+    if (product.categoryId) {
+      category = categoriesMap.get(product.categoryId) || null;
+    }
+
+    productsWithRelations.push({
+      ...product,
+      stock: actualStock,
+      category,
+      tags: tagsMap.get(product.id) || [],
+      media: mediaMap.get(product.id) || [],
+      variants,
+    });
+  }
+
+  // Note: The total count from DB includes all active products, but we filter some out
+  // For accurate pagination, we should ideally filter at DB level, but this requires
+  // more complex queries. For now, return the filtered count.
+  const filteredTotal = includeOutOfStock
+    ? count || 0
+    : productsWithRelations.length;
 
   return {
     data: populateProductsImages(productsWithRelations),
-    total: count || 0,
+    total: filteredTotal,
     page,
     perPage,
-    totalPages: Math.ceil((count || 0) / perPage),
+    totalPages: Math.ceil(filteredTotal / perPage),
   };
 }
 
 /**
  * Get featured products (database-level filtering)
  * Optimized query that directly fetches only featured products
+ * Filters out unavailable products (out of stock or no active variants)
  */
 export async function getFeaturedProducts(options?: {
   limit?: number;
@@ -634,6 +676,7 @@ export async function getFeaturedProducts(options?: {
   const limit = options?.limit || 4;
   const supabase = createClient();
 
+  // Fetch more products than needed since we filter out unavailable ones
   const { data: products, error } = await supabase
     .from('products')
     .select('*')
@@ -641,26 +684,54 @@ export async function getFeaturedProducts(options?: {
     .eq('isFeatured', true)
     .order('displayOrder', { ascending: true })
     .order('createdAt', { ascending: false })
-    .limit(limit);
+    .limit(limit * 2); // Fetch extra to account for filtering
 
   if (error) {
     log.error('Error fetching featured products', { error });
     throw new Error('خطا در دریافت محصولات ویژه');
   }
 
-  // Fetch relations for all products in parallel (OPTIMIZATION)
-  const productsWithRelations: ProductWithRelations[] = [];
-  if (products && products.length > 0) {
-    const fetchPromises = products.map((product) =>
-      fetchProductWithRelations(product.id)
-    );
-    const results = await Promise.all(fetchPromises);
+  if (!products || products.length === 0) {
+    return [];
+  }
 
-    for (const fullProduct of results) {
-      if (fullProduct) {
-        productsWithRelations.push(fullProduct);
-      }
+  // Use batch fetching for better performance
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+    await batchFetchProductRelations(products);
+
+  // Filter out unavailable products and build result
+  const productsWithRelations: ProductWithRelations[] = [];
+
+  for (const product of products) {
+    // Stop once we have enough products
+    if (productsWithRelations.length >= limit) break;
+
+    const variants = variantsMap.get(product.id) || [];
+
+    // Calculate actual stock from active variants if product has variants
+    let actualStock = product.stock;
+    if (product.hasVariants) {
+      actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
     }
+
+    // Skip products that are effectively unavailable (stock <= 0 includes negative stock)
+    if (product.hasVariants && variants.length === 0) continue;
+    if (actualStock <= 0) continue;
+
+    // Get category from map
+    let category: Category | null = null;
+    if (product.categoryId) {
+      category = categoriesMap.get(product.categoryId) || null;
+    }
+
+    productsWithRelations.push({
+      ...product,
+      stock: actualStock,
+      category,
+      tags: tagsMap.get(product.id) || [],
+      media: mediaMap.get(product.id) || [],
+      variants,
+    });
   }
 
   return populateProductsImages(productsWithRelations);
@@ -669,6 +740,7 @@ export async function getFeaturedProducts(options?: {
 /**
  * Get discounted/sale products (database-level filtering)
  * Optimized query that directly fetches only products with active discounts
+ * Filters out unavailable products (out of stock or no active variants)
  */
 export async function getDiscountedProducts(options?: {
   limit?: number;
@@ -676,6 +748,7 @@ export async function getDiscountedProducts(options?: {
   const limit = options?.limit || 4;
   const supabase = createClient();
 
+  // Fetch more products than needed since we filter out unavailable ones
   const { data: products, error } = await supabase
     .from('products')
     .select('*')
@@ -684,26 +757,54 @@ export async function getDiscountedProducts(options?: {
     .order('displayOrder', { ascending: true })
     .order('discountPercent', { ascending: false })
     .order('createdAt', { ascending: false })
-    .limit(limit);
+    .limit(limit * 2); // Fetch extra to account for filtering
 
   if (error) {
     log.error('Error fetching discounted products', { error });
     throw new Error('خطا در دریافت محصولات تخفیف‌دار');
   }
 
-  // Fetch relations for all products in parallel (OPTIMIZATION)
-  const productsWithRelations: ProductWithRelations[] = [];
-  if (products && products.length > 0) {
-    const fetchPromises = products.map((product) =>
-      fetchProductWithRelations(product.id)
-    );
-    const results = await Promise.all(fetchPromises);
+  if (!products || products.length === 0) {
+    return [];
+  }
 
-    for (const fullProduct of results) {
-      if (fullProduct) {
-        productsWithRelations.push(fullProduct);
-      }
+  // Use batch fetching for better performance
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+    await batchFetchProductRelations(products);
+
+  // Filter out unavailable products and build result
+  const productsWithRelations: ProductWithRelations[] = [];
+
+  for (const product of products) {
+    // Stop once we have enough products
+    if (productsWithRelations.length >= limit) break;
+
+    const variants = variantsMap.get(product.id) || [];
+
+    // Calculate actual stock from active variants if product has variants
+    let actualStock = product.stock;
+    if (product.hasVariants) {
+      actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
     }
+
+    // Skip products that are effectively unavailable (stock <= 0 includes negative stock)
+    if (product.hasVariants && variants.length === 0) continue;
+    if (actualStock <= 0) continue;
+
+    // Get category from map
+    let category: Category | null = null;
+    if (product.categoryId) {
+      category = categoriesMap.get(product.categoryId) || null;
+    }
+
+    productsWithRelations.push({
+      ...product,
+      stock: actualStock,
+      category,
+      tags: tagsMap.get(product.id) || [],
+      media: mediaMap.get(product.id) || [],
+      variants,
+    });
   }
 
   return populateProductsImages(productsWithRelations);
@@ -713,7 +814,7 @@ export async function getDiscountedProducts(options?: {
  * Get product by ID
  * @param id - Product ID
  * @param includeRelations - Whether to include related data (category, tags, media, variants)
- * @param includeInactive - Whether to include inactive products (default: false, for public access)
+ * @param includeInactive - Whether to include inactive products AND inactive variants (default: false, for public access)
  */
 export async function getProductById(
   id: string,
@@ -743,7 +844,8 @@ export async function getProductById(
   }
 
   // Fetch with all relations
-  const product = await fetchProductWithRelations(id);
+  // Pass includeInactive to control variant filtering
+  const product = await fetchProductWithRelations(id, includeInactive);
 
   if (!product) {
     throw new Error('محصول یافت نشد');
@@ -898,7 +1000,7 @@ export async function getRelatedProducts(
     }
   }
 
-  // Fetch relations for all related products
+  // Fetch relations for all related products and filter out unavailable ones
   const relatedProductsWithRelations: ProductWithRelations[] = [];
   if (relatedProducts.length > 0) {
     const { categoriesMap, tagsMap, mediaMap, variantsMap } =
@@ -907,10 +1009,22 @@ export async function getRelatedProducts(
     for (const product of relatedProducts) {
       const variants = variantsMap.get(product.id) || [];
 
-      // Calculate actual stock from variants if they exist
+      // Calculate actual stock from active variants if product has variants
       let actualStock = product.stock;
-      if (variants.length > 0) {
+      if (product.hasVariants) {
+        // For variant-based products, stock is sum of active variant stocks
         actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Skip products that are effectively unavailable
+      // Case 1: Product has variants but no active variants available
+      if (product.hasVariants && variants.length === 0) {
+        continue;
+      }
+
+      // Case 2: Product is out of stock or has invalid stock (stock <= 0)
+      if (actualStock <= 0) {
+        continue;
       }
 
       // Get category from map
