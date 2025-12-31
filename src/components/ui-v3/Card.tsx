@@ -38,40 +38,40 @@ const CardV3 = forwardRef<HTMLDivElement, CardV3Props>(
     const variantStyles = {
       default: `
         bg-white
-        border border-rose-100
+        border border-pink-100
         rounded-2xl
-        shadow-sm shadow-rose-100/30
+        shadow-sm shadow-pink-100/30
       `,
       outlined: `
         bg-transparent
-        border-2 border-dashed border-rose-200
+        border-2 border-dashed border-pink-200
         rounded-2xl
       `,
       elevated: `
         bg-white
         rounded-2xl
-        shadow-lg shadow-rose-100/40
-        border border-rose-50
+        shadow-lg shadow-pink-100/40
+        border border-pink-50
       `,
       glass: `
         bg-white/70 backdrop-blur-lg
-        border border-rose-100/50
+        border border-pink-100/50
         rounded-2xl
-        shadow-lg shadow-rose-100/20
+        shadow-lg shadow-pink-100/20
       `,
       gradient: `
-        bg-gradient-to-br from-white via-rose-50/30 to-pink-50/50
-        border border-rose-100/50
+        bg-gradient-to-br from-white via-pink-50/30 to-fuchsia-50/50
+        border border-pink-100/50
         rounded-2xl
-        shadow-sm shadow-rose-100/30
+        shadow-sm shadow-pink-100/30
       `,
     };
 
     const hoverStyles = hoverable
       ? `
         cursor-pointer
-        hover:shadow-xl hover:shadow-rose-200/40
-        hover:-translate-y-1 hover:border-rose-200
+        hover:shadow-xl hover:shadow-pink-200/40
+        hover:-translate-y-1 hover:border-pink-200
         active:translate-y-0 active:shadow-lg
       `
       : '';
@@ -103,7 +103,7 @@ export const CardHeader = forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <div
     ref={ref}
-    className={`pb-4 border-b border-rose-100 mb-4 ${className}`}
+    className={`pb-4 border-b border-pink-100 mb-4 ${className}`}
     {...props}
   >
     {children}
@@ -117,7 +117,7 @@ export const CardTitle = forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-lg font-semibold text-rose-900 leading-tight ${className}`}
+    className={`text-lg font-semibold text-pink-900 leading-tight ${className}`}
     {...props}
   >
     {children}
@@ -129,7 +129,7 @@ export const CardDescription = forwardRef<
   HTMLParagraphElement,
   HTMLAttributes<HTMLParagraphElement>
 >(({ className = '', children, ...props }, ref) => (
-  <p ref={ref} className={`text-sm text-rose-400 mt-1 ${className}`} {...props}>
+  <p ref={ref} className={`text-sm text-pink-400 mt-1 ${className}`} {...props}>
     {children}
   </p>
 ));
@@ -151,7 +151,7 @@ export const CardFooter = forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <div
     ref={ref}
-    className={`pt-4 border-t border-rose-100 mt-4 flex items-center gap-3 ${className}`}
+    className={`pt-4 border-t border-pink-100 mt-4 flex items-center gap-3 ${className}`}
     {...props}
   >
     {children}

@@ -57,7 +57,7 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
   ) => {
     const baseSelectStyles = `
       w-full h-12 px-4 pe-10
-      text-rose-900 text-sm text-right
+      text-pink-900 text-sm text-right
       appearance-none
       cursor-pointer
       transition-all duration-300 ease-out
@@ -68,26 +68,26 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
     const variantStyles = {
       default: `
         bg-white
-        border-2 border-rose-200
+        border-2 border-pink-200
         rounded-xl
-        focus:border-rose-400 focus:ring-4 focus:ring-rose-100
-        hover:border-rose-300
-        disabled:bg-rose-50
+        focus:border-pink-400 focus:ring-4 focus:ring-pink-100
+        hover:border-pink-300
+        disabled:bg-pink-50
       `,
       filled: `
-        bg-rose-50
+        bg-pink-50
         border-2 border-transparent
         rounded-xl
-        focus:bg-white focus:border-rose-400 focus:ring-4 focus:ring-rose-100
-        hover:bg-rose-100/50
-        disabled:bg-rose-100
+        focus:bg-white focus:border-pink-400 focus:ring-4 focus:ring-pink-100
+        hover:bg-pink-100/50
+        disabled:bg-pink-100
       `,
       minimal: `
         bg-transparent
-        border-b-2 border-rose-200
+        border-b-2 border-pink-200
         rounded-none
-        focus:border-rose-400
-        hover:border-rose-300
+        focus:border-pink-400
+        hover:border-pink-300
         disabled:bg-transparent
       `,
     };
@@ -101,7 +101,7 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
     return (
       <div className={fullWidth ? 'w-full' : 'w-auto'}>
         {label && (
-          <label className="block text-sm font-medium text-rose-700 mb-2 text-right">
+          <label className="block text-sm font-medium text-pink-700 mb-2 text-right">
             {label}
           </label>
         )}
@@ -120,7 +120,7 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
             {...props}
           >
             {placeholder && (
-              <option value="" disabled className="text-rose-300">
+              <option value="" disabled className="text-pink-300">
                 {placeholder}
               </option>
             )}
@@ -139,7 +139,7 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
           <div
             className="
               absolute top-1/2 -translate-y-1/2 end-3
-              pointer-events-none text-rose-400
+              pointer-events-none text-pink-400
               transition-transform duration-200
               group-focus-within:rotate-180
             "
@@ -153,10 +153,10 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
               className="
                 absolute top-1/2 -translate-y-1/2 start-4
                 flex items-center justify-center
-                w-5 h-5 text-rose-400
+                w-5 h-5 text-pink-400
                 pointer-events-none
                 transition-colors duration-300
-                group-focus-within:text-rose-500
+                group-focus-within:text-pink-500
               "
             >
               {icon}
@@ -178,7 +178,7 @@ const SelectV3 = forwardRef<HTMLSelectElement, SelectV3Props>(
         )}
 
         {helperText && !error && (
-          <p className="mt-2 text-sm text-rose-400 text-right">{helperText}</p>
+          <p className="mt-2 text-sm text-pink-400 text-right">{helperText}</p>
         )}
       </div>
     );

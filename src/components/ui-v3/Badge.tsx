@@ -39,14 +39,14 @@ const BadgeV3 = forwardRef<HTMLSpanElement, BadgeV3Props>(
     `;
 
     const variantStyles = {
-      default: 'bg-rose-100 text-rose-600 border border-rose-200',
-      outline: 'bg-transparent border-2 border-rose-300 text-rose-500',
+      default: 'bg-pink-100 text-pink-600 border border-pink-200',
+      outline: 'bg-transparent border-2 border-pink-300 text-pink-500',
       success: 'bg-emerald-100 text-emerald-600 border border-emerald-200',
       warning: 'bg-amber-100 text-amber-600 border border-amber-200',
       error: 'bg-red-100 text-red-600 border border-red-200',
       info: 'bg-sky-100 text-sky-600 border border-sky-200',
       premium:
-        'bg-gradient-to-r from-rose-400 to-pink-500 text-white shadow-sm shadow-rose-200',
+        'bg-gradient-to-r from-pink-400 to-fuchsia-500 text-white shadow-sm shadow-pink-200',
     };
 
     const sizeStyles = {
@@ -56,8 +56,8 @@ const BadgeV3 = forwardRef<HTMLSpanElement, BadgeV3Props>(
     };
 
     const dotColors = {
-      default: 'bg-rose-500',
-      outline: 'bg-rose-400',
+      default: 'bg-pink-500',
+      outline: 'bg-pink-400',
       success: 'bg-emerald-500',
       warning: 'bg-amber-500',
       error: 'bg-red-500',

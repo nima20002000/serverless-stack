@@ -129,11 +129,11 @@ const AlertV3 = forwardRef<HTMLDivElement, AlertV3Props>(
         title: variant === 'filled' ? 'text-white' : 'text-amber-800',
       },
       info: {
-        soft: 'bg-rose-50 border-rose-200 text-rose-700',
-        filled: 'bg-rose-500 border-rose-500 text-white',
-        outlined: 'bg-transparent border-rose-300 text-rose-600',
-        icon: variant === 'filled' ? 'text-white' : 'text-rose-500',
-        title: variant === 'filled' ? 'text-white' : 'text-rose-800',
+        soft: 'bg-pink-50 border-pink-200 text-pink-700',
+        filled: 'bg-pink-500 border-pink-500 text-white',
+        outlined: 'bg-transparent border-pink-300 text-pink-600',
+        icon: variant === 'filled' ? 'text-white' : 'text-pink-500',
+        title: variant === 'filled' ? 'text-white' : 'text-pink-800',
       },
     };
 

@@ -42,28 +42,28 @@ const ButtonV3 = forwardRef<HTMLButtonElement, ButtonV3Props>(
 
     const variantStyles = {
       primary: `
-        bg-gradient-to-r from-rose-400 to-rose-500
+        bg-gradient-to-r from-pink-400 to-pink-500
         text-white
-        hover:from-rose-500 hover:to-rose-600
-        focus-visible:ring-rose-400
-        shadow-md shadow-rose-200/50 hover:shadow-lg hover:shadow-rose-300/50
+        hover:from-pink-500 hover:to-pink-600
+        focus-visible:ring-pink-400
+        shadow-md shadow-pink-200/50 hover:shadow-lg hover:shadow-pink-300/50
       `,
       secondary: `
-        bg-rose-50 text-rose-600
-        hover:bg-rose-100
-        focus-visible:ring-rose-300
-        border border-rose-100
+        bg-pink-50 text-pink-600
+        hover:bg-pink-100
+        focus-visible:ring-pink-300
+        border border-pink-100
       `,
       outline: `
-        bg-transparent text-rose-500
-        border-2 border-rose-300
-        hover:bg-rose-50 hover:border-rose-400
-        focus-visible:ring-rose-300
+        bg-transparent text-pink-500
+        border-2 border-pink-300
+        hover:bg-pink-50 hover:border-pink-400
+        focus-visible:ring-pink-300
       `,
       ghost: `
-        bg-transparent text-rose-500
-        hover:bg-rose-50
-        focus-visible:ring-rose-300
+        bg-transparent text-pink-500
+        hover:bg-pink-50
+        focus-visible:ring-pink-300
       `,
       danger: `
         bg-gradient-to-r from-red-400 to-red-500
@@ -73,11 +73,11 @@ const ButtonV3 = forwardRef<HTMLButtonElement, ButtonV3Props>(
         shadow-md shadow-red-200/50
       `,
       soft: `
-        bg-gradient-to-r from-pink-50 to-rose-50
-        text-rose-600
-        hover:from-pink-100 hover:to-rose-100
-        focus-visible:ring-rose-300
-        border border-rose-100/50
+        bg-gradient-to-r from-pink-50 to-fuchsia-50
+        text-pink-600
+        hover:from-pink-100 hover:to-fuchsia-100
+        focus-visible:ring-pink-300
+        border border-pink-100/50
       `,
     };
 
