@@ -104,14 +104,8 @@ async function getHandler(req: NextRequest) {
       userAgent: req.headers.get('user-agent'),
     });
 
-    if (!trackingCode) {
-      log.warn('Digipay verification failed: missing trackingCode');
-      return NextResponse.json(
-        { error: 'کد پیگیری یافت نشد' },
-        { status: 400 }
-      );
-    }
-
+    // IMPORTANT: Check ticket first (always present in callback URL)
+    // trackingCode may be missing if user cancels before completing payment
     if (!ticket) {
       log.warn('Digipay verification failed: missing ticket');
       return NextResponse.json(
@@ -122,6 +116,56 @@ async function getHandler(req: NextRequest) {
 
     // Find transaction by ID (ticket param = transaction.id from callback URL)
     const transaction = await getTransactionById(ticket);
+
+    // Handle case where user cancelled before completing payment (no trackingCode)
+    // This happens when user clicks "cancel" or closes the Digipay page early
+    if (!trackingCode) {
+      log.warn('Digipay payment cancelled by user (no trackingCode)', {
+        ticket,
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        status,
+      });
+
+      // If transaction is already completed (shouldn't happen, but be safe)
+      if (transaction.status === 'COMPLETED') {
+        return NextResponse.redirect(
+          createRedirectUrl(
+            `/payment/success?code=${transaction.transactionCode}`
+          ),
+          303
+        );
+      }
+
+      // If transaction is already failed, just redirect
+      if (transaction.status === 'FAILED') {
+        return NextResponse.redirect(
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}`
+          ),
+          303
+        );
+      }
+
+      // Mark transaction as failed
+      const supabase = createClient();
+      const now = new Date().toISOString();
+      await supabase
+        .from('transactions')
+        .update({
+          status: 'FAILED',
+          updatedAt: now,
+        })
+        .eq('id', transaction.id);
+
+      // Redirect to failure page with transaction code
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/failure?code=${transaction.transactionCode}`
+        ),
+        303
+      );
+    }
 
     log.info('Transaction found', {
       transactionId: transaction.id,
