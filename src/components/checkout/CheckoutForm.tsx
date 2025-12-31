@@ -468,6 +468,7 @@ export default function CheckoutForm({
           <input
             type="tel"
             id="phone"
+            name="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfilePhone ? 'bg-gray-100' : ''}`}
@@ -475,6 +476,7 @@ export default function CheckoutForm({
             required
             dir="ltr"
             disabled={hasProfilePhone}
+            autoComplete="off"
           />
           {hasProfilePhone && (
             <p className="text-sm text-blue-600 text-right mt-2">
