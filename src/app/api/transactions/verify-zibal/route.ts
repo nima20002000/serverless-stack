@@ -170,31 +170,23 @@ async function getHandler(req: NextRequest) {
         refNumber: verification.refNumber,
         error: updateError.message,
       });
-      throw new Error('خطا در به‌روزرسانی وضعیت تراکنش');
-    }
-
-    // Verify the update was successful by re-fetching the transaction
-    const { data: updatedTransaction, error: fetchError } = await supabase
-      .from('transactions')
-      .select('status')
-      .eq('id', transaction.id)
-      .single();
-
-    if (fetchError || updatedTransaction?.status !== 'COMPLETED') {
-      log.error('Transaction status not updated to COMPLETED', {
+      // Don't throw - the payment was verified successfully by Zibal
+      // Log the error but proceed with notifications since payment is confirmed
+      log.warn(
+        'Proceeding with notifications despite DB update error - payment was verified',
+        {
+          transactionId: transaction.id,
+          trackId,
+          refNumber: verification.refNumber,
+        }
+      );
+    } else {
+      log.info('Transaction status updated to COMPLETED', {
         transactionId: transaction.id,
-        expectedStatus: 'COMPLETED',
-        actualStatus: updatedTransaction?.status || 'unknown',
-        fetchError: fetchError?.message,
+        trackId,
+        refNumber: verification.refNumber,
       });
-      throw new Error('وضعیت تراکنش به‌روزرسانی نشد');
     }
-
-    log.info('Transaction status confirmed COMPLETED', {
-      transactionId: transaction.id,
-      trackId,
-      refNumber: verification.refNumber,
-    });
 
     // Reduce product stock
     await reduceProductStock(transaction.id);

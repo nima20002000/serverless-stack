@@ -226,7 +226,6 @@ async function getHandler(req: NextRequest) {
     });
 
     // Update transaction status with Digipay tracking code
-    // CRITICAL: Check for errors before proceeding with notifications
     const supabase = createClient();
     const now = new Date().toISOString();
     const { error: updateError } = await supabase
@@ -244,30 +243,21 @@ async function getHandler(req: NextRequest) {
         trackingCode: verification.trackingCode,
         error: updateError.message,
       });
-      throw new Error('خطا در به‌روزرسانی وضعیت تراکنش');
-    }
-
-    // Verify the update was successful by re-fetching the transaction
-    const { data: updatedTransaction, error: fetchError } = await supabase
-      .from('transactions')
-      .select('status')
-      .eq('id', transaction.id)
-      .single();
-
-    if (fetchError || updatedTransaction?.status !== 'COMPLETED') {
-      log.error('Transaction status not updated to COMPLETED', {
+      // Don't throw - the payment was verified successfully by Digipay
+      // Log the error but proceed with notifications since payment is confirmed
+      log.warn(
+        'Proceeding with notifications despite DB update error - payment was verified',
+        {
+          transactionId: transaction.id,
+          trackingCode: verification.trackingCode,
+        }
+      );
+    } else {
+      log.info('Transaction status updated to COMPLETED', {
         transactionId: transaction.id,
-        expectedStatus: 'COMPLETED',
-        actualStatus: updatedTransaction?.status || 'unknown',
-        fetchError: fetchError?.message,
+        trackingCode: verification.trackingCode,
       });
-      throw new Error('وضعیت تراکنش به‌روزرسانی نشد');
     }
-
-    log.info('Transaction status confirmed COMPLETED', {
-      transactionId: transaction.id,
-      trackingCode: verification.trackingCode,
-    });
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
