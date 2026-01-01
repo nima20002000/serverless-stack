@@ -497,7 +497,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-slate-600">
                   <span>هزینه ارسال</span>
-                  <span className="text-emerald-600">رایگان</span>
+                  <span>پس کرایه</span>
                 </div>
               </div>
 
