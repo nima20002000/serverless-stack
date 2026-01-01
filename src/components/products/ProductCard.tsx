@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
 import Button from '@/components/ui/Button';
@@ -47,6 +48,7 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
 
   // Get active variants - memoized to prevent dependency changes on every render
@@ -288,8 +290,16 @@ function ProductCard({ product }: ProductCardProps) {
         },
         1
       );
-      // Show success feedback
-      setTimeout(() => setIsAdding(false), 500);
+      // Show success feedback and offer checkout
+      setTimeout(() => {
+        setIsAdding(false);
+        const shouldCheckout = confirm(
+          'محصول به سبد خرید اضافه شد. می‌خواهید به تسویه حساب بروید؟'
+        );
+        if (shouldCheckout) {
+          router.push('/checkout');
+        }
+      }, 300);
     } catch (error) {
       alert(
         error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید'
@@ -305,6 +315,7 @@ function ProductCard({ product }: ProductCardProps) {
     currentImage,
     effectiveStock,
     addItem,
+    router,
   ]);
 
   return (

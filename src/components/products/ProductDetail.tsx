@@ -200,7 +200,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       setTimeout(() => {
         setIsAdding(false);
         setQuantity(1);
-      }, 500);
+        const shouldCheckout = confirm(
+          'محصول به سبد خرید اضافه شد. می‌خواهید به تسویه حساب بروید؟'
+        );
+        if (shouldCheckout) {
+          router.push('/checkout');
+        }
+      }, 300);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'خطا در افزودن به سبد خرید'
@@ -320,11 +326,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
 
           {/* Installment Purchase Banner */}
-          <Card className="mb-6 bg-rose-50/70 border-rose-100/80 shadow-[0_18px_40px_-28px_rgba(244,114,182,0.35)]">
+          <Card className="mb-6 bg-gradient-to-br from-rose-50 via-white to-rose-100/70 border-rose-200/80 shadow-[0_24px_50px_-30px_rgba(244,114,182,0.55)] ring-1 ring-rose-200/60">
             <div className="flex items-center gap-3 mb-3">
-              <div className="bg-white/80 border border-rose-100 rounded-2xl p-2 shadow-sm">
+              <div className="bg-white border border-rose-200 rounded-2xl p-2 shadow-[0_10px_20px_-12px_rgba(244,114,182,0.6)]">
                 <svg
-                  className="w-5 h-5 text-rose-500"
+                  className="w-5 h-5 text-rose-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -340,8 +346,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <span className="font-bold text-lg text-rose-950">
                 خرید اقساطی با دیجی‌پی
               </span>
+              <span className="text-xs font-semibold text-rose-700 bg-rose-100/90 px-2 py-1 rounded-full">
+                ویژه پرداخت قسطی
+              </span>
             </div>
-            <div className="text-right text-rose-900/70 text-sm leading-relaxed">
+            <div className="text-right text-rose-900/80 text-sm leading-relaxed">
               <span>پرداخت فقط </span>
               <span className="font-bold text-rose-900 text-base">
                 {formatPrice(

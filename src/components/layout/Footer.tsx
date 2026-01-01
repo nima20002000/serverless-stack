@@ -81,6 +81,22 @@ export default function Footer() {
                   />
                 </svg>
               </a>
+              <a
+                href="https://t.me/kitia_a"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 dark:from-slate-700 dark:to-slate-600 rounded-xl flex items-center justify-center text-white hover:shadow-[0_8px_20px_-8px_rgba(244,63,94,0.5)] dark:hover:shadow-none transition-all duration-300 hover:-translate-y-1"
+                aria-label="تلگرام کیتیا"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="M21.943 3.233a1.5 1.5 0 0 0-1.7-.258L2.88 10.29a1.5 1.5 0 0 0 .152 2.78l4.552 1.684 1.86 5.597a1.5 1.5 0 0 0 2.782.227l2.828-3.355 4.92 3.642a1.5 1.5 0 0 0 2.38-.912l2.62-14.62a1.5 1.5 0 0 0-.03-.7ZM9.574 14.32l7.12-6.57c.13-.122.3.06.187.187l-5.88 7.1a1 1 0 0 0-.2.59l-.11 3.2-1.48-4.47a1 1 0 0 0-.64-.63l-3.6-1.33 4.6-1.77Z" />
+                </svg>
+              </a>
             </div>
           </div>
 

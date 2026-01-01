@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useWishlistStore, selectWishlistCount } from '@/store/wishlist-store';
 import { WishlistItemCard } from './WishlistItemCard';
@@ -34,6 +35,7 @@ function WishlistSkeleton() {
 }
 
 export function WishlistPage() {
+  const router = useRouter();
   const { status } = useSession();
   useWishlistSync();
 
@@ -94,6 +96,12 @@ export function WishlistPage() {
         },
         1
       );
+      const shouldCheckout = confirm(
+        'محصول به سبد خرید اضافه شد. می‌خواهید به تسویه حساب بروید؟'
+      );
+      if (shouldCheckout) {
+        router.push('/checkout');
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
       alert('خطا در افزودن به سبد خرید');
