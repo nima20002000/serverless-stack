@@ -375,102 +375,117 @@ function ProductCard({ product }: ProductCardProps) {
               <span className="text-white font-bold text-lg">ناموجود</span>
             </div>
           )}
-
-          {/* Color Variant Indicators (dots) - Only show if there are multiple color variants */}
-          {hasColorVariants && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-              {colorVariants.map((variant, index) => (
-                <div
-                  key={variant.id}
-                  className={`transition-all duration-200 ${
-                    index === currentVariantIndex
-                      ? 'w-6 h-2 bg-white rounded-full shadow-md'
-                      : 'w-2 h-2 bg-white/60 rounded-full'
-                  }`}
-                  title={variant.name}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </Link>
 
       {/* Product Info */}
-      <div className="p-4">
+      <div className="p-4 text-right space-y-3">
+        <p className="text-xs text-rose-500/80 line-clamp-1">
+          {product.description}
+        </p>
+        <div className="flex flex-wrap gap-1.5 justify-end">
+          {discountPercent > 0 && (
+            <BadgeV4 variant="error" size="sm">
+              فروش ویژه
+            </BadgeV4>
+          )}
+          {product.isFeatured && (
+            <BadgeV4 variant="premium" size="sm">
+              نسخه محدود
+            </BadgeV4>
+          )}
+        </div>
         <Link href={`/products/${product.id}`}>
-          <h3 className="text-lg font-semibold text-rose-900 mb-2 hover:text-rose-600 text-right line-clamp-1">
+          <h3 className="text-base font-semibold text-rose-900 hover:text-rose-600 line-clamp-2">
             {product.name}
           </h3>
         </Link>
-        <p className="text-rose-500 text-sm mb-3 text-right line-clamp-2">
-          {product.description}
-        </p>
 
         {/* Variant Selector - Compact Version for Cards */}
         {hasVariants && (
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-rose-600 mb-2 text-right">
-              انتخاب نوع:
-            </label>
-            <div className="flex flex-wrap gap-1.5">
-              {activeVariants.map((variant) => {
-                const isSelected = selectedVariant?.id === variant.id;
-                const variantOutOfStock = variant.stock === 0;
+          <div className="space-y-2">
+            {colorVariants.length > 0 && (
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {colorVariants.map((variant) => {
+                  const isSelected = selectedVariant?.id === variant.id;
+                  const variantOutOfStock = variant.stock === 0;
 
-                return (
-                  <button
-                    key={variant.id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (!variantOutOfStock) handleVariantSelect(variant);
-                    }}
-                    disabled={variantOutOfStock}
-                    className={`px-2 py-1 text-xs rounded border transition-all ${
-                      isSelected
-                        ? 'border-rose-400 bg-rose-50 text-rose-700 font-medium'
-                        : 'border-rose-200 hover:border-rose-300 text-rose-600'
-                    } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
-                    title={variantOutOfStock ? 'ناموجود' : variant.name}
-                  >
-                    {variant.color && (
+                  return (
+                    <button
+                      key={variant.id}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!variantOutOfStock) handleVariantSelect(variant);
+                      }}
+                      disabled={variantOutOfStock}
+                      className={`relative h-6 w-6 rounded-lg border transition-all ${
+                        isSelected
+                          ? 'border-rose-500 ring-2 ring-rose-200/70'
+                          : 'border-rose-200/70 hover:border-rose-300'
+                      } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      title={variantOutOfStock ? 'ناموجود' : variant.name}
+                      aria-label={variant.name}
+                    >
                       <span
-                        className="inline-block w-3 h-3 rounded-full border border-gray-300 ml-1"
-                        style={{ background: variant.color }}
+                        className="absolute inset-0 rounded-[6px] border border-white/70"
+                        style={{ background: variant.color || '#e2e8f0' }}
                       />
-                    )}
-                    {variant.size || variant.material || variant.name}
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeVariants.some((variant) => !variant.color) && (
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {activeVariants
+                  .filter((variant) => !variant.color)
+                  .map((variant) => {
+                    const isSelected = selectedVariant?.id === variant.id;
+                    const variantOutOfStock = variant.stock === 0;
+                    const label =
+                      variant.size || variant.material || variant.name;
+
+                    return (
+                      <button
+                        key={variant.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (!variantOutOfStock) handleVariantSelect(variant);
+                        }}
+                        disabled={variantOutOfStock}
+                        className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                          isSelected
+                            ? 'border-rose-500 bg-rose-50 text-rose-700 font-medium'
+                            : 'border-rose-200/70 hover:border-rose-300 text-slate-600'
+                        } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
+                        title={variantOutOfStock ? 'ناموجود' : variant.name}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Price and Stock */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-right">
-            {discountPercent > 0 ? (
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-rose-300 line-through">
-                  {formatPrice(effectivePrice)}
-                </span>
-                <span className="text-xl font-bold text-rose-600">
-                  {formatPrice(discountedPrice)}
-                </span>
-              </div>
-            ) : (
-              <span className="text-xl font-bold text-rose-900">
+        {/* Price */}
+        <div className="flex items-center justify-end gap-2">
+          {discountPercent > 0 ? (
+            <div className="flex flex-row-reverse items-center gap-2">
+              <span className="text-lg font-semibold text-rose-600">
+                {formatPrice(discountedPrice)}
+              </span>
+              <span className="text-sm text-slate-400 line-through">
                 {formatPrice(effectivePrice)}
               </span>
-            )}
-          </div>
-          <div className="text-left">
-            <span
-              className={`text-sm ${effectiveStock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}
-            >
-              {effectiveStock > 0 ? `موجود: ${effectiveStock}` : 'ناموجود'}
+            </div>
+          ) : (
+            <span className="text-lg font-semibold text-rose-900">
+              {formatPrice(effectivePrice)}
             </span>
-          </div>
+          )}
         </div>
 
         {/* Add to Cart Button */}
