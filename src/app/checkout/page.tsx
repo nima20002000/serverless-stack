@@ -436,7 +436,9 @@ export default function CheckoutPage() {
                     />
                     <div className="flex-1 text-right">
                       <div className="font-medium text-slate-900">دیجی پی</div>
-                      <div className="text-sm text-slate-600">پرداخت اقساطی</div>
+                      <div className="text-sm text-slate-600">
+                        پرداخت اقساطی
+                      </div>
                       <div className="text-xs text-slate-500 mt-1">
                         + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ کارمزد درگاه
                       </div>

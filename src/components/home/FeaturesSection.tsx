@@ -8,8 +8,13 @@ export default function FeaturesSection() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+    const cleanup = () => {
+      observer?.disconnect();
+    };
+
     if (typeof window === 'undefined') {
-      return;
+      return cleanup;
     }
 
     const prefersReducedMotion = window.matchMedia(
@@ -18,14 +23,14 @@ export default function FeaturesSection() {
 
     if (prefersReducedMotion) {
       setIsVisible(true);
-      return;
+      return cleanup;
     }
 
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect();
+          cleanup();
         }
       },
       { threshold: 0.25 }
@@ -35,7 +40,7 @@ export default function FeaturesSection() {
       observer.observe(sectionRef.current);
     }
 
-    return () => observer.disconnect();
+    return cleanup;
   }, []);
 
   const revealBase = isVisible
@@ -76,9 +81,7 @@ export default function FeaturesSection() {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-rose-900 mb-3">
-              ارسال سریع
-            </h3>
+            <h3 className="text-xl font-bold text-rose-900 mb-3">ارسال سریع</h3>
             <p className="text-rose-500 leading-relaxed">
               ارسال سریع و ایمن محصولات به سراسر کشور با بسته‌بندی مناسب
             </p>

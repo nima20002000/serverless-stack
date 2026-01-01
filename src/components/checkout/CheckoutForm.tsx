@@ -402,7 +402,9 @@ export default function CheckoutForm({
   if (!_hasHydrated || (isLoadingProfile && session)) {
     return (
       <Card className="mt-6">
-        <div className="text-center py-8 text-slate-500">در حال بارگذاری...</div>
+        <div className="text-center py-8 text-slate-500">
+          در حال بارگذاری...
+        </div>
       </Card>
     );
   }

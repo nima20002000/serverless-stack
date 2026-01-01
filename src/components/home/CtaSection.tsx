@@ -11,8 +11,13 @@ export default function CtaSection() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    let observer: IntersectionObserver | null = null;
+    const cleanup = () => {
+      observer?.disconnect();
+    };
+
     if (typeof window === 'undefined') {
-      return;
+      return cleanup;
     }
 
     const prefersReducedMotion = window.matchMedia(
@@ -21,14 +26,14 @@ export default function CtaSection() {
 
     if (prefersReducedMotion) {
       setIsVisible(true);
-      return;
+      return cleanup;
     }
 
-    const observer = new IntersectionObserver(
+    observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect();
+          cleanup();
         }
       },
       { threshold: 0.3 }
@@ -38,7 +43,7 @@ export default function CtaSection() {
       observer.observe(sectionRef.current);
     }
 
-    return () => observer.disconnect();
+    return cleanup;
   }, []);
 
   const revealBase = isVisible

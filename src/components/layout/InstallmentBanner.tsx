@@ -11,15 +11,22 @@ export default function InstallmentBanner() {
   const shortMessage = '۲۵٪ پیش‌پرداخت + ۳ قسط';
   const [typedFull, setTypedFull] = useState('');
   const [typedShort, setTypedShort] = useState('');
-
-  // Hide banner on cart and checkout pages
-  if (HIDDEN_PATHS.some((path) => pathname.startsWith(path))) {
-    return null;
-  }
+  const isHidden = HIDDEN_PATHS.some((path) => pathname.startsWith(path));
 
   useEffect(() => {
+    let interval: number | null = null;
+    const cleanup = () => {
+      if (interval !== null) {
+        window.clearInterval(interval);
+      }
+    };
+
     if (typeof window === 'undefined') {
-      return;
+      return cleanup;
+    }
+
+    if (isHidden) {
+      return cleanup;
     }
 
     const prefersReducedMotion = window.matchMedia(
@@ -29,22 +36,27 @@ export default function InstallmentBanner() {
     if (prefersReducedMotion) {
       setTypedFull(fullMessage);
       setTypedShort(shortMessage);
-      return;
+      return cleanup;
     }
 
     let index = 0;
     const maxLength = Math.max(fullMessage.length, shortMessage.length);
-    const interval = window.setInterval(() => {
+    interval = window.setInterval(() => {
       index += 1;
       setTypedFull(fullMessage.slice(0, index));
       setTypedShort(shortMessage.slice(0, index));
       if (index >= maxLength) {
-        window.clearInterval(interval);
+        cleanup();
       }
     }, 30);
 
-    return () => window.clearInterval(interval);
-  }, [fullMessage, shortMessage]);
+    return cleanup;
+  }, [fullMessage, isHidden, shortMessage]);
+
+  // Hide banner on cart and checkout pages
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <>
@@ -69,10 +81,7 @@ export default function InstallmentBanner() {
             </div>
             <span className="text-center">
               <span className="font-bold">خرید قسطی:</span>
-              <span className="hidden sm:inline">
-                {' '}
-                {typedFull}
-              </span>
+              <span className="hidden sm:inline"> {typedFull}</span>
               <span className="sm:hidden"> {typedShort}</span>
             </span>
           </div>
