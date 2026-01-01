@@ -6,6 +6,17 @@ import { randomUUID } from 'crypto';
 
 type PromoCode = Tables<'promo_codes'>;
 
+function maskPromoCode(code: string): string {
+  const trimmed = code.trim();
+  if (!trimmed) {
+    return '';
+  }
+  if (trimmed.length <= 4) {
+    return '****';
+  }
+  return `${trimmed.slice(0, 3)}...${trimmed.slice(-4)}`;
+}
+
 /**
  * Promo Service (Supabase)
  * Handles promo code generation, validation, and usage tracking
@@ -51,7 +62,7 @@ export async function createFirstTimePromoCode(
       throw new Error('خطا در ایجاد کد تخفیف');
     }
 
-    log.info('Promo code created', { code, userId });
+    log.info('Promo code created', { code: maskPromoCode(code), userId });
     return data;
   } catch (error) {
     log.error('Error in createFirstTimePromoCode', { userId, error });
@@ -107,17 +118,20 @@ export async function usePromoCode(code: string): Promise<PromoCode> {
       .single();
 
     if (fetchError || !promoCode) {
-      log.warn('Promo code not found', { code });
+      log.warn('Promo code not found', { code: maskPromoCode(code) });
       throw new Error('کد تخفیف یافت نشد');
     }
 
     if (promoCode.isUsed) {
-      log.warn('Promo code already used', { code });
+      log.warn('Promo code already used', { code: maskPromoCode(code) });
       throw new Error('این کد تخفیف قبلاً استفاده شده است');
     }
 
     if (new Date(promoCode.expiresAt) < new Date()) {
-      log.warn('Promo code expired', { code, expiresAt: promoCode.expiresAt });
+      log.warn('Promo code expired', {
+        code: maskPromoCode(code),
+        expiresAt: promoCode.expiresAt,
+      });
       throw new Error('کد تخفیف منقضی شده است');
     }
 
@@ -130,14 +144,17 @@ export async function usePromoCode(code: string): Promise<PromoCode> {
       .single();
 
     if (updateError || !updatedPromoCode) {
-      log.error('Error updating promo code', { error: updateError, code });
+      log.error('Error updating promo code', {
+        error: updateError,
+        code: maskPromoCode(code),
+      });
       throw new Error('خطا در استفاده از کد تخفیف');
     }
 
-    log.info('Promo code used', { code });
+    log.info('Promo code used', { code: maskPromoCode(code) });
     return updatedPromoCode;
   } catch (error) {
-    log.error('Error in usePromoCode', { code, error });
+    log.error('Error in usePromoCode', { code: maskPromoCode(code), error });
     throw error;
   }
 }

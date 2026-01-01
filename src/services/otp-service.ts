@@ -112,7 +112,6 @@ export async function sendOTP(
     log.info('🔵 Creating new OTP record', {
       identifier,
       purpose,
-      code,
       expiresAt: expiresAt.toISOString(),
     });
 
@@ -214,7 +213,6 @@ export async function sendOTP(
       // Email address: Send email
       log.info('🔵 Attempting to send OTP email', {
         identifier,
-        code,
         otpRecordId: otpRecord.id,
       });
       const result = await sendOTPEmail(identifier, code);
