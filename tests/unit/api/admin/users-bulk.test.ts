@@ -1,0 +1,201 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { bulkDeleteUsers, bulkUpdateUsers } from '@/services/admin-service';
+
+vi.mock('next-auth', () => ({
+  getServerSession: vi.fn(),
+}));
+
+vi.mock('@/lib/auth/options', () => ({
+  authOptions: {},
+}));
+
+vi.mock('@/services/admin-service', () => ({
+  bulkDeleteUsers: vi.fn(),
+  bulkUpdateUsers: vi.fn(),
+}));
+
+describe('admin users bulk API', () => {
+  const getServerSessionMock = vi.mocked(getServerSession);
+  const bulkDeleteUsersMock = vi.mocked(bulkDeleteUsers);
+  const bulkUpdateUsersMock = vi.mocked(bulkUpdateUsers);
+
+  const adminSession = {
+    user: {
+      id: 'admin-1',
+      role: 'ADMIN',
+      email: 'admin@kitia.ir',
+    },
+  };
+
+  const createPostRequest = (body: unknown) =>
+    new NextRequest('http://localhost/api/admin/users/bulk', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  const loadHandlers = async () => {
+    const handlers = await import('@/app/api/admin/users/bulk/route');
+    return { POST: handlers.POST };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
+
+  it('POST returns 403 when session is missing', async () => {
+    getServerSessionMock.mockResolvedValue(null);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(createPostRequest({ action: 'delete' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
+  });
+
+  it('POST returns 400 for invalid action', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(createPostRequest({ action: 'archive' }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'عملیات نامعتبر است',
+    });
+  });
+
+  it('POST returns 400 when delete userIds are invalid', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'delete', userIds: [] })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'شناسه کاربران نامعتبر است',
+    });
+    expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
+  });
+
+  it('POST returns 400 when delete finds no users', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    bulkDeleteUsersMock.mockResolvedValue({ count: 0 });
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'delete', userIds: ['u1'] })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'هیچ کاربری برای حذف یافت نشد (فقط کاربران عادی قابل حذف هستند)',
+    });
+  });
+
+  it('POST deletes users in bulk', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    bulkDeleteUsersMock.mockResolvedValue({ count: 2 });
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'delete', userIds: ['u1', 'u2'] })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      message: '2 کاربر با موفقیت حذف شد',
+      count: 2,
+    });
+    expect(bulkDeleteUsersMock).toHaveBeenCalledWith(['u1', 'u2']);
+  });
+
+  it('POST returns 400 when delete service throws', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    bulkDeleteUsersMock.mockRejectedValue(new Error('delete failed'));
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'delete', userIds: ['u1'] })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'delete failed' });
+  });
+
+  it('POST returns 400 when update userIds are invalid', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'update', userIds: [], updates: {} })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'شناسه کاربران نامعتبر است',
+    });
+    expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
+  });
+
+  it('POST returns 400 when update payload is empty', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ action: 'update', userIds: ['u1'], updates: {} })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'داده\u200cهای به\u200cروزرسانی نامعتبر است',
+    });
+    expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
+  });
+
+  it('POST updates users in bulk', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    bulkUpdateUsersMock.mockResolvedValue({ count: 3 });
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({
+        action: 'update',
+        userIds: ['u1', 'u2', 'u3'],
+        updates: { role: 'ADMIN' },
+      })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      message: '3 کاربر با موفقیت به\u200cروزرسانی شد',
+      count: 3,
+    });
+    expect(bulkUpdateUsersMock).toHaveBeenCalledWith(['u1', 'u2', 'u3'], {
+      role: 'ADMIN',
+    });
+  });
+
+  it('POST returns 400 when update service throws', async () => {
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    bulkUpdateUsersMock.mockRejectedValue(new Error('update failed'));
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({
+        action: 'update',
+        userIds: ['u1'],
+        updates: { role: 'USER' },
+      })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: 'update failed' });
+  });
+});
