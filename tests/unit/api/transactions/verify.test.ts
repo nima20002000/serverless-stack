@@ -184,13 +184,13 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
   });
 
   describe('Idempotency - Already Failed Transaction', () => {
-    it('redirects to failure when transaction is already FAILED', async () => {
+    it('redirects to failure when transaction is already FAILED and callback is not OK', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByAuthority).mockResolvedValue(
         createMockTransaction({ status: 'FAILED' })
       );
 
-      const req = createMockRequest('AUTH123456');
+      const req = createMockRequest('AUTH123456', 'NOK');
       const response = await GET(req);
 
       expect(response.status).toBe(307);
@@ -199,10 +199,34 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
       expect(verifyPayment).not.toHaveBeenCalled();
       expect(updateTransactionStatus).not.toHaveBeenCalled();
     });
+
+    it('re-verifies when failed transaction receives OK callback', async () => {
+      const GET = await getHandler();
+      vi.mocked(getTransactionByAuthority).mockResolvedValue(
+        createMockTransaction({ status: 'FAILED', phone: null, email: null })
+      );
+      vi.mocked(verifyPayment).mockResolvedValue({
+        status: 100,
+        refId: 1234567890,
+      });
+
+      const req = createMockRequest('AUTH123456', 'OK');
+      const response = await GET(req);
+
+      expect(verifyPayment).toHaveBeenCalledWith('AUTH123456', 50000);
+      expect(updateTransactionStatus).toHaveBeenCalledWith(
+        'tx-1',
+        'COMPLETED',
+        'AUTH123456',
+        1234567890
+      );
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/payment/success');
+    });
   });
 
   describe('User Cancelled Payment', () => {
-    it('marks transaction as FAILED when status is NOK', async () => {
+    it('does not mark transaction as FAILED when status is NOK', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByAuthority).mockResolvedValue(
         createMockTransaction()
@@ -211,16 +235,12 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
       const req = createMockRequest('AUTH123456', 'NOK');
       const response = await GET(req);
 
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        'tx-1',
-        'FAILED',
-        'AUTH123456'
-      );
+      expect(updateTransactionStatus).not.toHaveBeenCalled();
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });
 
-    it('marks transaction as FAILED when status is empty', async () => {
+    it('does not mark transaction as FAILED when status is empty', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByAuthority).mockResolvedValue(
         createMockTransaction()
@@ -229,11 +249,7 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
       const req = createMockRequest('AUTH123456', '');
       const response = await GET(req);
 
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        'tx-1',
-        'FAILED',
-        'AUTH123456'
-      );
+      expect(updateTransactionStatus).not.toHaveBeenCalled();
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });
@@ -587,7 +603,7 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
   });
 
   describe('Verification API Error', () => {
-    it('marks transaction as FAILED when Zarinpal verification fails', async () => {
+    it('does not mark transaction as FAILED when Zarinpal verification fails', async () => {
       vi.mocked(getTransactionByAuthority).mockResolvedValue(
         createMockTransaction()
       );
@@ -599,11 +615,7 @@ describe('GET /api/transactions/verify (Zarinpal)', () => {
       const req = createMockRequest('AUTH123456', 'OK');
       const response = await GET(req);
 
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        'tx-1',
-        'FAILED',
-        'AUTH123456'
-      );
+      expect(updateTransactionStatus).not.toHaveBeenCalled();
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });

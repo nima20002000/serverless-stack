@@ -189,6 +189,10 @@ describe('GET /api/transactions/verify-zibal', () => {
         success: true,
         messageId: 'sms-1',
       });
+      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'msg-2',
+      });
 
       const req = createMockRequest('12345678');
       await GET(req);
@@ -214,18 +218,50 @@ describe('GET /api/transactions/verify-zibal', () => {
       expect(verifyPayment).not.toHaveBeenCalled();
     });
 
-    it('redirects to failure when transaction already FAILED', async () => {
+    it('redirects to failure when transaction already FAILED and callback is not success', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByZibalTrackId).mockResolvedValue(
         createMockTransaction({ status: 'FAILED' })
       );
 
-      const req = createMockRequest('12345678');
+      const req = createMockRequest('12345678', '0');
       const response = await GET(req);
 
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/payment/failure');
       expect(verifyPayment).not.toHaveBeenCalled();
+    });
+
+    it('re-verifies when failed transaction receives success callback', async () => {
+      const GET = await getHandler();
+      vi.mocked(getTransactionByZibalTrackId).mockResolvedValue(
+        createMockTransaction({ status: 'FAILED' })
+      );
+      vi.mocked(verifyPayment).mockResolvedValue({
+        trackId: 12345678,
+        refNumber: 9876543210,
+      });
+      vi.mocked(getTransactionWithVariants).mockResolvedValue(
+        createMockTransaction()
+      );
+      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'msg-1',
+      });
+      vi.mocked(sendOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'sms-1',
+      });
+
+      const req = createMockRequest('12345678', '1');
+      const response = await GET(req);
+
+      expect(verifyPayment).toHaveBeenCalledWith({
+        trackId: 12345678,
+        amount: 50000,
+      });
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/payment/success');
     });
 
     it('does not reprocess for completed transaction even if success=1', async () => {
@@ -244,7 +280,7 @@ describe('GET /api/transactions/verify-zibal', () => {
   });
 
   describe('Zibal Failure Status', () => {
-    it('marks transaction as FAILED when success is 0', async () => {
+    it('redirects to failure when success is 0', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByZibalTrackId).mockResolvedValue(
         createMockTransaction()
@@ -259,7 +295,7 @@ describe('GET /api/transactions/verify-zibal', () => {
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });
 
-    it('marks transaction as FAILED when success is empty', async () => {
+    it('redirects to failure when success is empty', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByZibalTrackId).mockResolvedValue(
         createMockTransaction()
@@ -272,7 +308,7 @@ describe('GET /api/transactions/verify-zibal', () => {
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });
 
-    it('marks transaction as FAILED when success is -1', async () => {
+    it('redirects to failure when success is -1', async () => {
       const GET = await getHandler();
       vi.mocked(getTransactionByZibalTrackId).mockResolvedValue(
         createMockTransaction()

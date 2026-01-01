@@ -87,23 +87,32 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // If transaction is already failed, redirect to failure (regardless of callback status)
+    // If transaction is already failed, only re-verify if callback indicates success
     if (transaction.status === 'FAILED') {
-      log.info('Transaction already failed, skipping verification', {
+      if (success !== '1') {
+        log.info('Transaction already failed, skipping verification', {
+          transactionId: transaction.id,
+          trackId,
+          callbackSuccess: success,
+          elapsedMs: Date.now() - startTime,
+        });
+
+        return NextResponse.redirect(
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}`
+          )
+        );
+      }
+
+      log.info('Failed transaction received success callback, re-verifying', {
         transactionId: transaction.id,
         trackId,
         callbackSuccess: success,
         elapsedMs: Date.now() - startTime,
       });
-
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/failure?code=${transaction.transactionCode}`
-        )
-      );
     }
 
-    // Now safe to process callback status - transaction is still PENDING
+    // Now safe to process callback status - transaction is still PENDING or failed-with-success-callback
     // Check if payment was cancelled/failed by user
     // Zibal sends success=1 for successful payments
     if (success !== '1') {
@@ -113,17 +122,6 @@ async function getHandler(req: NextRequest) {
         success,
         status,
       });
-
-      // Update transaction status to failed
-      const supabase = createClient();
-      const now = new Date().toISOString();
-      await supabase
-        .from('transactions')
-        .update({
-          status: 'FAILED',
-          updatedAt: now,
-        })
-        .eq('id', transaction.id);
 
       return NextResponse.redirect(
         createRedirectUrl(
@@ -394,21 +392,14 @@ async function getHandler(req: NextRequest) {
           );
         }
 
-        log.warn('Marking transaction as failed', {
-          transactionId: failedTransaction.id,
-          trackId: failTrackId,
-          error: errorMessage,
-        });
-
-        const supabaseFail = createClient();
-        const now = new Date().toISOString();
-        await supabaseFail
-          .from('transactions')
-          .update({
-            status: 'FAILED',
-            updatedAt: now,
-          })
-          .eq('id', failedTransaction.id);
+        log.warn(
+          'Verification error encountered, leaving transaction pending',
+          {
+            transactionId: failedTransaction.id,
+            trackId: failTrackId,
+            error: errorMessage,
+          }
+        );
 
         return NextResponse.redirect(
           createRedirectUrl(
@@ -417,7 +408,7 @@ async function getHandler(req: NextRequest) {
         );
       }
     } catch (nestedError) {
-      log.error('Failed to mark transaction as failed', {
+      log.error('Failed to handle verification error', {
         trackId: failTrackId,
         error:
           nestedError instanceof Error ? nestedError.message : 'Unknown error',

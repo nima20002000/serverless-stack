@@ -79,23 +79,32 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // If transaction is already failed, redirect to failure (regardless of callback status)
+    // If transaction is already failed, only re-verify if the callback indicates success
     if (transaction.status === 'FAILED') {
-      log.info('Transaction already failed, skipping verification', {
+      if (status !== 'OK') {
+        log.info('Transaction already failed, skipping verification', {
+          transactionId: transaction.id,
+          authority,
+          callbackStatus: status,
+          elapsedMs: Date.now() - startTime,
+        });
+
+        return NextResponse.redirect(
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}`
+          )
+        );
+      }
+
+      log.info('Failed transaction received success callback, re-verifying', {
         transactionId: transaction.id,
         authority,
         callbackStatus: status,
         elapsedMs: Date.now() - startTime,
       });
-
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/failure?code=${transaction.transactionCode}`
-        )
-      );
     }
 
-    // Now safe to process callback status - transaction is still PENDING
+    // Now safe to process callback status - transaction is still PENDING or failed-with-success-callback
     // Check if payment was cancelled by user
     if (status !== 'OK') {
       log.warn('Payment cancelled by user', {
@@ -103,8 +112,6 @@ async function getHandler(req: NextRequest) {
         transactionId: transaction.id,
         status,
       });
-
-      await updateTransactionStatus(transaction.id, 'FAILED', authority);
 
       return NextResponse.redirect(
         createRedirectUrl(
@@ -359,13 +366,14 @@ async function getHandler(req: NextRequest) {
           );
         }
 
-        log.warn('Marking transaction as failed', {
-          transactionId: transaction.id,
-          authority,
-          error: errorMessage,
-        });
-
-        await updateTransactionStatus(transaction.id, 'FAILED', authority);
+        log.warn(
+          'Verification error encountered, leaving transaction pending',
+          {
+            transactionId: transaction.id,
+            authority,
+            error: errorMessage,
+          }
+        );
 
         return NextResponse.redirect(
           createRedirectUrl(
@@ -374,7 +382,7 @@ async function getHandler(req: NextRequest) {
         );
       }
     } catch (nestedError) {
-      log.error('Failed to mark transaction as failed', {
+      log.error('Failed to handle verification error', {
         authority,
         error:
           nestedError instanceof Error ? nestedError.message : 'Unknown error',

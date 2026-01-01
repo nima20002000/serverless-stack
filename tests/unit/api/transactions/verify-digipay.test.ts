@@ -196,6 +196,10 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
         success: true,
         messageId: 'sms-1',
       });
+      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'msg-2',
+      });
 
       const req = createMockPostRequest(
         {
@@ -422,7 +426,7 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
       expect(verifyPayment).not.toHaveBeenCalled();
     });
 
-    it('redirects to failure when transaction already FAILED', async () => {
+    it('redirects to failure when transaction already FAILED and callback is not SUCCESS', async () => {
       const { POST } = await getHandlers();
       vi.mocked(getTransactionById).mockResolvedValue(
         createMockTransaction({ status: 'FAILED' })
@@ -430,7 +434,7 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
 
       const req = createMockPostRequest(
         {
-          result: 'SUCCESS',
+          result: 'FAILURE',
           trackingCode: 'DGP123',
         },
         'tx-1'
@@ -442,10 +446,51 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
       expect(response.headers.get('Location')).toContain('/payment/failure');
       expect(verifyPayment).not.toHaveBeenCalled();
     });
+
+    it('re-verifies when failed transaction receives SUCCESS callback', async () => {
+      const { POST } = await getHandlers();
+      vi.mocked(getTransactionById).mockResolvedValue(
+        createMockTransaction({ status: 'FAILED' })
+      );
+      vi.mocked(verifyPayment).mockResolvedValue({
+        trackingCode: 'DGP-VERIFIED-123',
+        fpName: 'Test Bank',
+      });
+      vi.mocked(getTransactionWithVariants).mockResolvedValue(
+        createMockTransaction()
+      );
+      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'msg-1',
+      });
+      vi.mocked(sendOrderConfirmation).mockResolvedValue({
+        success: true,
+        messageId: 'sms-1',
+      });
+
+      const req = createMockPostRequest(
+        {
+          result: 'SUCCESS',
+          trackingCode: 'DGP123',
+          providerId: 'KT-ABC123',
+        },
+        'tx-1'
+      );
+
+      const response = await POST(req);
+
+      expect(verifyPayment).toHaveBeenCalledWith({
+        trackingCode: 'DGP123',
+        amount: 50000,
+        providerId: 'KT-ABC123',
+      });
+      expect(response.status).toBe(303);
+      expect(response.headers.get('Location')).toContain('/payment/success');
+    });
   });
 
   describe('Digipay FAILURE Status', () => {
-    it('marks transaction as FAILED when result is FAILURE', async () => {
+    it('redirects to failure when result is FAILURE', async () => {
       const { POST } = await getHandlers();
       vi.mocked(getTransactionById).mockResolvedValue(createMockTransaction());
 
@@ -465,7 +510,7 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
       expect(response.headers.get('Location')).toContain('/payment/failure');
     });
 
-    it('marks transaction as FAILED when result is lowercase failure', async () => {
+    it('redirects to failure when result is lowercase failure', async () => {
       const { POST } = await getHandlers();
       vi.mocked(getTransactionById).mockResolvedValue(createMockTransaction());
 
@@ -661,7 +706,7 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
   });
 
   describe('Error Handling', () => {
-    it('marks transaction as FAILED when Digipay verification fails', async () => {
+    it('redirects to failure when Digipay verification fails', async () => {
       const { POST } = await getHandlers();
       vi.mocked(getTransactionById).mockResolvedValue(createMockTransaction());
       vi.mocked(verifyPayment).mockRejectedValue(

@@ -147,17 +147,6 @@ async function getHandler(req: NextRequest) {
         );
       }
 
-      // Mark transaction as failed
-      const supabase = createClient();
-      const now = new Date().toISOString();
-      await supabase
-        .from('transactions')
-        .update({
-          status: 'FAILED',
-          updatedAt: now,
-        })
-        .eq('id', transaction.id);
-
       // Redirect to failure page with transaction code
       return NextResponse.redirect(
         createRedirectUrl(
@@ -205,22 +194,32 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // If transaction is already failed, redirect to failure (regardless of callback status)
+    // If transaction is already failed, only re-verify if callback indicates success
     if (transaction.status === 'FAILED') {
-      log.info('Transaction already failed, skipping verification', {
+      const isSuccessCallback = status?.toUpperCase() === 'SUCCESS';
+      if (!isSuccessCallback) {
+        log.info('Transaction already failed, skipping verification', {
+          transactionId: transaction.id,
+          ticket,
+          callbackStatus: status,
+          elapsedMs: Date.now() - startTime,
+        });
+
+        // Use 303 (See Other) to force browser to use GET for the redirect
+        return NextResponse.redirect(
+          createRedirectUrl(
+            `/payment/failure?code=${transaction.transactionCode}`
+          ),
+          303
+        );
+      }
+
+      log.info('Failed transaction received success callback, re-verifying', {
         transactionId: transaction.id,
         ticket,
         callbackStatus: status,
         elapsedMs: Date.now() - startTime,
       });
-
-      // Use 303 (See Other) to force browser to use GET for the redirect
-      return NextResponse.redirect(
-        createRedirectUrl(
-          `/payment/failure?code=${transaction.transactionCode}`
-        ),
-        303
-      );
     }
 
     // Now safe to process callback status - transaction is still PENDING
@@ -232,18 +231,6 @@ async function getHandler(req: NextRequest) {
         transactionId: transaction.id,
         status,
       });
-
-      // Update transaction with tracking code but mark as failed
-      const supabase = createClient();
-      const now = new Date().toISOString();
-      await supabase
-        .from('transactions')
-        .update({
-          status: 'FAILED',
-          digipayTrackingCode: trackingCode || undefined,
-          updatedAt: now,
-        })
-        .eq('id', transaction.id);
 
       // Use 303 (See Other) to force browser to use GET for the redirect
       // 307 preserves POST method which causes 405 on page routes
@@ -540,23 +527,15 @@ async function getHandler(req: NextRequest) {
           );
         }
 
-        log.warn('Marking transaction as failed', {
-          transactionId: failedTransaction.id,
-          ticket: failTicket,
-          trackingCode: failTrackingCode,
-          error: errorMessage,
-        });
-
-        const supabaseFail = createClient();
-        const now = new Date().toISOString();
-        await supabaseFail
-          .from('transactions')
-          .update({
-            status: 'FAILED',
-            digipayTrackingCode: failTrackingCode || undefined,
-            updatedAt: now,
-          })
-          .eq('id', failedTransaction.id);
+        log.warn(
+          'Verification error encountered, leaving transaction pending',
+          {
+            transactionId: failedTransaction.id,
+            ticket: failTicket,
+            trackingCode: failTrackingCode,
+            error: errorMessage,
+          }
+        );
 
         // Use 303 (See Other) to force browser to use GET for the redirect
         return NextResponse.redirect(
@@ -567,7 +546,7 @@ async function getHandler(req: NextRequest) {
         );
       }
     } catch (nestedError) {
-      log.error('Failed to mark transaction as failed', {
+      log.error('Failed to handle verification error', {
         ticket: failTicket,
         error:
           nestedError instanceof Error ? nestedError.message : 'Unknown error',
