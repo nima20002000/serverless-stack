@@ -4,35 +4,72 @@ import EnamadBadge from '@/components/badges/EnamadBadge';
 
 export default function Footer() {
   return (
-    <footer className="bg-white border-t border-gray-200 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-gradient-to-b from-white to-rose-50/50 border-t border-rose-100 mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand Section */}
           <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-3">کیتیا</h3>
-            <p className="text-gray-600 text-sm leading-relaxed">
+            <h3 className="text-2xl font-bold bg-gradient-to-l from-rose-600 to-pink-500 bg-clip-text text-transparent mb-4">
+              کیتیا
+            </h3>
+            <p className="text-rose-600 text-sm leading-relaxed mb-6">
               فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت
             </p>
-            <div className="mt-4 space-y-2">
-              <p className="text-gray-600 text-sm">
-                <span className="font-bold">تلفن:</span> 09912218463 -
-                09910258259
-              </p>
-              <p className="text-gray-600 text-sm">
-                <span className="font-bold">آدرس:</span> تهران - خیابان اردستانی
-              </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-rose-700 text-sm">
+                <div className="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-rose-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
+                  </svg>
+                </div>
+                <span>09912218463 - 09910258259</span>
+              </div>
+              <div className="flex items-start gap-3 text-rose-700 text-sm">
+                <div className="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-rose-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <span>تهران - خیابان اردستانی</span>
+              </div>
             </div>
             {/* Social Links */}
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-6 flex items-center gap-3">
               <a
                 href="https://instagram.com/kitia.ir"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-500 hover:text-pink-600 transition-colors"
+                className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl flex items-center justify-center text-white hover:shadow-[0_8px_20px_-8px_rgba(244,63,94,0.5)] transition-all duration-300 hover:-translate-y-1"
                 aria-label="اینستاگرام کیتیا"
               >
                 <svg
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                   aria-hidden="true"
@@ -49,39 +86,43 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">
+            <h4 className="text-lg font-bold text-rose-900 mb-5">
               دسترسی سریع
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               <li>
                 <Link
                   href="/products"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   محصولات
                 </Link>
               </li>
               <li>
                 <Link
                   href="/about"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   درباره ما
                 </Link>
               </li>
               <li>
                 <Link
                   href="/contact"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   تماس با ما
                 </Link>
               </li>
               <li>
                 <Link
                   href="/faq"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   سوالات متداول
                 </Link>
               </li>
@@ -90,39 +131,43 @@ export default function Footer() {
 
           {/* Customer Support */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">
+            <h4 className="text-lg font-bold text-rose-900 mb-5">
               راهنما و پشتیبانی
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               <li>
                 <Link
                   href="/shipping"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   اطلاعات ارسال
                 </Link>
               </li>
               <li>
                 <Link
                   href="/refund-policy"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   قوانین مرجوعی
                 </Link>
               </li>
               <li>
                 <Link
                   href="/terms"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   قوانین و مقررات
                 </Link>
               </li>
               <li>
                 <Link
                   href="/privacy"
-                  className="text-gray-600 hover:text-blue-600 text-sm transition-colors"
+                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
+                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
                   حریم خصوصی
                 </Link>
               </li>
@@ -131,10 +176,10 @@ export default function Footer() {
 
           {/* Trust Badges */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-3">
+            <h4 className="text-lg font-bold text-rose-900 mb-5">
               نماد اعتماد
             </h4>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 p-4 bg-white/80 rounded-2xl border border-rose-100 shadow-[0_8px_20px_-12px_rgba(244,63,94,0.2)]">
               {/* Enamad Badge - Lazy loaded */}
               <EnamadBadge />
               {/* Union Badge */}
@@ -152,10 +197,23 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-gray-200 mt-8 pt-6 text-center">
-          <p className="text-sm text-gray-600">
-            © {new Date().getFullYear()} کیتیا. تمامی حقوق محفوظ است.
-          </p>
+        <div className="border-t border-rose-200/60 mt-10 pt-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-rose-500 text-center md:text-right">
+              © {new Date().getFullYear()} کیتیا. تمامی حقوق محفوظ است.
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-rose-400">ساخته شده با</span>
+              <svg
+                className="w-4 h-4 text-rose-500"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+              <span className="text-xs text-rose-400">در ایران</span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
