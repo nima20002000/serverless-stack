@@ -43,7 +43,7 @@ export type TransactionEmailData = {
   } | null;
 };
 
-// Resend client instance
+// Resend client instance (API)
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
@@ -60,9 +60,47 @@ async function sendEmail(options: {
 }): Promise<SendEmailResult> {
   const from = process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>';
 
-  // Production: Use Resend REST API
-  if (resend) {
-    try {
+  const useResendSmtp =
+    process.env.RESEND_SMTP === 'true' ||
+    !!process.env.RESEND_SMTP_HOST ||
+    !!process.env.RESEND_SMTP_USER ||
+    !!process.env.RESEND_SMTP_PASS;
+
+  // SMTP (Resend or custom)
+  try {
+    let transporter: nodemailer.Transporter;
+
+    if (useResendSmtp) {
+      const smtpHost = process.env.RESEND_SMTP_HOST || 'smtp.resend.com';
+      const smtpPort = parseInt(process.env.RESEND_SMTP_PORT || '587');
+      const smtpUser = process.env.RESEND_SMTP_USER || 'resend';
+      const smtpPass =
+        process.env.RESEND_SMTP_PASS || process.env.RESEND_API_KEY;
+
+      if (!smtpPass) {
+        throw new Error('RESEND_SMTP_PASS or RESEND_API_KEY is required');
+      }
+
+      transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: process.env.RESEND_SMTP_SECURE === 'true',
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+    } else if (process.env.EMAIL_SMTP_HOST) {
+      transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_SMTP_HOST,
+        port: parseInt(process.env.EMAIL_SMTP_PORT || '587'),
+        secure: process.env.EMAIL_SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_SMTP_USER,
+          pass: process.env.EMAIL_SMTP_PASS,
+        },
+      });
+    } else if (resend) {
       const { data, error } = await resend.emails.send({
         from,
         to: options.to,
@@ -82,27 +120,6 @@ async function sendEmail(options: {
       });
 
       return { success: true, messageId: data?.id };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      log.error('Failed to send email via Resend API', { error: errorMessage });
-      return { success: false, error: errorMessage };
-    }
-  }
-
-  // Development: Use nodemailer with Ethereal or custom SMTP
-  try {
-    let transporter: nodemailer.Transporter;
-
-    if (process.env.EMAIL_SMTP_HOST) {
-      transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SMTP_HOST,
-        port: parseInt(process.env.EMAIL_SMTP_PORT || '587'),
-        secure: process.env.EMAIL_SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.EMAIL_SMTP_USER,
-          pass: process.env.EMAIL_SMTP_PASS,
-        },
-      });
     } else {
       // Fallback: Create Ethereal test account on the fly
       const testAccount = await nodemailer.createTestAccount();
@@ -131,7 +148,12 @@ async function sendEmail(options: {
     });
 
     // Log preview URL for Ethereal
-    if (!process.env.EMAIL_SMTP_HOST && info.messageId) {
+    if (
+      !process.env.EMAIL_SMTP_HOST &&
+      !useResendSmtp &&
+      !resend &&
+      info.messageId
+    ) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
         log.info('📧 Email sent (Ethereal)', {

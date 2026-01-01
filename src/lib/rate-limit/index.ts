@@ -42,6 +42,24 @@ export const publicLimiter = new Ratelimit({
   prefix: 'ratelimit:public',
 });
 
+type RateLimitResult = {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+};
+
+const RATE_LIMIT_CACHE_TTL_MS = 1000;
+const rateLimitCache = new Map<
+  string,
+  { value: RateLimitResult; expiresAt: number }
+>();
+
+function getLimiterPrefix(limiter: Ratelimit) {
+  const maybePrefix = (limiter as { prefix?: string }).prefix;
+  return maybePrefix || 'ratelimit';
+}
+
 /**
  * Get client identifier for rate limiting
  * Uses user ID if authenticated, otherwise uses IP address
@@ -82,13 +100,14 @@ export async function checkRateLimit(
   req: Request,
   limiter: Ratelimit = apiLimiter,
   endpoint?: string
-): Promise<{
-  success: boolean;
-  limit: number;
-  remaining: number;
-  reset: number;
-}> {
+): Promise<RateLimitResult> {
   const identifier = getClientId(req, endpoint);
+  const cacheKey = `${getLimiterPrefix(limiter)}:${endpoint || 'default'}:${identifier}`;
+  const cached = rateLimitCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
 
   try {
     const { success, limit, remaining, reset } =
@@ -103,7 +122,12 @@ export async function checkRateLimit(
       });
     }
 
-    return { success, limit, remaining, reset };
+    const result = { success, limit, remaining, reset };
+    rateLimitCache.set(cacheKey, {
+      value: result,
+      expiresAt: Date.now() + RATE_LIMIT_CACHE_TTL_MS,
+    });
+    return result;
   } catch (error) {
     log.error('Rate limit check failed', {
       identifier,
@@ -112,6 +136,11 @@ export async function checkRateLimit(
     });
 
     // If rate limiting fails, allow the request (fail open)
-    return { success: true, limit: 0, remaining: 0, reset: 0 };
+    const result = { success: true, limit: 0, remaining: 0, reset: 0 };
+    rateLimitCache.set(cacheKey, {
+      value: result,
+      expiresAt: Date.now() + RATE_LIMIT_CACHE_TTL_MS,
+    });
+    return result;
   }
 }
