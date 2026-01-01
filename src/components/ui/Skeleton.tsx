@@ -1,3 +1,7 @@
+'use client';
+
+import SkeletonV4, { SkeletonText as SkeletonTextV4 } from '../ui-v4/Skeleton';
+
 interface SkeletonProps {
   className?: string;
   variant?: 'text' | 'circular' | 'rectangular';
@@ -7,47 +11,32 @@ interface SkeletonProps {
   style?: React.CSSProperties;
 }
 
-/**
- * Base skeleton component for loading states
- * Provides animated placeholders while content is loading
- */
 export function Skeleton({
   className = '',
   variant = 'rectangular',
   width,
   height,
   animation = 'pulse',
-  style: externalStyle,
+  style,
 }: SkeletonProps) {
-  const animationClass = {
-    pulse: 'animate-pulse',
-    wave: 'animate-shimmer',
-    none: '',
-  }[animation];
-
-  const variantClass = {
-    text: 'rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-lg',
-  }[variant];
-
-  const internalStyle: React.CSSProperties = {
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
-    ...externalStyle,
-  };
+  const animationMap = {
+    pulse: 'pulse',
+    wave: 'shimmer',
+    none: 'none',
+  } as const;
 
   return (
-    <div
-      className={`bg-gray-200 ${variantClass} ${animationClass} ${className}`}
-      style={internalStyle}
+    <SkeletonV4
+      className={className}
+      variant={variant}
+      width={width}
+      height={height}
+      animation={animationMap[animation]}
+      style={style}
     />
   );
 }
 
-/**
- * Skeleton for text lines
- */
 export function SkeletonText({
   lines = 1,
   className = '',
@@ -55,22 +44,9 @@ export function SkeletonText({
   lines?: number;
   className?: string;
 }) {
-  return (
-    <div className={`space-y-2 ${className}`}>
-      {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
-          key={i}
-          variant="text"
-          className={`h-4 ${i === lines - 1 && lines > 1 ? 'w-4/5' : ''}`}
-        />
-      ))}
-    </div>
-  );
+  return <SkeletonTextV4 lines={lines} className={className} />;
 }
 
-/**
- * Skeleton for images
- */
 export function SkeletonImage({
   aspectRatio = '4/5',
   className = '',
@@ -78,5 +54,11 @@ export function SkeletonImage({
   aspectRatio?: string;
   className?: string;
 }) {
-  return <Skeleton className={`w-full ${className}`} style={{ aspectRatio }} />;
+  return (
+    <Skeleton
+      className={className}
+      style={{ aspectRatio }}
+      variant="rectangular"
+    />
+  );
 }

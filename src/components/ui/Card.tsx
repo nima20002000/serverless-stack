@@ -1,4 +1,7 @@
+'use client';
+
 import { ReactNode } from 'react';
+import CardV4 from '../ui-v4/Card';
 
 interface CardProps {
   children: ReactNode;
@@ -18,10 +21,8 @@ export default function Card({
   };
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow-md border border-gray-200 ${paddingStyles[padding]} ${className}`}
-    >
+    <CardV4 className={`${paddingStyles[padding]} ${className}`}>
       {children}
-    </div>
+    </CardV4>
   );
 }
