@@ -127,7 +127,7 @@ export async function sendOTP(
         purpose,
         expiresAt: expiresAt.toISOString(),
         attempts: 0,
-        maxAttempts: 3,
+        maxAttempts: 5,
       })
       .select()
       .single();
