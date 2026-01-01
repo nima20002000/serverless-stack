@@ -14,7 +14,7 @@ export default function InstallmentBanner() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-l from-purple-600 to-purple-700 text-white">
+      <div className="fixed top-0 left-0 right-0 z-[60] bg-white/90 text-rose-700 backdrop-blur border-b border-rose-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center gap-2 py-2 text-sm sm:text-base">
             <svg

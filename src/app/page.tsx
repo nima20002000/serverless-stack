@@ -92,34 +92,30 @@ export default async function Home() {
   const topCategories = categories.slice(0, 3);
 
   return (
-    <div className="relative min-h-screen bg-[#fff7fa] overflow-hidden">
-      <div className="absolute -top-32 -left-24 h-80 w-80 rounded-full bg-rose-200/40 blur-3xl" />
-      <div className="absolute top-20 right-10 h-64 w-64 rounded-full bg-pink-100/60 blur-3xl" />
-      <div className="absolute inset-0 opacity-40 bg-[radial-gradient(#fbcfe8_1px,transparent_1px)] bg-[length:22px_22px]" />
-
+    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-pink-50">
       {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
-          <div className="text-right">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="order-2 md:order-1 text-right">
             <div className="flex flex-wrap gap-3 justify-end mb-6">
               <PillV4 tone="blush">ارسال سریع</PillV4>
               <PillV4 tone="cream">بسته‌بندی هدیه</PillV4>
               <PillV4 tone="rose">کمک به گربه‌های خیابانی</PillV4>
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-rose-900 leading-tight">
-              لحظه‌های ظریف،
-              <span className="block text-rose-600">طراحی برای دخترانه‌ها</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-rose-900 mb-6 leading-tight">
+              به کیتیا خوش آمدید
             </h1>
-            <p className="text-lg md:text-2xl text-rose-700 mt-6 leading-relaxed">
-              انتخابی هوشمندانه برای ماگ‌های خاص و هدیه‌های دوست‌داشتنی.
+            <p className="text-xl md:text-2xl text-rose-700 mb-8 leading-relaxed">
+              دنیایی از محصولات زیبا و با کیفیت برای شما
             </p>
-            <p className="text-base md:text-lg text-rose-500 mt-6 leading-relaxed">
-              تجربه‌ای دلپذیر از خرید آنلاین و حمایت از گربه‌های خیابانی.
+            <p className="text-lg text-rose-500 mb-10 leading-relaxed">
+              کیتیا با ارائه بهترین محصولات و خدمات، همراه شماست تا تجربه‌ای
+              لذت‌بخش از خرید آنلاین داشته باشید.
             </p>
-            <div className="mt-8 flex flex-wrap gap-4 justify-end">
+            <div className="flex flex-wrap gap-4 justify-end">
               <Link href="/products">
                 <Button variant="primary" size="lg">
-                  دیدن کالکشن
+                  مشاهده محصولات
                 </Button>
               </Link>
               <Link href="/products?discounted=true">
@@ -128,30 +124,14 @@ export default async function Home() {
                 </Button>
               </Link>
             </div>
-            <div className="mt-8 flex flex-wrap gap-6 justify-end text-sm text-rose-500">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-rose-400" />
-                ارسال شهری ۲۴ ساعته
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-rose-400" />
-                پرداخت امن و سریع
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-rose-400" />
-                بسته‌بندی با عشق
-              </span>
-            </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute -top-8 right-8">
-              <PillV4 tone="blush" size="sm">
-                محبوب امروز
-              </PillV4>
-            </div>
-            <Card className="relative p-4 shadow-[0_30px_80px_-50px_rgba(244,63,94,0.6)]">
-              <div className="relative aspect-[3/4] rounded-[28px] overflow-hidden">
+          <div className="order-1 md:order-2 flex justify-center">
+            <div className="relative w-full max-w-md aspect-square">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-white opacity-80 blur-3xl"></div>
+              </div>
+              <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
                 <Image
                   src={HERO_IMAGE_OPTIMIZED}
                   alt="کیتیا - فروشگاه آنلاین"
@@ -161,61 +141,60 @@ export default async function Home() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
-            </Card>
-            <div className="absolute -bottom-6 left-6 right-6 grid grid-cols-2 gap-4">
-              <StatCardV4
-                label="ارسال سریع"
-                value="۲۴ ساعت"
-                trend="سفارش‌های شهری"
-                accent="rose"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                }
-              />
-              <StatCardV4
-                label="تضمین کیفیت"
-                value="۷ روز"
-                trend="بازگشت آسان"
-                accent="pink"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                }
-              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Highlights */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCardV4
+            label="ارسال سریع"
+            value="۲۴ ساعت"
+            trend="سفارش‌های شهری"
+            accent="rose"
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+            }
+          />
+          <StatCardV4
+            label="تضمین کیفیت"
+            value="۷ روز"
+            trend="بازگشت آسان"
+            accent="pink"
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                />
+              </svg>
+            }
+          />
           <StatCardV4
             label="پرداخت مطمئن"
             value="چند درگاه"
-            trend="زرین‌پال و زیبال"
+            trend="زیبال و زرین‌پال"
             accent="peach"
             icon={
               <svg
@@ -233,48 +212,6 @@ export default async function Home() {
               </svg>
             }
           />
-          <StatCardV4
-            label="سفارش هدیه"
-            value="کارت تبریک"
-            trend="پیام شخصی"
-            accent="rose"
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 7h18v10H3zM3 7l9 6 9-6"
-                />
-              </svg>
-            }
-          />
-          <StatCardV4
-            label="باشگاه مشتریان"
-            value="هدیه ماهانه"
-            trend="کدهای ویژه"
-            accent="pink"
-            icon={
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 1.343-3 3v7h6v-7c0-1.657-1.343-3-3-3zm0 0V6m0 0a3 3 0 00-3 3m3-3a3 3 0 013 3"
-                />
-              </svg>
-            }
-          />
         </div>
       </section>
 
@@ -285,11 +222,9 @@ export default async function Home() {
             <div className="text-right">
               <PillV4 tone="rose">منتخب‌ها</PillV4>
               <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-4">
-                کالکشن دلبرانه
+                کالکشن 2026
               </h2>
-              <p className="text-rose-500 text-lg mt-3">
-                محصولاتی که عاشقشان خواهید شد
-              </p>
+              <p className="text-rose-500 text-lg mt-3">ترند ترین استنلی ها</p>
             </div>
             <Link href="/products" className="self-end">
               <Button variant="secondary" size="lg">
@@ -384,63 +319,92 @@ export default async function Home() {
       )}
 
       {/* Features Section */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 mb-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 mb-10">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mb-4">
+            چرا کیتیا؟
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-rose-500 to-pink-400 mx-auto mb-4"></div>
+          <p className="text-rose-500 text-lg">مزایای خرید از ما</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            {
-              title: 'ارسال سریع',
-              desc: 'ارسال امن و سریع با بسته‌بندی ویژه هدیه.',
-              color: 'from-rose-100 to-pink-100',
-              text: 'text-rose-600',
-              icon: 'M13 10V3L4 14h7v7l9-11h-7z',
-            },
-            {
-              title: 'تضمین سلامت کالا',
-              desc: 'بازگشت آسان تا ۷ روز، بدون دردسر.',
-              color: 'from-pink-100 to-rose-100',
-              text: 'text-pink-600',
-              icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-            },
-            {
-              title: 'خرید قسطی',
-              desc: 'پرداخت منعطف با چندین درگاه امن.',
-              color: 'from-rose-100 to-amber-100',
-              text: 'text-rose-500',
-              icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z',
-            },
-          ].map((feature, index) => (
-            <Card
-              key={feature.title}
-              className="text-right hover:shadow-[0_28px_60px_-40px_rgba(244,63,94,0.45)] transition-all duration-300 transform hover:-translate-y-2"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div
-                  className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center`}
+          <Card className="text-center hover:shadow-[0_28px_60px_-40px_rgba(244,63,94,0.45)] transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mb-6">
+                <svg
+                  className="w-10 h-10 text-rose-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <svg
-                    className={`w-7 h-7 ${feature.text}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={feature.icon}
-                    />
-                  </svg>
-                </div>
-                <span className="text-4xl font-bold text-rose-100">
-                  0{index + 1}
-                </span>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
+                </svg>
               </div>
               <h3 className="text-xl font-bold text-rose-900 mb-3">
-                {feature.title}
+                ارسال سریع
               </h3>
-              <p className="text-rose-500 leading-relaxed">{feature.desc}</p>
-            </Card>
-          ))}
+              <p className="text-rose-500 leading-relaxed">
+                ارسال سریع و ایمن محصولات به سراسر کشور با بسته‌بندی مناسب
+              </p>
+            </div>
+          </Card>
+
+          <Card className="text-center hover:shadow-[0_28px_60px_-40px_rgba(244,63,94,0.45)] transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-pink-100 to-rose-100 rounded-full flex items-center justify-center mb-6">
+                <svg
+                  className="w-10 h-10 text-pink-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-rose-900 mb-3">
+                تضمین سلامت کالا
+              </h3>
+              <p className="text-rose-500 leading-relaxed">
+                تضمین اصالت و سلامت کالا با امکان بازگشت تا ۷ روز
+              </p>
+            </div>
+          </Card>
+
+          <Card className="text-center hover:shadow-[0_28px_60px_-40px_rgba(244,63,94,0.45)] transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-rose-100 to-amber-100 rounded-full flex items-center justify-center mb-6">
+                <svg
+                  className="w-10 h-10 text-rose-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-rose-900 mb-3">
+                امکان خرید قسطی
+              </h3>
+              <p className="text-rose-500 leading-relaxed">
+                خرید آسان با امکان پرداخت اقساطی و بدون نیاز به ضامن
+              </p>
+            </div>
+          </Card>
         </div>
       </section>
 
