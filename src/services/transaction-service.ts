@@ -44,6 +44,10 @@ export async function createTransaction(data: {
   // Optional client info for tracking
   ipAddress?: string | null;
   userAgent?: string | null;
+  // Promo code fields
+  promoCodeId?: string;
+  discountAmount?: number;
+  subtotal?: number;
 }) {
   const transactionCode = generateTransactionCode();
   const supabase = createClient();
@@ -56,6 +60,9 @@ export async function createTransaction(data: {
     itemCount: data.items.length,
     transactionCode,
     hasShippingInfo: !!data.shippingInfo,
+    promoCodeId: data.promoCodeId,
+    discountAmount: data.discountAmount || 0,
+    subtotal: data.subtotal,
   });
 
   try {
@@ -80,6 +87,10 @@ export async function createTransaction(data: {
         // Client tracking info
         ip_address: data.ipAddress || null,
         user_agent: data.userAgent || null,
+        // Promo code fields
+        promoCodeId: data.promoCodeId || null,
+        discountAmount: data.discountAmount || 0,
+        subtotal: data.subtotal || null,
         updatedAt: now,
       })
       .select()

@@ -14,11 +14,21 @@ export interface CheckoutFormData {
   postalCode: string;
 }
 
+export interface AppliedPromoCode {
+  code: string;
+  discountType: 'PERCENT' | 'FIXED';
+  discountValue: number;
+  discountAmount: number;
+}
+
 interface CheckoutStore {
   formData: CheckoutFormData;
+  promoCode: AppliedPromoCode | null;
   _hasHydrated: boolean;
   setFormData: (data: Partial<CheckoutFormData>) => void;
   clearFormData: () => void;
+  setPromoCode: (promo: AppliedPromoCode | null) => void;
+  clearPromoCode: () => void;
   setHasHydrated: (state: boolean) => void;
 }
 
@@ -34,6 +44,7 @@ export const useCheckoutStore = create<CheckoutStore>()(
   persist(
     (set) => ({
       formData: initialFormData,
+      promoCode: null,
       _hasHydrated: false,
 
       setFormData: (data) =>
@@ -43,6 +54,10 @@ export const useCheckoutStore = create<CheckoutStore>()(
 
       clearFormData: () => set({ formData: initialFormData }),
 
+      setPromoCode: (promo) => set({ promoCode: promo }),
+
+      clearPromoCode: () => set({ promoCode: null }),
+
       setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
@@ -51,6 +66,11 @@ export const useCheckoutStore = create<CheckoutStore>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
+      // Don't persist promo code - it should be validated fresh each session
+      partialize: (state) => ({
+        formData: state.formData,
+        _hasHydrated: state._hasHydrated,
+      }),
     }
   )
 );
