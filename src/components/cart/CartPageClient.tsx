@@ -49,18 +49,18 @@ export default function CartPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Link
               href="/products"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
             >
-              <ArrowRightIcon className="w-5 h-5 text-gray-600" />
+              <ArrowRightIcon className="w-5 h-5 text-rose-600" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 text-right">
+            <h1 className="text-2xl font-bold text-rose-900 text-right">
               سبد خرید
             </h1>
           </div>
@@ -69,11 +69,11 @@ export default function CartPageClient() {
             <div className="flex items-center justify-between">
               <button
                 onClick={handleClearCart}
-                className="text-sm text-red-600 hover:text-red-700 transition-colors"
+                className="text-sm text-rose-600 hover:text-rose-700 transition-colors"
               >
                 پاک کردن سبد خرید
               </button>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-rose-600">
                 {itemCount} کالا در سبد خرید شما موجود است
               </p>
             </div>
@@ -89,15 +89,15 @@ export default function CartPageClient() {
 
         {/* Empty Cart State */}
         {items.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12">
+          <div className="bg-white/90 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] border border-rose-100 p-12">
             <div className="max-w-md mx-auto text-center">
               <div className="mb-6">
-                <ShoppingBagIcon className="w-24 h-24 mx-auto text-gray-300" />
+                <ShoppingBagIcon className="w-24 h-24 mx-auto text-rose-200" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-3">
+              <h2 className="text-xl font-bold text-rose-900 mb-3">
                 سبد خرید شما خالی است
               </h2>
-              <p className="text-gray-600 mb-8">
+              <p className="text-rose-600 mb-8">
                 برای مشاهده و خرید محصولات به صفحه محصولات بروید
               </p>
               <Button
@@ -112,8 +112,8 @@ export default function CartPageClient() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Cart Items */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
+              <div className="bg-white/90 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] border border-rose-100 p-6">
+                <h2 className="text-lg font-bold text-rose-900 text-right mb-4 border-b border-rose-100 pb-3">
                   لیست کالاها
                 </h2>
                 <div className="space-y-0">
@@ -132,7 +132,7 @@ export default function CartPageClient() {
               <div className="mt-4">
                 <Link
                   href="/products"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 text-rose-600 hover:text-rose-700 transition-colors"
                 >
                   <span className="text-sm font-medium">ادامه خرید</span>
                 </Link>

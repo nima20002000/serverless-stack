@@ -194,7 +194,7 @@ export default function LoginPage() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">
+      <h2 className="text-2xl font-bold text-center mb-6 text-rose-900">
         ورود
       </h2>
 
@@ -268,7 +268,7 @@ export default function LoginPage() {
                 setFormData((prev) => ({ ...prev, password: '' }));
                 setErrors({});
               }}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-rose-600 hover:text-rose-700 font-medium"
               disabled={isLoading}
             >
               {loginWithOTP
@@ -282,11 +282,11 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-gray-600">
+        <p className="text-rose-500">
           حساب کاربری ندارید؟{' '}
           <Link
             href="/register"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-rose-600 hover:text-rose-700 font-medium"
           >
             ثبت‌نام کنید
           </Link>

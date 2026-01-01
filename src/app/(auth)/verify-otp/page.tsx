@@ -161,13 +161,13 @@ function VerifyOTPContent() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-2">
+      <h2 className="text-2xl font-bold text-center mb-2 text-rose-900">
         {isEmail ? 'تایید ایمیل' : 'تایید شماره تلفن'}
       </h2>
 
-      <p className="text-center text-gray-600 mb-6">
+      <p className="text-center text-rose-600 mb-6">
         کد تایید ۶ رقمی به {isEmail ? 'ایمیل' : 'شماره'}{' '}
-        <span className="font-bold text-gray-900" dir="ltr">
+        <span className="font-bold text-rose-900" dir="ltr">
           {identifier}
         </span>{' '}
         ارسال شد
@@ -188,15 +188,15 @@ function VerifyOTPContent() {
 
       <div className="mt-4 text-center">
         {timeLeft > 0 ? (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-rose-600">
             زمان باقی‌مانده:{' '}
-            <span className="font-mono font-bold text-gray-900">
+            <span className="font-mono font-bold text-rose-900">
               {minutes.toString().padStart(2, '0')}:
               {seconds.toString().padStart(2, '0')}
             </span>
           </p>
         ) : (
-          <p className="text-sm text-red-600 font-medium">
+          <p className="text-sm text-rose-600 font-medium">
             زمان کد تایید به پایان رسید. لطفاً کد جدید درخواست کنید.
           </p>
         )}
@@ -214,7 +214,7 @@ function VerifyOTPContent() {
       <div className="mt-4 text-center">
         <button
           onClick={() => router.back()}
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-rose-600 hover:text-rose-700 font-medium"
           disabled={isVerifying}
         >
           بازگشت

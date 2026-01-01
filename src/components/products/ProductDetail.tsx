@@ -215,26 +215,26 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       <div className="mb-6 text-right">
         <button
           onClick={() => router.push('/products')}
-          className="text-blue-600 hover:text-blue-700"
+          className="text-rose-600 hover:text-rose-700"
         >
           محصولات
         </button>
         {product.category && (
           <>
-            <span className="mx-2 text-gray-400">/</span>
+            <span className="mx-2 text-rose-300">/</span>
             <button
               onClick={() =>
                 product.category &&
                 router.push(`/products?category=${product.category.slug}`)
               }
-              className="text-blue-600 hover:text-blue-700"
+              className="text-rose-600 hover:text-rose-700"
             >
               {product.category.name}
             </button>
           </>
         )}
-        <span className="mx-2 text-gray-400">/</span>
-        <span className="text-gray-700">{product.name}</span>
+        <span className="mx-2 text-rose-300">/</span>
+        <span className="text-rose-800">{product.name}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -258,8 +258,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             />
           ) : (
             <Card>
-              <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-                <div className="text-gray-400 text-8xl">📦</div>
+              <div className="flex items-center justify-center h-96 bg-rose-50 rounded-lg">
+                <div className="text-rose-300 text-8xl">📦</div>
               </div>
             </Card>
           )}
@@ -267,7 +267,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
         {/* Product Details */}
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4 text-right">
+          <h1 className="text-3xl font-bold text-rose-900 mb-4 text-right">
             {product.name}
           </h1>
 
@@ -278,7 +278,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 <button
                   key={tag.id}
                   onClick={() => router.push(`/products?tag=${tag.slug}`)}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-full transition-colors"
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 text-sm rounded-full transition-colors border border-rose-200"
                 >
                   <TagIcon className="h-3 w-3" />
                   {tag.name}
@@ -291,28 +291,28 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <div className="mb-6">
             <div className="flex items-center gap-3 flex-wrap">
               {discountPercent > 0 && (
-                <span className="text-2xl font-bold text-gray-500 line-through">
+                <span className="text-2xl font-bold text-rose-400 line-through">
                   {formatPrice(basePrice)}
                 </span>
               )}
               <span
-                className={`text-3xl font-bold ${discountPercent > 0 ? 'text-red-600' : 'text-blue-600'}`}
+                className={`text-3xl font-bold ${discountPercent > 0 ? 'text-rose-600' : 'text-rose-600'}`}
               >
                 {formatPrice(effectivePrice)}
               </span>
               {discountPercent > 0 && (
-                <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                <span className="bg-rose-500 text-white text-sm font-bold px-3 py-1 rounded-2xl">
                   {discountPercent}% تخفیف
                 </span>
               )}
               {product.isFeatured && (
-                <span className="bg-yellow-500 text-white text-sm font-bold px-3 py-1 rounded-md">
+                <span className="bg-amber-500 text-white text-sm font-bold px-3 py-1 rounded-2xl">
                   ویژه
                 </span>
               )}
             </div>
             {selectedVariant && selectedVariant.priceAdjust !== 0 && (
-              <div className="mt-2 text-sm text-gray-600">
+              <div className="mt-2 text-sm text-rose-500">
                 قیمت پایه: {formatPrice(product.price)}
                 {discountPercent > 0 && (
                   <span className="mr-2">(قبل از تخفیف)</span>
@@ -361,11 +361,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           {/* Stock Status */}
           <div className="mb-6">
             {isOutOfStock ? (
-              <span className="inline-block bg-red-100 text-red-800 px-4 py-2 rounded-lg font-medium">
+              <span className="inline-block bg-rose-100 text-rose-700 px-4 py-2 rounded-2xl font-medium border border-rose-200">
                 ناموجود
               </span>
             ) : (
-              <span className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-lg font-medium">
+              <span className="inline-block bg-emerald-50 text-emerald-700 px-4 py-2 rounded-2xl font-medium border border-emerald-200">
                 موجود ({effectiveStock} عدد)
               </span>
             )}
@@ -385,52 +385,52 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
           {/* Description */}
           <Card className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-3 text-right">
+            <h2 className="text-xl font-semibold text-rose-900 mb-3 text-right">
               توضیحات محصول
             </h2>
-            <p className="text-gray-700 leading-relaxed text-right whitespace-pre-line">
+            <p className="text-rose-700 leading-relaxed text-right whitespace-pre-line">
               {product.description}
             </p>
           </Card>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 text-right">{error}</p>
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl">
+              <p className="text-sm text-rose-600 text-right">{error}</p>
             </div>
           )}
 
           {/* Quantity Selector */}
           {!isOutOfStock && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+              <label className="block text-sm font-medium text-rose-700 mb-2 text-right">
                 تعداد
               </label>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleDecrement}
                   disabled={quantity <= 1}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-xl border border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label="کاهش تعداد"
                 >
-                  <MinusIcon className="w-5 h-5 text-gray-600" />
+                  <MinusIcon className="w-5 h-5 text-rose-600" />
                 </button>
 
-                <span className="text-lg font-medium text-gray-900 min-w-[3rem] text-center">
+                <span className="text-lg font-medium text-rose-900 min-w-[3rem] text-center">
                   {quantity}
                 </span>
 
                 <button
                   onClick={handleIncrement}
                   disabled={quantity >= effectiveStock}
-                  className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 rounded-xl border border-rose-200 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   aria-label="افزایش تعداد"
                 >
-                  <PlusIcon className="w-5 h-5 text-gray-600" />
+                  <PlusIcon className="w-5 h-5 text-rose-600" />
                 </button>
 
                 {quantity >= effectiveStock && (
-                  <span className="text-sm text-orange-600 mr-2">
+                  <span className="text-sm text-amber-600 mr-2">
                     حداکثر موجودی
                   </span>
                 )}

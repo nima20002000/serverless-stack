@@ -159,7 +159,7 @@ export default function RegisterPage() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-900">
+      <h2 className="text-2xl font-bold text-center mb-6 text-rose-900">
         ثبت‌نام
       </h2>
 
@@ -253,11 +253,11 @@ export default function RegisterPage() {
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-gray-600">
+        <p className="text-rose-500">
           قبلاً ثبت‌نام کرده‌اید؟{' '}
           <Link
             href="/login"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-rose-600 hover:text-rose-700 font-medium"
           >
             وارد شوید
           </Link>

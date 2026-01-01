@@ -92,17 +92,17 @@ export default function FAQList() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <QuestionMarkCircleIcon className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <QuestionMarkCircleIcon className="w-8 h-8 text-rose-500" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-rose-900 mb-4">
             سوالات متداول
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-rose-600">
             پاسخ سوالات رایج درباره خرید و خدمات کیتیا
           </p>
         </div>
@@ -112,24 +112,24 @@ export default function FAQList() {
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden transition-all"
+              className="bg-white/90 rounded-2xl shadow-[0_8px_20px_-14px_rgba(236,72,153,0.35)] border border-rose-100 overflow-hidden transition-all"
             >
               <button
                 onClick={() => toggleFAQ(index)}
-                className="w-full px-6 py-5 text-right flex items-center justify-between hover:bg-gray-50 transition-colors"
+                className="w-full px-6 py-5 text-right flex items-center justify-between hover:bg-rose-50/50 transition-colors"
               >
-                <span className="text-lg font-bold text-gray-900 flex-1">
+                <span className="text-lg font-bold text-rose-900 flex-1">
                   {faq.question}
                 </span>
                 <ChevronDownIcon
-                  className={`w-5 h-5 text-gray-500 transition-transform flex-shrink-0 mr-4 ${
+                  className={`w-5 h-5 text-rose-400 transition-transform flex-shrink-0 mr-4 ${
                     openIndex === index ? 'transform rotate-180' : ''
                   }`}
                 />
               </button>
               {openIndex === index && (
                 <div className="px-6 pb-5 pt-2">
-                  <p className="text-gray-700 text-right leading-relaxed">
+                  <p className="text-rose-700 text-right leading-relaxed">
                     {faq.answer}
                   </p>
                 </div>
@@ -139,18 +139,18 @@ export default function FAQList() {
         </div>
 
         {/* Contact Section */}
-        <div className="mt-12 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-sm p-8 border border-blue-200 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="mt-12 bg-gradient-to-br from-rose-50 to-pink-100 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] p-8 border border-rose-200 text-center">
+          <h2 className="text-2xl font-bold text-rose-900 mb-4">
             سوال شما پاسخ داده نشد؟
           </h2>
-          <p className="text-gray-700 mb-6">
+          <p className="text-rose-700 mb-6">
             تیم پشتیبانی ما آماده است تا به سوالات شما پاسخ دهد
           </p>
           <div className="space-y-3">
-            <p className="font-bold text-lg text-gray-900">
+            <p className="font-bold text-lg text-rose-900">
               تلفن و واتساپ: 09912218463 - 09910258259
             </p>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-rose-600">
               پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب
             </p>
           </div>
