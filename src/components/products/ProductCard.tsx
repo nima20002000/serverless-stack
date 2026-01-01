@@ -9,6 +9,7 @@ import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
+import BadgeV4 from '@/components/ui-v4/Badge';
 
 interface Variant {
   id: string;
@@ -307,11 +308,11 @@ function ProductCard({ product }: ProductCardProps) {
   ]);
 
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-3xl border border-rose-100 overflow-hidden shadow-[0_18px_40px_-30px_rgba(244,63,94,0.4)] hover:shadow-[0_28px_60px_-36px_rgba(244,63,94,0.45)] transition-all">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
         <div
-          className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden group"
+          className="relative w-full aspect-[4/5] bg-rose-50 overflow-hidden group"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -333,7 +334,7 @@ function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <div className="text-gray-400 text-4xl">📦</div>
+              <div className="text-rose-300 text-4xl">📦</div>
             </div>
           )}
           {/* Wishlist Button - Left side (RTL: visually on right) */}
@@ -359,14 +360,14 @@ function ProductCard({ product }: ProductCardProps) {
           {/* Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-2">
             {product.isFeatured && (
-              <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+              <BadgeV4 variant="premium" size="sm">
                 ویژه
-              </span>
+              </BadgeV4>
             )}
             {discountPercent > 0 && (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-md">
+              <BadgeV4 variant="error" size="sm">
                 {discountPercent}% تخفیف
-              </span>
+              </BadgeV4>
             )}
           </div>
           {isOutOfStock && (
@@ -397,18 +398,18 @@ function ProductCard({ product }: ProductCardProps) {
       {/* Product Info */}
       <div className="p-4">
         <Link href={`/products/${product.id}`}>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 text-right line-clamp-1">
+          <h3 className="text-lg font-semibold text-rose-900 mb-2 hover:text-rose-600 text-right line-clamp-1">
             {product.name}
           </h3>
         </Link>
-        <p className="text-gray-600 text-sm mb-3 text-right line-clamp-2">
+        <p className="text-rose-500 text-sm mb-3 text-right line-clamp-2">
           {product.description}
         </p>
 
         {/* Variant Selector - Compact Version for Cards */}
         {hasVariants && (
           <div className="mb-3">
-            <label className="block text-xs font-medium text-gray-700 mb-2 text-right">
+            <label className="block text-xs font-medium text-rose-600 mb-2 text-right">
               انتخاب نوع:
             </label>
             <div className="flex flex-wrap gap-1.5">
@@ -426,8 +427,8 @@ function ProductCard({ product }: ProductCardProps) {
                     disabled={variantOutOfStock}
                     className={`px-2 py-1 text-xs rounded border transition-all ${
                       isSelected
-                        ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
-                        : 'border-gray-300 hover:border-gray-400 text-gray-700'
+                        ? 'border-rose-400 bg-rose-50 text-rose-700 font-medium'
+                        : 'border-rose-200 hover:border-rose-300 text-rose-600'
                     } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
                     title={variantOutOfStock ? 'ناموجود' : variant.name}
                   >
@@ -450,22 +451,22 @@ function ProductCard({ product }: ProductCardProps) {
           <div className="text-right">
             {discountPercent > 0 ? (
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-gray-500 line-through">
+                <span className="text-sm text-rose-300 line-through">
                   {formatPrice(effectivePrice)}
                 </span>
-                <span className="text-xl font-bold text-red-600">
+                <span className="text-xl font-bold text-rose-600">
                   {formatPrice(discountedPrice)}
                 </span>
               </div>
             ) : (
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-xl font-bold text-rose-900">
                 {formatPrice(effectivePrice)}
               </span>
             )}
           </div>
           <div className="text-left">
             <span
-              className={`text-sm ${effectiveStock > 0 ? 'text-green-600' : 'text-red-600'}`}
+              className={`text-sm ${effectiveStock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}
             >
               {effectiveStock > 0 ? `موجود: ${effectiveStock}` : 'ناموجود'}
             </span>
