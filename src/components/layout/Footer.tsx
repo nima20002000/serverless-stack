@@ -4,22 +4,22 @@ import EnamadBadge from '@/components/badges/EnamadBadge';
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-b from-white to-rose-50/50 border-t border-rose-100 mt-auto">
+    <footer className="bg-gradient-to-b from-white to-rose-50/50 dark:from-slate-950 dark:to-slate-950 border-t border-rose-100 dark:border-slate-800 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand Section */}
           <div>
-            <h3 className="text-2xl font-bold bg-gradient-to-l from-rose-600 to-pink-500 bg-clip-text text-transparent mb-4">
+            <h3 className="text-2xl font-bold bg-gradient-to-l from-rose-600 to-pink-500 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent mb-4">
               کیتیا
             </h3>
-            <p className="text-rose-600 text-sm leading-relaxed mb-6">
+            <p className="text-rose-600 dark:text-slate-400 text-sm leading-relaxed mb-6">
               فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت
             </p>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-rose-700 text-sm">
-                <div className="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center gap-3 text-rose-700 dark:text-slate-300 text-sm">
+                <div className="w-8 h-8 bg-rose-100 dark:bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-4 h-4 text-rose-500"
+                    className="w-4 h-4 text-rose-500 dark:text-slate-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -34,10 +34,10 @@ export default function Footer() {
                 </div>
                 <span>09912218463 - 09910258259</span>
               </div>
-              <div className="flex items-start gap-3 text-rose-700 text-sm">
-                <div className="w-8 h-8 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <div className="flex items-start gap-3 text-rose-700 dark:text-slate-300 text-sm">
+                <div className="w-8 h-8 bg-rose-100 dark:bg-slate-800 rounded-xl flex items-center justify-center flex-shrink-0">
                   <svg
-                    className="w-4 h-4 text-rose-500"
+                    className="w-4 h-4 text-rose-500 dark:text-slate-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -65,7 +65,7 @@ export default function Footer() {
                 href="https://instagram.com/kitia.ir"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 rounded-xl flex items-center justify-center text-white hover:shadow-[0_8px_20px_-8px_rgba(244,63,94,0.5)] transition-all duration-300 hover:-translate-y-1"
+                className="w-10 h-10 bg-gradient-to-br from-rose-400 to-pink-500 dark:from-slate-700 dark:to-slate-600 rounded-xl flex items-center justify-center text-white hover:shadow-[0_8px_20px_-8px_rgba(244,63,94,0.5)] dark:hover:shadow-none transition-all duration-300 hover:-translate-y-1"
                 aria-label="اینستاگرام کیتیا"
               >
                 <svg
@@ -86,43 +86,43 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-bold text-rose-900 mb-5">
+            <h4 className="text-lg font-bold text-rose-900 dark:text-slate-100 mb-5">
               دسترسی سریع
             </h4>
             <ul className="space-y-3">
               <li>
                 <Link
                   href="/products"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   محصولات
                 </Link>
               </li>
               <li>
                 <Link
                   href="/about"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   درباره ما
                 </Link>
               </li>
               <li>
                 <Link
                   href="/contact"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   تماس با ما
                 </Link>
               </li>
               <li>
                 <Link
                   href="/faq"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   سوالات متداول
                 </Link>
               </li>
@@ -131,43 +131,43 @@ export default function Footer() {
 
           {/* Customer Support */}
           <div>
-            <h4 className="text-lg font-bold text-rose-900 mb-5">
+            <h4 className="text-lg font-bold text-rose-900 dark:text-slate-100 mb-5">
               راهنما و پشتیبانی
             </h4>
             <ul className="space-y-3">
               <li>
                 <Link
                   href="/shipping"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   اطلاعات ارسال
                 </Link>
               </li>
               <li>
                 <Link
                   href="/refund-policy"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   قوانین مرجوعی
                 </Link>
               </li>
               <li>
                 <Link
                   href="/terms"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   قوانین و مقررات
                 </Link>
               </li>
               <li>
                 <Link
                   href="/privacy"
-                  className="text-rose-600 hover:text-rose-800 text-sm transition-colors inline-flex items-center gap-2 group"
+                  className="text-rose-600 hover:text-rose-800 dark:text-slate-300 dark:hover:text-slate-100 text-sm transition-colors inline-flex items-center gap-2 group"
                 >
-                  <span className="w-1.5 h-1.5 bg-rose-300 rounded-full group-hover:bg-rose-500 transition-colors"></span>
+                  <span className="w-1.5 h-1.5 bg-rose-300 dark:bg-slate-700 rounded-full group-hover:bg-rose-500 dark:group-hover:bg-slate-400 transition-colors"></span>
                   حریم خصوصی
                 </Link>
               </li>
@@ -176,10 +176,10 @@ export default function Footer() {
 
           {/* Trust Badges */}
           <div>
-            <h4 className="text-lg font-bold text-rose-900 mb-5">
+            <h4 className="text-lg font-bold text-rose-900 dark:text-slate-100 mb-5">
               نماد اعتماد
             </h4>
-            <div className="flex items-start gap-3 p-4 bg-white/80 rounded-2xl border border-rose-100 shadow-[0_8px_20px_-12px_rgba(244,63,94,0.2)]">
+            <div className="flex items-start gap-3 p-4 bg-white/80 dark:bg-slate-900/70 rounded-2xl border border-rose-100 dark:border-slate-800 shadow-[0_8px_20px_-12px_rgba(244,63,94,0.2)] dark:shadow-none">
               {/* Enamad Badge - Lazy loaded */}
               <EnamadBadge />
               {/* Union Badge */}
@@ -197,21 +197,25 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-rose-200/60 mt-10 pt-8">
+        <div className="border-t border-rose-200/60 dark:border-slate-800 mt-10 pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-rose-500 text-center md:text-right">
+            <p className="text-sm text-rose-500 dark:text-slate-400 text-center md:text-right">
               © {new Date().getFullYear()} کیتیا. تمامی حقوق محفوظ است.
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-rose-400">ساخته شده با</span>
+              <span className="text-xs text-rose-400 dark:text-slate-500">
+                ساخته شده با
+              </span>
               <svg
-                className="w-4 h-4 text-rose-500"
+                className="w-4 h-4 text-rose-500 dark:text-slate-300"
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
-              <span className="text-xs text-rose-400">در ایران</span>
+              <span className="text-xs text-rose-400 dark:text-slate-500">
+                در ایران
+              </span>
             </div>
           </div>
         </div>

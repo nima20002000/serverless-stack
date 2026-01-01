@@ -544,7 +544,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -559,7 +561,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       />
 
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 text-right">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 text-right">
           ویرایش محصول
         </h1>
       </div>
@@ -577,7 +579,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card padding="sm">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 text-right">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
             اطلاعات پایه
           </h2>
 

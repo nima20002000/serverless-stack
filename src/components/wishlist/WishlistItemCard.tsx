@@ -29,9 +29,9 @@ export function WishlistItemCard({
 
   if (compact) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden">
         <Link href={`/products/${item.productId}`}>
-          <div className="relative w-full aspect-square bg-gray-100">
+          <div className="relative w-full aspect-square bg-rose-50">
             {item.image ? (
               <Image
                 src={optimizeImage.thumbnail(item.image)}
@@ -54,11 +54,11 @@ export function WishlistItemCard({
         </Link>
         <div className="p-2">
           <Link href={`/products/${item.productId}`}>
-            <h4 className="text-sm font-medium text-gray-900 line-clamp-1 hover:text-blue-600">
+            <h4 className="text-sm font-medium text-rose-900 line-clamp-1 hover:text-rose-600">
               {item.name}
             </h4>
           </Link>
-          <p className="text-sm font-bold text-gray-900 mt-1">
+          <p className="text-sm font-bold text-rose-900 mt-1">
             {formatPrice(Math.round(effectivePrice))}
           </p>
         </div>
@@ -68,11 +68,11 @@ export function WishlistItemCard({
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+      className="bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden"
       data-testid="wishlist-item"
     >
       <Link href={`/products/${item.productId}`}>
-        <div className="relative w-full aspect-[4/5] bg-gray-100">
+        <div className="relative w-full aspect-[4/5] bg-rose-50">
           {item.image ? (
             <Image
               src={optimizeImage.thumbnail(item.image)}
@@ -92,7 +92,7 @@ export function WishlistItemCard({
             </div>
           )}
           {item.discountPercent && item.discountPercent > 0 && (
-            <span className="absolute top-2 start-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+            <span className="absolute top-2 start-2 bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded-xl">
               {item.discountPercent}% تخفیف
             </span>
           )}
@@ -101,27 +101,27 @@ export function WishlistItemCard({
 
       <div className="p-4">
         <Link href={`/products/${item.productId}`}>
-          <h3 className="font-semibold text-gray-900 mb-1 line-clamp-1 hover:text-blue-600">
+          <h3 className="font-semibold text-rose-900 mb-1 line-clamp-1 hover:text-rose-600">
             {item.name}
           </h3>
         </Link>
 
         {item.variantName && (
-          <p className="text-sm text-gray-500 mb-2">{item.variantName}</p>
+          <p className="text-sm text-rose-400 mb-2">{item.variantName}</p>
         )}
 
         <div className="mb-3">
           {item.discountPercent ? (
             <div className="flex flex-col">
-              <span className="text-sm text-gray-400 line-through">
+              <span className="text-sm text-rose-300 line-through">
                 {formatPrice(item.price)}
               </span>
-              <span className="text-lg font-bold text-red-600">
+              <span className="text-lg font-bold text-rose-700">
                 {formatPrice(Math.round(effectivePrice))}
               </span>
             </div>
           ) : (
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-lg font-bold text-rose-900">
               {formatPrice(item.price)}
             </span>
           )}

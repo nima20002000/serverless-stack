@@ -23,7 +23,7 @@ const SkeletonV4 = forwardRef<HTMLDivElement, SkeletonV4Props>(
     ref
   ) => {
     const baseStyles =
-      'bg-gradient-to-r from-rose-100/80 via-rose-50 to-pink-100/80 bg-[length:200%_100%]';
+      'bg-gradient-to-r from-rose-100/80 via-rose-50 to-pink-100/80 dark:from-slate-800 dark:via-slate-700/80 dark:to-slate-800 bg-[length:200%_100%]';
 
     const variantStyles = {
       text: 'h-4 w-full rounded-lg',
@@ -111,7 +111,7 @@ export function SkeletonText({
 export function SkeletonCard({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`p-5 space-y-4 bg-white rounded-3xl border border-rose-100 ${className}`}
+      className={`p-5 space-y-4 bg-white rounded-3xl border border-rose-100 dark:bg-slate-900 dark:border-slate-800 ${className}`}
     >
       <SkeletonV4 variant="rounded" height={180} />
       <SkeletonV4 variant="text" width="55%" />
@@ -144,7 +144,7 @@ export function SkeletonAvatar({
 export function SkeletonProduct({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`p-4 space-y-4 bg-white rounded-3xl border border-rose-100 ${className}`}
+      className={`p-4 space-y-4 bg-white rounded-3xl border border-rose-100 dark:bg-slate-900 dark:border-slate-800 ${className}`}
     >
       <SkeletonV4 variant="rounded" height={200} />
       <div className="space-y-2">

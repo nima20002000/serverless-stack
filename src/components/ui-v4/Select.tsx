@@ -63,6 +63,7 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
       transition-all duration-200 ease-out
       focus:outline-none
       disabled:opacity-50 disabled:cursor-not-allowed
+      dark:text-slate-100
     `;
 
     const variantStyles = {
@@ -73,6 +74,7 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
         focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80
         hover:border-rose-300
         disabled:bg-rose-50
+        dark:bg-slate-900 dark:border-slate-700 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:border-slate-600 dark:disabled:bg-slate-800
       `,
       filled: `
         bg-rose-50/80
@@ -81,6 +83,7 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
         focus:bg-white focus:border-rose-300 focus:ring-4 focus:ring-rose-100/70
         hover:bg-rose-50
         disabled:bg-rose-100
+        dark:bg-slate-900/70 dark:border-slate-700 dark:focus:bg-slate-900 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:bg-slate-800/80 dark:disabled:bg-slate-800
       `,
       minimal: `
         bg-transparent
@@ -89,11 +92,12 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
         focus:border-rose-400
         hover:border-rose-300
         disabled:bg-transparent
+        dark:border-slate-700 dark:focus:border-slate-500 dark:hover:border-slate-600
       `,
     };
 
     const errorStyles = error
-      ? 'border-red-300 focus:border-red-400 focus:ring-red-100/70'
+      ? 'border-red-300 focus:border-red-400 focus:ring-red-100/70 dark:border-rose-600 dark:focus:border-rose-500 dark:focus:ring-rose-900/60'
       : '';
 
     const iconPaddingStyles = icon ? 'ps-11' : '';
@@ -101,7 +105,7 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
     return (
       <div className={fullWidth ? 'w-full' : 'w-auto'}>
         {label && (
-          <label className="block text-sm font-medium text-rose-700 mb-2 text-right">
+          <label className="block text-sm font-medium text-rose-700 dark:text-slate-300 mb-2 text-right">
             {label}
           </label>
         )}
@@ -120,7 +124,11 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
             {...props}
           >
             {placeholder && (
-              <option value="" disabled className="text-rose-300">
+              <option
+                value=""
+                disabled
+                className="text-rose-300 dark:text-slate-500"
+              >
                 {placeholder}
               </option>
             )}
@@ -135,19 +143,19 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
             ))}
           </select>
 
-          <div className="absolute top-1/2 -translate-y-1/2 end-3 pointer-events-none text-rose-400 transition-transform duration-200 group-focus-within:rotate-180">
+          <div className="absolute top-1/2 -translate-y-1/2 end-3 pointer-events-none text-rose-400 dark:text-slate-500 transition-transform duration-200 group-focus-within:rotate-180">
             {chevronIcon}
           </div>
 
           {icon && (
-            <div className="absolute top-1/2 -translate-y-1/2 start-4 flex items-center justify-center w-5 h-5 text-rose-400 pointer-events-none transition-colors duration-200 group-focus-within:text-rose-500">
+            <div className="absolute top-1/2 -translate-y-1/2 start-4 flex items-center justify-center w-5 h-5 text-rose-400 dark:text-slate-500 pointer-events-none transition-colors duration-200 group-focus-within:text-rose-500 dark:group-focus-within:text-slate-200">
               {icon}
             </div>
           )}
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-500 text-right flex items-center gap-1 justify-end">
+          <p className="mt-2 text-sm text-red-500 dark:text-rose-300 text-right flex items-center gap-1 justify-end">
             <span>{error}</span>
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -160,7 +168,9 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
         )}
 
         {helperText && !error && (
-          <p className="mt-2 text-sm text-rose-400 text-right">{helperText}</p>
+          <p className="mt-2 text-sm text-rose-400 dark:text-slate-500 text-right">
+            {helperText}
+          </p>
         )}
       </div>
     );

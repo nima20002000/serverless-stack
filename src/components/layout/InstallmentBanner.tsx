@@ -1,25 +1,60 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 const HIDDEN_PATHS = ['/cart', '/checkout'];
 
 export default function InstallmentBanner() {
   const pathname = usePathname();
+  const fullMessage = 'فقط ۲۵٪ پیش‌پرداخت، مابقی طی ۳ قسط ماهانه';
+  const shortMessage = '۲۵٪ پیش‌پرداخت + ۳ قسط';
+  const [typedFull, setTypedFull] = useState('');
+  const [typedShort, setTypedShort] = useState('');
 
   // Hide banner on cart and checkout pages
   if (HIDDEN_PATHS.some((path) => pathname.startsWith(path))) {
     return null;
   }
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+
+    if (prefersReducedMotion) {
+      setTypedFull(fullMessage);
+      setTypedShort(shortMessage);
+      return;
+    }
+
+    let index = 0;
+    const maxLength = Math.max(fullMessage.length, shortMessage.length);
+    const interval = window.setInterval(() => {
+      index += 1;
+      setTypedFull(fullMessage.slice(0, index));
+      setTypedShort(shortMessage.slice(0, index));
+      if (index >= maxLength) {
+        window.clearInterval(interval);
+      }
+    }, 30);
+
+    return () => window.clearInterval(interval);
+  }, [fullMessage, shortMessage]);
+
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-l from-rose-500 to-pink-500 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="fixed top-0 left-0 right-0 z-[60] text-rose-700 bg-white/90 backdrop-blur border-b border-rose-100/80 shadow-[0_6px_20px_-16px_rgba(244,63,94,0.35)]">
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(244,63,94,0.08),_rgba(255,255,255,0.95)_45%,_rgba(251,207,232,0.14))]" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center gap-2 py-2 text-sm sm:text-base">
-            <div className="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-6 h-6 bg-rose-50 border border-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-rose-600"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -36,9 +71,9 @@ export default function InstallmentBanner() {
               <span className="font-bold">خرید قسطی:</span>
               <span className="hidden sm:inline">
                 {' '}
-                فقط ۲۵٪ پیش‌پرداخت، مابقی طی ۳ قسط ماهانه
+                {typedFull}
               </span>
-              <span className="sm:hidden"> ۲۵٪ پیش‌پرداخت + ۳ قسط</span>
+              <span className="sm:hidden"> {typedShort}</span>
             </span>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Input from '@/components/ui/Input';
 import { validatePassword } from '@/lib/utils/password-validation';
 import { useFormState } from '@/hooks/useFormState';
 
@@ -167,8 +168,8 @@ export default function OTPPasswordReset({
         </Alert>
       )}
 
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-        <p className="text-sm text-blue-800">
+      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-4">
+        <p className="text-sm text-rose-700">
           {otpResetStep === 'send'
             ? 'کد تایید به شماره تلفن یا ایمیل شما ارسال خواهد شد'
             : `کد تایید را وارد کنید (${otpCountdown > 0 ? `${otpCountdown} ثانیه` : 'منقضی شده'})`}
@@ -190,60 +191,46 @@ export default function OTPPasswordReset({
         </div>
       ) : (
         <>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              کد تایید
-            </label>
-            <input
-              type="text"
-              value={otpResetForm.otp}
-              onChange={(e) =>
-                setOtpResetForm({ ...otpResetForm, otp: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-center"
-              placeholder="کد ۶ رقمی"
-              maxLength={6}
-              dir="ltr"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              رمز عبور جدید
-            </label>
-            <input
-              type="password"
-              value={otpResetForm.newPassword}
-              onChange={(e) =>
-                setOtpResetForm({
-                  ...otpResetForm,
-                  newPassword: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="حداقل ۸ کاراکتر"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              تکرار رمز عبور جدید
-            </label>
-            <input
-              type="password"
-              value={otpResetForm.confirmPassword}
-              onChange={(e) =>
-                setOtpResetForm({
-                  ...otpResetForm,
-                  confirmPassword: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
+          <Input
+            label="کد تایید"
+            type="text"
+            value={otpResetForm.otp}
+            onChange={(e) =>
+              setOtpResetForm({ ...otpResetForm, otp: e.target.value })
+            }
+            className="text-center tracking-widest"
+            placeholder="کد ۶ رقمی"
+            maxLength={6}
+            dir="ltr"
+          />
+          <Input
+            label="رمز عبور جدید"
+            type="password"
+            value={otpResetForm.newPassword}
+            onChange={(e) =>
+              setOtpResetForm({
+                ...otpResetForm,
+                newPassword: e.target.value,
+              })
+            }
+            placeholder="حداقل ۸ کاراکتر"
+          />
+          <Input
+            label="تکرار رمز عبور جدید"
+            type="password"
+            value={otpResetForm.confirmPassword}
+            onChange={(e) =>
+              setOtpResetForm({
+                ...otpResetForm,
+                confirmPassword: e.target.value,
+              })
+            }
+          />
           <div className="flex gap-3 justify-between">
             <button
               onClick={handleSendOtp}
               disabled={otpCountdown > 0 || formState.isSubmitting}
-              className="text-sm text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
+              className="text-sm text-rose-600 hover:text-rose-700 disabled:text-gray-400 disabled:no-underline"
             >
               {otpCountdown > 0
                 ? `ارسال مجدد (${otpCountdown}s)`

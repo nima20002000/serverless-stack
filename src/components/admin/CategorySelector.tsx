@@ -171,16 +171,18 @@ export default function CategorySelector({
             onChange(category.id);
             setIsOpen(false);
           }}
-          className={`w-full text-right px-4 py-2 hover:bg-gray-100 transition-colors ${
-            value === category.id ? 'bg-blue-50 text-blue-700 font-medium' : ''
+          className={`w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
+            value === category.id
+              ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-900/40 dark:text-blue-200'
+              : 'dark:hover:bg-slate-800 dark:text-slate-200'
           }`}
           style={{ paddingRight: `${1 + level * 1.5}rem` }}
         >
           <div className="flex items-center gap-2">
-            <FolderIcon className="h-4 w-4 text-gray-400" />
+            <FolderIcon className="h-4 w-4 text-gray-400 dark:text-slate-500" />
             <span>{category.name}</span>
             {category.children && category.children.length > 0 && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-gray-500 dark:text-slate-500">
                 ({category.children.length})
               </span>
             )}
@@ -199,7 +201,7 @@ export default function CategorySelector({
   if (loading) {
     return (
       <div className="relative">
-        <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+        <div className="w-full p-3 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400">
           در حال بارگذاری دسته‌بندی‌ها...
         </div>
       </div>
@@ -209,13 +211,13 @@ export default function CategorySelector({
   if (error) {
     return (
       <div className="relative">
-        <div className="w-full p-3 border border-red-300 rounded-lg bg-red-50 text-red-700 text-sm">
+        <div className="w-full p-3 border border-red-300 dark:border-rose-700 rounded-lg bg-red-50 dark:bg-rose-900/30 text-red-700 dark:text-rose-200 text-sm">
           {error}
         </div>
         <button
           type="button"
           onClick={fetchCategories}
-          className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+          className="mt-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
         >
           تلاش مجدد
         </button>
@@ -232,15 +234,21 @@ export default function CategorySelector({
         disabled={disabled}
         className={`w-full flex items-center justify-between p-3 border rounded-lg transition-colors ${
           disabled
-            ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-            : 'bg-white hover:border-gray-400'
-        } ${isOpen ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}`}
+            ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+            : 'bg-white hover:border-gray-400 dark:bg-slate-900 dark:hover:border-slate-500'
+        } ${isOpen ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900/50' : 'border-gray-300 dark:border-slate-700'}`}
       >
-        <span className={selectedCategory ? 'text-gray-900' : 'text-gray-500'}>
+        <span
+          className={
+            selectedCategory
+              ? 'text-gray-900 dark:text-slate-100'
+              : 'text-gray-500 dark:text-slate-400'
+          }
+        >
           {selectedCategory ? selectedCategory.name : 'انتخاب دسته‌بندی'}
         </span>
         <ChevronDownIcon
-          className={`h-5 w-5 text-gray-400 transition-transform ${
+          className={`h-5 w-5 text-gray-400 dark:text-slate-500 transition-transform ${
             isOpen ? 'transform rotate-180' : ''
           }`}
         />
@@ -259,12 +267,12 @@ export default function CategorySelector({
           />
 
           {/* Menu */}
-          <div className="absolute z-20 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+          <div className="absolute z-20 mt-2 w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-lg dark:shadow-none max-h-80 overflow-y-auto">
             {/* Create Category Button */}
             <button
               type="button"
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="w-full text-right px-4 py-2 hover:bg-gray-100 text-blue-600 font-medium border-b border-gray-200 flex items-center gap-2"
+              className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-300 font-medium border-b border-gray-200 dark:border-slate-800 flex items-center gap-2"
             >
               <PlusIcon className="h-4 w-4" />
               ایجاد دسته‌بندی جدید
@@ -272,7 +280,7 @@ export default function CategorySelector({
 
             {/* Create Form */}
             {showCreateForm && (
-              <div className="p-4 border-b border-gray-200 bg-blue-50 space-y-3">
+              <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-blue-50 dark:bg-slate-900/60 space-y-3">
                 <Input
                   label="نام دسته‌بندی"
                   value={createForm.name}
@@ -284,7 +292,7 @@ export default function CategorySelector({
                 />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     توضیحات (اختیاری)
                   </label>
                   <textarea
@@ -298,12 +306,12 @@ export default function CategorySelector({
                     placeholder="توضیحات دسته‌بندی..."
                     disabled={isCreating}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     دسته‌بندی والد (اختیاری)
                   </label>
                   <select
@@ -315,7 +323,7 @@ export default function CategorySelector({
                       })
                     }
                     disabled={isCreating}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
                   >
                     <option value="">بدون والد (دسته اصلی)</option>
                     {getAllCategories(categories).map((cat) => (
@@ -361,14 +369,14 @@ export default function CategorySelector({
                 onChange(null);
                 setIsOpen(false);
               }}
-              className="w-full text-right px-4 py-2 hover:bg-gray-100 text-gray-500 border-b border-gray-200"
+              className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-800"
             >
               بدون دسته‌بندی
             </button>
 
             {/* Categories */}
             {categories.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 text-sm">
+              <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
                 هیچ دسته‌بندی‌ای موجود نیست. یکی ایجاد کنید!
               </div>
             ) : (

@@ -75,9 +75,11 @@ export default function AdminDashboard() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      COMPLETED: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      FAILED: 'bg-red-100 text-red-800',
+      COMPLETED:
+        'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+      PENDING:
+        'bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200',
+      FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
       COMPLETED: 'موفق',
@@ -98,7 +100,9 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -116,17 +120,17 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-4 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-right">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
           داشبورد مدیریت
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 text-right mt-1 sm:mt-2">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-slate-400 text-right mt-1 sm:mt-2">
           خلاصه آمار و فعالیت‌های سیستم
         </p>
       </div>
 
       {/* Quick Navigation Cards - Mobile First */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
           دسترسی سریع
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -170,7 +174,7 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
           آمار کلی
         </h2>
       </div>
@@ -220,42 +224,45 @@ export default function AdminDashboard() {
       {/* Recent Transactions */}
       <Card padding="sm">
         <div className="sm:p-2">
-          <h2 className="text-base sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-right">
+          <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
             آخرین تراکنش‌ها
           </h2>
           {stats.recentTransactions.length === 0 ? (
-            <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500">
+            <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500 dark:text-slate-500">
               هیچ تراکنشی وجود ندارد
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px]">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
                       وضعیت
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
                       تاریخ
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
                       مبلغ
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
                       کاربر
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900">
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
                       کد تراکنش
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                   {stats.recentTransactions.map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
+                    <tr
+                      key={transaction.id}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                    >
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
                         {format(
                           new Date(transaction.createdAt),
                           'yyyy/MM/dd - HH:mm'
@@ -266,16 +273,16 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden sm:table-cell">
                         <div className="text-xs sm:text-sm">
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-gray-900 dark:text-slate-100">
                             {transaction.user.name}
                           </div>
-                          <div className="text-gray-500">
+                          <div className="text-gray-500 dark:text-slate-500">
                             {transaction.user.email}
                           </div>
                         </div>
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
-                        <code className="text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded break-all">
+                        <code className="text-[10px] sm:text-xs bg-gray-100 dark:bg-slate-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded break-all">
                           {transaction.transactionCode}
                         </code>
                       </td>

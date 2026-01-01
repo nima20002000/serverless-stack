@@ -91,7 +91,9 @@ export default function Pagination({
                 1
               </Button>
               {pageNumbers[0] > 2 && (
-                <span className="px-2 text-gray-500">...</span>
+                <span className="px-2 text-gray-500 dark:text-slate-500">
+                  ...
+                </span>
               )}
             </>
           )}
@@ -113,7 +115,9 @@ export default function Pagination({
           {pageNumbers[pageNumbers.length - 1] < totalPages && (
             <>
               {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
-                <span className="px-2 text-gray-500">...</span>
+                <span className="px-2 text-gray-500 dark:text-slate-500">
+                  ...
+                </span>
               )}
               <Button
                 variant="ghost"
@@ -140,7 +144,7 @@ export default function Pagination({
 
       {/* Page Info */}
       {!showPageNumbers && (
-        <span className="text-sm text-gray-600 mx-2">
+        <span className="text-sm text-gray-600 dark:text-slate-400 mx-2">
           صفحه {safePage.toLocaleString('fa-IR')} از{' '}
           {totalPages.toLocaleString('fa-IR')}
         </span>

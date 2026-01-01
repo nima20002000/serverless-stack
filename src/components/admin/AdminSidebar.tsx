@@ -39,7 +39,7 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed bottom-4 left-4 z-40 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+        className="lg:hidden fixed bottom-4 left-4 z-40 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700"
         aria-label="فهرست منو"
       >
         <Bars3Icon className="w-6 h-6" />
@@ -48,7 +48,7 @@ export default function AdminSidebar() {
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 dark:bg-slate-950/70 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
@@ -63,23 +63,23 @@ export default function AdminSidebar() {
           lg:z-auto
         `}
       >
-        <nav className="bg-white rounded-lg shadow-md p-4 sticky top-4 lg:top-4 mt-4 lg:mt-0 mr-4 lg:mr-0">
+        <nav className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-md dark:shadow-none p-4 sticky top-4 lg:top-4 mt-4 lg:mt-0 mr-4 lg:mr-0">
           {/* Mobile Close Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-500 hover:text-gray-700 p-1"
+              className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 p-1"
               aria-label="بستن منو"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">
               پنل مدیریت کیتیا
             </h2>
           </div>
 
           {/* Desktop Header */}
-          <h2 className="hidden lg:block text-lg font-bold text-gray-900 mb-4 text-right">
+          <h2 className="hidden lg:block text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
             پنل مدیریت کیتیا
           </h2>
 
@@ -95,10 +95,10 @@ export default function AdminSidebar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-right transition-colors ${
                       isActive
-                        ? 'bg-blue-50 text-blue-600 font-medium'
+                        ? 'bg-blue-50 text-blue-600 font-medium dark:bg-slate-800 dark:text-slate-100'
                         : item.disabled
-                          ? 'text-gray-400 cursor-not-allowed'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'text-gray-400 dark:text-slate-500 cursor-not-allowed'
+                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100'
                     }`}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />

@@ -109,7 +109,7 @@ export default function OTPInput({
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}
-          className="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed transition-all"
+          className="w-12 h-14 text-center text-2xl font-bold border border-rose-200 rounded-2xl text-rose-900 focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:focus:border-slate-500 dark:focus:ring-slate-700/60"
           aria-label={`کد تایید رقم ${index + 1}`}
         />
       ))}

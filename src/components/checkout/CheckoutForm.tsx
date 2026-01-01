@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Session } from 'next-auth';
 import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import {
@@ -401,7 +402,7 @@ export default function CheckoutForm({
   if (!_hasHydrated || (isLoadingProfile && session)) {
     return (
       <Card className="mt-6">
-        <div className="text-center py-8 text-gray-600">در حال بارگذاری...</div>
+        <div className="text-center py-8 text-slate-500">در حال بارگذاری...</div>
       </Card>
     );
   }
@@ -413,10 +414,20 @@ export default function CheckoutForm({
   const hasProfileName = !!(isLoggedIn && initialProfileData.name);
   const hasProfilePhone = !!(isLoggedIn && initialProfileData.phone);
   const hasProfileEmail = !!(isLoggedIn && initialProfileData.email);
+  const textareaClassName = [
+    'w-full min-h-[96px] px-4 py-2',
+    'text-slate-900 text-sm text-right placeholder:text-slate-400',
+    'bg-white border border-slate-200 rounded-2xl',
+    'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
+    'transition-all duration-200 ease-out',
+    'disabled:opacity-50 disabled:cursor-not-allowed',
+    'dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500',
+    'dark:focus:border-slate-500 dark:focus:ring-slate-700/60',
+  ].join(' ');
 
   return (
     <Card className="mt-6">
-      <h2 className="text-lg font-bold text-gray-900 text-right mb-4 border-b pb-3">
+      <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
         اطلاعات ارسال
       </h2>
 
@@ -430,26 +441,20 @@ export default function CheckoutForm({
 
         {/* Full Name */}
         <div>
-          <label
-            htmlFor="fullName"
-            className="block text-sm font-medium text-gray-700 text-right mb-2"
-          >
-            نام و نام خانوادگی <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
+          <Input
             id="fullName"
+            label="نام و نام خانوادگی *"
+            type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfileName ? 'bg-gray-100' : ''}`}
             required
             dir="rtl"
             disabled={hasProfileName}
           />
           {hasProfileName && (
-            <p className="text-sm text-blue-600 text-right mt-2">
+            <p className="text-sm text-slate-500 text-right mt-2">
               💡 برای تغییر نام، به{' '}
-              <Link href="/profile" className="underline hover:text-blue-800">
+              <Link href="/profile" className="underline hover:text-slate-700">
                 صفحه پروفایل
               </Link>{' '}
               مراجعه کنید
@@ -459,19 +464,13 @@ export default function CheckoutForm({
 
         {/* Phone */}
         <div>
-          <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-700 text-right mb-2"
-          >
-            شماره تلفن <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="tel"
+          <Input
             id="phone"
             name="phone"
+            label="شماره تلفن *"
+            type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfilePhone ? 'bg-gray-100' : ''}`}
             placeholder="09123456789"
             required
             dir="ltr"
@@ -479,9 +478,9 @@ export default function CheckoutForm({
             autoComplete="off"
           />
           {hasProfilePhone && (
-            <p className="text-sm text-blue-600 text-right mt-2">
+            <p className="text-sm text-slate-500 text-right mt-2">
               💡 برای تغییر شماره تلفن، به{' '}
-              <Link href="/profile" className="underline hover:text-blue-800">
+              <Link href="/profile" className="underline hover:text-slate-700">
                 صفحه پروفایل
               </Link>{' '}
               مراجعه کنید
@@ -496,25 +495,19 @@ export default function CheckoutForm({
 
         {/* Email (Optional) */}
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 text-right mb-2"
-          >
-            ایمیل (اختیاری)
-          </label>
-          <input
-            type="email"
+          <Input
             id="email"
+            label="ایمیل (اختیاری)"
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${hasProfileEmail ? 'bg-gray-100' : ''}`}
             dir="ltr"
             disabled={hasProfileEmail}
           />
           {hasProfileEmail && (
-            <p className="text-sm text-blue-600 text-right mt-2">
+            <p className="text-sm text-slate-500 text-right mt-2">
               💡 برای تغییر ایمیل، به{' '}
-              <Link href="/profile" className="underline hover:text-blue-800">
+              <Link href="/profile" className="underline hover:text-slate-700">
                 صفحه پروفایل
               </Link>{' '}
               مراجعه کنید
@@ -526,16 +519,16 @@ export default function CheckoutForm({
         <div>
           <label
             htmlFor="shippingAddress"
-            className="block text-sm font-medium text-gray-700 text-right mb-2"
+            className="block text-sm font-medium text-slate-700 text-right mb-2"
           >
-            آدرس ارسال <span className="text-red-500">*</span>
+            آدرس ارسال *
           </label>
           <textarea
             id="shippingAddress"
             value={shippingAddress}
             onChange={(e) => setShippingAddress(e.target.value)}
             rows={3}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right resize-none"
+            className={`${textareaClassName} resize-none`}
             required
             dir="rtl"
           />
@@ -543,20 +536,14 @@ export default function CheckoutForm({
 
         {/* Postal Code (Optional) */}
         <div>
-          <label
-            htmlFor="postalCode"
-            className="block text-sm font-medium text-gray-700 text-right mb-2"
-          >
-            کد پستی (اختیاری)
-          </label>
-          <input
-            type="text"
+          <Input
             id="postalCode"
+            label="کد پستی (اختیاری)"
+            type="text"
             value={postalCode}
             onChange={(e) =>
               setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))
             }
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
             placeholder="1234567890"
             maxLength={10}
             dir="ltr"
@@ -572,12 +559,12 @@ export default function CheckoutForm({
 
         {/* Create Account Section (Only for guest users) */}
         {!session && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
             {/* Checkbox Row */}
             <div className="flex items-center gap-2 justify-end">
               <label
                 htmlFor="createAccount"
-                className="text-sm font-medium text-gray-700 cursor-pointer"
+                className="text-sm font-medium text-slate-700 cursor-pointer"
               >
                 ساخت حساب کاربری
               </label>
@@ -586,12 +573,12 @@ export default function CheckoutForm({
                 id="createAccount"
                 checked={createAccount}
                 onChange={(e) => setCreateAccount(e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-slate-700 border-slate-300 rounded focus:ring-slate-400"
               />
             </div>
 
             {/* Helper Text */}
-            <p className="text-xs text-gray-600 text-right">
+            <p className="text-xs text-slate-600 text-right">
               {createAccount
                 ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
                 : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
@@ -599,7 +586,7 @@ export default function CheckoutForm({
 
             {/* OTP Verification Section - Only shown when createAccount is checked */}
             {createAccount && (
-              <div className="pt-2 border-t border-blue-300 space-y-2">
+              <div className="pt-2 border-t border-slate-200 space-y-2">
                 {!phoneVerified ? (
                   <>
                     {!otpSent ? (
@@ -617,7 +604,7 @@ export default function CheckoutForm({
                       </Button>
                     ) : (
                       <div className="space-y-2">
-                        <input
+                        <Input
                           type="text"
                           value={otpCode}
                           onChange={(e) =>
@@ -625,7 +612,7 @@ export default function CheckoutForm({
                               e.target.value.replace(/\D/g, '').slice(0, 6)
                             )
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center"
+                          className="text-center tracking-widest"
                           placeholder="کد 6 رقمی را وارد کنید"
                           maxLength={6}
                           dir="ltr"

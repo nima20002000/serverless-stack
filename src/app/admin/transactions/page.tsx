@@ -145,9 +145,11 @@ export default function TransactionsManagementPage() {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      COMPLETED: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      FAILED: 'bg-red-100 text-red-800',
+      COMPLETED:
+        'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+      PENDING:
+        'bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200',
+      FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
       COMPLETED: 'موفق',
@@ -171,7 +173,7 @@ export default function TransactionsManagementPage() {
       DIGIPAY: 'دیجی‌پی',
     };
     return (
-      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+      <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
         {labels[method as keyof typeof labels] || method}
       </span>
     );
@@ -180,7 +182,9 @@ export default function TransactionsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -190,10 +194,10 @@ export default function TransactionsManagementPage() {
       <Breadcrumbs items={[{ label: 'مدیریت تراکنش‌ها' }]} />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
           مدیریت تراکنش‌ها
         </h1>
-        <p className="text-gray-600 text-right mt-2">
+        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
           مشاهده و مدیریت تراکنش‌های سیستم
         </p>
       </div>
@@ -216,7 +220,7 @@ export default function TransactionsManagementPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو بر اساس کد تراکنش، نام کاربر یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
             />
             <Button
               type="submit"
@@ -234,7 +238,7 @@ export default function TransactionsManagementPage() {
         <div className="p-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap order-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap order-1">
                 بازه تاریخ:
               </label>
               <input
@@ -244,9 +248,9 @@ export default function TransactionsManagementPage() {
                   setDateFrom(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-2"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-2 dark:bg-slate-900 dark:text-slate-100"
               />
-              <span className="text-sm text-gray-600 text-center order-3">
+              <span className="text-sm text-gray-600 dark:text-slate-400 text-center order-3">
                 تا
               </span>
               <input
@@ -256,7 +260,7 @@ export default function TransactionsManagementPage() {
                   setDateTo(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-4"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-4 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
 
@@ -282,14 +286,14 @@ export default function TransactionsManagementPage() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+              className="px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
             >
               <option value="all">همه</option>
               <option value="COMPLETED">موفق</option>
               <option value="PENDING">در انتظار</option>
               <option value="FAILED">ناموفق</option>
             </select>
-            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
               وضعیت:
             </label>
           </div>
@@ -299,13 +303,13 @@ export default function TransactionsManagementPage() {
       {data && (
         <>
           <Card>
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-slate-400">
                   نمایش {data.data.length.toLocaleString('fa-IR')} تراکنش از{' '}
                   {data.total.toLocaleString('fa-IR')} تراکنش
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-slate-400">
                   صفحه {data.page.toLocaleString('fa-IR')} از{' '}
                   {data.totalPages.toLocaleString('fa-IR')}
                 </div>
@@ -314,49 +318,49 @@ export default function TransactionsManagementPage() {
 
             <div className="overflow-x-auto -mx-6 px-6">
               <table className="w-full min-w-[900px]">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
                       محصولات
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
                       درگاه
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       وضعیت
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
                       تاریخ
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       مبلغ
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       کاربر
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       کد تراکنش
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                   {data.data.map((transaction) => (
                     <tr
                       key={transaction.id}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer transition-colors"
                       onClick={() => handleTransactionClick(transaction.id)}
                     >
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-slate-400">
                           {transaction.items.length.toLocaleString('fa-IR')}{' '}
                           محصول
                           {transaction.items.length > 0 && (
-                            <div className="text-xs text-gray-500 mt-1">
+                            <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
                               {transaction.items.slice(0, 2).map((item) => (
                                 <div key={item.id}>
                                   {item.product.name}
                                   {item.variant && (
-                                    <span className="text-blue-600">
+                                    <span className="text-blue-600 dark:text-blue-300">
                                       {' '}
                                       ({item.variant.name})
                                     </span>
@@ -383,7 +387,7 @@ export default function TransactionsManagementPage() {
                       <td className="px-4 py-3 text-right">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600 whitespace-nowrap hidden sm:table-cell">
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">
                         {format(
                           new Date(transaction.createdAt),
                           'yyyy/MM/dd - HH:mm'
@@ -394,19 +398,19 @@ export default function TransactionsManagementPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900 flex items-center gap-2">
+                          <div className="font-medium text-gray-900 dark:text-slate-100 flex items-center gap-2">
                             <span>
                               {transaction.user
                                 ? transaction.user.name
                                 : transaction.fullName}
                             </span>
                             {transaction.isGuest && (
-                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">
+                              <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded">
                                 مهمان
                               </span>
                             )}
                           </div>
-                          <div className="text-gray-500 text-xs">
+                          <div className="text-gray-500 dark:text-slate-500 text-xs">
                             {transaction.user
                               ? transaction.user.email
                               : transaction.email || transaction.phone}
@@ -414,16 +418,16 @@ export default function TransactionsManagementPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                        <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                           {transaction.transactionCode}
                         </code>
                         {transaction.zarinpalRefId && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
                             Ref: {transaction.zarinpalRefId}
                           </div>
                         )}
                         {transaction.invoice && (
-                          <div className="text-xs text-green-600 mt-1">
+                          <div className="text-xs text-green-600 dark:text-emerald-300 mt-1">
                             فاکتور: {transaction.invoice.invoiceNumber}
                           </div>
                         )}
@@ -434,7 +438,7 @@ export default function TransactionsManagementPage() {
               </table>
 
               {data.data.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-slate-500">
                   هیچ تراکنشی یافت نشد
                 </div>
               )}
@@ -451,7 +455,7 @@ export default function TransactionsManagementPage() {
               >
                 قبلی
               </Button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-slate-400">
                 صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
                 {data.totalPages.toLocaleString('fa-IR')}
               </span>
@@ -478,9 +482,11 @@ export default function TransactionsManagementPage() {
 
       {/* Loading indicator for modal */}
       {loadingTransaction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg p-6 shadow-xl">
-            <div className="text-gray-600">در حال بارگذاری جزئیات...</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-slate-950/70">
+          <div className="bg-white dark:bg-slate-900 rounded-lg p-6 shadow-xl dark:shadow-none">
+            <div className="text-gray-600 dark:text-slate-400">
+              در حال بارگذاری جزئیات...
+            </div>
           </div>
         </div>
       )}

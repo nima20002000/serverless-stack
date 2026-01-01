@@ -100,7 +100,7 @@ export default function SearchBar({
           {/* Search Icon */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             {isLoading ? (
-              <div className="animate-spin h-5 w-5 text-rose-400">
+              <div className="animate-spin h-5 w-5 text-rose-400 dark:text-slate-500">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
@@ -118,13 +118,13 @@ export default function SearchBar({
                 </svg>
               </div>
             ) : (
-              <MagnifyingGlassIcon className="h-5 w-5 text-rose-400" />
+              <MagnifyingGlassIcon className="h-5 w-5 text-rose-400 dark:text-slate-500" />
             )}
           </div>
 
           {/* Input Field */}
           <Combobox.Input
-            className="w-full pr-10 pl-10 py-2.5 text-sm bg-rose-50/50 border border-rose-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all placeholder-rose-400"
+            className="w-full pr-10 pl-10 py-2.5 text-sm bg-rose-50/50 border border-rose-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all placeholder-rose-400 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-slate-700/60"
             placeholder={placeholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -139,9 +139,9 @@ export default function SearchBar({
                 setQuery('');
                 setResults({ products: [], categories: [], total: 0 });
               }}
-              className="absolute inset-y-0 left-0 flex items-center pl-3 hover:bg-rose-100 rounded-l-2xl transition-colors"
+              className="absolute inset-y-0 left-0 flex items-center pl-3 hover:bg-rose-100 dark:hover:bg-slate-800 rounded-l-2xl transition-colors"
             >
-              <XMarkIcon className="h-5 w-5 text-rose-400 hover:text-rose-600" />
+              <XMarkIcon className="h-5 w-5 text-rose-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-slate-200" />
             </button>
           )}
 
@@ -153,13 +153,13 @@ export default function SearchBar({
             leaveTo="opacity-0"
             afterLeave={() => setQuery('')}
           >
-            <Combobox.Options className="absolute z-50 mt-2 w-full bg-white rounded-2xl shadow-[0_20px_40px_-20px_rgba(244,63,94,0.25)] border border-rose-100 max-h-96 overflow-auto focus:outline-none">
+            <Combobox.Options className="absolute z-50 mt-2 w-full bg-white dark:bg-slate-900 rounded-2xl shadow-[0_20px_40px_-20px_rgba(244,63,94,0.25)] dark:shadow-none border border-rose-100 dark:border-slate-800 max-h-96 overflow-auto focus:outline-none">
               {hasResults ? (
                 <div className="py-2">
                   {/* Categories Section */}
                   {results.categories.length > 0 && (
                     <div className="mb-2">
-                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 bg-rose-50/70">
+                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 dark:text-slate-400 bg-rose-50/70 dark:bg-slate-900/70">
                         دسته‌بندی‌ها
                       </div>
                       {results.categories.map((category) => (
@@ -169,8 +169,8 @@ export default function SearchBar({
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
                               active
-                                ? 'bg-rose-50 text-rose-900'
-                                : 'text-rose-800'
+                                ? 'bg-rose-50 text-rose-900 dark:bg-slate-800 dark:text-slate-100'
+                                : 'text-rose-800 dark:text-slate-200'
                             }`
                           }
                         >
@@ -178,12 +178,16 @@ export default function SearchBar({
                             <div className="flex items-center gap-3">
                               <div
                                 className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
-                                  active ? 'bg-rose-200' : 'bg-rose-100'
+                                  active
+                                    ? 'bg-rose-200 dark:bg-slate-700'
+                                    : 'bg-rose-100 dark:bg-slate-800'
                                 }`}
                               >
                                 <FolderIcon
                                   className={`w-5 h-5 ${
-                                    active ? 'text-rose-600' : 'text-rose-500'
+                                    active
+                                      ? 'text-rose-600 dark:text-slate-100'
+                                      : 'text-rose-500 dark:text-slate-300'
                                   }`}
                                 />
                               </div>
@@ -192,7 +196,7 @@ export default function SearchBar({
                                   {category.name}
                                 </p>
                                 {category.description && (
-                                  <p className="text-xs text-rose-500 truncate mt-0.5">
+                                  <p className="text-xs text-rose-500 dark:text-slate-500 truncate mt-0.5">
                                     {category.description}
                                   </p>
                                 )}
@@ -207,7 +211,7 @@ export default function SearchBar({
                   {/* Products Section */}
                   {results.products.length > 0 && (
                     <div>
-                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 bg-rose-50/70">
+                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 dark:text-slate-400 bg-rose-50/70 dark:bg-slate-900/70">
                         محصولات
                       </div>
                       {results.products.map((product) => (
@@ -217,8 +221,8 @@ export default function SearchBar({
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
                               active
-                                ? 'bg-rose-50 text-rose-900'
-                                : 'text-rose-800'
+                                ? 'bg-rose-50 text-rose-900 dark:bg-slate-800 dark:text-slate-100'
+                                : 'text-rose-800 dark:text-slate-200'
                             }`
                           }
                         >
@@ -227,7 +231,9 @@ export default function SearchBar({
                               {/* Product Image */}
                               <div
                                 className={`relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border ${
-                                  active ? 'border-rose-300' : 'border-rose-200'
+                                  active
+                                    ? 'border-rose-300 dark:border-slate-600'
+                                    : 'border-rose-200 dark:border-slate-700'
                                 }`}
                               >
                                 {product.images && product.images.length > 0 ? (
@@ -239,8 +245,8 @@ export default function SearchBar({
                                     sizes="48px"
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-rose-100 flex items-center justify-center">
-                                    <TagIcon className="w-6 h-6 text-rose-400" />
+                                  <div className="w-full h-full bg-rose-100 dark:bg-slate-800 flex items-center justify-center">
+                                    <TagIcon className="w-6 h-6 text-rose-400 dark:text-slate-500" />
                                   </div>
                                 )}
                               </div>
@@ -251,13 +257,15 @@ export default function SearchBar({
                                   {product.name}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-sm font-semibold text-rose-600">
+                                  <span className="text-sm font-semibold text-rose-600 dark:text-slate-100">
                                     {formatPrice(product.price)}
                                   </span>
                                   {product.categoryName && (
                                     <>
-                                      <span className="text-rose-300">•</span>
-                                      <span className="text-xs text-rose-500 truncate">
+                                      <span className="text-rose-300 dark:text-slate-600">
+                                        •
+                                      </span>
+                                      <span className="text-xs text-rose-500 dark:text-slate-500 truncate">
                                         {product.categoryName}
                                       </span>
                                     </>
@@ -269,7 +277,7 @@ export default function SearchBar({
                               {product.discountPercent &&
                                 product.discountPercent > 0 && (
                                   <div className="flex-shrink-0">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-slate-800 dark:text-slate-200">
                                       {product.discountPercent}٪ تخفیف
                                     </span>
                                   </div>
@@ -284,10 +292,10 @@ export default function SearchBar({
               ) : (
                 query.trim().length >= 2 &&
                 !isLoading && (
-                  <div className="px-4 py-8 text-center text-rose-500">
-                    <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-rose-300 mb-3" />
+                  <div className="px-4 py-8 text-center text-rose-500 dark:text-slate-400">
+                    <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-rose-300 dark:text-slate-600 mb-3" />
                     <p className="text-sm font-medium">نتیجه‌ای یافت نشد</p>
-                    <p className="text-xs mt-1 text-rose-400">
+                    <p className="text-xs mt-1 text-rose-400 dark:text-slate-500">
                       جستجوی دیگری را امتحان کنید
                     </p>
                   </div>

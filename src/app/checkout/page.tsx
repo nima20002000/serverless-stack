@@ -165,8 +165,8 @@ export default function CheckoutPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white flex items-center justify-center">
-        <div className="text-rose-600">در حال بارگذاری...</div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="text-slate-500">در حال بارگذاری...</div>
       </div>
     );
   }
@@ -176,18 +176,18 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <Link
               href="/cart"
-              className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
             >
-              <ArrowRightIcon className="w-5 h-5 text-rose-600" />
+              <ArrowRightIcon className="w-5 h-5 text-slate-600" />
             </Link>
-            <h1 className="text-2xl font-bold text-rose-900 text-right">
+            <h1 className="text-2xl font-bold text-slate-900 text-right">
               تکمیل خرید
             </h1>
           </div>
@@ -205,7 +205,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2">
             {/* Order Summary */}
             <Card>
-              <h2 className="text-lg font-bold text-rose-900 text-right mb-4 border-b border-rose-100 pb-3">
+              <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
                 اطلاعات سفارش
               </h2>
 
@@ -213,9 +213,9 @@ export default function CheckoutPage() {
                 {items.map((item) => (
                   <div
                     key={`${item.productId}-${item.variantId || 'no-variant'}`}
-                    className="flex items-center gap-4 py-3 border-b border-rose-100 last:border-b-0"
+                    className="flex items-center gap-4 py-3 border-b border-slate-100 last:border-b-0"
                   >
-                    <div className="flex-shrink-0 w-16 h-16 bg-rose-50 rounded-xl overflow-hidden">
+                    <div className="flex-shrink-0 w-16 h-16 bg-slate-50 rounded-xl overflow-hidden">
                       {item.image ? (
                         <Image
                           src={optimizeImage.cartItem(item.image)}
@@ -225,23 +225,25 @@ export default function CheckoutPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-rose-300">
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
                           <span className="text-xs">بدون تصویر</span>
                         </div>
                       )}
                     </div>
                     <div className="flex-1 text-right">
-                      <h3 className="font-medium text-rose-900">{item.name}</h3>
+                      <h3 className="font-medium text-slate-900">
+                        {item.name}
+                      </h3>
                       {item.variantName && (
-                        <p className="text-xs text-rose-500 mt-0.5">
+                        <p className="text-xs text-slate-500 mt-0.5">
                           {item.variantName}
                         </p>
                       )}
-                      <p className="text-sm text-rose-600">
+                      <p className="text-sm text-slate-600">
                         {formatPrice(item.price)} × {item.quantity}
                       </p>
                     </div>
-                    <div className="text-left font-bold text-rose-900">
+                    <div className="text-left font-bold text-slate-900">
                       {formatPrice(item.price * item.quantity)}
                     </div>
                   </div>
@@ -251,15 +253,15 @@ export default function CheckoutPage() {
 
             {/* Payment Method Selection - shown here for mobile, after order summary */}
             <Card className="mt-6 lg:hidden">
-              <h2 className="text-lg font-bold text-rose-900 text-right mb-4 border-b border-rose-100 pb-3">
+              <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
                 روش پرداخت
               </h2>
               <div className="space-y-3">
                 <label
                   className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                     paymentMethod === 'zarinpal'
-                      ? 'border-rose-400 bg-rose-50'
-                      : 'border-rose-100 bg-white hover:border-rose-200'
+                      ? 'border-slate-400 bg-slate-50'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <input
@@ -268,11 +270,11 @@ export default function CheckoutPage() {
                     value="zarinpal"
                     checked={paymentMethod === 'zarinpal'}
                     onChange={() => setPaymentMethod('zarinpal')}
-                    className="w-4 h-4 text-rose-600 border-rose-300 focus:ring-rose-500"
+                    className="w-4 h-4 text-slate-700 border-slate-300 focus:ring-slate-400"
                   />
                   <div className="flex-1 text-right">
-                    <div className="font-medium text-rose-900">زرین‌پال</div>
-                    <div className="text-sm text-rose-600">
+                    <div className="font-medium text-slate-900">زرین‌پال</div>
+                    <div className="text-sm text-slate-600">
                       پرداخت امن با کلیه کارت‌های بانکی
                     </div>
                   </div>
@@ -285,7 +287,7 @@ export default function CheckoutPage() {
                   className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                     paymentMethod === 'zibal'
                       ? 'border-emerald-400 bg-emerald-50'
-                      : 'border-rose-100 bg-white hover:border-rose-200'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <input
@@ -294,11 +296,11 @@ export default function CheckoutPage() {
                     value="zibal"
                     checked={paymentMethod === 'zibal'}
                     onChange={() => setPaymentMethod('zibal')}
-                    className="w-4 h-4 text-emerald-600 border-rose-300 focus:ring-emerald-500"
+                    className="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500"
                   />
                   <div className="flex-1 text-right">
-                    <div className="font-medium text-rose-900">زیبال</div>
-                    <div className="text-sm text-rose-600">
+                    <div className="font-medium text-slate-900">زیبال</div>
+                    <div className="text-sm text-slate-600">
                       پرداخت امن با کلیه کارت‌های بانکی
                     </div>
                   </div>
@@ -310,8 +312,8 @@ export default function CheckoutPage() {
                 <label
                   className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                     paymentMethod === 'digipay'
-                      ? 'border-purple-400 bg-purple-50'
-                      : 'border-rose-100 bg-white hover:border-rose-200'
+                      ? 'border-slate-400 bg-slate-50'
+                      : 'border-slate-200 bg-white hover:border-slate-300'
                   }`}
                 >
                   <input
@@ -320,12 +322,12 @@ export default function CheckoutPage() {
                     value="digipay"
                     checked={paymentMethod === 'digipay'}
                     onChange={() => setPaymentMethod('digipay')}
-                    className="w-4 h-4 text-purple-600 border-rose-300 focus:ring-purple-500"
+                    className="w-4 h-4 text-slate-700 border-slate-300 focus:ring-slate-400"
                   />
                   <div className="flex-1 text-right">
-                    <div className="font-medium text-rose-900">دیجی پی</div>
-                    <div className="text-sm text-rose-600">پرداخت اقساطی</div>
-                    <div className="text-xs text-purple-600 mt-1">
+                    <div className="font-medium text-slate-900">دیجی پی</div>
+                    <div className="text-sm text-slate-600">پرداخت اقساطی</div>
+                    <div className="text-xs text-slate-500 mt-1">
                       + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ کارمزد درگاه
                     </div>
                   </div>
@@ -334,24 +336,8 @@ export default function CheckoutPage() {
                   </div>
                 </label>
 
-                <div
-                  className={`${
-                    paymentMethod === 'digipay'
-                      ? 'bg-purple-50 border-purple-200'
-                      : paymentMethod === 'zibal'
-                        ? 'bg-emerald-50 border-emerald-200'
-                        : 'bg-rose-50 border-rose-200'
-                  } border rounded-2xl p-3 mt-4`}
-                >
-                  <p
-                    className={`text-xs ${
-                      paymentMethod === 'digipay'
-                        ? 'text-purple-800'
-                        : paymentMethod === 'zibal'
-                          ? 'text-emerald-800'
-                          : 'text-rose-800'
-                    } text-right`}
-                  >
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mt-4">
+                  <p className="text-xs text-slate-700 text-right">
                     {paymentMethod === 'digipay'
                       ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
                       : paymentMethod === 'zibal'
@@ -377,15 +363,15 @@ export default function CheckoutPage() {
             <div className="sticky top-4 space-y-6">
               {/* Payment Method Selection - shown here for desktop only */}
               <Card className="hidden lg:block">
-                <h2 className="text-lg font-bold text-rose-900 text-right mb-4 border-b border-rose-100 pb-3">
+                <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
                   روش پرداخت
                 </h2>
                 <div className="space-y-3">
                   <label
                     className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                       paymentMethod === 'zarinpal'
-                        ? 'border-rose-400 bg-rose-50'
-                        : 'border-rose-100 bg-white hover:border-rose-200'
+                        ? 'border-slate-400 bg-slate-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
                     <input
@@ -394,11 +380,11 @@ export default function CheckoutPage() {
                       value="zarinpal"
                       checked={paymentMethod === 'zarinpal'}
                       onChange={() => setPaymentMethod('zarinpal')}
-                      className="w-4 h-4 text-rose-600 border-rose-300 focus:ring-rose-500"
+                      className="w-4 h-4 text-slate-700 border-slate-300 focus:ring-slate-400"
                     />
                     <div className="flex-1 text-right">
-                      <div className="font-medium text-rose-900">زرین‌پال</div>
-                      <div className="text-sm text-rose-600">
+                      <div className="font-medium text-slate-900">زرین‌پال</div>
+                      <div className="text-sm text-slate-600">
                         پرداخت امن با کلیه کارت‌های بانکی
                       </div>
                     </div>
@@ -411,7 +397,7 @@ export default function CheckoutPage() {
                     className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                       paymentMethod === 'zibal'
                         ? 'border-emerald-400 bg-emerald-50'
-                        : 'border-rose-100 bg-white hover:border-rose-200'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
                     <input
@@ -420,11 +406,11 @@ export default function CheckoutPage() {
                       value="zibal"
                       checked={paymentMethod === 'zibal'}
                       onChange={() => setPaymentMethod('zibal')}
-                      className="w-4 h-4 text-emerald-600 border-rose-300 focus:ring-emerald-500"
+                      className="w-4 h-4 text-emerald-600 border-slate-300 focus:ring-emerald-500"
                     />
                     <div className="flex-1 text-right">
-                      <div className="font-medium text-rose-900">زیبال</div>
-                      <div className="text-sm text-rose-600">
+                      <div className="font-medium text-slate-900">زیبال</div>
+                      <div className="text-sm text-slate-600">
                         پرداخت امن با کلیه کارت‌های بانکی
                       </div>
                     </div>
@@ -436,8 +422,8 @@ export default function CheckoutPage() {
                   <label
                     className={`flex items-center gap-3 p-4 border-2 rounded-2xl cursor-pointer transition-all ${
                       paymentMethod === 'digipay'
-                        ? 'border-purple-400 bg-purple-50'
-                        : 'border-rose-100 bg-white hover:border-rose-200'
+                        ? 'border-slate-400 bg-slate-50'
+                        : 'border-slate-200 bg-white hover:border-slate-300'
                     }`}
                   >
                     <input
@@ -446,12 +432,12 @@ export default function CheckoutPage() {
                       value="digipay"
                       checked={paymentMethod === 'digipay'}
                       onChange={() => setPaymentMethod('digipay')}
-                      className="w-4 h-4 text-purple-600 border-rose-300 focus:ring-purple-500"
+                      className="w-4 h-4 text-slate-700 border-slate-300 focus:ring-slate-400"
                     />
                     <div className="flex-1 text-right">
-                      <div className="font-medium text-rose-900">دیجی پی</div>
-                      <div className="text-sm text-rose-600">پرداخت اقساطی</div>
-                      <div className="text-xs text-purple-600 mt-1">
+                      <div className="font-medium text-slate-900">دیجی پی</div>
+                      <div className="text-sm text-slate-600">پرداخت اقساطی</div>
+                      <div className="text-xs text-slate-500 mt-1">
                         + {DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪ کارمزد درگاه
                       </div>
                     </div>
@@ -460,24 +446,8 @@ export default function CheckoutPage() {
                     </div>
                   </label>
 
-                  <div
-                    className={`${
-                      paymentMethod === 'digipay'
-                        ? 'bg-purple-50 border-purple-200'
-                        : paymentMethod === 'zibal'
-                          ? 'bg-emerald-50 border-emerald-200'
-                          : 'bg-rose-50 border-rose-200'
-                    } border rounded-2xl p-3 mt-4`}
-                  >
-                    <p
-                      className={`text-xs ${
-                        paymentMethod === 'digipay'
-                          ? 'text-purple-800'
-                          : paymentMethod === 'zibal'
-                            ? 'text-emerald-800'
-                            : 'text-rose-800'
-                      } text-right`}
-                    >
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 mt-4">
+                    <p className="text-xs text-slate-700 text-right">
                       {paymentMethod === 'digipay'
                         ? 'پس از تکمیل فرم و کلیک بر روی دکمه پرداخت، به درگاه پرداخت دیجی‌پی هدایت می‌شوید'
                         : paymentMethod === 'zibal'
@@ -490,26 +460,26 @@ export default function CheckoutPage() {
 
               {/* Payment Information */}
               <Card>
-                <h2 className="text-lg font-bold text-rose-900 text-right mb-4 border-b border-rose-100 pb-3">
+                <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
                   اطلاعات پرداخت
                 </h2>
 
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-rose-900">{itemCount}</span>
-                    <span className="text-rose-600">تعداد کالاها</span>
+                    <span className="text-slate-900">{itemCount}</span>
+                    <span className="text-slate-600">تعداد کالاها</span>
                   </div>
 
-                  <div className="flex justify-between text-sm border-t border-rose-100 pt-3">
-                    <span className="text-rose-900" dir="rtl">
+                  <div className="flex justify-between text-sm border-t border-slate-100 pt-3">
+                    <span className="text-slate-900" dir="rtl">
                       {formatPrice(total)}
                     </span>
-                    <span className="text-rose-600">قیمت کالاها</span>
+                    <span className="text-slate-600">قیمت کالاها</span>
                   </div>
 
                   {/* Digipay Surcharge - Only show when Digipay is selected */}
                   {paymentMethod === 'digipay' && digipaySurcharge > 0 && (
-                    <div className="flex justify-between text-sm text-purple-700 bg-purple-50 rounded-2xl px-3 py-2 -mx-1">
+                    <div className="flex justify-between text-sm text-slate-700 bg-slate-50 rounded-2xl px-3 py-2 -mx-1">
                       <span dir="rtl">+ {formatPrice(digipaySurcharge)}</span>
                       <span>
                         کارمزد درگاه دیجی‌پی ({DIGIPAY_CONFIG.SURCHARGE_PERCENT}
@@ -521,7 +491,7 @@ export default function CheckoutPage() {
                   {/* Show different total based on payment method */}
                   {paymentMethod === 'digipay' ? (
                     <>
-                      <div className="flex justify-between text-sm border-t border-rose-100 pt-3 text-rose-500">
+                      <div className="flex justify-between text-sm border-t border-slate-100 pt-3 text-slate-500">
                         <span dir="rtl">{formatPrice(finalTotal)}</span>
                         <span>مجموع کل</span>
                       </div>
@@ -533,11 +503,11 @@ export default function CheckoutPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="flex justify-between text-lg font-bold border-t border-rose-100 pt-3">
-                      <span className="text-rose-900" dir="rtl">
+                    <div className="flex justify-between text-lg font-bold border-t border-slate-100 pt-3">
+                      <span className="text-slate-900" dir="rtl">
                         {formatPrice(finalTotal)}
                       </span>
-                      <span className="text-rose-900">مبلغ قابل پرداخت</span>
+                      <span className="text-slate-900">مبلغ قابل پرداخت</span>
                     </div>
                   )}
                 </div>
@@ -545,8 +515,8 @@ export default function CheckoutPage() {
 
               {/* Digipay Installment Details - shown below payment info for both mobile and desktop */}
               {paymentMethod === 'digipay' && (
-                <Card className="bg-purple-50 border-purple-200">
-                  <div className="text-sm text-purple-800 font-bold mb-4 text-right border-b border-purple-200 pb-3">
+                <Card className="bg-white border-slate-200">
+                  <div className="text-sm text-slate-800 font-bold mb-4 text-right border-b border-slate-200 pb-3">
                     جزئیات اقساط
                   </div>
                   <div className="space-y-3">
@@ -564,14 +534,14 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                     <div className="flex justify-between items-center gap-4 px-1">
-                      <span className="text-sm text-purple-700 whitespace-nowrap">
+                      <span className="text-sm text-slate-600 whitespace-nowrap">
                         ۳ قسط ماهانه
                       </span>
-                      <span className="font-bold text-purple-900 text-base whitespace-nowrap">
+                      <span className="font-bold text-slate-900 text-base whitespace-nowrap">
                         هر قسط {formatPrice(Math.round(finalTotal / 4))}
                       </span>
                     </div>
-                    <p className="text-xs text-purple-600 text-right bg-white/50 rounded-2xl p-2">
+                    <p className="text-xs text-slate-600 text-right bg-slate-50 rounded-2xl p-2">
                       اقساط بعدی به صورت خودکار از حساب دیجی‌پی شما کسر می‌شود
                     </p>
                   </div>

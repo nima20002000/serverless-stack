@@ -99,7 +99,9 @@ export default function SiteSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -109,10 +111,10 @@ export default function SiteSettingsPage() {
       <Breadcrumbs items={[{ label: 'تنظیمات سایت' }]} />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-right">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 text-right">
           تنظیمات سایت
         </h1>
-        <p className="text-gray-600 text-right mt-2">
+        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
           مدیریت فاویکون، لوگو و سایر تنظیمات سایت
         </p>
       </div>
@@ -137,7 +139,7 @@ export default function SiteSettingsPage() {
         <div className="p-6 space-y-6">
           {/* Site Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
               نام سایت
             </label>
             <input
@@ -146,20 +148,20 @@ export default function SiteSettingsPage() {
               onChange={(e) =>
                 setSettings({ ...settings, site_name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
               placeholder="کیتیا"
             />
           </div>
 
           {/* Favicon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
               فاویکون (Favicon)
             </label>
             <div className="space-y-2">
               {settings.favicon && (
-                <div className="flex items-center gap-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
-                  <div className="relative w-16 h-16 border border-gray-300 rounded overflow-hidden bg-white">
+                <div className="flex items-center gap-4 p-4 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/60">
+                  <div className="relative w-16 h-16 border border-gray-300 dark:border-slate-700 rounded overflow-hidden bg-white dark:bg-slate-900">
                     <Image
                       src={settings.favicon}
                       alt="فاویکون"
@@ -168,14 +170,14 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
                       {settings.favicon}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSettings({ ...settings, favicon: '' })}
-                    className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-800 dark:text-rose-300 dark:hover:text-rose-200"
                   >
                     حذف
                   </button>
@@ -188,7 +190,7 @@ export default function SiteSettingsPage() {
               >
                 {settings.favicon ? 'تغییر فاویکون' : 'انتخاب فاویکون از R2'}
               </Button>
-              <p className="text-xs text-gray-500 text-right">
+              <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
                 فاویکون آیکون کوچکی است که در تب مرورگر نمایش داده می‌شود. ابعاد
                 توصیه شده: 32x32 یا 64x64 پیکسل
               </p>
@@ -197,13 +199,13 @@ export default function SiteSettingsPage() {
 
           {/* Logo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
               لوگو (Logo)
             </label>
             <div className="space-y-2">
               {settings.logo && (
-                <div className="flex items-center gap-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
-                  <div className="relative w-32 h-16 border border-gray-300 rounded overflow-hidden bg-white">
+                <div className="flex items-center gap-4 p-4 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/60">
+                  <div className="relative w-32 h-16 border border-gray-300 dark:border-slate-700 rounded overflow-hidden bg-white dark:bg-slate-900">
                     <Image
                       src={settings.logo}
                       alt="لوگو"
@@ -212,14 +214,14 @@ export default function SiteSettingsPage() {
                     />
                   </div>
                   <div className="flex-1 text-right">
-                    <p className="text-sm text-gray-600 truncate">
+                    <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
                       {settings.logo}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setSettings({ ...settings, logo: '' })}
-                    className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                    className="px-3 py-1 text-sm text-red-600 hover:text-red-800 dark:text-rose-300 dark:hover:text-rose-200"
                   >
                     حذف
                   </button>
@@ -232,7 +234,7 @@ export default function SiteSettingsPage() {
               >
                 {settings.logo ? 'تغییر لوگو' : 'انتخاب لوگو از R2'}
               </Button>
-              <p className="text-xs text-gray-500 text-right">
+              <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
                 لوگو در هدر سایت نمایش داده می‌شود. ابعاد توصیه شده: عرض حداکثر
                 200 پیکسل
               </p>
@@ -240,7 +242,7 @@ export default function SiteSettingsPage() {
           </div>
 
           {/* Save Button */}
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-gray-200 dark:border-slate-800">
             <Button
               type="button"
               variant="primary"

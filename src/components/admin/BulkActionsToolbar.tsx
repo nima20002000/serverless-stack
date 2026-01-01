@@ -49,7 +49,7 @@ export default function BulkActionsToolbar<T = unknown>({
 
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="bg-blue-600 text-white rounded-lg shadow-2xl px-6 py-4 flex items-center gap-4">
+      <div className="bg-blue-600 text-white rounded-lg shadow-2xl px-6 py-4 flex items-center gap-4 dark:bg-slate-900 dark:border dark:border-slate-800 dark:shadow-none">
         {/* Selection Count */}
         <div className="flex items-center gap-2">
           <span className="font-semibold text-lg">
@@ -59,7 +59,7 @@ export default function BulkActionsToolbar<T = unknown>({
         </div>
 
         {/* Divider */}
-        <div className="w-px h-8 bg-blue-400" />
+        <div className="w-px h-8 bg-blue-400 dark:bg-slate-700" />
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export default function BulkActionsToolbar<T = unknown>({
         {/* Clear Selection */}
         <button
           onClick={onClearSelection}
-          className="p-1 hover:bg-blue-500 rounded-full transition-colors"
+          className="p-1 hover:bg-blue-500 dark:hover:bg-slate-800 rounded-full transition-colors"
           aria-label="لغو انتخاب"
           disabled={isProcessing}
         >

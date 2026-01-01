@@ -37,7 +37,7 @@ export default function MediaManager({
     <>
       <div className="space-y-3 sm:space-y-4">
         {title && (
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 text-right">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 text-right">
             {title}
           </h2>
         )}
@@ -49,12 +49,14 @@ export default function MediaManager({
               <div
                 key={item.id}
                 className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer ${
-                  item.isDefault ? 'border-blue-500' : 'border-gray-200'
+                  item.isDefault
+                    ? 'border-blue-500'
+                    : 'border-gray-200 dark:border-slate-700'
                 }`}
                 onClick={() => onSetDefault(item.id)}
                 title="کلیک کنید تا عکس پیش‌فرض شود"
               >
-                <div className="aspect-square relative bg-gray-200">
+                <div className="aspect-square relative bg-gray-200 dark:bg-slate-800">
                   {item.type === 'IMAGE' ? (
                     <Image
                       src={item.url}
@@ -64,7 +66,7 @@ export default function MediaManager({
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500 text-xs sm:text-sm">
+                    <div className="flex items-center justify-center h-full text-gray-500 dark:text-slate-400 text-xs sm:text-sm">
                       ویدیو
                     </div>
                   )}

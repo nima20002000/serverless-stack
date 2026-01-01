@@ -52,15 +52,15 @@ export default function DigipayGuidanceModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-purple-50 rounded-t-2xl">
+          <div className="flex items-center justify-between p-5 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
             <button
               onClick={onClose}
               disabled={isProcessing}
-              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              className="text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
-            <h2 className="text-lg font-bold text-purple-900">
+            <h2 className="text-lg font-bold text-slate-900">
               راهنمای پرداخت با دیجی‌پی
             </h2>
           </div>
@@ -68,7 +68,7 @@ export default function DigipayGuidanceModal({
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {/* Intro */}
-            <p className="text-sm text-gray-700 text-right leading-relaxed">
+            <p className="text-sm text-slate-700 text-right leading-relaxed">
               شما به درگاه دیجی‌پی منتقل می‌شوید. بسته به اینکه حساب دیجی‌پی
               دارید یا نه، مراحل متفاوت است:
             </p>
@@ -136,8 +136,8 @@ export default function DigipayGuidanceModal({
             </div>
 
             {/* Important Note */}
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
-              <p className="text-sm text-purple-800 text-right leading-relaxed">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <p className="text-sm text-slate-700 text-right leading-relaxed">
                 <span className="font-bold">نکته مهم:</span> اگر کاربر جدید
                 دیجی‌پی هستید، بعد از تکمیل ثبت‌نام و دریافت اعتبار، به سایت
                 کیتیا برگردید و دوباره روی دکمه پرداخت کلیک کنید. سفارش شما
@@ -147,10 +147,10 @@ export default function DigipayGuidanceModal({
           </div>
 
           {/* Footer */}
-          <div className="p-5 border-t border-gray-200 space-y-3">
+          <div className="p-5 border-t border-slate-200 space-y-3">
             <Button
               variant="primary"
-              className="w-full bg-purple-600 hover:bg-purple-700"
+              className="w-full"
               onClick={onConfirm}
               isLoading={isProcessing}
               disabled={isProcessing}
@@ -160,7 +160,7 @@ export default function DigipayGuidanceModal({
             <button
               onClick={onClose}
               disabled={isProcessing}
-              className="w-full text-sm text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+              className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50"
             >
               انصراف
             </button>

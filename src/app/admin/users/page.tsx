@@ -248,13 +248,13 @@ export default function UsersManagementPage() {
   const getRoleBadge = (role: string) => {
     if (role === 'ADMIN') {
       return (
-        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+        <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">
           مدیر
         </span>
       );
     }
     return (
-      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+      <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200">
         کاربر
       </span>
     );
@@ -263,7 +263,9 @@ export default function UsersManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -273,10 +275,10 @@ export default function UsersManagementPage() {
       <Breadcrumbs items={[{ label: 'مدیریت کاربران' }]} />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
           مدیریت کاربران
         </h1>
-        <p className="text-gray-600 text-right mt-2">
+        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
           مشاهده و مدیریت کاربران سیستم
         </p>
       </div>
@@ -309,7 +311,7 @@ export default function UsersManagementPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو بر اساس نام یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
             />
             <Button
               type="submit"
@@ -333,13 +335,13 @@ export default function UsersManagementPage() {
                   setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-right"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
               >
                 <option value="all">همه</option>
                 <option value="USER">کاربران</option>
                 <option value="ADMIN">مدیران</option>
               </select>
-              <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
                 نقش:
               </label>
             </div>
@@ -359,13 +361,13 @@ export default function UsersManagementPage() {
       {data && (
         <>
           <Card>
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
+            <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-slate-400">
                   نمایش {data.data.length.toLocaleString('fa-IR')} کاربر از{' '}
                   {data.total.toLocaleString('fa-IR')} کاربر
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-600 dark:text-slate-400">
                   صفحه {data.page.toLocaleString('fa-IR')} از{' '}
                   {data.totalPages.toLocaleString('fa-IR')}
                 </div>
@@ -374,7 +376,7 @@ export default function UsersManagementPage() {
 
             <div className="overflow-x-auto -mx-6 px-6">
               <table className="w-full min-w-[800px]">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                   <tr>
                     <th className="px-4 py-3 text-center w-12">
                       <input
@@ -384,38 +386,41 @@ export default function UsersManagementPage() {
                           selectedUsers.size === data.data.length
                         }
                         onChange={toggleSelectAll}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                       />
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       عملیات
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
                       تراکنش‌ها
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       نقش
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
                       ایمیل / شماره تلفن
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                       نام کاربر
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden sm:table-cell">
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
                       شناسه
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                   {data.data.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr
+                      key={user.id}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                    >
                       <td className="px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={selectedUsers.has(user.id)}
                           onChange={() => toggleSelectUser(user.id)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -450,7 +455,7 @@ export default function UsersManagementPage() {
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <Link
                           href={`/admin/users/${user.id}`}
-                          className="text-blue-600 hover:text-blue-800 hover:underline text-sm"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline text-sm"
                         >
                           {user._count.transactions.toLocaleString('fa-IR')}{' '}
                           تراکنش
@@ -459,19 +464,19 @@ export default function UsersManagementPage() {
                       <td className="px-4 py-3 text-right">
                         {getRoleBadge(user.role)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-900 hidden md:table-cell">
+                      <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-slate-100 hidden md:table-cell">
                         {user.email || user.phone || 'ندارد'}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900">
+                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-slate-100">
                         <Link
                           href={`/admin/users/${user.id}`}
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                          className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline"
                         >
                           {user.name}
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-right hidden sm:table-cell">
-                        <code className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded font-medium">
+                        <code className="text-xs bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-1 rounded font-medium">
                           {user.uid}
                         </code>
                       </td>
@@ -481,7 +486,7 @@ export default function UsersManagementPage() {
               </table>
 
               {data.data.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500 dark:text-slate-500">
                   هیچ کاربری یافت نشد
                 </div>
               )}
@@ -498,7 +503,7 @@ export default function UsersManagementPage() {
               >
                 قبلی
               </Button>
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-slate-400">
                 صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
                 {data.totalPages.toLocaleString('fa-IR')}
               </span>

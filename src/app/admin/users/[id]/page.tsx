@@ -128,9 +128,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      COMPLETED: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      FAILED: 'bg-red-100 text-red-800',
+      COMPLETED:
+        'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+      PENDING:
+        'bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200',
+      FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
       COMPLETED: 'موفق',
@@ -151,7 +153,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -180,7 +184,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 text-right">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
           جزئیات کاربر
         </h1>
       </div>
@@ -205,26 +209,36 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* User Info Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
               اطلاعات کاربر
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
               <div>
-                <span className="text-sm text-gray-600">نام:</span>
-                <p className="font-medium text-gray-900">{user.name}</p>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  نام:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-slate-100">
+                  {user.name}
+                </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">ایمیل:</span>
-                <p className="font-medium text-gray-900">{user.email}</p>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  ایمیل:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-slate-100">
+                  {user.email}
+                </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">نقش:</span>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  نقش:
+                </span>
                 <p>
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                       user.role === 'ADMIN'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200'
+                        : 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200'
                     }`}
                   >
                     {user.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
@@ -232,22 +246,26 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">تاریخ عضویت:</span>
-                <p className="font-medium text-gray-900">
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  تاریخ عضویت:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-slate-100">
                   {format(new Date(user.createdAt), 'yyyy/MM/dd - HH:mm')}
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">تعداد تراکنش‌ها:</span>
-                <p className="font-medium text-gray-900">
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  تعداد تراکنش‌ها:
+                </span>
+                <p className="font-medium text-gray-900 dark:text-slate-100">
                   {user._count.transactions.toLocaleString('fa-IR')}
                 </p>
               </div>
               <div>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-slate-400">
                   تعداد کدهای تخفیف:
                 </span>
-                <p className="font-medium text-gray-900">
+                <p className="font-medium text-gray-900 dark:text-slate-100">
                   {user._count.promoCodes.toLocaleString('fa-IR')}
                 </p>
               </div>
@@ -288,7 +306,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                 </>
               )}
               {isOwnProfile && (
-                <div className="text-sm text-gray-500 px-4 py-2 bg-gray-50 rounded">
+                <div className="text-sm text-gray-500 dark:text-slate-400 px-4 py-2 bg-gray-50 dark:bg-slate-900/60 rounded">
                   نمی‌توانید نقش خود را تغییر دهید یا حساب خود را حذف کنید
                 </div>
               )}
@@ -299,36 +317,39 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* Transactions Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
               تراکنش‌های کاربر (
               {user.transactions.length.toLocaleString('fa-IR')})
             </h2>
             {user.transactions.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         وضعیت
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         تاریخ
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         مبلغ
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         کد تراکنش
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                     {user.transactions.map((transaction) => (
-                      <tr key={transaction.id} className="hover:bg-gray-50">
+                      <tr
+                        key={transaction.id}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                      >
                         <td className="px-4 py-3 text-right">
                           {getStatusBadge(transaction.status)}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600">
+                        <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
                           {format(
                             new Date(transaction.createdAt),
                             'yyyy/MM/dd - HH:mm'
@@ -338,7 +359,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                           {formatPrice(Number(transaction.amount))}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                          <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                             {transaction.transactionCode}
                           </code>
                         </td>
@@ -348,7 +369,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-slate-500">
                 هیچ تراکنشی وجود ندارد
               </div>
             )}
@@ -358,36 +379,39 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* Promo Codes Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
               کدهای تخفیف ({user.promoCodes.length.toLocaleString('fa-IR')})
             </h2>
             {user.promoCodes.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         وضعیت
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         انقضا
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                         کد
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                     {user.promoCodes.map((promo) => (
-                      <tr key={promo.id} className="hover:bg-gray-50">
+                      <tr
+                        key={promo.id}
+                        className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                      >
                         <td className="px-4 py-3 text-right">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
                               promo.isUsed
-                                ? 'bg-gray-100 text-gray-800'
+                                ? 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200'
                                 : new Date(promo.expiresAt) < new Date()
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-green-100 text-green-800'
+                                  ? 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
+                                  : 'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200'
                             }`}
                           >
                             {promo.isUsed
@@ -397,14 +421,14 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                                 : 'فعال'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600">
+                        <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
                           {format(
                             new Date(promo.expiresAt),
                             'yyyy/MM/dd - HH:mm'
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <code className="text-sm bg-gray-100 px-2 py-1 rounded font-bold">
+                          <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-bold">
                             {promo.code}
                           </code>
                         </td>
@@ -414,7 +438,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 dark:text-slate-500">
                 هیچ کد تخفیفی وجود ندارد
               </div>
             )}

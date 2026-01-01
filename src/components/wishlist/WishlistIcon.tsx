@@ -20,7 +20,7 @@ export function WishlistIcon({ className = '' }: WishlistIconProps) {
   return (
     <Link
       href="/wishlist"
-      className={`relative p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition-colors ${className}`}
+      className={`relative p-2 text-rose-600 hover:text-rose-700 dark:text-slate-200 dark:hover:text-slate-100 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl transition-colors ${className}`}
       aria-label="علاقه‌مندی‌ها"
       data-testid="wishlist-icon"
     >
@@ -40,7 +40,7 @@ export function WishlistIcon({ className = '' }: WishlistIconProps) {
       </svg>
       {displayCount > 0 && (
         <span
-          className="absolute -top-1 -right-1 bg-gradient-to-br from-rose-500 to-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-[0_2px_8px_-2px_rgba(244,63,94,0.5)]"
+          className="absolute -top-1 -right-1 bg-gradient-to-br from-rose-500 to-pink-500 dark:from-slate-600 dark:to-slate-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-[0_2px_8px_-2px_rgba(244,63,94,0.5)] dark:shadow-none"
           data-testid="wishlist-badge"
         >
           {displayCount > 99 ? '99+' : displayCount}

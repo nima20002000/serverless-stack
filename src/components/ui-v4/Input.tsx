@@ -37,6 +37,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
       transition-all duration-200 ease-out
       focus:outline-none
       disabled:opacity-50 disabled:cursor-not-allowed
+      dark:text-slate-100 dark:placeholder:text-slate-500
     `;
 
     const variantStyles = {
@@ -47,6 +48,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80
         hover:border-rose-300
         disabled:bg-rose-50
+        dark:bg-slate-900 dark:border-slate-700 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:border-slate-600 dark:disabled:bg-slate-800
       `,
       filled: `
         bg-rose-50/80
@@ -55,6 +57,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         focus:bg-white focus:border-rose-300 focus:ring-4 focus:ring-rose-100/70
         hover:bg-rose-50
         disabled:bg-rose-100
+        dark:bg-slate-900/70 dark:border-slate-700 dark:focus:bg-slate-900 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:bg-slate-800/80 dark:disabled:bg-slate-800
       `,
       minimal: `
         bg-transparent
@@ -63,6 +66,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         focus:border-rose-400
         hover:border-rose-300
         disabled:bg-transparent
+        dark:border-slate-700 dark:focus:border-slate-500 dark:hover:border-slate-600
       `,
     };
 
@@ -70,6 +74,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
       ? `
         border-red-300 focus:border-red-400 focus:ring-red-100/70
         placeholder:text-red-300
+        dark:border-rose-600 dark:focus:border-rose-500 dark:focus:ring-rose-900/60 dark:placeholder:text-rose-400
       `
       : '';
 
@@ -82,7 +87,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
     return (
       <div className={fullWidth ? 'w-full' : 'w-auto'}>
         {label && (
-          <label className="block text-sm font-medium text-rose-700 mb-2 text-right">
+          <label className="block text-sm font-medium text-rose-700 dark:text-slate-300 mb-2 text-right">
             {label}
           </label>
         )}
@@ -106,10 +111,10 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
               className={`
                 absolute top-1/2 -translate-y-1/2
                 flex items-center justify-center
-                w-5 h-5 text-rose-400
+                w-5 h-5 text-rose-400 dark:text-slate-500
                 pointer-events-none
                 transition-colors duration-200
-                group-focus-within:text-rose-500
+                group-focus-within:text-rose-500 dark:group-focus-within:text-slate-200
                 ${iconPosition === 'start' ? 'start-4' : 'end-4'}
               `}
             >
@@ -119,7 +124,7 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-500 text-right flex items-center gap-1 justify-end">
+          <p className="mt-2 text-sm text-red-500 dark:text-rose-300 text-right flex items-center gap-1 justify-end">
             <span>{error}</span>
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path
@@ -132,7 +137,9 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         )}
 
         {helperText && !error && (
-          <p className="mt-2 text-sm text-rose-400 text-right">{helperText}</p>
+          <p className="mt-2 text-sm text-rose-400 dark:text-slate-500 text-right">
+            {helperText}
+          </p>
         )}
       </div>
     );

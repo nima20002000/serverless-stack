@@ -108,32 +108,64 @@ const AlertV4 = forwardRef<HTMLDivElement, AlertV4Props>(
   ) => {
     const typeColors = {
       success: {
-        soft: 'bg-emerald-50/80 border-emerald-200 text-emerald-700',
-        filled: 'bg-emerald-500 border-emerald-500 text-white',
-        outlined: 'bg-white border-emerald-200 text-emerald-700',
-        icon: variant === 'filled' ? 'text-white' : 'text-emerald-500',
-        title: variant === 'filled' ? 'text-white' : 'text-emerald-800',
+        soft: 'bg-emerald-50/80 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-100',
+        filled:
+          'bg-emerald-500 border-emerald-500 text-white dark:bg-emerald-600 dark:border-emerald-500',
+        outlined:
+          'bg-white border-emerald-200 text-emerald-700 dark:bg-slate-900 dark:border-emerald-700 dark:text-emerald-100',
+        icon:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-emerald-500 dark:text-emerald-300',
+        title:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-emerald-800 dark:text-emerald-200',
       },
       error: {
-        soft: 'bg-rose-50/80 border-rose-200 text-rose-700',
-        filled: 'bg-rose-500 border-rose-500 text-white',
-        outlined: 'bg-white border-rose-200 text-rose-700',
-        icon: variant === 'filled' ? 'text-white' : 'text-rose-500',
-        title: variant === 'filled' ? 'text-white' : 'text-rose-800',
+        soft: 'bg-rose-50/80 border-rose-200 text-rose-700 dark:bg-rose-900/30 dark:border-rose-700 dark:text-rose-100',
+        filled:
+          'bg-rose-500 border-rose-500 text-white dark:bg-rose-600 dark:border-rose-500',
+        outlined:
+          'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-rose-700 dark:text-rose-100',
+        icon:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-rose-500 dark:text-rose-300',
+        title:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-rose-800 dark:text-rose-200',
       },
       warning: {
-        soft: 'bg-amber-50/80 border-amber-200 text-amber-700',
-        filled: 'bg-amber-500 border-amber-500 text-white',
-        outlined: 'bg-white border-amber-200 text-amber-700',
-        icon: variant === 'filled' ? 'text-white' : 'text-amber-500',
-        title: variant === 'filled' ? 'text-white' : 'text-amber-800',
+        soft: 'bg-amber-50/80 border-amber-200 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-100',
+        filled:
+          'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-500',
+        outlined:
+          'bg-white border-amber-200 text-amber-700 dark:bg-slate-900 dark:border-amber-700 dark:text-amber-100',
+        icon:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-amber-500 dark:text-amber-300',
+        title:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-amber-800 dark:text-amber-200',
       },
       info: {
-        soft: 'bg-rose-50/70 border-rose-200 text-rose-700',
-        filled: 'bg-rose-400 border-rose-400 text-white',
-        outlined: 'bg-white border-rose-200 text-rose-700',
-        icon: variant === 'filled' ? 'text-white' : 'text-rose-500',
-        title: variant === 'filled' ? 'text-white' : 'text-rose-800',
+        soft: 'bg-rose-50/70 border-rose-200 text-rose-700 dark:bg-slate-900/70 dark:border-slate-700 dark:text-slate-100',
+        filled:
+          'bg-rose-400 border-rose-400 text-white dark:bg-slate-700 dark:border-slate-600',
+        outlined:
+          'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100',
+        icon:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-rose-500 dark:text-slate-300',
+        title:
+          variant === 'filled'
+            ? 'text-white'
+            : 'text-rose-800 dark:text-slate-100',
       },
     };
 
@@ -161,7 +193,7 @@ const AlertV4 = forwardRef<HTMLDivElement, AlertV4Props>(
                 flex-shrink-0 p-1 -mt-0.5
                 opacity-60 hover:opacity-100
                 transition-opacity duration-200
-                rounded-xl hover:bg-black/5
+                rounded-xl hover:bg-black/5 dark:hover:bg-white/10
               "
               aria-label="بستن"
             >

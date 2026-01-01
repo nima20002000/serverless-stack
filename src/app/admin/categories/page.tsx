@@ -309,7 +309,9 @@ export default function CategoriesManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600">در حال بارگذاری...</div>
+        <div className="text-gray-600 dark:text-slate-400">
+          در حال بارگذاری...
+        </div>
       </div>
     );
   }
@@ -326,7 +328,7 @@ export default function CategoriesManagementPage() {
         >
           {showForm ? 'انصراف' : 'افزودن دسته‌بندی جدید'}
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 order-1 sm:order-2">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 order-1 sm:order-2">
           مدیریت دسته‌بندی‌ها
         </h1>
       </div>
@@ -351,13 +353,13 @@ export default function CategoriesManagementPage() {
       {showForm && (
         <Card className="mb-6">
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 text-right">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
               {editingCategory ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی جدید'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     نام دسته‌بندی *
                   </label>
                   <input
@@ -366,12 +368,12 @@ export default function CategoriesManagementPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     نامک (Slug) *
                   </label>
                   <input
@@ -380,7 +382,7 @@ export default function CategoriesManagementPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, slug: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
                     placeholder="electronics"
                     required
                   />
@@ -388,7 +390,7 @@ export default function CategoriesManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                   توضیحات
                 </label>
                 <textarea
@@ -396,18 +398,18 @@ export default function CategoriesManagementPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                   تصویر دسته‌بندی
                 </label>
                 <div className="space-y-2">
                   {formData.image && (
-                    <div className="relative w-full aspect-[4/5] border border-gray-300 rounded-lg overflow-hidden">
+                    <div className="relative w-full aspect-[4/5] border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden">
                       <Image
                         src={formData.image}
                         alt="پیش‌نمایش تصویر"
@@ -431,7 +433,7 @@ export default function CategoriesManagementPage() {
                   >
                     {formData.image ? 'تغییر تصویر' : 'انتخاب تصویر از R2'}
                   </Button>
-                  <p className="text-xs text-gray-500 text-right">
+                  <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
                     تصویر از فضای ذخیره‌سازی R2 انتخاب می‌شود
                   </p>
                 </div>
@@ -439,7 +441,7 @@ export default function CategoriesManagementPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     دسته‌بندی والد
                   </label>
                   <select
@@ -447,7 +449,7 @@ export default function CategoriesManagementPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, parentId: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white dark:bg-slate-900 dark:text-slate-100"
                   >
                     <option value="">بدون والد (دسته اصلی)</option>
                     {availableParents.map((cat) => (
@@ -460,7 +462,7 @@ export default function CategoriesManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     وضعیت
                   </label>
                   <select
@@ -471,7 +473,7 @@ export default function CategoriesManagementPage() {
                         isActive: e.target.value === 'active',
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white dark:bg-slate-900 dark:text-slate-100"
                   >
                     <option value="active">فعال</option>
                     <option value="inactive">غیرفعال</option>
@@ -500,7 +502,7 @@ export default function CategoriesManagementPage() {
       <Card>
         <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[700px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
               <tr>
                 <th className="px-4 py-3 text-center w-12">
                   <input
@@ -510,36 +512,39 @@ export default function CategoriesManagementPage() {
                       selectedCategories.size === categories.length
                     }
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                   عملیات
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                   وضعیت
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden md:table-cell">
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
                   تعداد محصولات
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 hidden lg:table-cell">
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
                   توضیحات
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                   نام دسته‌بندی
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {rootCategories.map((category) => (
                 <>
-                  <tr key={category.id} className="hover:bg-gray-50">
+                  <tr
+                    key={category.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                  >
                     <td className="px-4 py-3 text-center">
                       <input
                         type="checkbox"
                         checked={selectedCategories.has(category.id)}
                         onChange={() => toggleSelectCategory(category.id)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                       />
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -569,37 +574,42 @@ export default function CategoriesManagementPage() {
                         }
                         className={`px-3 py-1 rounded-full text-xs font-medium ${
                           category.isActive
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                            : 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
                         }`}
                       >
                         {category.isActive ? 'فعال' : 'غیرفعال'}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right hidden md:table-cell">
-                      <span className="text-gray-900">
+                      <span className="text-gray-900 dark:text-slate-100">
                         {category._count.products.toLocaleString('fa-IR')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-600 hidden lg:table-cell">
+                    <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
                       {category.description || '-'}
                     </td>
                     <td className="px-4 py-3 text-right font-medium">
-                      {category.name}
-                      <div className="text-xs text-gray-500">
+                      <span className="text-gray-900 dark:text-slate-100">
+                        {category.name}
+                      </span>
+                      <div className="text-xs text-gray-500 dark:text-slate-500">
                         {category.slug}
                       </div>
                     </td>
                   </tr>
                   {/* Child categories */}
                   {category.children.map((child) => (
-                    <tr key={child.id} className="hover:bg-gray-50 bg-gray-25">
+                    <tr
+                      key={child.id}
+                      className="hover:bg-gray-50 dark:hover:bg-slate-900/60 bg-gray-25 dark:bg-slate-900/30"
+                    >
                       <td className="px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={selectedCategories.has(child.id)}
                           onChange={() => toggleSelectCategory(child.id)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -625,25 +635,29 @@ export default function CategoriesManagementPage() {
                           onClick={() => toggleActive(child.id, child.isActive)}
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
                             child.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
+                              ? 'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                              : 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
                           }`}
                         >
                           {child.isActive ? 'فعال' : 'غیرفعال'}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-right hidden md:table-cell">
-                        <span className="text-gray-900">
+                        <span className="text-gray-900 dark:text-slate-100">
                           {child._count.products.toLocaleString('fa-IR')}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600 hidden lg:table-cell">
+                      <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
                         {child.description || '-'}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">
-                        <span className="text-gray-500 ml-2">↳</span>
-                        {child.name}
-                        <div className="text-xs text-gray-500 mr-4">
+                        <span className="text-gray-500 dark:text-slate-500 ml-2">
+                          ↳
+                        </span>
+                        <span className="text-gray-900 dark:text-slate-100">
+                          {child.name}
+                        </span>
+                        <div className="text-xs text-gray-500 dark:text-slate-500 mr-4">
                           {child.slug}
                         </div>
                       </td>
@@ -655,7 +669,7 @@ export default function CategoriesManagementPage() {
           </table>
 
           {categories.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 dark:text-slate-500">
               هیچ دسته‌بندی وجود ندارد
             </div>
           )}

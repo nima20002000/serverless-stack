@@ -34,7 +34,7 @@ const ButtonV4 = forwardRef<HTMLButtonElement, ButtonV4Props>(
       inline-flex items-center justify-center gap-2
       font-semibold tracking-[0.01em]
       transition-all duration-200 ease-out
-      focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/70
+      focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/70 dark:focus-visible:ring-slate-700/60
       disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
       active:translate-y-[1px]
       select-none
@@ -45,30 +45,36 @@ const ButtonV4 = forwardRef<HTMLButtonElement, ButtonV4Props>(
         bg-rose-500 text-white
         hover:bg-rose-600
         shadow-[0_18px_30px_-18px_rgba(244,63,94,0.7)]
+        dark:bg-blue-500 dark:hover:bg-blue-400 dark:shadow-[0_18px_30px_-18px_rgba(37,99,235,0.6)]
       `,
       secondary: `
         bg-white text-rose-600
         border border-rose-200
         hover:bg-rose-50 hover:border-rose-300
+        dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700
       `,
       outline: `
         bg-transparent text-rose-600
         border-2 border-rose-300
         hover:border-rose-400 hover:bg-rose-50
+        dark:text-slate-100 dark:border-slate-600 dark:hover:border-slate-500 dark:hover:bg-slate-800/60
       `,
       ghost: `
         bg-transparent text-rose-500
         hover:bg-rose-50
+        dark:text-slate-200 dark:hover:bg-slate-800/60
       `,
       danger: `
         bg-rose-600 text-white
         hover:bg-rose-700
         shadow-[0_18px_30px_-18px_rgba(225,29,72,0.7)]
+        dark:bg-rose-600 dark:hover:bg-rose-500 dark:shadow-[0_18px_30px_-18px_rgba(190,18,60,0.6)]
       `,
       soft: `
         bg-rose-50 text-rose-700
         border border-rose-100
         hover:bg-rose-100/70
+        dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700
       `,
     };
 

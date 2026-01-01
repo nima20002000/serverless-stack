@@ -5,6 +5,7 @@ import { VersionProvider } from '@/components/providers/VersionProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import InstallmentBanner from '@/components/layout/InstallmentBanner';
+import AdminThemeGate from '@/components/layout/AdminThemeGate';
 import {
   generateOrganizationSchema,
   generateWebSiteSchema,
@@ -69,6 +70,7 @@ export default function RootLayout({
       <body className="antialiased flex flex-col min-h-screen">
         <SessionProvider>
           <VersionProvider>
+            <AdminThemeGate />
             <InstallmentBanner />
             <Header />
             {children}

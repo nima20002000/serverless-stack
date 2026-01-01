@@ -190,17 +190,17 @@ export default function R2MediaBrowser({
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-slate-950/80"
           onClick={onClose}
         />
 
         {/* Modal */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-right overflow-hidden shadow-xl dark:shadow-none transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
           {/* Header */}
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 border-b">
+          <div className="bg-white dark:bg-slate-900 px-4 pt-5 pb-4 sm:p-6 border-b border-gray-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">
                   انتخاب رسانه از R2
                 </h3>
 
@@ -208,7 +208,7 @@ export default function R2MediaBrowser({
                 <select
                   value={selectedFolder}
                   onChange={(e) => setSelectedFolder(e.target.value)}
-                  className="text-sm border border-gray-300 rounded px-3 py-2"
+                  className="text-sm border border-gray-300 dark:border-slate-700 rounded px-3 py-2 dark:bg-slate-900 dark:text-slate-100"
                   disabled={loading || uploading}
                 >
                   {FOLDERS.map((folder) => (
@@ -231,7 +231,7 @@ export default function R2MediaBrowser({
                     <button
                       type="button"
                       disabled={uploading || loading}
-                      className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400"
                     >
                       <ArrowUpTrayIcon className="h-4 w-4" />
                       {uploading ? 'در حال آپلود...' : 'آپلود فایل'}
@@ -242,14 +242,14 @@ export default function R2MediaBrowser({
 
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-500"
+                className="text-gray-400 hover:text-gray-500 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
 
             {error && (
-              <div className="mt-3 text-sm text-red-600 bg-red-50 p-3 rounded">
+              <div className="mt-3 text-sm text-red-600 dark:text-rose-200 bg-red-50 dark:bg-rose-900/30 p-3 rounded">
                 {error}
               </div>
             )}
@@ -257,16 +257,16 @@ export default function R2MediaBrowser({
 
           {/* Content */}
           <div
-            className="bg-gray-50 px-4 py-5 sm:p-6"
+            className="bg-gray-50 dark:bg-slate-900/60 px-4 py-5 sm:p-6"
             style={{ maxHeight: '60vh', overflowY: 'auto' }}
           >
             {loading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-300" />
               </div>
             ) : objects.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <FolderIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+              <div className="text-center py-12 text-gray-500 dark:text-slate-400">
+                <FolderIcon className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-slate-500" />
                 <p>هیچ فایلی در این پوشه وجود ندارد</p>
               </div>
             ) : (
@@ -280,13 +280,13 @@ export default function R2MediaBrowser({
                       key={obj.key}
                       className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
                         isSelected
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
                       }`}
                       onClick={() => toggleSelection(obj.url)}
                     >
                       {/* Preview */}
-                      <div className="aspect-square bg-gray-100 relative">
+                      <div className="aspect-square bg-gray-100 dark:bg-slate-800 relative">
                         {isImg ? (
                           <Image
                             src={optimizeImage.adminThumb(obj.url)}
@@ -297,7 +297,7 @@ export default function R2MediaBrowser({
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full">
-                            <PhotoIcon className="h-12 w-12 text-gray-400" />
+                            <PhotoIcon className="h-12 w-12 text-gray-400 dark:text-slate-500" />
                           </div>
                         )}
 
@@ -322,14 +322,14 @@ export default function R2MediaBrowser({
                       </div>
 
                       {/* Info */}
-                      <div className="p-2 bg-white">
+                      <div className="p-2 bg-white dark:bg-slate-900">
                         <p
-                          className="text-xs text-gray-600 truncate"
+                          className="text-xs text-gray-600 dark:text-slate-300 truncate"
                           title={obj.key}
                         >
                           {obj.key.split('/').pop()}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-slate-500">
                           {(obj.size / 1024).toFixed(0)} KB
                         </p>
                       </div>
@@ -341,19 +341,19 @@ export default function R2MediaBrowser({
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3 border-t">
+          <div className="bg-gray-50 dark:bg-slate-900/60 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-3 border-t border-gray-200 dark:border-slate-800">
             <button
               type="button"
               onClick={handleConfirm}
               disabled={selectedUrls.size === 0}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400"
             >
               انتخاب ({selectedUrls.size})
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-700 shadow-sm px-4 py-2 bg-white dark:bg-slate-900 text-base font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
             >
               انصراف
             </button>

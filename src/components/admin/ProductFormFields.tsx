@@ -41,7 +41,7 @@ export default function ProductFormFields({
       />
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
           دسته‌بندی
         </label>
         <CategorySelector
@@ -61,7 +61,7 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
           برچسب‌ها
         </label>
         <TagInput
@@ -72,7 +72,7 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 text-right">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
           توضیحات محصول
         </label>
         <textarea
@@ -81,11 +81,11 @@ export default function ProductFormFields({
           onChange={onChange}
           disabled={disabled}
           rows={4}
-          className="w-full px-3 py-2 text-sm border rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
           placeholder="توضیحات کامل محصول را وارد کنید"
         />
         {errors.description && (
-          <p className="mt-1 text-xs sm:text-sm text-red-600 text-right">
+          <p className="mt-1 text-xs sm:text-sm text-red-600 dark:text-rose-200 text-right">
             {errors.description}
           </p>
         )}
@@ -119,7 +119,7 @@ export default function ProductFormFields({
         />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border border-blue-200 bg-blue-50 rounded-lg">
+      <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-slate-900/60 rounded-lg">
         <input
           type="checkbox"
           id="hasVariants"
@@ -127,19 +127,19 @@ export default function ProductFormFields({
           checked={formData.hasVariants}
           onChange={onChange}
           disabled={disabled}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0"
+          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 flex-shrink-0 border-gray-300 dark:border-slate-700 dark:bg-slate-900"
         />
         <label
           htmlFor="hasVariants"
-          className="text-xs sm:text-sm font-medium text-gray-700"
+          className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
         >
           این محصول دارای انواع مختلف است (رنگ، سایز، جنس، ...)
         </label>
       </div>
 
       {formData.hasVariants && (
-        <div className="p-3 sm:p-4 border border-amber-200 bg-amber-50 rounded-lg">
-          <p className="text-xs sm:text-sm text-amber-800">
+        <div className="p-3 sm:p-4 border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
             <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به
             صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
             {variants.length > 0
@@ -180,11 +180,11 @@ export default function ProductFormFields({
             checked={formData.isFeatured}
             onChange={onChange}
             disabled={disabled}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-slate-700 dark:bg-slate-900"
           />
           <label
             htmlFor="isFeatured"
-            className="text-xs sm:text-sm font-medium text-gray-700"
+            className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
           >
             محصول ویژه
           </label>
@@ -198,11 +198,11 @@ export default function ProductFormFields({
             checked={formData.isActive}
             onChange={onChange}
             disabled={disabled}
-            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-slate-700 dark:bg-slate-900"
           />
           <label
             htmlFor="isActive"
-            className="text-xs sm:text-sm font-medium text-gray-700"
+            className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
           >
             محصول فعال باشد
           </label>

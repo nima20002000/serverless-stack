@@ -16,15 +16,15 @@ function WishlistSkeleton() {
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden animate-pulse"
+          className="bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden animate-pulse"
         >
-          <div className="w-full aspect-[4/5] bg-gray-200" />
+          <div className="w-full aspect-[4/5] bg-rose-100/60" />
           <div className="p-4">
-            <div className="h-5 bg-gray-200 rounded mb-2" />
-            <div className="h-6 bg-gray-200 rounded w-1/2 mb-3" />
+            <div className="h-5 bg-rose-100/70 rounded-lg mb-2" />
+            <div className="h-6 bg-rose-100/70 rounded-lg w-1/2 mb-3" />
             <div className="flex gap-2">
-              <div className="h-9 bg-gray-200 rounded flex-1" />
-              <div className="h-9 w-9 bg-gray-200 rounded" />
+              <div className="h-9 bg-rose-100/70 rounded-xl flex-1" />
+              <div className="h-9 w-9 bg-rose-100/70 rounded-xl" />
             </div>
           </div>
         </div>
@@ -142,7 +142,7 @@ export function WishlistPage() {
             viewBox="0 0 24 24"
             strokeWidth={1}
             stroke="currentColor"
-            className="w-20 h-20 mx-auto text-gray-300"
+            className="w-20 h-20 mx-auto text-rose-200"
           >
             <path
               strokeLinecap="round"
@@ -151,10 +151,10 @@ export function WishlistPage() {
             />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-2xl font-bold text-rose-900 mb-2">
           لیست علاقه‌مندی‌ها خالی است
         </h2>
-        <p className="text-gray-600 mb-6">
+        <p className="text-rose-600 mb-6">
           محصولات مورد علاقه خود را با کلیک روی آیکون قلب ذخیره کنید
         </p>
         <Link href="/products">
@@ -168,7 +168,7 @@ export function WishlistPage() {
     <div>
       {/* Guest user info banner */}
       {status === 'unauthenticated' && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6">
           <div className="flex items-start gap-3">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -176,7 +176,7 @@ export function WishlistPage() {
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5"
+              className="w-6 h-6 text-rose-400 flex-shrink-0 mt-0.5"
             >
               <path
                 strokeLinecap="round"
@@ -185,9 +185,12 @@ export function WishlistPage() {
               />
             </svg>
             <div>
-              <p className="text-blue-800 text-sm">
+              <p className="text-rose-700 text-sm">
                 لیست علاقه‌مندی‌ها روی این دستگاه ذخیره شده است.{' '}
-                <Link href="/login" className="font-medium underline">
+                <Link
+                  href="/login"
+                  className="font-medium underline text-rose-700 hover:text-rose-900"
+                >
                   وارد شوید
                 </Link>{' '}
                 تا لیست شما در حساب کاربری‌تان ذخیره شود و از هر دستگاهی به آن
@@ -199,7 +202,7 @@ export function WishlistPage() {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-rose-900">
           علاقه‌مندی‌ها ({itemCount})
         </h1>
         <Button

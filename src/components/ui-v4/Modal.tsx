@@ -97,7 +97,7 @@ export default function ModalV4({
       onClick={handleBackdropClick}
     >
       <div
-        className="absolute inset-0 bg-rose-950/10 backdrop-blur-sm animate-[fadeIn_200ms_ease-out]"
+        className="absolute inset-0 bg-rose-950/10 dark:bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_200ms_ease-out]"
         aria-hidden="true"
       />
 
@@ -110,10 +110,10 @@ export default function ModalV4({
         tabIndex={-1}
         className={`
           relative
-          bg-white
+          bg-white dark:bg-slate-900
           rounded-[28px]
           shadow-[0_28px_70px_-40px_rgba(236,72,153,0.6)]
-          border border-rose-100
+          border border-rose-100 dark:border-slate-800
           w-full ${sizeStyles[size]}
           max-h-[calc(100vh-2rem)]
           flex flex-col
@@ -121,15 +121,15 @@ export default function ModalV4({
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-200 via-pink-300 to-rose-200 rounded-t-[28px]" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-200 via-pink-300 to-rose-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 rounded-t-[28px]" />
 
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between p-6 pb-4 border-b border-rose-100">
+          <div className="flex items-start justify-between p-6 pb-4 border-b border-rose-100 dark:border-slate-800">
             <div className="flex-1 text-right pe-4">
               {title && (
                 <h2
                   id="modal-title"
-                  className="text-xl font-semibold text-rose-900"
+                  className="text-xl font-semibold text-rose-900 dark:text-slate-100"
                 >
                   {title}
                 </h2>
@@ -137,7 +137,7 @@ export default function ModalV4({
               {description && (
                 <p
                   id="modal-description"
-                  className="mt-1 text-sm text-rose-400"
+                  className="mt-1 text-sm text-rose-400 dark:text-slate-400"
                 >
                   {description}
                 </p>
@@ -152,6 +152,8 @@ export default function ModalV4({
                   p-2 -mt-1 -ms-1
                   text-rose-400 hover:text-rose-600
                   hover:bg-rose-50
+                  dark:text-slate-400 dark:hover:text-slate-200
+                  dark:hover:bg-slate-800
                   rounded-2xl
                   transition-all duration-200
                 "
@@ -207,8 +209,8 @@ export function ModalFooter({
     <div
       className={`
         flex items-center justify-end gap-3
-        p-6 pt-4 border-t border-rose-100
-        bg-gradient-to-b from-white to-rose-50/30
+        p-6 pt-4 border-t border-rose-100 dark:border-slate-800
+        bg-gradient-to-b from-white to-rose-50/30 dark:from-slate-900 dark:to-slate-900/60
         rounded-b-[28px]
         ${className}
       `}

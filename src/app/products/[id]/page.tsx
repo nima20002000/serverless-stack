@@ -219,7 +219,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: renderJsonLd(breadcrumbSchema) }}
       />
-      <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50/70 to-white">
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ProductDetail product={serializedProduct} />
           <RelatedProducts products={serializedRelatedProducts} />

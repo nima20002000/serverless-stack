@@ -20,17 +20,21 @@ export default function NavigationCard({
   color = 'blue',
 }: NavigationCardProps) {
   const colorStyles = {
-    blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-100',
-    green: 'bg-green-50 text-green-600 group-hover:bg-green-100',
-    purple: 'bg-purple-50 text-purple-600 group-hover:bg-purple-100',
-    orange: 'bg-orange-50 text-orange-600 group-hover:bg-orange-100',
-    red: 'bg-red-50 text-red-600 group-hover:bg-red-100',
-    indigo: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100',
+    blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200 dark:group-hover:bg-blue-900/60',
+    green:
+      'bg-green-50 text-green-600 group-hover:bg-green-100 dark:bg-emerald-900/40 dark:text-emerald-200 dark:group-hover:bg-emerald-900/60',
+    purple:
+      'bg-purple-50 text-purple-600 group-hover:bg-purple-100 dark:bg-purple-900/40 dark:text-purple-200 dark:group-hover:bg-purple-900/60',
+    orange:
+      'bg-orange-50 text-orange-600 group-hover:bg-orange-100 dark:bg-orange-900/40 dark:text-orange-200 dark:group-hover:bg-orange-900/60',
+    red: 'bg-red-50 text-red-600 group-hover:bg-red-100 dark:bg-rose-900/40 dark:text-rose-200 dark:group-hover:bg-rose-900/60',
+    indigo:
+      'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-200 dark:group-hover:bg-indigo-900/60',
   };
 
   return (
     <Link href={href} className="group">
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300 h-full">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-md dark:shadow-none border border-gray-200 dark:border-slate-800 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 hover:border-gray-300 dark:hover:border-slate-700 h-full">
         <div className="flex items-start gap-3 sm:gap-4">
           {/* Icon */}
           <div
@@ -41,10 +45,10 @@ export default function NavigationCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1 text-right group-hover:text-blue-600 transition-colors">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 mb-1 text-right group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
               {title}
             </h3>
-            <p className="text-xs sm:text-sm text-gray-600 text-right leading-relaxed">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 text-right leading-relaxed">
               {description}
             </p>
           </div>

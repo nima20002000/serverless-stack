@@ -154,14 +154,14 @@ export default function TagInput({
           {selectedTags.map((tag) => (
             <span
               key={tag.id}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 rounded-full text-sm"
             >
               <span>{tag.name}</span>
               {!disabled && (
                 <button
                   type="button"
                   onClick={() => removeTag(tag.id)}
-                  className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                  className="hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full p-0.5 transition-colors"
                   aria-label={`حذف ${tag.name}`}
                 >
                   <XMarkIcon className="h-4 w-4" />
@@ -175,7 +175,7 @@ export default function TagInput({
       {/* Input */}
       <div className="relative">
         <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
         </div>
 
         <input
@@ -192,28 +192,28 @@ export default function TagInput({
           placeholder="جستجو یا ایجاد برچسب جدید..."
           className={`w-full pr-10 pl-4 py-3 border rounded-lg transition-colors ${
             disabled
-              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-              : 'bg-white hover:border-gray-400'
-          } ${isOpen ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-300'}`}
+              ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
+              : 'bg-white hover:border-gray-400 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-500'
+          } ${isOpen ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900/50' : 'border-gray-300 dark:border-slate-700'}`}
         />
 
         {loading && (
           <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 dark:border-blue-300" />
           </div>
         )}
       </div>
 
       {/* Suggestions Dropdown */}
       {isOpen && !disabled && (query.length >= 2 || suggestions.length > 0) && (
-        <div className="absolute z-20 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-20 mt-2 w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-lg dark:shadow-none max-h-60 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-center text-gray-500 text-sm">
+            <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
               در حال جستجو...
             </div>
           ) : suggestions.length > 0 ? (
             <>
-              <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200">
+              <div className="px-3 py-2 text-xs text-gray-500 dark:text-slate-500 border-b border-gray-200 dark:border-slate-800">
                 برچسب‌های موجود
               </div>
               {suggestions.map((tag) => (
@@ -221,37 +221,41 @@ export default function TagInput({
                   key={tag.id}
                   type="button"
                   onClick={() => addTag(tag)}
-                  className="w-full text-right px-4 py-2 hover:bg-gray-100 transition-colors"
+                  className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">{tag.name}</span>
-                    <span className="text-xs text-gray-500">#{tag.slug}</span>
+                    <span className="text-sm dark:text-slate-100">
+                      {tag.name}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-slate-500">
+                      #{tag.slug}
+                    </span>
                   </div>
                 </button>
               ))}
             </>
           ) : query.trim().length >= 2 ? (
             <>
-              <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-200">
+              <div className="px-3 py-2 text-xs text-gray-500 dark:text-slate-500 border-b border-gray-200 dark:border-slate-800">
                 نتیجه‌ای یافت نشد
               </div>
               <button
                 type="button"
                 onClick={createNewTag}
-                className="w-full text-right px-4 py-3 hover:bg-gray-100 transition-colors"
+                className="w-full text-right px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-blue-600 font-medium">
+                  <span className="text-sm text-blue-600 dark:text-blue-300 font-medium">
                     ایجاد برچسب جدید:
                   </span>
-                  <span className="text-sm text-gray-700">
+                  <span className="text-sm text-gray-700 dark:text-slate-200">
                     &quot;{query}&quot;
                   </span>
                 </div>
               </button>
             </>
           ) : (
-            <div className="p-4 text-center text-gray-500 text-sm">
+            <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
               حداقل 2 حرف تایپ کنید
             </div>
           )}
@@ -260,7 +264,7 @@ export default function TagInput({
 
       {/* Helper Text */}
       {!disabled && (
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-gray-500 dark:text-slate-500">
           برای جستجو تایپ کنید یا Enter بزنید تا برچسب جدید ایجاد شود
         </p>
       )}

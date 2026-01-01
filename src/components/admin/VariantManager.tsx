@@ -75,25 +75,25 @@ function SortableVariantCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="p-3 sm:p-4 border border-gray-200 rounded-lg bg-gray-50 hover:border-gray-300 transition-colors"
+      className="p-3 sm:p-4 border border-gray-200 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/60 hover:border-gray-300 dark:hover:border-slate-600 transition-colors"
     >
       <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-3">
         {/* Variant info */}
         <div className="flex-1 w-full sm:w-auto">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-800 text-[10px] sm:text-xs font-medium flex-shrink-0">
+            <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 text-[10px] sm:text-xs font-medium flex-shrink-0">
               {variant.order + 1}
             </span>
-            <h4 className="font-medium text-gray-900 text-right text-sm sm:text-base">
+            <h4 className="font-medium text-gray-900 dark:text-slate-100 text-right text-sm sm:text-base">
               {variant.name}
             </h4>
             {variant.media && variant.media.length > 0 && (
-              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
+              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200 whitespace-nowrap">
                 {variant.media.length} تصویر
               </span>
             )}
           </div>
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600 dark:text-slate-400">
             {variant.sku && <p>SKU: {variant.sku}</p>}
             {variant.color && (
               <p className="flex items-center gap-2">
@@ -142,7 +142,7 @@ function SortableVariantCard({
           <button
             {...attributes}
             {...listeners}
-            className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 transition-colors p-1 flex-shrink-0"
+            className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors p-1 flex-shrink-0"
             aria-label="جابجایی واریانت"
             type="button"
           >
@@ -253,7 +253,7 @@ export default function VariantManager({
   return (
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 text-right order-1">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 text-right order-1">
           انواع محصول (رنگ، سایز، ...)
         </h2>
         {!showVariantForm && (
@@ -271,8 +271,8 @@ export default function VariantManager({
       </div>
 
       {hasVariantsError && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-red-600 text-right">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 dark:bg-rose-900/30 border border-red-200 dark:border-rose-700 rounded-lg">
+          <p className="text-xs sm:text-sm text-red-600 dark:text-rose-200 text-right">
             {hasVariantsError}
           </p>
         </div>
@@ -280,7 +280,7 @@ export default function VariantManager({
 
       {/* Variant Form */}
       {showVariantForm && (
-        <div className="mb-4 sm:mb-6 p-3 sm:p-4 border border-blue-200 bg-blue-50 rounded-lg space-y-3 sm:space-y-4">
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-slate-900/60 rounded-lg space-y-3 sm:space-y-4">
           <h3 className="font-medium text-right text-sm sm:text-base">
             {editingVariantId && !editingVariantId.startsWith('variant-')
               ? 'ویرایش نوع محصول'
@@ -360,22 +360,22 @@ export default function VariantManager({
               name="isActive"
               checked={variantForm.isActive}
               onChange={onVariantFormChange}
-              className="w-4 h-4 text-blue-600 rounded"
+              className="w-4 h-4 text-blue-600 rounded border-gray-300 dark:border-slate-700 dark:bg-slate-900"
             />
             <label
               htmlFor="variantIsActive"
-              className="text-xs sm:text-sm font-medium text-gray-700"
+              className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
             >
               فعال
             </label>
           </div>
 
           {/* Variant Media */}
-          <div className="border-t border-blue-200 pt-3 sm:pt-4">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-2 text-right">
+          <div className="border-t border-blue-200 dark:border-blue-900/50 pt-3 sm:pt-4">
+            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 mb-2 text-right">
               تصاویر این نوع محصول (اختیاری)
             </h4>
-            <p className="text-[10px] sm:text-xs text-gray-600 mb-2 sm:mb-3 text-right">
+            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-slate-400 mb-2 sm:mb-3 text-right">
               تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده
               می‌شوند
             </p>
@@ -418,7 +418,7 @@ export default function VariantManager({
       {/* Variant List with Drag and Drop */}
       {variants.length > 0 ? (
         <div>
-          <p className="text-[10px] sm:text-xs text-gray-500 mb-2 sm:mb-3 text-right">
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-500 mb-2 sm:mb-3 text-right">
             💡 برای تغییر ترتیب نمایش، واریانت‌ها را با نگه داشتن آیکن کشیده و
             جابجا کنید
           </p>
@@ -445,7 +445,7 @@ export default function VariantManager({
           </DndContext>
         </div>
       ) : (
-        <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8">
+        <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-500 text-center py-6 sm:py-8">
           هیچ نوع محصولی اضافه نشده است
         </p>
       )}

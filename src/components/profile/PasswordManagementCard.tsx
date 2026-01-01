@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import Input from '@/components/ui/Input';
 import { validatePassword } from '@/lib/utils/password-validation';
 import { useFormState } from '@/hooks/useFormState';
 
@@ -112,57 +113,42 @@ export default function PasswordManagementCard({
       {isChangingPassword ? (
         <div className="space-y-4 text-right">
           {hasPassword && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                رمز عبور فعلی
-              </label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) =>
-                  setPasswordForm({
-                    ...passwordForm,
-                    currentPassword: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="رمز عبور فعلی خود را وارد کنید"
-              />
-            </div>
+            <Input
+              label="رمز عبور فعلی"
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) =>
+                setPasswordForm({
+                  ...passwordForm,
+                  currentPassword: e.target.value,
+                })
+              }
+              placeholder="رمز عبور فعلی خود را وارد کنید"
+            />
           )}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              رمز عبور جدید
-            </label>
-            <input
-              type="password"
-              value={passwordForm.newPassword}
-              onChange={(e) =>
-                setPasswordForm({
-                  ...passwordForm,
-                  newPassword: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="حداقل ۸ کاراکتر"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              تکرار رمز عبور جدید
-            </label>
-            <input
-              type="password"
-              value={passwordForm.confirmPassword}
-              onChange={(e) =>
-                setPasswordForm({
-                  ...passwordForm,
-                  confirmPassword: e.target.value,
-                })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
+          <Input
+            label="رمز عبور جدید"
+            type="password"
+            value={passwordForm.newPassword}
+            onChange={(e) =>
+              setPasswordForm({
+                ...passwordForm,
+                newPassword: e.target.value,
+              })
+            }
+            placeholder="حداقل ۸ کاراکتر"
+          />
+          <Input
+            label="تکرار رمز عبور جدید"
+            type="password"
+            value={passwordForm.confirmPassword}
+            onChange={(e) =>
+              setPasswordForm({
+                ...passwordForm,
+                confirmPassword: e.target.value,
+              })
+            }
+          />
           <div className="flex gap-3 justify-end">
             <Button
               variant="secondary"
@@ -198,7 +184,7 @@ export default function PasswordManagementCard({
               <p className="text-sm text-gray-500">
                 رمز عبور خود را فراموش کرده‌اید؟{' '}
                 <span
-                  className="text-blue-600 hover:underline cursor-pointer"
+                  className="text-rose-600 hover:text-rose-700 cursor-pointer"
                   onClick={onStartOtpReset}
                 >
                   بازیابی از طریق OTP

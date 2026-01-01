@@ -78,11 +78,17 @@ export default function TransactionDetailModal({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <CheckCircleIcon className="w-6 h-6 text-green-600" />;
+        return (
+          <CheckCircleIcon className="w-6 h-6 text-green-600 dark:text-emerald-300" />
+        );
       case 'FAILED':
-        return <XCircleIcon className="w-6 h-6 text-red-600" />;
+        return (
+          <XCircleIcon className="w-6 h-6 text-red-600 dark:text-rose-300" />
+        );
       case 'PENDING':
-        return <ClockIcon className="w-6 h-6 text-yellow-600" />;
+        return (
+          <ClockIcon className="w-6 h-6 text-yellow-600 dark:text-amber-300" />
+        );
       default:
         return null;
     }
@@ -90,9 +96,11 @@ export default function TransactionDetailModal({
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      COMPLETED: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      FAILED: 'bg-red-100 text-red-800',
+      COMPLETED:
+        'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200',
+      PENDING:
+        'bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200',
+      FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
       COMPLETED: 'موفق',
@@ -127,17 +135,21 @@ export default function TransactionDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="جزئیات تراکنش" size="2xl">
       <div className="space-y-6">
         {/* Transaction Status Header */}
-        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+        <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
           <div className="flex items-center gap-3">
             {getStatusIcon(transaction.status)}
             <div>
-              <div className="text-sm text-gray-600">وضعیت تراکنش</div>
+              <div className="text-sm text-gray-600 dark:text-slate-400">
+                وضعیت تراکنش
+              </div>
               <div className="mt-1">{getStatusBadge(transaction.status)}</div>
             </div>
           </div>
           <div className="text-left">
-            <div className="text-sm text-gray-600">کد تراکنش</div>
-            <code className="text-lg font-bold bg-white px-3 py-1 rounded mt-1 inline-block">
+            <div className="text-sm text-gray-600 dark:text-slate-400">
+              کد تراکنش
+            </div>
+            <code className="text-lg font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded mt-1 inline-block">
               {transaction.transactionCode}
             </code>
           </div>
@@ -147,41 +159,51 @@ export default function TransactionDetailModal({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Payment Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <CreditCardIcon className="w-5 h-5" />
               اطلاعات پرداخت
             </h3>
-            <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+            <div className="space-y-3 bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">مبلغ کل:</span>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  مبلغ کل:
+                </span>
                 <span className="font-bold text-lg">
                   {formatPrice(Number(transaction.amount))}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">درگاه پرداخت:</span>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  درگاه پرداخت:
+                </span>
                 <span className="font-medium">
                   {getPaymentMethodLabel(transaction.paymentMethod)}
                 </span>
               </div>
               {transaction.zarinpalRefId && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">کد رهگیری:</span>
-                  <code className="text-sm bg-white px-2 py-1 rounded">
+                  <span className="text-sm text-gray-600 dark:text-slate-400">
+                    کد رهگیری:
+                  </span>
+                  <code className="text-sm bg-white dark:bg-slate-800 px-2 py-1 rounded">
                     {transaction.zarinpalRefId}
                   </code>
                 </div>
               )}
               {transaction.zarinpalAuthority && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Authority:</span>
-                  <code className="text-xs bg-white px-2 py-1 rounded">
+                  <span className="text-sm text-gray-600 dark:text-slate-400">
+                    Authority:
+                  </span>
+                  <code className="text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded">
                     {transaction.zarinpalAuthority.substring(0, 20)}...
                   </code>
                 </div>
               )}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">تاریخ ایجاد:</span>
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  تاریخ ایجاد:
+                </span>
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
                   {transaction.createdAt ? (
@@ -190,7 +212,9 @@ export default function TransactionDetailModal({
                       'yyyy/MM/dd - HH:mm'
                     )
                   ) : (
-                    <span className="text-gray-400">نامشخص</span>
+                    <span className="text-gray-400 dark:text-slate-500">
+                      نامشخص
+                    </span>
                   )}
                 </span>
               </div>
@@ -199,28 +223,30 @@ export default function TransactionDetailModal({
 
           {/* Customer Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <UserIcon className="w-5 h-5" />
               اطلاعات مشتری
             </h3>
-            <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+            <div className="space-y-3 bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
               <div className="flex items-start gap-2">
-                <UserIcon className="w-4 h-4 mt-1 text-gray-500" />
+                <UserIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                 <div className="flex-1">
-                  <div className="text-sm text-gray-600">نام:</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400">
+                    نام:
+                  </div>
                   <div className="font-medium flex items-center gap-2">
                     {transaction.user
                       ? transaction.user.name
                       : transaction.fullName}
                     {transaction.isGuest && (
-                      <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded">
+                      <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded">
                         مهمان
                       </span>
                     )}
                   </div>
                   {transaction.user && (
                     <div className="mt-1">
-                      <code className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">
+                      <code className="text-xs bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-0.5 rounded font-medium">
                         {transaction.user.uid}
                       </code>
                     </div>
@@ -228,9 +254,11 @@ export default function TransactionDetailModal({
                 </div>
               </div>
               <div className="flex items-start gap-2">
-                <PhoneIcon className="w-4 h-4 mt-1 text-gray-500" />
+                <PhoneIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                 <div className="flex-1">
-                  <div className="text-sm text-gray-600">تلفن:</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400">
+                    تلفن:
+                  </div>
                   <div className="font-medium" dir="ltr">
                     {transaction.phone}
                   </div>
@@ -238,9 +266,11 @@ export default function TransactionDetailModal({
               </div>
               {(transaction.email || transaction.user?.email) && (
                 <div className="flex items-start gap-2">
-                  <EnvelopeIcon className="w-4 h-4 mt-1 text-gray-500" />
+                  <EnvelopeIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                   <div className="flex-1">
-                    <div className="text-sm text-gray-600">ایمیل:</div>
+                    <div className="text-sm text-gray-600 dark:text-slate-400">
+                      ایمیل:
+                    </div>
                     <div className="font-medium text-sm" dir="ltr">
                       {transaction.user?.email || transaction.email}
                     </div>
@@ -248,7 +278,7 @@ export default function TransactionDetailModal({
                 </div>
               )}
               {transaction.createAccount && (
-                <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                <div className="text-xs text-blue-600 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/40 px-2 py-1 rounded">
                   درخواست ایجاد حساب کاربری
                 </div>
               )}
@@ -258,18 +288,20 @@ export default function TransactionDetailModal({
 
         {/* Shipping Address */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <MapPinIcon className="w-5 h-5" />
             آدرس ارسال
           </h3>
-          <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
             <p className="text-sm leading-relaxed">
               {transaction.shippingAddress}
             </p>
             {transaction.postalCode && (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-gray-600">کد پستی:</span>
-                <code className="text-sm bg-white px-2 py-1 rounded">
+                <span className="text-sm text-gray-600 dark:text-slate-400">
+                  کد پستی:
+                </span>
+                <code className="text-sm bg-white dark:bg-slate-800 px-2 py-1 rounded">
                   {transaction.postalCode}
                 </code>
               </div>
@@ -279,37 +311,40 @@ export default function TransactionDetailModal({
 
         {/* Order Items */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5" />
             محصولات ({totalItems.toLocaleString('fa-IR')} عدد)
           </h3>
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-slate-900/60">
                 <tr>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                     محصول
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                     تعداد
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                     قیمت واحد
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
                     جمع
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
                 {transaction.items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                  <tr
+                    key={item.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
+                  >
                     <td className="px-4 py-3 text-right">
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 dark:text-slate-100">
                         {item.product.name}
                       </div>
                       {item.variant && (
-                        <div className="text-xs text-blue-600 mt-1">
+                        <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                           {item.variant.name}
                           {item.variant.color &&
                             ` - رنگ: ${item.variant.color}`}
@@ -333,11 +368,11 @@ export default function TransactionDetailModal({
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50">
+              <tfoot className="bg-gray-50 dark:bg-slate-900/60">
                 <tr>
                   <td
                     colSpan={3}
-                    className="px-4 py-3 text-right font-semibold text-gray-900"
+                    className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-slate-100"
                   >
                     جمع کل:
                   </td>
@@ -353,20 +388,24 @@ export default function TransactionDetailModal({
         {/* Invoice Information */}
         {transaction.invoice && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <DocumentTextIcon className="w-5 h-5" />
               اطلاعات فاکتور
             </h3>
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <div className="bg-green-50 dark:bg-emerald-900/30 border border-green-200 dark:border-emerald-700/50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm text-gray-600">شماره فاکتور:</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400">
+                    شماره فاکتور:
+                  </div>
                   <div className="font-bold text-lg">
                     {transaction.invoice.invoiceNumber}
                   </div>
                 </div>
                 <div className="text-left">
-                  <div className="text-sm text-gray-600">تاریخ صدور:</div>
+                  <div className="text-sm text-gray-600 dark:text-slate-400">
+                    تاریخ صدور:
+                  </div>
                   <div className="text-sm">
                     {transaction.invoice.generatedAt ? (
                       format(
@@ -374,7 +413,9 @@ export default function TransactionDetailModal({
                         'yyyy/MM/dd - HH:mm'
                       )
                     ) : (
-                      <span className="text-gray-400">نامشخص</span>
+                      <span className="text-gray-400 dark:text-slate-500">
+                        نامشخص
+                      </span>
                     )}
                   </div>
                 </div>
