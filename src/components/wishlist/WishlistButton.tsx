@@ -16,6 +16,13 @@ interface WishlistButtonProps {
   variant?: {
     id: string;
     name: string;
+    media?: Array<{
+      id: string;
+      type: 'IMAGE' | 'VIDEO';
+      url: string;
+      alt?: string | null;
+      order: number;
+    }>;
   } | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -40,6 +47,11 @@ export function WishlistButton({
   const removeItem = useWishlistStore((state) => state.removeItem);
   const [isLoading, setIsLoading] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const getWishlistImage = useCallback(() => {
+    const variantImage = variant?.media?.find((item) => item.type === 'IMAGE');
+    return variantImage?.url || product.images[0] || '';
+  }, [product.images, variant]);
 
   // Check initial state
   useEffect(() => {
@@ -91,7 +103,7 @@ export function WishlistButton({
             variantId: variant?.id,
             name: variant ? `${product.name} - ${variant.name}` : product.name,
             price: product.price,
-            image: product.images[0] || '',
+            image: getWishlistImage(),
             stock: product.stock,
             discountPercent: product.discountPercent ?? undefined,
             variantName: variant?.name,
@@ -106,7 +118,16 @@ export function WishlistButton({
         setIsLoading(false);
       }
     },
-    [isWishlisted, isLoading, session, product, variant, addItem, removeItem]
+    [
+      isWishlisted,
+      isLoading,
+      session,
+      product,
+      variant,
+      addItem,
+      removeItem,
+      getWishlistImage,
+    ]
   );
 
   const sizeClasses = {

@@ -362,7 +362,11 @@ function ProductCard({ product }: ProductCardProps) {
               }}
               variant={
                 selectedVariant
-                  ? { id: selectedVariant.id, name: selectedVariant.name }
+                  ? {
+                      id: selectedVariant.id,
+                      name: selectedVariant.name,
+                      media: selectedVariant.media,
+                    }
                   : null
               }
               size="md"
