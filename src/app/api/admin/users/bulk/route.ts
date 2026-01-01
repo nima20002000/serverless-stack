@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
+import { createClient } from '@/lib/supabase/server';
 import { bulkDeleteUsers, bulkUpdateUsers } from '@/services/admin-service';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +33,10 @@ export async function POST(req: NextRequest) {
       case 'delete':
         return await handleBulkDelete(body as BulkDeleteRequest);
       case 'update':
-        return await handleBulkUpdate(body as BulkUpdateRequest);
+        return await handleBulkUpdate(
+          session.user.id,
+          body as BulkUpdateRequest
+        );
       default:
         return NextResponse.json(
           { error: 'عملیات نامعتبر است' },
@@ -85,6 +89,7 @@ async function handleBulkDelete(
 }
 
 async function handleBulkUpdate(
+  adminUserId: string,
   data: BulkUpdateRequest
 ): Promise<NextResponse> {
   const { userIds, updates } = data;
@@ -101,6 +106,36 @@ async function handleBulkUpdate(
       { error: 'داده‌های به‌روزرسانی نامعتبر است' },
       { status: 400 }
     );
+  }
+
+  if (updates.role === 'USER') {
+    if (userIds.includes(adminUserId)) {
+      return NextResponse.json(
+        { error: 'نمی‌توانید نقش خود را تغییر دهید' },
+        { status: 403 }
+      );
+    }
+
+    const supabase = createClient();
+    const { data: adminTargets, error } = await supabase
+      .from('users')
+      .select('id')
+      .in('id', userIds)
+      .eq('role', 'ADMIN');
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'خطا در بررسی نقش کاربران' },
+        { status: 500 }
+      );
+    }
+
+    if (adminTargets && adminTargets.length > 0) {
+      return NextResponse.json(
+        { error: 'امکان تغییر نقش مدیران به کاربر وجود ندارد' },
+        { status: 403 }
+      );
+    }
   }
 
   try {

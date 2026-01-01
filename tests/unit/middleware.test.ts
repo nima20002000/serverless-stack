@@ -98,34 +98,46 @@ describe('middleware', () => {
       );
     });
 
-    it('skips rate limiting for /api/auth/send-otp', async () => {
+    it('uses apiLimiter with "otp-send" bucket for /api/auth/send-otp', async () => {
       const req = createRequest('/api/auth/send-otp');
+      mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      await middleware(req);
 
-      expect(checkRateLimitMock).not.toHaveBeenCalled();
-      expect(response.status).not.toBe(429);
+      expect(checkRateLimitMock).toHaveBeenCalledWith(
+        req,
+        expect.objectContaining({ name: 'apiLimiter' }),
+        'otp-send'
+      );
     });
 
-    it('skips rate limiting for /api/auth/verify-otp', async () => {
+    it('uses apiLimiter with "otp-verify" bucket for /api/auth/verify-otp', async () => {
       const req = createRequest('/api/auth/verify-otp');
+      mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      await middleware(req);
 
-      expect(checkRateLimitMock).not.toHaveBeenCalled();
-      expect(response.status).not.toBe(429);
+      expect(checkRateLimitMock).toHaveBeenCalledWith(
+        req,
+        expect.objectContaining({ name: 'apiLimiter' }),
+        'otp-verify'
+      );
     });
 
-    it('skips rate limiting for /api/auth/checkout-verify-otp', async () => {
+    it('uses apiLimiter with "otp-checkout-verify" bucket for /api/auth/checkout-verify-otp', async () => {
       const req = createRequest('/api/auth/checkout-verify-otp');
+      mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      await middleware(req);
 
-      expect(checkRateLimitMock).not.toHaveBeenCalled();
-      expect(response.status).not.toBe(429);
+      expect(checkRateLimitMock).toHaveBeenCalledWith(
+        req,
+        expect.objectContaining({ name: 'apiLimiter' }),
+        'otp-checkout-verify'
+      );
     });
 
     it('skips rate limiting for /api/transactions/verify (Zarinpal callback)', async () => {

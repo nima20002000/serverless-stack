@@ -324,7 +324,7 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
   });
 
   describe('Parameter Validation', () => {
-    it('returns 400 when trackingCode is missing', async () => {
+    it('redirects to failure when trackingCode is missing', async () => {
       const { POST } = await getHandlers();
       vi.mocked(getTransactionById).mockResolvedValue(createMockTransaction());
 
@@ -339,9 +339,8 @@ describe('POST/GET /api/transactions/verify-digipay', () => {
 
       const response = await POST(req);
 
-      expect(response.status).toBe(400);
-      const body = await response.json();
-      expect(body.error).toBeDefined();
+      expect(response.status).toBe(303);
+      expect(response.headers.get('Location')).toContain('/payment/failure');
     });
 
     it('returns 400 when ticket query param is missing', async () => {

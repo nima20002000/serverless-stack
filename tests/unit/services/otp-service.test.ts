@@ -42,11 +42,23 @@ describe('otp-service', () => {
 
     const deleteExpired = createQueryMock({ count: 0, error: null });
     const recentOtpQuery = createQueryMock({
-      data: {
-        id: 'otp-1',
-        createdAt: '2024-01-01T00:00:00.000',
-        expiresAt: '2024-01-01T00:05:00.000',
-      },
+      data: [
+        {
+          id: 'otp-1',
+          createdAt: '2024-01-01T00:00:30.000',
+          expiresAt: '2024-01-01T00:05:00.000',
+        },
+        {
+          id: 'otp-2',
+          createdAt: '2024-01-01T00:00:20.000',
+          expiresAt: '2024-01-01T00:05:00.000',
+        },
+        {
+          id: 'otp-3',
+          createdAt: '2024-01-01T00:00:10.000',
+          expiresAt: '2024-01-01T00:05:00.000',
+        },
+      ],
       error: null,
     });
 
@@ -61,7 +73,7 @@ describe('otp-service', () => {
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('RATE_LIMIT');
     expect(result.expiresAt).toBe(
-      new Date('2024-01-01T00:00:00.000Z').getTime() + 120000
+      new Date('2024-01-01T00:00:30.000Z').getTime() + 120000
     );
     expect(sendSmsMock).not.toHaveBeenCalled();
   });
