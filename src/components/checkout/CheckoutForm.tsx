@@ -280,6 +280,10 @@ export default function CheckoutForm({
 
       // Handle different scenarios based on response
       if (data.action === 'login' || data.action === 'register') {
+        if (!data.otpToken) {
+          throw new Error('توکن تایید یافت نشد');
+        }
+
         // Set success message and mark for login on payment
         setPhoneVerified(true);
         setPendingLogin(true);
@@ -294,6 +298,7 @@ export default function CheckoutForm({
         // Store identifier for later login
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('pendingLoginIdentifier', data.identifier);
+          sessionStorage.setItem('pendingLoginOtpToken', data.otpToken);
         }
       }
     } catch (error) {
@@ -343,12 +348,13 @@ export default function CheckoutForm({
     // If user verified OTP and needs login, log them in first
     if (pendingLogin && !session && typeof window !== 'undefined') {
       const identifier = sessionStorage.getItem('pendingLoginIdentifier');
-      if (identifier) {
+      const otpToken = sessionStorage.getItem('pendingLoginOtpToken');
+      if (identifier && otpToken) {
         try {
           // Sign in with NextAuth
           const result = await signIn('credentials', {
             identifier: identifier,
-            password: '', // Passwordless login (OTP already verified)
+            otpToken: otpToken,
             redirect: false,
           });
 
@@ -356,6 +362,7 @@ export default function CheckoutForm({
             // Clear pending login state
             if (typeof window !== 'undefined') {
               sessionStorage.removeItem('pendingLoginIdentifier');
+              sessionStorage.removeItem('pendingLoginOtpToken');
             }
             setPendingLogin(false);
 
@@ -385,6 +392,9 @@ export default function CheckoutForm({
           setOtpError('خطا در ورود به حساب کاربری');
           return;
         }
+      } else {
+        setOtpError('اطلاعات تایید یافت نشد. لطفاً دوباره تلاش کنید.');
+        return;
       }
     }
 

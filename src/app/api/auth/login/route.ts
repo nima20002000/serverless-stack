@@ -61,11 +61,6 @@ export async function POST(req: NextRequest) {
         name: user.name,
         role: user.role,
       },
-      // Return credentials to use with NextAuth signIn
-      credentials: {
-        email,
-        password,
-      },
     });
   } catch (error) {
     // Log failed login (fire-and-forget)

@@ -97,8 +97,13 @@ function VerifyOTPContent() {
         };
       } else {
         // Login with OTP: no password (passwordless auth)
+        if (!data.otpToken) {
+          throw new Error('توکن تایید یافت نشد');
+        }
+
         signInData = {
           identifier: identifier,
+          otpToken: data.otpToken,
           redirect: false,
         };
       }

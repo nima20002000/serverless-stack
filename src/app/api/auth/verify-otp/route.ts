@@ -5,6 +5,7 @@ import { authenticateUserByPhone } from '@/services/auth-service';
 import { logUserActivity } from '@/services/activity-log-service';
 import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
+import { createOtpToken } from '@/lib/auth/otp-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,6 +142,11 @@ export async function POST(req: NextRequest) {
 
     // For login: Verify user exists
     if (purpose === 'login') {
+      const secret = process.env.NEXTAUTH_SECRET;
+      if (!secret) {
+        throw new Error('تنظیمات احراز هویت ناقص است');
+      }
+
       // For phone login, use existing authenticateUserByPhone
       // For email login, use getUserByIdentifier
       const user = isEmail
@@ -196,6 +202,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'ورود با موفقیت انجام شد',
+        otpToken: createOtpToken(identifier, 'login', secret),
         user: {
           id: user.id,
           phone: user.phone,

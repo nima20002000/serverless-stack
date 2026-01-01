@@ -4,6 +4,7 @@ import { createUser, getUserByIdentifier } from '@/services/user-service';
 import { logUserActivity } from '@/services/activity-log-service';
 import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
+import { createOtpToken } from '@/lib/auth/otp-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,11 @@ export async function POST(req: NextRequest) {
     }
 
     const isEmail = identifier.includes('@');
+    const secret = process.env.NEXTAUTH_SECRET;
+
+    if (!secret) {
+      throw new Error('تنظیمات احراز هویت ناقص است');
+    }
 
     log.info('Verifying OTP for checkout', {
       identifier,
@@ -124,6 +130,7 @@ export async function POST(req: NextRequest) {
         action: 'login',
         message: 'ورود با موفقیت انجام شد',
         identifier: identifier,
+        otpToken: createOtpToken(identifier, 'checkout', secret),
       });
     }
 
@@ -191,6 +198,7 @@ export async function POST(req: NextRequest) {
         action: 'register',
         message: 'حساب کاربری با موفقیت ایجاد شد',
         identifier: identifier,
+        otpToken: createOtpToken(identifier, 'checkout', secret),
       });
     }
 

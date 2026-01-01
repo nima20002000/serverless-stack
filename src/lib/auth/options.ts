@@ -3,6 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@/lib/supabase/server';
 import { detectIdentifierType } from '@/services/user-service';
+import { verifyOtpToken } from '@/lib/auth/otp-token';
 
 // Extend the built-in types
 declare module 'next-auth' {
@@ -45,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         identifier: { label: 'ایمیل یا شماره تلفن', type: 'text' },
         password: { label: 'رمز عبور', type: 'password' },
+        otpToken: { label: 'OTP Token', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.identifier) {
@@ -77,6 +79,24 @@ export const authOptions: NextAuthOptions = {
         // For authentication without password (OTP-verified)
         // Allow passwordless login for both phone and email after OTP verification
         if (!credentials.password) {
+          const secret = process.env.NEXTAUTH_SECRET;
+          const otpToken = credentials.otpToken;
+
+          if (!secret || !otpToken) {
+            throw new Error('تایید دو مرحله‌ای نامعتبر است');
+          }
+
+          const otpVerification = verifyOtpToken({
+            token: otpToken,
+            identifier: credentials.identifier,
+            secret,
+            allowedPurposes: ['login', 'checkout'],
+          });
+
+          if (!otpVerification.valid) {
+            throw new Error('تایید دو مرحله‌ای نامعتبر است');
+          }
+
           // This path is used after OTP verification
           // The OTP was already verified before calling signIn
           // Security: Only allow if user is verified (went through OTP for phone)

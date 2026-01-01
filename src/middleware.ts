@@ -26,14 +26,14 @@ export async function middleware(req: NextRequest) {
       limiter = strictLimiter; // Strict for register (5 requests per 2 minutes)
       endpoint = 'register'; // Separate bucket for register
     } else if (req.nextUrl.pathname === '/api/auth/send-otp') {
-      // Don't rate limit here - OTP service has its own rate limiting per email/phone
-      shouldRateLimit = false;
+      limiter = apiLimiter; // IP-level guardrail for OTP requests
+      endpoint = 'otp-send';
     } else if (req.nextUrl.pathname === '/api/auth/verify-otp') {
-      // Don't rate limit here - OTP service has its own attempt limiting
-      shouldRateLimit = false;
+      limiter = apiLimiter; // IP-level guardrail for OTP verification
+      endpoint = 'otp-verify';
     } else if (req.nextUrl.pathname === '/api/auth/checkout-verify-otp') {
-      // Don't rate limit here - OTP service has its own attempt limiting
-      shouldRateLimit = false;
+      limiter = apiLimiter; // IP-level guardrail for checkout OTP verification
+      endpoint = 'otp-checkout-verify';
     } else if (req.nextUrl.pathname === '/api/transactions/verify') {
       // Don't rate limit - this is an external callback from Zarinpal payment gateway
       // Users cannot trigger this directly; requires valid authority from database
