@@ -151,6 +151,7 @@ describe('POST /api/products/[id]/media', () => {
     );
 
     expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual({ media: { id: 'm1' } });
     expect(addProductMediaMock).toHaveBeenCalledWith({
       productId: 'p1',
       variantId: undefined,
@@ -219,6 +220,7 @@ describe('PATCH /api/products/[id]/media/[mediaId]', () => {
     );
 
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ media: { id: 'm1' } });
     expect(updateProductMediaMock).toHaveBeenCalledWith('m1', {
       alt: 'new',
       order: 2,

@@ -184,6 +184,7 @@ describe('POST /api/products/[id]/variants', () => {
     );
 
     expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual({ variant: { id: 'v1' } });
     expect(createProductVariantMock).toHaveBeenCalledWith({
       productId: 'p1',
       name: 'Variant',
@@ -290,6 +291,7 @@ describe('PUT /api/products/[id]/variants/[variantId]', () => {
     );
 
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ variant: { id: 'v1' } });
     expect(updateProductVariantMock).toHaveBeenCalledWith('v1', {
       name: 'Variant',
       sku: undefined,
@@ -454,6 +456,10 @@ describe('PATCH /api/products/[id]/variants/reorder', () => {
     );
 
     expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      success: true,
+      message: 'ترتیب واریانت‌ها با موفقیت به‌روز شد',
+    });
     expect(reorderProductVariantsMock).toHaveBeenCalledWith('p1', [
       { id: 'v1', order: 1 },
       { id: 'v2', order: 2 },

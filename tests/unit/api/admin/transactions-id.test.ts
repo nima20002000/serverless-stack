@@ -50,6 +50,21 @@ describe('admin transaction detail API', () => {
     expect(getTransactionByIdMock).not.toHaveBeenCalled();
   });
 
+  it('GET returns 403 when user is not admin', async () => {
+    getServerSessionMock.mockResolvedValue({
+      user: { role: 'USER' },
+    } as any);
+    const { GET } = await loadHandlers();
+
+    const response = await GET(new NextRequest('http://localhost'), {
+      params: { id: 't1' },
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    expect(getTransactionByIdMock).not.toHaveBeenCalled();
+  });
+
   it('GET returns transaction details for admin', async () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     getTransactionByIdMock.mockResolvedValue({ id: 't1', status: 'COMPLETED' });

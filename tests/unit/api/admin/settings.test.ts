@@ -67,6 +67,19 @@ describe('admin settings API', () => {
     expect(getAllSettingsMock).not.toHaveBeenCalled();
   });
 
+  it('GET returns 403 when user is not admin', async () => {
+    getServerSessionMock.mockResolvedValue({
+      user: { role: 'USER' },
+    } as any);
+    const { GET } = await loadHandlers();
+
+    const response = await GET();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
+    expect(getAllSettingsMock).not.toHaveBeenCalled();
+  });
+
   it('GET returns settings for admin users', async () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     getAllSettingsMock.mockResolvedValue([

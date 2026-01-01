@@ -57,6 +57,19 @@ describe('admin users bulk API', () => {
     expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
   });
 
+  it('POST returns 403 when user is not admin', async () => {
+    getServerSessionMock.mockResolvedValue({
+      user: { role: 'USER' },
+    } as any);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(createPostRequest({ action: 'delete' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
+  });
+
   it('POST returns 400 for invalid action', async () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     const { POST } = await loadHandlers();
