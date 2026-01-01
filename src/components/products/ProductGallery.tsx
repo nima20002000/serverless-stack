@@ -398,8 +398,8 @@ export default function ProductGallery({
           <div
             className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
               selectedVariant.media && selectedVariant.media.length > 0
-                ? 'bg-blue-600'
-                : 'bg-gray-600'
+                ? 'bg-rose-500'
+                : 'bg-slate-600'
             }`}
           >
             {selectedVariant.media && selectedVariant.media.length > 0
@@ -416,10 +416,10 @@ export default function ProductGallery({
             <button
               key={item.id}
               onClick={() => handleThumbnailClick(index)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+              className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${
                 index === selectedIndex
-                  ? 'border-blue-600 ring-2 ring-blue-200'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-rose-500 ring-2 ring-rose-200/70'
+                  : 'border-rose-200/70 hover:border-rose-300'
               }`}
             >
               {item.type === 'IMAGE' ? (

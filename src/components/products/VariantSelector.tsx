@@ -82,8 +82,8 @@ function VariantSelector({
         disabled={outOfStock}
         className={`relative w-12 h-12 rounded-full border-2 transition-all ${
           isSelected
-            ? 'border-blue-600 ring-2 ring-blue-200'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-rose-500 ring-2 ring-rose-200/70'
+            : 'border-rose-200/70 hover:border-rose-300'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         style={{ background: variant.color || '#ddd' }}
         title={`${variant.name}${outOfStock ? ' (ناموجود)' : ''}`}
@@ -112,10 +112,10 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`px-4 py-2 rounded-lg border-2 transition-all min-w-[4rem] ${
+        className={`px-4 py-2 rounded-2xl border-2 transition-all min-w-[4rem] ${
           isSelected
-            ? 'border-blue-600 bg-blue-50 text-blue-700'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-rose-500 bg-rose-50 text-rose-700'
+            : 'border-rose-200/70 hover:border-rose-300 text-slate-700'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed line-through' : 'cursor-pointer'}`}
         title={outOfStock ? 'ناموجود' : variant.name}
       >
@@ -133,28 +133,28 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`px-4 py-3 rounded-lg border-2 transition-all text-right ${
+        className={`px-4 py-3 rounded-2xl border-2 transition-all text-right ${
           isSelected
-            ? 'border-blue-600 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
+            ? 'border-rose-500 bg-rose-50/80'
+            : 'border-rose-200/70 hover:border-rose-300'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="font-medium text-sm">{variant.name}</div>
             {variant.sku && (
-              <div className="text-xs text-gray-500 mt-1">{variant.sku}</div>
+              <div className="text-xs text-slate-500 mt-1">{variant.sku}</div>
             )}
           </div>
           <div className="text-left">
             {variant.priceAdjust !== 0 && (
-              <div className="text-sm font-medium text-blue-600">
+              <div className="text-sm font-medium text-rose-600">
                 {variant.priceAdjust > 0 ? '+' : ''}
                 {Number(variant.priceAdjust).toLocaleString('fa-IR')} تومان
               </div>
             )}
             <div
-              className={`text-xs ${outOfStock ? 'text-red-600' : 'text-gray-500'}`}
+              className={`text-xs ${outOfStock ? 'text-rose-600' : 'text-slate-500'}`}
             >
               {outOfStock ? 'ناموجود' : `موجودی: ${variant.stock}`}
             </div>
@@ -173,7 +173,7 @@ function VariantSelector({
       {/* Color Variants */}
       {colorVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-rose-900/80 mb-3">
             رنگ
           </label>
           <div className="flex flex-wrap gap-3">
@@ -187,7 +187,7 @@ function VariantSelector({
       {/* Size Variants */}
       {sizeVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-rose-900/80 mb-3">
             سایز
           </label>
           <div className="flex flex-wrap gap-2">
@@ -201,7 +201,7 @@ function VariantSelector({
       {/* Material Variants */}
       {materialVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-rose-900/80 mb-3">
             جنس
           </label>
           <div className="flex flex-wrap gap-2">
@@ -210,10 +210,10 @@ function VariantSelector({
                 key={variant.id}
                 onClick={() => !isOutOfStock(variant) && handleSelect(variant)}
                 disabled={isOutOfStock(variant)}
-                className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                className={`px-4 py-2 rounded-2xl border-2 transition-all ${
                   selected === variant.id
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:border-gray-400'
+                    ? 'border-rose-500 bg-rose-50 text-rose-700'
+                    : 'border-rose-200/70 hover:border-rose-300 text-slate-700'
                 } ${isOutOfStock(variant) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {variant.material}
@@ -226,7 +226,7 @@ function VariantSelector({
       {/* Other Variants */}
       {otherVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
+          <label className="block text-sm font-medium text-rose-900/80 mb-3">
             انتخاب نوع
           </label>
           <div className="space-y-2">
@@ -239,19 +239,21 @@ function VariantSelector({
 
       {/* Selected Variant Info */}
       {selectedVariant && (
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="p-4 bg-rose-50/70 border border-rose-200/70 rounded-2xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-700">انتخاب شما:</p>
-              <p className="text-base font-semibold text-gray-900 mt-1">
+              <p className="text-sm font-medium text-rose-900/80">
+                انتخاب شما:
+              </p>
+              <p className="text-base font-semibold text-rose-950 mt-1">
                 {selectedVariant.name}
               </p>
             </div>
             <div className="text-left">
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-lg font-bold text-rose-700">
                 {getVariantPrice(selectedVariant)} تومان
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-slate-600 mt-1">
                 موجودی: {selectedVariant.stock} عدد
               </p>
             </div>

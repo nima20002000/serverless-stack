@@ -320,11 +320,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
 
           {/* Installment Purchase Banner */}
-          <div className="mb-6 bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="bg-slate-100 rounded-full p-2">
+          <Card className="mb-6 bg-rose-50/70 border-rose-100/80 shadow-[0_18px_40px_-28px_rgba(244,114,182,0.35)]">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-white/80 border border-rose-100 rounded-2xl p-2 shadow-sm">
                 <svg
-                  className="w-5 h-5 text-slate-600"
+                  className="w-5 h-5 text-rose-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -337,13 +337,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   />
                 </svg>
               </div>
-              <span className="font-bold text-lg text-slate-900">
+              <span className="font-bold text-lg text-rose-950">
                 خرید اقساطی با دیجی‌پی
               </span>
             </div>
-            <div className="text-right text-slate-600 text-sm leading-relaxed">
+            <div className="text-right text-rose-900/70 text-sm leading-relaxed">
               <span>پرداخت فقط </span>
-              <span className="font-bold text-slate-900 text-base">
+              <span className="font-bold text-rose-900 text-base">
                 {formatPrice(
                   Math.round(
                     (effectivePrice *
@@ -354,9 +354,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 )}
               </span>
               <span> الان + مابقی طی </span>
-              <span className="font-bold text-slate-900">۳ قسط ماهانه</span>
+              <span className="font-bold text-rose-900">۳ قسط ماهانه</span>
             </div>
-          </div>
+          </Card>
 
           {/* Stock Status */}
           <div className="mb-6">
