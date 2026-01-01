@@ -1,8 +1,20 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import ZarinpalFooterBadge from '@/components/payment/ZarinpalFooterBadge';
 import EnamadBadge from '@/components/badges/EnamadBadge';
 
+const HIDDEN_PATHS = ['/checkout'];
+
 export default function Footer() {
+  const pathname = usePathname();
+  const isHidden = HIDDEN_PATHS.some((path) => pathname.startsWith(path));
+
+  if (isHidden) {
+    return null;
+  }
+
   return (
     <footer className="bg-gradient-to-b from-white to-rose-50/50 dark:from-slate-950 dark:to-slate-950 border-t border-rose-100 dark:border-slate-800 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -12,6 +12,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import { WishlistIcon } from '@/components/wishlist/WishlistIcon';
 
 const BANNER_HIDDEN_PATHS = ['/cart', '/checkout'];
+const HEADER_HIDDEN_PATHS = ['/checkout'];
 
 export default function Header() {
   const { data: session, status } = useSession();
@@ -19,6 +20,11 @@ export default function Header() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Check if header is hidden (e.g., on checkout page)
+  const isHeaderHidden = HEADER_HIDDEN_PATHS.some((path) =>
+    pathname.startsWith(path)
+  );
 
   // Check if banner is visible (not on cart/checkout pages)
   const isBannerVisible = !BANNER_HIDDEN_PATHS.some((path) =>
@@ -33,6 +39,11 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Don't render header on checkout page
+  if (isHeaderHidden) {
+    return null;
+  }
 
   return (
     <>

@@ -29,6 +29,7 @@ interface CheckoutFormProps {
   isProcessing: boolean;
   hideSubmitButton?: boolean;
   formRef?: React.RefObject<HTMLFormElement>;
+  compact?: boolean;
 }
 
 export default function CheckoutForm({
@@ -37,6 +38,7 @@ export default function CheckoutForm({
   isProcessing,
   hideSubmitButton = false,
   formRef,
+  compact = false,
 }: CheckoutFormProps) {
   const { update: updateSession } = useSession();
   const {
@@ -400,6 +402,13 @@ export default function CheckoutForm({
 
   // Show loading while waiting for hydration or profile data
   if (!_hasHydrated || (isLoadingProfile && session)) {
+    if (compact) {
+      return (
+        <div className="text-center py-8 text-slate-500">
+          در حال بارگذاری...
+        </div>
+      );
+    }
     return (
       <Card className="mt-6">
         <div className="text-center py-8 text-slate-500">
@@ -427,252 +436,261 @@ export default function CheckoutForm({
     'dark:focus:border-slate-500 dark:focus:ring-slate-700/60',
   ].join(' ');
 
+  const formContent = (
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+      {/* Form-level Error Message - shown for validation errors or when createAccount is off */}
+      {otpError && (!createAccount || (createAccount && phoneVerified)) && (
+        <Alert type="error" onClose={() => setOtpError('')}>
+          {otpError}
+        </Alert>
+      )}
+
+      {/* Full Name */}
+      <div>
+        <Input
+          id="fullName"
+          label="نام و نام خانوادگی *"
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+          dir="rtl"
+          disabled={hasProfileName}
+        />
+        {hasProfileName && (
+          <p className="text-sm text-slate-500 text-right mt-2">
+            💡 برای تغییر نام، به{' '}
+            <Link href="/profile" className="underline hover:text-slate-700">
+              صفحه پروفایل
+            </Link>{' '}
+            مراجعه کنید
+          </p>
+        )}
+      </div>
+
+      {/* Phone */}
+      <div>
+        <Input
+          id="phone"
+          name="phone"
+          label="شماره تلفن *"
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="09123456789"
+          required
+          dir="ltr"
+          disabled={hasProfilePhone}
+          autoComplete="off"
+        />
+        {hasProfilePhone && (
+          <p className="text-sm text-slate-500 text-right mt-2">
+            💡 برای تغییر شماره تلفن، به{' '}
+            <Link href="/profile" className="underline hover:text-slate-700">
+              صفحه پروفایل
+            </Link>{' '}
+            مراجعه کنید
+          </p>
+        )}
+        {hasVerifiedPhone && !isLoggedIn && (
+          <p className="text-sm text-green-600 text-right mt-2">
+            ✓ شماره تلفن تایید شده
+          </p>
+        )}
+      </div>
+
+      {/* Email (Optional) */}
+      <div>
+        <Input
+          id="email"
+          label="ایمیل (اختیاری)"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          dir="ltr"
+          disabled={hasProfileEmail}
+        />
+        {hasProfileEmail && (
+          <p className="text-sm text-slate-500 text-right mt-2">
+            💡 برای تغییر ایمیل، به{' '}
+            <Link href="/profile" className="underline hover:text-slate-700">
+              صفحه پروفایل
+            </Link>{' '}
+            مراجعه کنید
+          </p>
+        )}
+      </div>
+
+      {/* Shipping Address */}
+      <div>
+        <label
+          htmlFor="shippingAddress"
+          className="block text-sm font-medium text-slate-700 text-right mb-2"
+        >
+          آدرس ارسال *
+        </label>
+        <textarea
+          id="shippingAddress"
+          value={shippingAddress}
+          onChange={(e) => setShippingAddress(e.target.value)}
+          rows={3}
+          className={`${textareaClassName} resize-none`}
+          required
+          dir="rtl"
+        />
+      </div>
+
+      {/* Postal Code (Optional) */}
+      <div>
+        <Input
+          id="postalCode"
+          label="کد پستی (اختیاری)"
+          type="text"
+          value={postalCode}
+          onChange={(e) =>
+            setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))
+          }
+          placeholder="1234567890"
+          maxLength={10}
+          dir="ltr"
+        />
+      </div>
+
+      {/* Shipping Fee Notice */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <p className="text-sm text-amber-800 text-right">
+          📦 هزینه ارسال به صورت پس کرایه درب منزل محاسبه خواهد شد.
+        </p>
+      </div>
+
+      {/* Create Account Section (Only for guest users) */}
+      {!session && (
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          {/* Checkbox Row */}
+          <div className="flex items-center gap-2 justify-end">
+            <label
+              htmlFor="createAccount"
+              className="text-sm font-medium text-slate-700 cursor-pointer"
+            >
+              ساخت حساب کاربری
+            </label>
+            <input
+              type="checkbox"
+              id="createAccount"
+              checked={createAccount}
+              onChange={(e) => setCreateAccount(e.target.checked)}
+              className="w-4 h-4 text-slate-700 border-slate-300 rounded focus:ring-slate-400"
+            />
+          </div>
+
+          {/* Helper Text */}
+          <p className="text-xs text-slate-600 text-right">
+            {createAccount
+              ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
+              : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
+          </p>
+
+          {/* OTP Verification Section - Only shown when createAccount is checked */}
+          {createAccount && (
+            <div className="pt-2 border-t border-slate-200 space-y-2">
+              {!phoneVerified ? (
+                <>
+                  {!otpSent ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleSendOTP}
+                      disabled={otpCooldown > 0 || isSendingOTP}
+                      className="w-full"
+                      isLoading={isSendingOTP}
+                    >
+                      {otpCooldown > 0
+                        ? `ارسال مجدد (${otpCooldown}ثانیه)`
+                        : 'ارسال کد تایید'}
+                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input
+                        type="text"
+                        value={otpCode}
+                        onChange={(e) =>
+                          setOtpCode(
+                            e.target.value.replace(/\D/g, '').slice(0, 6)
+                          )
+                        }
+                        className="text-center tracking-widest"
+                        placeholder="کد 6 رقمی را وارد کنید"
+                        maxLength={6}
+                        dir="ltr"
+                      />
+                      <Button
+                        type="button"
+                        variant="primary"
+                        onClick={handleVerifyOTP}
+                        className="w-full"
+                        disabled={isVerifyingOTP}
+                        isLoading={isVerifyingOTP}
+                      >
+                        تایید کد
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="text-sm text-green-700 text-right">
+                    ✓ شماره تلفن تایید شد
+                  </p>
+                </div>
+              )}
+
+              {otpError && (
+                <Alert type="error" onClose={() => setOtpError('')}>
+                  {otpError}
+                </Alert>
+              )}
+
+              {otpSuccess && (
+                <Alert type="success" onClose={() => setOtpSuccess('')}>
+                  {otpSuccess}
+                </Alert>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Submit Button - hidden on mobile when hideSubmitButton is true */}
+      {!hideSubmitButton && (
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          isLoading={isProcessing}
+          disabled={
+            isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
+          }
+        >
+          {!isLoggedIn && createAccount && !phoneVerified
+            ? 'ابتدا شماره تلفن را تایید کنید'
+            : 'پرداخت'}
+        </Button>
+      )}
+    </form>
+  );
+
+  // In compact mode, return just the form without Card wrapper
+  if (compact) {
+    return formContent;
+  }
+
+  // Normal mode: wrap in Card with header
   return (
     <Card className="mt-6">
       <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
         اطلاعات ارسال
       </h2>
-
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-        {/* Form-level Error Message - shown for validation errors or when createAccount is off */}
-        {otpError && (!createAccount || (createAccount && phoneVerified)) && (
-          <Alert type="error" onClose={() => setOtpError('')}>
-            {otpError}
-          </Alert>
-        )}
-
-        {/* Full Name */}
-        <div>
-          <Input
-            id="fullName"
-            label="نام و نام خانوادگی *"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            required
-            dir="rtl"
-            disabled={hasProfileName}
-          />
-          {hasProfileName && (
-            <p className="text-sm text-slate-500 text-right mt-2">
-              💡 برای تغییر نام، به{' '}
-              <Link href="/profile" className="underline hover:text-slate-700">
-                صفحه پروفایل
-              </Link>{' '}
-              مراجعه کنید
-            </p>
-          )}
-        </div>
-
-        {/* Phone */}
-        <div>
-          <Input
-            id="phone"
-            name="phone"
-            label="شماره تلفن *"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="09123456789"
-            required
-            dir="ltr"
-            disabled={hasProfilePhone}
-            autoComplete="off"
-          />
-          {hasProfilePhone && (
-            <p className="text-sm text-slate-500 text-right mt-2">
-              💡 برای تغییر شماره تلفن، به{' '}
-              <Link href="/profile" className="underline hover:text-slate-700">
-                صفحه پروفایل
-              </Link>{' '}
-              مراجعه کنید
-            </p>
-          )}
-          {hasVerifiedPhone && !isLoggedIn && (
-            <p className="text-sm text-green-600 text-right mt-2">
-              ✓ شماره تلفن تایید شده
-            </p>
-          )}
-        </div>
-
-        {/* Email (Optional) */}
-        <div>
-          <Input
-            id="email"
-            label="ایمیل (اختیاری)"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            dir="ltr"
-            disabled={hasProfileEmail}
-          />
-          {hasProfileEmail && (
-            <p className="text-sm text-slate-500 text-right mt-2">
-              💡 برای تغییر ایمیل، به{' '}
-              <Link href="/profile" className="underline hover:text-slate-700">
-                صفحه پروفایل
-              </Link>{' '}
-              مراجعه کنید
-            </p>
-          )}
-        </div>
-
-        {/* Shipping Address */}
-        <div>
-          <label
-            htmlFor="shippingAddress"
-            className="block text-sm font-medium text-slate-700 text-right mb-2"
-          >
-            آدرس ارسال *
-          </label>
-          <textarea
-            id="shippingAddress"
-            value={shippingAddress}
-            onChange={(e) => setShippingAddress(e.target.value)}
-            rows={3}
-            className={`${textareaClassName} resize-none`}
-            required
-            dir="rtl"
-          />
-        </div>
-
-        {/* Postal Code (Optional) */}
-        <div>
-          <Input
-            id="postalCode"
-            label="کد پستی (اختیاری)"
-            type="text"
-            value={postalCode}
-            onChange={(e) =>
-              setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))
-            }
-            placeholder="1234567890"
-            maxLength={10}
-            dir="ltr"
-          />
-        </div>
-
-        {/* Shipping Fee Notice */}
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-sm text-amber-800 text-right">
-            📦 هزینه ارسال به صورت پس کرایه درب منزل محاسبه خواهد شد.
-          </p>
-        </div>
-
-        {/* Create Account Section (Only for guest users) */}
-        {!session && (
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-            {/* Checkbox Row */}
-            <div className="flex items-center gap-2 justify-end">
-              <label
-                htmlFor="createAccount"
-                className="text-sm font-medium text-slate-700 cursor-pointer"
-              >
-                ساخت حساب کاربری
-              </label>
-              <input
-                type="checkbox"
-                id="createAccount"
-                checked={createAccount}
-                onChange={(e) => setCreateAccount(e.target.checked)}
-                className="w-4 h-4 text-slate-700 border-slate-300 rounded focus:ring-slate-400"
-              />
-            </div>
-
-            {/* Helper Text */}
-            <p className="text-xs text-slate-600 text-right">
-              {createAccount
-                ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
-                : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
-            </p>
-
-            {/* OTP Verification Section - Only shown when createAccount is checked */}
-            {createAccount && (
-              <div className="pt-2 border-t border-slate-200 space-y-2">
-                {!phoneVerified ? (
-                  <>
-                    {!otpSent ? (
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={handleSendOTP}
-                        disabled={otpCooldown > 0 || isSendingOTP}
-                        className="w-full"
-                        isLoading={isSendingOTP}
-                      >
-                        {otpCooldown > 0
-                          ? `ارسال مجدد (${otpCooldown}ثانیه)`
-                          : 'ارسال کد تایید'}
-                      </Button>
-                    ) : (
-                      <div className="space-y-2">
-                        <Input
-                          type="text"
-                          value={otpCode}
-                          onChange={(e) =>
-                            setOtpCode(
-                              e.target.value.replace(/\D/g, '').slice(0, 6)
-                            )
-                          }
-                          className="text-center tracking-widest"
-                          placeholder="کد 6 رقمی را وارد کنید"
-                          maxLength={6}
-                          dir="ltr"
-                        />
-                        <Button
-                          type="button"
-                          variant="primary"
-                          onClick={handleVerifyOTP}
-                          className="w-full"
-                          disabled={isVerifyingOTP}
-                          isLoading={isVerifyingOTP}
-                        >
-                          تایید کد
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <p className="text-sm text-green-700 text-right">
-                      ✓ شماره تلفن تایید شد
-                    </p>
-                  </div>
-                )}
-
-                {otpError && (
-                  <Alert type="error" onClose={() => setOtpError('')}>
-                    {otpError}
-                  </Alert>
-                )}
-
-                {otpSuccess && (
-                  <Alert type="success" onClose={() => setOtpSuccess('')}>
-                    {otpSuccess}
-                  </Alert>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Submit Button - hidden on mobile when hideSubmitButton is true */}
-        {!hideSubmitButton && (
-          <Button
-            type="submit"
-            variant="primary"
-            className="w-full"
-            isLoading={isProcessing}
-            disabled={
-              isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
-            }
-          >
-            {!isLoggedIn && createAccount && !phoneVerified
-              ? 'ابتدا شماره تلفن را تایید کنید'
-              : 'پرداخت'}
-          </Button>
-        )}
-      </form>
+      {formContent}
     </Card>
   );
 }
