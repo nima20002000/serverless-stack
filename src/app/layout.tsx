@@ -11,6 +11,7 @@ import {
   generateWebSiteSchema,
   renderJsonLd,
 } from '@/lib/seo/structured-data';
+import { ToastContainer } from '@/components/ui-v4';
 
 export const metadata: Metadata = {
   title: 'Kitia - فروشگاه آنلاین',
@@ -71,6 +72,7 @@ export default function RootLayout({
         <SessionProvider>
           <VersionProvider>
             <AdminThemeGate />
+            <ToastContainer />
             <InstallmentBanner />
             <Header />
             {children}

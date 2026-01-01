@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/utils/format';
 import { useCartStore } from '@/store/cart-store';
+import { toast } from '@/store/toast-store';
 import Button from '@/components/ui/Button';
 import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
@@ -271,7 +272,7 @@ function ProductCard({ product }: ProductCardProps) {
     try {
       // If product has variants, variant selection is REQUIRED
       if (hasVariants && !selectedVariant) {
-        alert('لطفاً یک نوع محصول (رنگ، سایز، ...) انتخاب کنید');
+        toast.warning('لطفاً یک نوع محصول (رنگ، سایز، ...) انتخاب کنید');
         return;
       }
 
@@ -293,15 +294,15 @@ function ProductCard({ product }: ProductCardProps) {
       // Show success feedback and offer checkout
       setTimeout(() => {
         setIsAdding(false);
-        const shouldCheckout = confirm(
-          'محصول به سبد خرید اضافه شد. می‌خواهید به تسویه حساب بروید؟'
-        );
-        if (shouldCheckout) {
-          router.push('/checkout');
-        }
+        toast.success('محصول به سبد خرید اضافه شد', {
+          action: {
+            label: 'رفتن به تسویه حساب',
+            onClick: () => router.push('/checkout'),
+          },
+        });
       }, 300);
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید'
       );
       setIsAdding(false);

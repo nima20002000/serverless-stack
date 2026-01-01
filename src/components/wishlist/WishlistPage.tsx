@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useWishlistStore, selectWishlistCount } from '@/store/wishlist-store';
 import { WishlistItemCard } from './WishlistItemCard';
 import { useCartStore } from '@/store/cart-store';
+import { toast } from '@/store/toast-store';
 import Button from '@/components/ui/Button';
 import { useWishlistSync } from '@/hooks/useWishlistSync';
 import Link from 'next/link';
@@ -70,7 +71,7 @@ export function WishlistPage() {
 
   const handleAddToCart = async (item: WishlistItem) => {
     if (item.stock <= 0) {
-      alert('این محصول ناموجود است');
+      toast.warning('این محصول ناموجود است');
       return;
     }
 
@@ -96,15 +97,15 @@ export function WishlistPage() {
         },
         1
       );
-      const shouldCheckout = confirm(
-        'محصول به سبد خرید اضافه شد. می‌خواهید به تسویه حساب بروید؟'
-      );
-      if (shouldCheckout) {
-        router.push('/checkout');
-      }
+      toast.success('محصول به سبد خرید اضافه شد', {
+        action: {
+          label: 'رفتن به تسویه حساب',
+          onClick: () => router.push('/checkout'),
+        },
+      });
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('خطا در افزودن به سبد خرید');
+      toast.error('خطا در افزودن به سبد خرید');
     } finally {
       setAddingToCart(null);
     }
