@@ -5,7 +5,6 @@ import {
   XMarkIcon,
   PhotoIcon,
   FolderIcon,
-  ArrowUpTrayIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
@@ -30,8 +29,6 @@ interface R2MediaBrowserProps {
   multiSelect?: boolean;
   /** Initial folder to browse */
   initialFolder?: string;
-  /** Show upload button */
-  allowUpload?: boolean;
 }
 
 const FOLDERS = [
@@ -48,13 +45,11 @@ export default function R2MediaBrowser({
   onSelect,
   multiSelect = false,
   initialFolder = 'products/images',
-  allowUpload = true,
 }: R2MediaBrowserProps) {
   const [objects, setObjects] = useState<R2Object[]>([]);
   const [selectedFolder, setSelectedFolder] = useState(initialFolder);
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
   // Load objects when folder changes
@@ -94,43 +89,6 @@ export default function R2MediaBrowser({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleUpload = async (file: File) => {
-    try {
-      setUploading(true);
-      setError('');
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', selectedFolder);
-
-      const response = await fetch('/api/admin/r2-browser/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در آپلود فایل');
-      }
-
-      // Reload objects after upload
-      await loadObjects();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطای نامشخص');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleUpload(file);
-    }
-    e.target.value = '';
   };
 
   const toggleSelection = (url: string) => {
@@ -209,7 +167,7 @@ export default function R2MediaBrowser({
                   value={selectedFolder}
                   onChange={(e) => setSelectedFolder(e.target.value)}
                   className="text-sm border border-gray-300 dark:border-slate-700 rounded px-3 py-2 dark:bg-slate-900 dark:text-slate-100"
-                  disabled={loading || uploading}
+                  disabled={loading}
                 >
                   {FOLDERS.map((folder) => (
                     <option key={folder.value} value={folder.value}>
@@ -217,27 +175,6 @@ export default function R2MediaBrowser({
                     </option>
                   ))}
                 </select>
-
-                {/* Upload button */}
-                {allowUpload && (
-                  <label className="relative cursor-pointer">
-                    <input
-                      type="file"
-                      onChange={handleFileInput}
-                      disabled={uploading || loading}
-                      accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      disabled={uploading || loading}
-                      className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400"
-                    >
-                      <ArrowUpTrayIcon className="h-4 w-4" />
-                      {uploading ? 'در حال آپلود...' : 'آپلود فایل'}
-                    </button>
-                  </label>
-                )}
               </div>
 
               <button

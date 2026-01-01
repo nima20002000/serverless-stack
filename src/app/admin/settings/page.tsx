@@ -266,7 +266,6 @@ export default function SiteSettingsPage() {
         onSelect={handleMediaSelect}
         multiSelect={false}
         initialFolder="media-library/images"
-        allowUpload={true}
       />
     </div>
   );

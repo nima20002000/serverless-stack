@@ -690,7 +690,6 @@ export default function CategoriesManagementPage() {
         onSelect={handleImageSelect}
         multiSelect={false}
         initialFolder="categories/images"
-        allowUpload={true}
       />
     </div>
   );

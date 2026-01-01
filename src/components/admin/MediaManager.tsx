@@ -110,7 +110,6 @@ export default function MediaManager({
         onSelect={onMediaSelect}
         multiSelect={true}
         initialFolder="products/images"
-        allowUpload={true}
       />
     </>
   );
