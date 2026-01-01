@@ -31,6 +31,7 @@ export async function createTransaction(data: {
     price: number;
   }>;
   amount: number;
+  gatewayFee?: number; // Payment gateway fee (e.g., Digipay 12% surcharge)
   paymentMethod?: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
   shippingInfo: {
     fullName: string;
@@ -51,6 +52,7 @@ export async function createTransaction(data: {
   log.info('Creating transaction', {
     userId: data.userId || 'guest',
     amount: data.amount,
+    gatewayFee: data.gatewayFee || 0,
     itemCount: data.items.length,
     transactionCode,
     hasShippingInfo: !!data.shippingInfo,
@@ -64,6 +66,7 @@ export async function createTransaction(data: {
         id: randomUUID(),
         userId: data.userId || null,
         amount: Number(data.amount),
+        gateway_fee: data.gatewayFee || 0, // Store gateway fee separately
         status: 'PENDING',
         transactionCode,
         paymentMethod: data.paymentMethod || 'ZARINPAL',

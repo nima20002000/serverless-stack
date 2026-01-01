@@ -167,11 +167,18 @@ async function getHandler(req: NextRequest) {
       );
     }
 
+    // Calculate total payment amount (base amount + gateway fee)
+    // This is the amount that was sent to Digipay and must be verified
+    const totalPaymentAmount =
+      Number(transaction.amount) + Number(transaction.gateway_fee || 0);
+
     log.info('Transaction found', {
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
       currentStatus: transaction.status,
-      amount: transaction.amount,
+      baseAmount: transaction.amount,
+      gatewayFee: transaction.gateway_fee || 0,
+      totalPaymentAmount,
       userId: transaction.userId || 'guest',
       ticket,
     });
@@ -249,16 +256,19 @@ async function getHandler(req: NextRequest) {
     }
 
     // Verify payment with Digipay
+    // Use the total payment amount (base + gateway fee) as this is what was sent to Digipay
     log.info('Calling Digipay verification API', {
       trackingCode,
       providerId: transaction.transactionCode,
-      amount: transaction.amount,
+      baseAmount: transaction.amount,
+      gatewayFee: transaction.gateway_fee || 0,
+      totalPaymentAmount,
       transactionId: transaction.id,
     });
 
     const verification = await verifyPayment({
       trackingCode,
-      amount: Number(transaction.amount),
+      amount: totalPaymentAmount, // Use total (base + gateway fee) for Digipay verification
       providerId: transaction.transactionCode,
     });
 

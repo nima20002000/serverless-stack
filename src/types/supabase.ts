@@ -490,6 +490,7 @@ export type Database = {
           digipayTrackingCode: string | null;
           email: string | null;
           fullName: string | null;
+          gateway_fee: number | null;
           id: string;
           ip_address: string | null;
           isGuest: boolean;
@@ -515,6 +516,7 @@ export type Database = {
           digipayTrackingCode?: string | null;
           email?: string | null;
           fullName?: string | null;
+          gateway_fee?: number | null;
           id: string;
           ip_address?: string | null;
           isGuest?: boolean;
@@ -540,6 +542,7 @@ export type Database = {
           digipayTrackingCode?: string | null;
           email?: string | null;
           fullName?: string | null;
+          gateway_fee?: number | null;
           id?: string;
           ip_address?: string | null;
           isGuest?: boolean;

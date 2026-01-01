@@ -269,27 +269,31 @@ async function postHandler(req: NextRequest) {
     }
 
     // Calculate surcharge for Digipay payments (12%)
-    const digipaySurcharge =
+    // The surcharge is stored separately and only used for payment gateway communication
+    const gatewayFee =
       validPaymentMethod === 'DIGIPAY'
         ? Math.round(totalAmount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
         : 0;
-    const finalPaymentAmount = totalAmount + digipaySurcharge;
+    // Amount sent to payment gateway (base + fee)
+    const paymentGatewayAmount = totalAmount + gatewayFee;
 
     log.info('Payment amount calculation', {
       baseAmount: totalAmount,
-      digipaySurcharge,
-      finalPaymentAmount,
+      gatewayFee,
+      paymentGatewayAmount,
       paymentMethod: validPaymentMethod,
       surchargePercent:
         validPaymentMethod === 'DIGIPAY' ? DIGIPAY_CONFIG.SURCHARGE_PERCENT : 0,
     });
 
     // Create transaction in database with shipping info
-    // Note: We store the final amount including surcharge for Digipay
+    // Note: We store the base amount (without gateway fee) in 'amount'
+    // The gateway_fee is stored separately for accounting purposes
     const transaction = await createTransaction({
       userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
-      amount: finalPaymentAmount, // Includes surcharge for Digipay
+      amount: totalAmount, // Base amount WITHOUT gateway fee
+      gatewayFee, // Gateway fee stored separately (only for Digipay)
       paymentMethod: validPaymentMethod,
       shippingInfo: {
         fullName: finalFullName,
@@ -367,7 +371,7 @@ async function postHandler(req: NextRequest) {
       const digipayClient = await import('@/lib/digipay/client');
 
       const digipayRequest = await digipayClient.createPaymentRequest({
-        amount: finalPaymentAmount, // In Tomans - includes 12% surcharge
+        amount: paymentGatewayAmount, // In Tomans - includes 12% surcharge for Digipay
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         cellNumber: finalPhone,
         providerId: transaction.transactionCode, // Use transactionCode as unique providerId
@@ -390,8 +394,8 @@ async function postHandler(req: NextRequest) {
         transactionId: transaction.id,
         transactionCode: transaction.transactionCode,
         baseAmount: totalAmount,
-        surcharge: digipaySurcharge,
-        finalAmount: finalPaymentAmount,
+        gatewayFee,
+        paymentGatewayAmount,
         ticket: digipayRequest.ticket,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
@@ -401,7 +405,7 @@ async function postHandler(req: NextRequest) {
       const zibalClient = await import('@/lib/zibal/client');
 
       const zibalRequest = await zibalClient.createPaymentRequest({
-        amount: finalPaymentAmount, // In Tomans (no surcharge for Zibal)
+        amount: paymentGatewayAmount, // In Tomans (no surcharge for Zibal, gatewayFee is 0)
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         mobile: finalPhone,
         orderId: transaction.transactionCode, // Use transactionCode as orderId
@@ -421,7 +425,7 @@ async function postHandler(req: NextRequest) {
       log.info('Zibal transaction created successfully', {
         transactionId: transaction.id,
         transactionCode: transaction.transactionCode,
-        amount: finalPaymentAmount,
+        amount: totalAmount,
         trackId: zibalRequest.trackId,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
@@ -429,7 +433,7 @@ async function postHandler(req: NextRequest) {
     } else {
       // Zarinpal payment flow (default)
       const paymentRequest = await createPaymentRequest({
-        amount: finalPaymentAmount, // In Tomans (no surcharge for Zarinpal)
+        amount: paymentGatewayAmount, // In Tomans (no surcharge for Zarinpal, gatewayFee is 0)
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
         email: finalEmail,
         mobile: finalPhone,
@@ -449,7 +453,7 @@ async function postHandler(req: NextRequest) {
       log.info('Zarinpal transaction created successfully', {
         transactionId: transaction.id,
         transactionCode: transaction.transactionCode,
-        amount: finalPaymentAmount,
+        amount: totalAmount,
         authority: paymentRequest.authority,
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
@@ -460,7 +464,7 @@ async function postHandler(req: NextRequest) {
       success: true,
       transactionId: transaction.id,
       transactionCode: transaction.transactionCode,
-      amount: finalPaymentAmount,
+      amount: totalAmount, // Return base amount (without gateway fee) to frontend
       paymentMethod: validPaymentMethod,
       paymentUrl,
       // For compatibility, include identifiers based on payment method
