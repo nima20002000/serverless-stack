@@ -50,40 +50,39 @@ export async function sendOTP(
       });
     }
 
-    // THEN: Check rate limiting for RECENT non-expired OTPs (max 1 OTP per 2 minutes)
+    // THEN: Check rate limiting for RECENT non-expired OTPs (max 3 OTPs per 2 minutes)
     const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
     const now = new Date().toISOString();
 
-    const { data: recentOTP, error: recentError } = await supabase
+    const { data: recentOTPs, error: recentError } = await supabase
       .from('otp_verifications')
       .select('*')
       .eq('identifier', identifier)
       .eq('purpose', purpose)
       .gte('createdAt', twoMinutesAgo)
       .gte('expiresAt', now)
-      .order('createdAt', { ascending: false })
-      .limit(1)
-      .single();
+      .order('createdAt', { ascending: false });
 
     log.info('🔵 Rate limit check', {
       identifier,
       purpose,
-      recentOTPFound: !!recentOTP,
-      recentOTPCreatedAt: recentOTP?.createdAt,
-      recentOTPExpiresAt: recentOTP?.expiresAt,
+      recentOTPCount: recentOTPs?.length || 0,
+      recentOTPLatestCreatedAt: recentOTPs?.[0]?.createdAt,
+      recentOTPLatestExpiresAt: recentOTPs?.[0]?.expiresAt,
       now: new Date().toISOString(),
     });
 
-    if (!recentError && recentOTP) {
+    if (!recentError && (recentOTPs?.length || 0) >= 3) {
       // Parse timestamp as UTC (Supabase returns timestamp without timezone)
-      const createdAt = new Date(recentOTP.createdAt + 'Z').getTime();
-      const rateLimitExpiresAt = createdAt + 120000; // Rate limit expires 2 minutes after creation
+      const createdAt = new Date(recentOTPs[0].createdAt + 'Z').getTime();
+      const rateLimitExpiresAt = createdAt + 120000; // Rate limit expires 2 minutes after latest creation
       const waitTime = Math.ceil((rateLimitExpiresAt - Date.now()) / 1000);
       log.warn('🔴 OTP rate limit hit', {
         identifier,
         purpose,
         waitTime,
-        recentOTPId: recentOTP.id,
+        recentOTPId: recentOTPs[0].id,
+        recentOTPCount: recentOTPs.length,
       });
       return {
         success: false,

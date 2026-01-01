@@ -15,6 +15,7 @@
     "tests/**/*",
     "config/**/*",
     "scripts/**/*",
+    "docs/kavenegar-examples-node-master (2)/**/*",
     "**/*.stories.tsx",
     "**/*.stories.ts",
     ".storybook/**/*",
