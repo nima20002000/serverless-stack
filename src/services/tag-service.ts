@@ -9,6 +9,16 @@ import { Inserts, Updates } from '@/lib/supabase/types';
 type SupabaseTagInsert = Inserts<'tags'>;
 type SupabaseTagUpdate = Updates<'tags'>;
 
+const MAX_QUERY_LENGTH = 100;
+const MAX_SEARCH_LIMIT = 10;
+
+function sanitizeSearchQuery(rawQuery: string): string {
+  return rawQuery
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+    .replace(/[%_\\]/g, '');
+}
+
 /**
  * Helper to invalidate tag cache
  */
@@ -75,14 +85,19 @@ export async function getAllTags(): Promise<TagWithCount[]> {
  */
 export async function searchTags(query: string): Promise<TagWithCount[]> {
   const supabase = createClient();
+  const searchQuery = sanitizeSearchQuery(query);
+
+  if (!searchQuery) {
+    return [];
+  }
 
   // Search tags (case-insensitive using ilike)
   const { data: tags, error: tagsError } = await supabase
     .from('tags')
     .select('*')
-    .or(`name.ilike.%${query}%,slug.ilike.%${query}%`)
+    .or(`name.ilike.%${searchQuery}%,slug.ilike.%${searchQuery}%`)
     .order('name', { ascending: true })
-    .limit(10);
+    .limit(MAX_SEARCH_LIMIT);
 
   if (tagsError) {
     log.error('Error searching tags', { error: tagsError, query });

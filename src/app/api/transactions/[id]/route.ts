@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import { getTransactionById } from '@/services/transaction-service';
 
 export const dynamic = 'force-dynamic';
+const MAX_ID_LENGTH = 64;
 
 // GET /api/transactions/[id] - Get transaction details
 export async function GET(
@@ -11,6 +12,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!params.id || params.id.length > MAX_ID_LENGTH) {
+      return NextResponse.json(
+        { error: 'شناسه تراکنش نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {

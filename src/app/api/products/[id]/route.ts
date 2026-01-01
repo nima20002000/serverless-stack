@@ -8,6 +8,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 
 export const dynamic = 'force-dynamic';
+const MAX_ID_LENGTH = 64;
+
+function isValidId(id: string): boolean {
+  return !!id && id.length <= MAX_ID_LENGTH;
+}
 
 // GET /api/products/[id] - Get single product (public, or admin with inactive variants)
 export async function GET(
@@ -15,6 +20,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const includeRelations = searchParams.get('includeRelations') === 'true';
     const includeInactiveParam = searchParams.get('includeInactive') === 'true';
@@ -63,6 +75,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
@@ -138,6 +157,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {

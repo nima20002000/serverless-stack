@@ -8,7 +8,15 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const category = await getCategoryBySlug(params.slug);
+    const slug = params.slug;
+    if (!slug || slug.length > 120) {
+      return NextResponse.json(
+        { error: 'شناسه دسته‌بندی نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
+    const category = await getCategoryBySlug(slug);
 
     if (!category) {
       return NextResponse.json(

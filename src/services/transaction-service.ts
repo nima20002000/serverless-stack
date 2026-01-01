@@ -705,7 +705,7 @@ export async function verifyStockAvailability(
     variantIds.length > 0
       ? await supabase
           .from('product_variants')
-          .select('id, stock, name, isActive')
+          .select('id, stock, name, isActive, productId')
           .in('id', variantIds)
       : { data: [] };
 
@@ -740,6 +740,12 @@ export async function verifyStockAvailability(
 
       if (!variant) {
         errors.push(`واریانت محصول ${product.name} یافت نشد`);
+        unavailableProductIds.push(item.productId);
+        continue;
+      }
+
+      if (variant.productId !== item.productId) {
+        errors.push(`واریانت محصول ${product.name} نامعتبر است`);
         unavailableProductIds.push(item.productId);
         continue;
       }

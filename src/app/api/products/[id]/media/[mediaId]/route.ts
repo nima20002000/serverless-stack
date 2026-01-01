@@ -7,12 +7,25 @@ import {
 } from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
+const MAX_ID_LENGTH = 64;
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string; mediaId: string } }
 ) {
   try {
+    if (
+      !params.id ||
+      params.id.length > MAX_ID_LENGTH ||
+      !params.mediaId ||
+      params.mediaId.length > MAX_ID_LENGTH
+    ) {
+      return NextResponse.json(
+        { error: 'شناسه رسانه نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
@@ -45,6 +58,18 @@ export async function DELETE(
   { params }: { params: { id: string; mediaId: string } }
 ) {
   try {
+    if (
+      !params.id ||
+      params.id.length > MAX_ID_LENGTH ||
+      !params.mediaId ||
+      params.mediaId.length > MAX_ID_LENGTH
+    ) {
+      return NextResponse.json(
+        { error: 'شناسه رسانه نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });

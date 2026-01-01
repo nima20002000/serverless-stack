@@ -4,12 +4,20 @@ import { authOptions } from '@/lib/auth/options';
 import { getProductMedia, addProductMedia } from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
+const MAX_ID_LENGTH = 64;
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!params.id || params.id.length > MAX_ID_LENGTH) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const media = await getProductMedia(params.id);
     return NextResponse.json({ media });
   } catch (error) {
@@ -29,6 +37,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!params.id || params.id.length > MAX_ID_LENGTH) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });

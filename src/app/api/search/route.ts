@@ -13,7 +13,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const limit = parseInt(searchParams.get('limit') || '5', 10);
+    const rawLimit = parseInt(searchParams.get('limit') || '5', 10);
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(rawLimit, 1), 20)
+      : 5;
 
     // Validate query
     if (!query || query.trim().length === 0) {

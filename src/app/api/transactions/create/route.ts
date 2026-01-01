@@ -44,6 +44,36 @@ async function postHandler(req: NextRequest) {
       return NextResponse.json({ error: 'سبد خرید خالی است' }, { status: 400 });
     }
 
+    for (const item of items) {
+      if (!item || typeof item.productId !== 'string' || !item.productId) {
+        return NextResponse.json(
+          { error: 'آیتم‌های سبد خرید نامعتبر است' },
+          { status: 400 }
+        );
+      }
+
+      if (
+        item.variantId !== undefined &&
+        item.variantId !== null &&
+        typeof item.variantId !== 'string'
+      ) {
+        return NextResponse.json(
+          { error: 'شناسه نوع محصول نامعتبر است' },
+          { status: 400 }
+        );
+      }
+
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return NextResponse.json(
+          { error: 'تعداد باید عدد صحیح بزرگتر از صفر باشد' },
+          { status: 400 }
+        );
+      }
+
+      item.quantity = quantity;
+    }
+
     // Validate shipping info
     if (!shippingInfo) {
       return NextResponse.json(
@@ -218,7 +248,7 @@ async function postHandler(req: NextRequest) {
         const supabaseVariant = createClient();
         const { data: variant, error: variantError } = await supabaseVariant
           .from('product_variants')
-          .select('priceAdjust, isActive')
+          .select('priceAdjust, isActive, productId')
           .eq('id', item.variantId)
           .single();
 
@@ -241,6 +271,18 @@ async function postHandler(req: NextRequest) {
           });
           return NextResponse.json(
             { error: `واریانت محصول ${product.name} غیرفعال است` },
+            { status: 400 }
+          );
+        }
+
+        if (variant.productId !== product.id) {
+          log.warn('Variant does not belong to product', {
+            variantId: item.variantId,
+            productId: product.id,
+            variantProductId: variant.productId,
+          });
+          return NextResponse.json(
+            { error: `واریانت محصول ${product.name} نامعتبر است` },
             { status: 400 }
           );
         }

@@ -16,6 +16,16 @@ export type {
   SearchResponse,
 };
 
+const MAX_QUERY_LENGTH = 100;
+const MAX_SEARCH_LIMIT = 20;
+
+function sanitizeSearchQuery(rawQuery: string): string {
+  return rawQuery
+    .trim()
+    .slice(0, MAX_QUERY_LENGTH)
+    .replace(/[%_\\]/g, '');
+}
+
 /**
  * Search products and categories by query
  * Returns combined results for real-time search suggestions
@@ -27,7 +37,8 @@ export async function searchAll(
     includeInactive?: boolean;
   }
 ): Promise<SearchResponse> {
-  const limit = options?.limit || 5;
+  const requestedLimit = options?.limit || 5;
+  const limit = Math.min(Math.max(requestedLimit, 1), MAX_SEARCH_LIMIT);
   const includeInactive = options?.includeInactive || false;
 
   if (!query || query.trim().length === 0) {
@@ -39,7 +50,15 @@ export async function searchAll(
   }
 
   const supabase = createClient();
-  const searchQuery = query.trim();
+  const searchQuery = sanitizeSearchQuery(query);
+
+  if (searchQuery.length === 0) {
+    return {
+      products: [],
+      categories: [],
+      total: 0,
+    };
+  }
 
   try {
     // Search products
