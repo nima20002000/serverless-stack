@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
+import { ArrowRightIcon, TrashIcon } from '@heroicons/react/24/outline';
 import {
   useCartStore,
   formatPrice,
   selectTotal,
   selectItemCount,
+  type CartItem,
 } from '@/store/cart-store';
+import { toast } from '@/store/toast-store';
 import { DIGIPAY_CONFIG } from '@/config/constants';
 import Image from 'next/image';
 import Card from '@/components/ui/Card';
@@ -27,6 +29,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const items = useCartStore((state) => state.items);
+  const removeItem = useCartStore((state) => state.removeItem);
   const removeUnavailableItems = useCartStore(
     (state) => state.removeUnavailableItems
   );
@@ -163,6 +166,14 @@ export default function CheckoutPage() {
     setPendingFormData(null);
   }, []);
 
+  const handleRemoveItem = useCallback(
+    (item: CartItem) => {
+      removeItem(item.productId, item.variantId);
+      toast.info(`${item.name} از سبد خرید حذف شد`);
+    },
+    [removeItem]
+  );
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
@@ -243,8 +254,18 @@ export default function CheckoutPage() {
                         {formatPrice(item.price)} × {item.quantity}
                       </p>
                     </div>
-                    <div className="text-left font-bold text-slate-900">
-                      {formatPrice(item.price * item.quantity)}
+                    <div className="flex flex-col items-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item)}
+                        className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        aria-label={`حذف ${item.name} از سبد خرید`}
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                      <span className="text-left font-bold text-slate-900">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
                     </div>
                   </div>
                 ))}

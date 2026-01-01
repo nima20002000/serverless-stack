@@ -42,7 +42,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         ${
           isVisible && !isLeaving
             ? 'translate-x-0 opacity-100'
-            : 'translate-x-full opacity-0'
+            : '-translate-x-full opacity-0'
         }
       `}
     >
@@ -81,7 +81,7 @@ export default function ToastContainer() {
 
   return (
     <div
-      className="fixed top-4 left-4 z-[9999] flex flex-col gap-3 pointer-events-none"
+      className="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none"
       aria-live="polite"
       aria-label="اعلان‌ها"
     >
