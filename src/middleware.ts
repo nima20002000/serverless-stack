@@ -46,9 +46,25 @@ export async function middleware(req: NextRequest) {
       // Don't rate limit - this is an external callback from Zibal payment gateway
       // Users cannot trigger this directly; requires valid trackId from database
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/search') {
+      // Dedicated bucket for search to avoid cross-endpoint blocking
+      limiter = apiLimiter;
+      endpoint = 'search';
     } else if (req.nextUrl.pathname.startsWith('/api/auth/')) {
       // Don't rate limit other NextAuth endpoints (session, CSRF, providers, etc.)
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/transactions/create') {
+      limiter = apiLimiter;
+      endpoint = 'checkout-create';
+    } else if (req.nextUrl.pathname.startsWith('/api/transactions/')) {
+      limiter = apiLimiter;
+      endpoint = 'transactions';
+    } else if (req.nextUrl.pathname.startsWith('/api/admin/')) {
+      limiter = apiLimiter;
+      endpoint = 'admin';
+    } else if (req.nextUrl.pathname.startsWith('/api/user/')) {
+      limiter = apiLimiter;
+      endpoint = 'user';
     } else if (
       req.nextUrl.pathname.startsWith('/api/products') ||
       req.nextUrl.pathname.startsWith('/api/categories') ||

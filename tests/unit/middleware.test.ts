@@ -526,7 +526,7 @@ describe('middleware', () => {
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
         expect.objectContaining({ name: 'apiLimiter' }),
-        undefined
+        'admin'
       );
     });
   });
