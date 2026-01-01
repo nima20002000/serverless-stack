@@ -599,6 +599,7 @@ export async function linkOrphanedTransactions(
 
 /**
  * Get user's transaction history with details
+ * Also includes guest transactions that match the user's phone or email
  */
 export async function getUserTransactions(
   userId: string,
@@ -615,11 +616,44 @@ export async function getUserTransactions(
 
     const supabase = createClient();
 
+    // First, get the user's phone and email to also fetch matching guest transactions
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('phone, email')
+      .eq('id', userId)
+      .single();
+
+    if (userError) {
+      log.error('Failed to fetch user for transactions query', {
+        userId,
+        error: userError,
+      });
+      throw new Error('خطا در دریافت اطلاعات کاربر');
+    }
+
+    // Build OR conditions for matching transactions:
+    // 1. Transactions directly linked to user via userId
+    // 2. Guest transactions (userId is null) that match user's phone
+    // 3. Guest transactions (userId is null) that match user's email
+    const orConditions: string[] = [`userId.eq.${userId}`];
+
+    if (user?.phone) {
+      // Match guest transactions by phone (userId is null AND phone matches)
+      orConditions.push(`and(userId.is.null,phone.eq.${user.phone})`);
+    }
+
+    if (user?.email) {
+      // Match guest transactions by email (userId is null AND email matches)
+      orConditions.push(`and(userId.is.null,email.eq.${user.email})`);
+    }
+
+    const orFilter = orConditions.join(',');
+
     // Build query for count
     let countQuery = supabase
       .from('transactions')
       .select('*', { count: 'exact', head: true })
-      .eq('userId', userId);
+      .or(orFilter);
 
     if (status) {
       countQuery = countQuery.eq('status', status);
@@ -654,7 +688,7 @@ export async function getUserTransactions(
         )
       `
       )
-      .eq('userId', userId)
+      .or(orFilter)
       .order('createdAt', { ascending: false })
       .range(offset, offset + limit - 1);
 
