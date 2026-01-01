@@ -55,9 +55,10 @@ const rateLimitCache = new Map<
   { value: RateLimitResult; expiresAt: number }
 >();
 
-function getLimiterPrefix(limiter: Ratelimit) {
-  const maybePrefix = (limiter as { prefix?: string }).prefix;
-  return maybePrefix || 'ratelimit';
+function getLimiterKey(limiter: Ratelimit) {
+  if (limiter === strictLimiter) return 'strict';
+  if (limiter === publicLimiter) return 'public';
+  return 'api';
 }
 
 /**
@@ -102,7 +103,7 @@ export async function checkRateLimit(
   endpoint?: string
 ): Promise<RateLimitResult> {
   const identifier = getClientId(req, endpoint);
-  const cacheKey = `${getLimiterPrefix(limiter)}:${endpoint || 'default'}:${identifier}`;
+  const cacheKey = `${getLimiterKey(limiter)}:${endpoint || 'default'}:${identifier}`;
   const cached = rateLimitCache.get(cacheKey);
 
   if (cached && cached.expiresAt > Date.now()) {
