@@ -6,7 +6,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useCartStore, formatPrice, selectTotal } from '@/store/cart-store';
 import CartItem from './CartItem';
-import Button from '@/components/ui/Button';
+import ButtonV4 from '@/components/ui-v4/Button';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -62,7 +62,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-rose-900/30 backdrop-blur-sm transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-hidden">
@@ -79,26 +79,26 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
-                  <div className="flex h-full flex-col bg-white shadow-xl">
+                  <div className="flex h-full flex-col bg-white shadow-[0_0_50px_-20px_rgba(244,63,94,0.3)] rounded-l-3xl">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between px-5 py-5 border-b border-rose-100">
                       <button
                         type="button"
-                        className="rounded-md text-gray-400 hover:text-gray-500"
+                        className="rounded-xl p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                         onClick={onClose}
                       >
                         <span className="sr-only">بستن</span>
                         <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                       </button>
-                      <Dialog.Title className="text-lg font-bold text-gray-900">
+                      <Dialog.Title className="text-lg font-bold text-rose-900">
                         سبد خرید
                       </Dialog.Title>
                     </div>
 
                     {/* Error Message */}
                     {error && (
-                      <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <p className="text-sm text-red-600 text-right">
+                      <div className="mx-4 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-2xl">
+                        <p className="text-sm text-rose-600 text-right">
                           {error}
                         </p>
                       </div>
@@ -108,7 +108,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     <div className="flex-1 overflow-y-auto px-4 py-6">
                       {items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center">
-                          <div className="text-gray-400 mb-4">
+                          <div className="text-rose-300 mb-4">
                             <svg
                               className="w-24 h-24 mx-auto"
                               fill="none"
@@ -123,18 +123,18 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                               />
                             </svg>
                           </div>
-                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          <h3 className="text-lg font-bold text-rose-900 mb-2">
                             سبد خرید خالی است
                           </h3>
-                          <p className="text-sm text-gray-500 mb-6">
+                          <p className="text-sm text-rose-500 mb-6">
                             محصولی به سبد خرید اضافه نشده است
                           </p>
-                          <Button
+                          <ButtonV4
                             variant="primary"
                             onClick={handleContinueShopping}
                           >
                             مشاهده محصولات
-                          </Button>
+                          </ButtonV4>
                         </div>
                       ) : (
                         <div className="space-y-0">
@@ -152,31 +152,31 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
                     {/* Footer - Cart Summary */}
                     {items.length > 0 && (
-                      <div className="border-t border-gray-200 px-4 py-6 space-y-4">
+                      <div className="border-t border-rose-100 px-5 py-6 space-y-4 bg-gradient-to-t from-rose-50/50 to-white">
                         {/* Total */}
                         <div className="flex items-center justify-between text-lg font-bold">
-                          <span className="text-gray-900" dir="rtl">
+                          <span className="text-rose-600" dir="rtl">
                             {formatPrice(total)}
                           </span>
-                          <span className="text-gray-900">جمع کل</span>
+                          <span className="text-rose-900">جمع کل</span>
                         </div>
 
                         {/* Buttons */}
-                        <div className="space-y-2">
-                          <Button
+                        <div className="space-y-3">
+                          <ButtonV4
                             variant="primary"
-                            className="w-full"
+                            fullWidth
                             onClick={handleCheckout}
                           >
                             ادامه فرآیند خرید
-                          </Button>
-                          <Button
+                          </ButtonV4>
+                          <ButtonV4
                             variant="secondary"
-                            className="w-full"
+                            fullWidth
                             onClick={handleContinueShopping}
                           >
                             ادامه خرید
-                          </Button>
+                          </ButtonV4>
                         </div>
                       </div>
                     )}

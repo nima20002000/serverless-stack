@@ -100,7 +100,7 @@ export default function SearchBar({
           {/* Search Icon */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
             {isLoading ? (
-              <div className="animate-spin h-5 w-5 text-gray-400">
+              <div className="animate-spin h-5 w-5 text-rose-400">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
@@ -118,13 +118,13 @@ export default function SearchBar({
                 </svg>
               </div>
             ) : (
-              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              <MagnifyingGlassIcon className="h-5 w-5 text-rose-400" />
             )}
           </div>
 
           {/* Input Field */}
           <Combobox.Input
-            className="w-full pr-10 pl-10 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder-gray-400"
+            className="w-full pr-10 pl-10 py-2.5 text-sm bg-rose-50/50 border border-rose-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-transparent transition-all placeholder-rose-400"
             placeholder={placeholder}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -139,9 +139,9 @@ export default function SearchBar({
                 setQuery('');
                 setResults({ products: [], categories: [], total: 0 });
               }}
-              className="absolute inset-y-0 left-0 flex items-center pl-3 hover:bg-gray-100 rounded-l-lg transition-colors"
+              className="absolute inset-y-0 left-0 flex items-center pl-3 hover:bg-rose-100 rounded-l-2xl transition-colors"
             >
-              <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              <XMarkIcon className="h-5 w-5 text-rose-400 hover:text-rose-600" />
             </button>
           )}
 
@@ -153,13 +153,13 @@ export default function SearchBar({
             leaveTo="opacity-0"
             afterLeave={() => setQuery('')}
           >
-            <Combobox.Options className="absolute z-50 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 max-h-96 overflow-auto focus:outline-none">
+            <Combobox.Options className="absolute z-50 mt-2 w-full bg-white rounded-2xl shadow-[0_20px_40px_-20px_rgba(244,63,94,0.25)] border border-rose-100 max-h-96 overflow-auto focus:outline-none">
               {hasResults ? (
                 <div className="py-2">
                   {/* Categories Section */}
                   {results.categories.length > 0 && (
                     <div className="mb-2">
-                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 bg-rose-50/70">
                         دسته‌بندی‌ها
                       </div>
                       {results.categories.map((category) => (
@@ -169,21 +169,21 @@ export default function SearchBar({
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
                               active
-                                ? 'bg-blue-50 text-blue-900'
-                                : 'text-gray-900'
+                                ? 'bg-rose-50 text-rose-900'
+                                : 'text-rose-800'
                             }`
                           }
                         >
                           {({ active }) => (
                             <div className="flex items-center gap-3">
                               <div
-                                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                                  active ? 'bg-blue-100' : 'bg-gray-100'
+                                className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${
+                                  active ? 'bg-rose-200' : 'bg-rose-100'
                                 }`}
                               >
                                 <FolderIcon
                                   className={`w-5 h-5 ${
-                                    active ? 'text-blue-600' : 'text-gray-600'
+                                    active ? 'text-rose-600' : 'text-rose-500'
                                   }`}
                                 />
                               </div>
@@ -192,7 +192,7 @@ export default function SearchBar({
                                   {category.name}
                                 </p>
                                 {category.description && (
-                                  <p className="text-xs text-gray-500 truncate mt-0.5">
+                                  <p className="text-xs text-rose-500 truncate mt-0.5">
                                     {category.description}
                                   </p>
                                 )}
@@ -207,7 +207,7 @@ export default function SearchBar({
                   {/* Products Section */}
                   {results.products.length > 0 && (
                     <div>
-                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 bg-gray-50">
+                      <div className="px-3 py-2 text-xs font-semibold text-rose-500 bg-rose-50/70">
                         محصولات
                       </div>
                       {results.products.map((product) => (
@@ -217,8 +217,8 @@ export default function SearchBar({
                           className={({ active }) =>
                             `cursor-pointer select-none px-4 py-3 transition-colors ${
                               active
-                                ? 'bg-blue-50 text-blue-900'
-                                : 'text-gray-900'
+                                ? 'bg-rose-50 text-rose-900'
+                                : 'text-rose-800'
                             }`
                           }
                         >
@@ -226,8 +226,8 @@ export default function SearchBar({
                             <div className="flex items-center gap-3">
                               {/* Product Image */}
                               <div
-                                className={`relative flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border ${
-                                  active ? 'border-blue-200' : 'border-gray-200'
+                                className={`relative flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden border ${
+                                  active ? 'border-rose-300' : 'border-rose-200'
                                 }`}
                               >
                                 {product.images && product.images.length > 0 ? (
@@ -239,8 +239,8 @@ export default function SearchBar({
                                     sizes="48px"
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                    <TagIcon className="w-6 h-6 text-gray-400" />
+                                  <div className="w-full h-full bg-rose-100 flex items-center justify-center">
+                                    <TagIcon className="w-6 h-6 text-rose-400" />
                                   </div>
                                 )}
                               </div>
@@ -251,13 +251,13 @@ export default function SearchBar({
                                   {product.name}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-sm font-semibold text-blue-600">
+                                  <span className="text-sm font-semibold text-rose-600">
                                     {formatPrice(product.price)}
                                   </span>
                                   {product.categoryName && (
                                     <>
-                                      <span className="text-gray-300">•</span>
-                                      <span className="text-xs text-gray-500 truncate">
+                                      <span className="text-rose-300">•</span>
+                                      <span className="text-xs text-rose-500 truncate">
                                         {product.categoryName}
                                       </span>
                                     </>
@@ -269,7 +269,7 @@ export default function SearchBar({
                               {product.discountPercent &&
                                 product.discountPercent > 0 && (
                                   <div className="flex-shrink-0">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-700">
                                       {product.discountPercent}٪ تخفیف
                                     </span>
                                   </div>
@@ -284,10 +284,12 @@ export default function SearchBar({
               ) : (
                 query.trim().length >= 2 &&
                 !isLoading && (
-                  <div className="px-4 py-8 text-center text-gray-500">
-                    <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                  <div className="px-4 py-8 text-center text-rose-500">
+                    <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-rose-300 mb-3" />
                     <p className="text-sm font-medium">نتیجه‌ای یافت نشد</p>
-                    <p className="text-xs mt-1">جستجوی دیگری را امتحان کنید</p>
+                    <p className="text-xs mt-1 text-rose-400">
+                      جستجوی دیگری را امتحان کنید
+                    </p>
                   </div>
                 )
               )}
