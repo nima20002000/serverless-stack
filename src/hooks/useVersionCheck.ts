@@ -175,7 +175,7 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
   useEffect(() => {
     // Skip all version check functionality in E2E tests unless explicitly allowed
     if (isE2E && !allowE2EVersionCheck) {
-      return;
+      return () => {};
     }
 
     // Initial setup

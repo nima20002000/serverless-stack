@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
@@ -32,11 +32,7 @@ export default function SiteSettingsPage() {
     'favicon' | 'logo' | null
   >(null);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       if (!isE2E) {
         setIsLoading(true);
@@ -62,7 +58,11 @@ export default function SiteSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isE2E]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleSave = async () => {
     try {
