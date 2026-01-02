@@ -20,6 +20,10 @@ export default function SiteSettingsPage() {
     site_name: 'کیتیا',
   });
   const [isLoading, setIsLoading] = useState(true);
+  const isE2E =
+    process.env.NEXT_PUBLIC_E2E_TEST === 'true' ||
+    (typeof document !== 'undefined' &&
+      document.cookie.includes('e2e-test=true'));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -34,7 +38,9 @@ export default function SiteSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      setIsLoading(true);
+      if (!isE2E) {
+        setIsLoading(true);
+      }
       const response = await fetch('/api/admin/settings');
       if (!response.ok) throw new Error('خطا در دریافت تنظیمات');
       const data = await response.json();

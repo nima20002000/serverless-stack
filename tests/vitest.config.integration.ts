@@ -20,7 +20,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    setupFiles: ['./setup.ts'],
+    setupFiles: ['./setup.ts', './integration/setup.ts'],
     include: ['integration/**/*.test.ts'],
     exclude: ['node_modules', 'dist'],
     testTimeout: 60000, // Longer timeout for DB operations

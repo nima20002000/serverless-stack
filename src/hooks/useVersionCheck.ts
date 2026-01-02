@@ -32,6 +32,12 @@ const STORAGE_KEY = 'kitia_build_version';
 export function useVersionCheck(options: VersionCheckOptions = {}) {
   const { checkInterval = DEFAULT_CHECK_INTERVAL, onUpdateAvailable } = options;
 
+  // Skip version check in E2E tests to avoid network flakiness
+  const isE2E =
+    process.env.NEXT_PUBLIC_E2E_TEST === 'true' ||
+    (typeof document !== 'undefined' &&
+      document.cookie.includes('e2e-test=true'));
+
   const currentVersionRef = useRef<string | null>(null);
   const checkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -163,6 +169,11 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
   ]);
 
   useEffect(() => {
+    // Skip all version check functionality in E2E tests
+    if (isE2E) {
+      return;
+    }
+
     // Initial setup
     registerServiceWorker();
     checkVersion();
@@ -185,7 +196,7 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [registerServiceWorker, checkVersion, checkInterval]);
+  }, [isE2E, registerServiceWorker, checkVersion, checkInterval]);
 
   return {
     checkVersion,

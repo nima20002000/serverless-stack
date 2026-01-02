@@ -458,21 +458,20 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     console.log(`Retrieved OTP from database: ${otpCode}`);
 
     // Enter OTP in the form
-    const otpInput = page.locator('input[placeholder*="کد"]');
-    if (await otpInput.isVisible()) {
-      await otpInput.fill(otpCode);
+    const otpInput = page.getByPlaceholder('کد 6 رقمی را وارد کنید');
+    await expect(otpInput).toBeVisible({ timeout: 10000 });
+    await otpInput.fill(otpCode);
 
-      // Click verify button
-      const verifyButton = page.getByRole('button', { name: /تایید کد/i });
-      await verifyButton.click();
+    // Click verify button
+    const verifyButton = page.getByRole('button', { name: /تایید کد/i });
+    await verifyButton.click();
 
-      // Wait for verification
-      await page.waitForTimeout(2000);
+    // Wait for verification
+    await page.waitForTimeout(2000);
 
-      // Should see success message
-      const successMessage = page.getByText(/تایید شد|موفق/i);
-      await expect(successMessage).toBeVisible({ timeout: 5000 });
-    }
+    // Should see success message
+    const successMessage = page.getByText(/حساب کاربری با موفقیت ایجاد شد/i);
+    await expect(successMessage).toBeVisible({ timeout: 5000 });
   });
 
   test('should show error for invalid OTP', async ({ page }) => {
@@ -520,7 +519,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await sendOtpButton.click();
 
     // Wait for OTP input to appear
-    const otpInput = page.locator('input[placeholder*="کد"]');
+    const otpInput = page.getByPlaceholder('کد 6 رقمی را وارد کنید');
     await expect(otpInput).toBeVisible({ timeout: 10000 });
 
     // Enter WRONG OTP

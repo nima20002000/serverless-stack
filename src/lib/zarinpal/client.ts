@@ -63,6 +63,21 @@ export async function createPaymentRequest(
   const startTime = Date.now();
   const config = getConfig();
 
+  // E2E Test Mode: Skip actual Zarinpal API call and return mock response
+  if (process.env.E2E_MOCK_PAYMENTS === 'true') {
+    const authority = `E2E-${Date.now()}`;
+    log.info('E2E Mock Mode: Simulating payment request', {
+      authority,
+      amount: request.amount,
+      callbackUrl: request.callbackUrl,
+    });
+    return {
+      status: 100,
+      authority,
+      url: `${config.baseURL}/pg/StartPay/${authority}`,
+    };
+  }
+
   // Convert Tomans to Rials (1 Toman = 10 Rials)
   const amountInRials = request.amount * 10;
 

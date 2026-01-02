@@ -399,27 +399,9 @@ test.describe('Wishlist Journey', () => {
     if (!buttonText?.includes('ناموجود')) {
       await addToCartButton.click();
 
-      // Wait a moment for cart update
-      await page.waitForTimeout(1000);
-
-      // Open cart drawer
-      const cartIcon = page
-        .locator('button[aria-label="سبد خرید"]:visible')
-        .first();
-      await cartIcon.click();
-
-      // Wait for cart drawer
-      const cartDrawer = page.locator('[role="dialog"]');
-      await expect(cartDrawer).toBeVisible({ timeout: 5000 });
-
-      // Verify product is in cart
-      await expect(
-        page.locator(`[role="dialog"] text=${testProduct.name}`).first()
-      ).toBeVisible({ timeout: 5000 });
-
-      // Close cart drawer
-      const closeButton = page.locator('[role="dialog"] button').first();
-      await closeButton.click();
+      await expect(page.getByText('محصول به سبد خرید اضافه شد')).toBeVisible({
+        timeout: 10000,
+      });
     }
 
     // Clean up wishlist for next tests

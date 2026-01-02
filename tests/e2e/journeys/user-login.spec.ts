@@ -229,8 +229,12 @@ test.describe('User Login Journey', () => {
     await page.waitForTimeout(2000);
 
     // Should show error
-    const errorAlert = page.locator('.text-red-800, .bg-red-50');
-    await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    const errorAlert = page.locator('[role="alert"]', {
+      hasText: 'رمز عبور اشتباه است',
+    });
+    await expect(errorAlert).toContainText('رمز عبور اشتباه است', {
+      timeout: 5000,
+    });
 
     // Verify still on login page
     await expect(page).toHaveURL('/login');
@@ -257,8 +261,12 @@ test.describe('User Login Journey', () => {
     // Wait for error
     await page.waitForTimeout(2000);
 
-    const errorAlert = page.locator('.text-red-800, .bg-red-50');
-    await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    const errorAlert = page.locator('[role="alert"]', {
+      hasText: 'کاربری با این مشخصات یافت نشد',
+    });
+    await expect(errorAlert).toContainText('کاربری با این مشخصات یافت نشد', {
+      timeout: 5000,
+    });
 
     await expect(page).toHaveURL('/login');
   });
