@@ -6,6 +6,7 @@ import {
   linkTransactionToUser,
 } from '@/services/transaction-service';
 import { createUser, getUserByPhone } from '@/services/user-service';
+import { recordPromoUsage } from '@/services/promo-service';
 import { verifyPayment } from '@/lib/digipay/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { createClient } from '@/lib/supabase/server';
@@ -302,6 +303,30 @@ async function getHandler(req: NextRequest) {
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
+
+    // Record promo code usage if a promo was applied
+    if (transaction.promoCodeId) {
+      try {
+        await recordPromoUsage(
+          transaction.promoCodeId,
+          transaction.id,
+          transaction.userId || undefined
+        );
+        log.info('Promo code usage recorded', {
+          promoCodeId: transaction.promoCodeId,
+          transactionId: transaction.id,
+          userId: transaction.userId,
+        });
+      } catch (promoError) {
+        // Don't fail the payment if promo tracking fails
+        log.error('Failed to record promo code usage', {
+          promoCodeId: transaction.promoCodeId,
+          transactionId: transaction.id,
+          error:
+            promoError instanceof Error ? promoError.message : 'Unknown error',
+        });
+      }
+    }
 
     // Fetch full transaction data with variants for email notifications
     const fullTransaction = await getTransactionWithVariants(transaction.id);

@@ -8,6 +8,7 @@ import {
 } from '@/services/transaction-service';
 import { getProductById } from '@/services/product-service';
 import { updateUserShippingInfo } from '@/services/user-service';
+import { validatePromoCode } from '@/services/promo-service';
 import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
@@ -27,7 +28,7 @@ async function postHandler(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await req.json();
-    const { items, shippingInfo, paymentMethod } = body;
+    const { items, shippingInfo, paymentMethod, promoCode } = body;
 
     log.info('Transaction creation started', {
       userId: session?.user?.id || 'guest',
@@ -302,6 +303,44 @@ async function postHandler(req: NextRequest) {
       });
     }
 
+    // Store subtotal before any promo discount
+    const subtotal = totalAmount;
+
+    // Validate and apply promo code if provided
+    let promoCodeId: string | undefined;
+    let discountAmount = 0;
+
+    if (promoCode) {
+      const promoResult = await validatePromoCode(
+        promoCode,
+        subtotal,
+        session?.user?.id
+      );
+
+      if (!promoResult.valid) {
+        return NextResponse.json(
+          { error: promoResult.error || 'کد تخفیف نامعتبر است' },
+          { status: 400 }
+        );
+      }
+
+      if (promoResult.promoCode) {
+        promoCodeId = promoResult.promoCode.id;
+        discountAmount = promoResult.discountAmount || 0;
+        totalAmount = subtotal - discountAmount;
+
+        log.info('Promo code applied', {
+          code: promoCode,
+          promoCodeId,
+          subtotal,
+          discountAmount,
+          finalAmount: totalAmount,
+          discountType: promoResult.promoCode.discountType,
+          discountValue: promoResult.promoCode.discountValue,
+        });
+      }
+    }
+
     // Validate payment method
     let validPaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL' = 'ZARINPAL';
     if (paymentMethod === 'DIGIPAY') {
@@ -334,7 +373,7 @@ async function postHandler(req: NextRequest) {
     const transaction = await createTransaction({
       userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
-      amount: totalAmount, // Base amount WITHOUT gateway fee
+      amount: totalAmount, // Final amount after promo discount, WITHOUT gateway fee
       gatewayFee, // Gateway fee stored separately (only for Digipay)
       paymentMethod: validPaymentMethod,
       shippingInfo: {
@@ -348,6 +387,10 @@ async function postHandler(req: NextRequest) {
       // Include client info for tracking
       ipAddress,
       userAgent,
+      // Promo code fields
+      promoCodeId,
+      discountAmount,
+      subtotal,
     });
 
     // If logged-in user, update their profile with shipping info and any new contact info

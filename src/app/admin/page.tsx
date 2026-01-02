@@ -13,6 +13,7 @@ import {
   BanknotesIcon,
   FolderIcon,
   Cog6ToothIcon,
+  TicketIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns-jalali';
 
@@ -168,6 +169,13 @@ export default function AdminDashboard() {
             href="/admin/settings"
             icon={<Cog6ToothIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="indigo"
+          />
+          <NavigationCard
+            title="کدهای تخفیف"
+            description="ایجاد و مدیریت کدهای تخفیف"
+            href="/admin/promo-codes"
+            icon={<TicketIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
+            color="purple"
           />
         </div>
       </div>

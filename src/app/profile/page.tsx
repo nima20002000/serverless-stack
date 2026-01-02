@@ -15,13 +15,6 @@ import TransactionHistory from '@/components/profile/TransactionHistory';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
 
-interface PromoCode {
-  id: string;
-  code: string;
-  expiresAt: string;
-  isUsed: boolean;
-}
-
 interface UserProfile {
   id: string;
   uid: string;
@@ -75,8 +68,6 @@ export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
 
-  const [promoCode, setPromoCode] = useState<PromoCode | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false);
@@ -104,46 +95,6 @@ export default function ProfilePage() {
       router.push('/login');
     }
   }, [status, router]);
-
-  useEffect(() => {
-    if (promoCode && !promoCode.isUsed) {
-      const interval = setInterval(() => {
-        const now = new Date();
-        const expiry = new Date(promoCode.expiresAt);
-        const diff = expiry.getTime() - now.getTime();
-
-        if (diff <= 0) {
-          setTimeRemaining('منقضی شده');
-          clearInterval(interval);
-        } else {
-          const hours = Math.floor(diff / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-          setTimeRemaining(
-            `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-          );
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [promoCode]);
-
-  const fetchPromoCode = useCallback(async () => {
-    try {
-      const response = await fetch('/api/promo/active');
-      if (response.ok) {
-        const data = await response.json();
-        setPromoCode(data.promoCode);
-      } else {
-        setPromoCode(null);
-      }
-    } catch (error) {
-      console.error('Error fetching promo code:', error);
-      setPromoCode(null);
-    }
-  }, []);
 
   const fetchUserProfile = useCallback(async () => {
     setProfileLoading(true);
@@ -243,11 +194,10 @@ export default function ProfilePage() {
   // This useEffect depends on callbacks, so must be after their definition
   useEffect(() => {
     if (session?.user) {
-      fetchPromoCode();
       fetchUserProfile();
       fetchTransactions();
     }
-  }, [session, fetchPromoCode, fetchUserProfile, fetchTransactions]);
+  }, [session, fetchUserProfile, fetchTransactions]);
 
   // Show skeleton until minimum time elapsed AND data loaded
   if (
@@ -389,35 +339,6 @@ export default function ProfilePage() {
             />
           )}
         </Card>
-
-        {/* Promo Code Card */}
-        {promoCode && !promoCode.isUsed && (
-          <Card className="mb-6 bg-gradient-to-r from-rose-50 to-pink-50">
-            <h2 className="text-xl font-semibold text-rose-900 mb-4 text-right">
-              کد تخفیف ویژه شما
-            </h2>
-            <Alert type="info">
-              <div className="text-right">
-                <div className="mb-2">
-                  <span className="text-lg font-bold">{promoCode.code}</span>
-                </div>
-                <div className="text-sm">
-                  زمان باقی‌مانده:{' '}
-                  <span className="font-mono font-bold">{timeRemaining}</span>
-                </div>
-                <div className="text-xs mt-2 text-gray-600">
-                  از این کد برای دریافت تخفیف در اولین خرید خود استفاده کنید!
-                </div>
-              </div>
-            </Alert>
-          </Card>
-        )}
-
-        {promoCode?.isUsed && (
-          <Card className="mb-6">
-            <Alert type="success">شما از کد تخفیف خود استفاده کرده‌اید.</Alert>
-          </Card>
-        )}
 
         {/* Transaction History Card */}
         <Card className="mb-6">

@@ -352,32 +352,109 @@ export type Database = {
           },
         ];
       };
+      promo_code_usages: {
+        Row: {
+          id: string;
+          promoCodeId: string;
+          transactionId: string | null;
+          usedAt: string | null;
+          userId: string | null;
+        };
+        Insert: {
+          id?: string;
+          promoCodeId: string;
+          transactionId?: string | null;
+          usedAt?: string | null;
+          userId?: string | null;
+        };
+        Update: {
+          id?: string;
+          promoCodeId?: string;
+          transactionId?: string | null;
+          usedAt?: string | null;
+          userId?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'promo_code_usages_promoCodeId_fkey';
+            columns: ['promoCodeId'];
+            isOneToOne: false;
+            referencedRelation: 'promo_codes';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'promo_code_usages_transactionId_fkey';
+            columns: ['transactionId'];
+            isOneToOne: false;
+            referencedRelation: 'transactions';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'promo_code_usages_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       promo_codes: {
         Row: {
           code: string;
           createdAt: string;
+          currentUsageCount: number | null;
+          description: string | null;
+          discountType: string;
+          discountValue: number;
           expiresAt: string;
           id: string;
+          isActive: boolean | null;
           isUsed: boolean;
-          userId: string;
+          maxDiscountAmount: number | null;
+          maxUsageCount: number | null;
+          minOrderAmount: number | null;
+          userId: string | null;
         };
         Insert: {
           code: string;
           createdAt?: string;
+          currentUsageCount?: number | null;
+          description?: string | null;
+          discountType?: string;
+          discountValue?: number;
           expiresAt: string;
           id: string;
+          isActive?: boolean | null;
           isUsed?: boolean;
-          userId: string;
+          maxDiscountAmount?: number | null;
+          maxUsageCount?: number | null;
+          minOrderAmount?: number | null;
+          userId?: string | null;
         };
         Update: {
           code?: string;
           createdAt?: string;
+          currentUsageCount?: number | null;
+          description?: string | null;
+          discountType?: string;
+          discountValue?: number;
           expiresAt?: string;
           id?: string;
+          isActive?: boolean | null;
           isUsed?: boolean;
-          userId?: string;
+          maxDiscountAmount?: number | null;
+          maxUsageCount?: number | null;
+          minOrderAmount?: number | null;
+          userId?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'promo_codes_userid_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'promo_codes_userId_fkey';
             columns: ['userId'];
@@ -488,6 +565,7 @@ export type Database = {
           createdAt: string;
           digipayTicket: string | null;
           digipayTrackingCode: string | null;
+          discountAmount: number | null;
           email: string | null;
           fullName: string | null;
           gateway_fee: number | null;
@@ -497,8 +575,10 @@ export type Database = {
           paymentMethod: Database['public']['Enums']['PaymentMethod'];
           phone: string | null;
           postalCode: string | null;
+          promoCodeId: string | null;
           shippingAddress: string | null;
           status: Database['public']['Enums']['TransactionStatus'];
+          subtotal: number | null;
           transactionCode: string;
           updatedAt: string;
           user_agent: string | null;
@@ -514,6 +594,7 @@ export type Database = {
           createdAt?: string;
           digipayTicket?: string | null;
           digipayTrackingCode?: string | null;
+          discountAmount?: number | null;
           email?: string | null;
           fullName?: string | null;
           gateway_fee?: number | null;
@@ -523,8 +604,10 @@ export type Database = {
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
           phone?: string | null;
           postalCode?: string | null;
+          promoCodeId?: string | null;
           shippingAddress?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
+          subtotal?: number | null;
           transactionCode: string;
           updatedAt: string;
           user_agent?: string | null;
@@ -540,6 +623,7 @@ export type Database = {
           createdAt?: string;
           digipayTicket?: string | null;
           digipayTrackingCode?: string | null;
+          discountAmount?: number | null;
           email?: string | null;
           fullName?: string | null;
           gateway_fee?: number | null;
@@ -549,8 +633,10 @@ export type Database = {
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
           phone?: string | null;
           postalCode?: string | null;
+          promoCodeId?: string | null;
           shippingAddress?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
+          subtotal?: number | null;
           transactionCode?: string;
           updatedAt?: string;
           user_agent?: string | null;
@@ -561,6 +647,13 @@ export type Database = {
           zibalTrackId?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: 'transactions_promocodeid_fkey';
+            columns: ['promoCodeId'];
+            isOneToOne: false;
+            referencedRelation: 'promo_codes';
+            referencedColumns: ['id'];
+          },
           {
             foreignKeyName: 'transactions_userId_fkey';
             columns: ['userId'];

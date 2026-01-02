@@ -28,6 +28,8 @@ import DigipayBadge from '@/components/payment/DigipayBadge';
 import ZibalBadge from '@/components/payment/ZibalBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 import DigipayGuidanceModal from '@/components/checkout/DigipayGuidanceModal';
+import PromoCodeInput from '@/components/checkout/PromoCodeInput';
+import { useCheckoutStore } from '@/store/checkout-store';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -39,6 +41,7 @@ export default function CheckoutPage() {
   );
   const total = useCartStore(selectTotal);
   const itemCount = useCartStore(selectItemCount);
+  const { promoCode: appliedPromo } = useCheckoutStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<
@@ -56,12 +59,17 @@ export default function CheckoutPage() {
   } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Calculate surcharge for Digipay
+  // Calculate discount and surcharge
+  const discountAmount = appliedPromo?.discountAmount || 0;
+  const subtotal = total; // Items total before discount
+  const afterDiscount = subtotal - discountAmount;
+
+  // Calculate surcharge for Digipay (on amount after discount)
   const digipaySurcharge =
     paymentMethod === 'digipay'
-      ? Math.round(total * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
+      ? Math.round(afterDiscount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
       : 0;
-  const finalTotal = total + digipaySurcharge;
+  const finalTotal = afterDiscount + digipaySurcharge;
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -110,6 +118,8 @@ export default function CheckoutPage() {
               postalCode: formData.postalCode || undefined,
               createAccount: formData.createAccount,
             },
+            // Include promo code if applied
+            promoCode: appliedPromo?.code,
           }),
         });
 
@@ -133,7 +143,7 @@ export default function CheckoutPage() {
         setIsProcessing(false);
       }
     },
-    [items, paymentMethod, removeUnavailableItems]
+    [items, paymentMethod, removeUnavailableItems, appliedPromo]
   );
 
   const handleCheckout = useCallback(
@@ -453,12 +463,30 @@ export default function CheckoutPage() {
               {/* Divider */}
               <div className="border-t border-slate-200 my-4" />
 
+              {/* Promo Code Input */}
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-slate-700 mb-2">
+                  کد تخفیف
+                </h3>
+                <PromoCodeInput subtotal={subtotal} />
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-slate-200 my-4" />
+
               {/* Totals */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>{itemCount} کالا</span>
-                  <span>{formatPrice(total)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
+
+                {appliedPromo && discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>تخفیف ({appliedPromo.code})</span>
+                    <span>- {formatPrice(discountAmount)}</span>
+                  </div>
+                )}
 
                 {paymentMethod === 'digipay' && digipaySurcharge > 0 && (
                   <div className="flex justify-between text-slate-600">
@@ -469,7 +497,7 @@ export default function CheckoutPage() {
 
                 <div className="flex justify-between text-slate-600">
                   <span>هزینه ارسال</span>
-                  <span className="text-emerald-600">رایگان</span>
+                  <span>پس کرایه</span>
                 </div>
               </div>
 
