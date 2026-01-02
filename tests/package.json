@@ -12,6 +12,7 @@
     "test:unit:parallel": "vitest run --config vitest.config.unit.ts --reporter=verbose",
     "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:integration:watch": "vitest watch --config vitest.config.integration.ts",
+    "test:integration:fast": "node scripts/run-integration-fast.js",
     "test:ui": "vitest --ui --config vitest.config.unit.ts",
     "test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
     "test:coverage:all": "vitest run --coverage",

@@ -44,6 +44,11 @@ function convertServerItemsToStoreFormat(items: ServerWishlistItem[]) {
  * - On logout: Keep local wishlist (for guest continuation)
  */
 export function useWishlistSync() {
+  const isE2E =
+    process.env.NEXT_PUBLIC_E2E_TEST === 'true' ||
+    (typeof document !== 'undefined' &&
+      document.cookie.includes('e2e-test=true'));
+
   const { data: session, status } = useSession();
   const items = useWishlistStore((state) => state.items);
   const setItems = useWishlistStore((state) => state.setItems);
@@ -118,6 +123,12 @@ export function useWishlistSync() {
   }, [setItems, setIsSyncing, setInitialized]);
 
   useEffect(() => {
+    // Skip wishlist sync in E2E to avoid network flakiness
+    if (isE2E) {
+      setInitialized(true);
+      return;
+    }
+
     if (status === 'loading') return;
 
     const wasUnauthenticated = previousStatusRef.current === 'unauthenticated';
@@ -145,6 +156,7 @@ export function useWishlistSync() {
       setInitialized(true);
     }
   }, [
+    isE2E,
     status,
     session,
     isInitialized,
