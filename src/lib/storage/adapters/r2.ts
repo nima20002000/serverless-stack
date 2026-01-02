@@ -187,6 +187,7 @@ export class R2StorageAdapter implements StorageAdapter {
       const command = new ListObjectsV2Command({
         Bucket: this.bucketName,
         Prefix: options?.prefix || '',
+        Delimiter: options?.delimiter,
         MaxKeys: options?.maxKeys || 100,
         ContinuationToken: options?.continuationToken,
       });
@@ -200,6 +201,9 @@ export class R2StorageAdapter implements StorageAdapter {
         url: this.getPublicUrl(item.Key || ''),
         contentType: undefined, // R2 ListObjectsV2 doesn't return ContentType
       }));
+      const prefixes = (response.CommonPrefixes || [])
+        .map((prefix) => prefix.Prefix || '')
+        .filter(Boolean);
 
       log.info('Listed R2 objects', {
         prefix: options?.prefix,
@@ -210,6 +214,7 @@ export class R2StorageAdapter implements StorageAdapter {
       return {
         success: true,
         objects,
+        prefixes,
         nextContinuationToken: response.NextContinuationToken,
         isTruncated: response.IsTruncated,
       };

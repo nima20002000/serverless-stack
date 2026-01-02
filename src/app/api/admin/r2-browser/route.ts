@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(req.url);
     const prefix = searchParams.get('prefix') || undefined;
+    const delimiter = searchParams.get('delimiter') || undefined;
     const maxKeysParam = searchParams.get('maxKeys');
     const maxKeys = maxKeysParam ? parseInt(maxKeysParam) : 100;
     const continuationToken =
@@ -29,6 +30,7 @@ export async function GET(req: NextRequest) {
     // List objects from R2
     const result = await storage.list({
       prefix,
+      delimiter,
       maxKeys,
       continuationToken,
     });
@@ -47,6 +49,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       objects: result.objects || [],
+      prefixes: result.prefixes || [],
       nextContinuationToken: result.nextContinuationToken,
       isTruncated: result.isTruncated,
     });

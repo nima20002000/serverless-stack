@@ -31,13 +31,27 @@ interface R2MediaBrowserProps {
   initialFolder?: string;
 }
 
-const FOLDERS = [
-  { value: 'products/images', label: 'تصاویر محصولات' },
-  { value: 'products/videos', label: 'ویدیوهای محصولات' },
-  { value: 'categories/images', label: 'تصاویر دسته‌بندی‌ها' },
-  { value: 'media-library/images', label: 'تصاویر کتابخانه رسانه' },
-  { value: 'media-library/videos', label: 'ویدیوهای کتابخانه رسانه' },
-];
+const DEFAULT_PAGE_SIZE = 200;
+
+const normalizePrefix = (prefix?: string) => {
+  if (!prefix) return '';
+  return prefix.endsWith('/') ? prefix : `${prefix}/`;
+};
+
+const getParentPrefix = (prefix: string) => {
+  const trimmed = prefix.replace(/\/$/, '');
+  if (!trimmed) return '';
+  const parts = trimmed.split('/');
+  parts.pop();
+  return parts.length ? `${parts.join('/')}/` : '';
+};
+
+const sortByLastModified = (items: R2Object[]) =>
+  [...items].sort((a, b) => {
+    const aTime = Date.parse(a.lastModified);
+    const bTime = Date.parse(b.lastModified);
+    return bTime - aTime;
+  });
 
 export default function R2MediaBrowser({
   isOpen,
@@ -47,34 +61,61 @@ export default function R2MediaBrowser({
   initialFolder = 'products/images',
 }: R2MediaBrowserProps) {
   const [objects, setObjects] = useState<R2Object[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState(initialFolder);
+  const [folders, setFolders] = useState<string[]>([]);
+  const [currentPrefix, setCurrentPrefix] = useState(
+    normalizePrefix(initialFolder)
+  );
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [selectedUrls, setSelectedUrls] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
 
   // Load objects when folder changes
   useEffect(() => {
     if (isOpen) {
-      loadObjects();
+      loadObjects(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedFolder, isOpen]);
+  }, [currentPrefix, isOpen]);
 
   // Reset selection when closed
   useEffect(() => {
     if (!isOpen) {
       setSelectedUrls(new Set());
       setError('');
+    } else {
+      setCurrentPrefix(normalizePrefix(initialFolder));
     }
-  }, [isOpen]);
+  }, [isOpen, initialFolder]);
 
-  const loadObjects = async () => {
+  // Clear selection when navigating folders
+  useEffect(() => {
+    setSelectedUrls(new Set());
+  }, [currentPrefix]);
+
+  const loadObjects = async (reset: boolean) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       setError('');
 
+      const params = new URLSearchParams();
+      if (currentPrefix) {
+        params.set('prefix', currentPrefix);
+      }
+      params.set('delimiter', '/');
+      params.set('maxKeys', `${DEFAULT_PAGE_SIZE}`);
+      if (!reset && nextToken) {
+        params.set('continuationToken', nextToken);
+      }
+
       const response = await fetch(
-        `/api/admin/r2-browser?prefix=${selectedFolder}/&maxKeys=100`
+        `/api/admin/r2-browser?${params.toString()}`
       );
       const data = await response.json();
 
@@ -82,12 +123,31 @@ export default function R2MediaBrowser({
         throw new Error(data.error || 'خطا در دریافت فایل‌ها');
       }
 
-      setObjects(data.objects || []);
+      const incomingObjects = data.objects || [];
+      const incomingPrefixes = data.prefixes || [];
+
+      if (reset) {
+        setFolders(incomingPrefixes);
+        setObjects(sortByLastModified(incomingObjects));
+      } else {
+        setObjects((prev) => sortByLastModified([...prev, ...incomingObjects]));
+      }
+      setNextToken(data.nextContinuationToken || null);
+      setHasMore(Boolean(data.isTruncated && data.nextContinuationToken));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطای نامشخص');
-      setObjects([]);
+      if (reset) {
+        setObjects([]);
+        setFolders([]);
+        setNextToken(null);
+        setHasMore(false);
+      }
     } finally {
-      setLoading(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   };
 
@@ -131,7 +191,7 @@ export default function R2MediaBrowser({
       }
 
       // Reload objects after delete
-      await loadObjects();
+      await loadObjects(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطای نامشخص');
     }
@@ -142,6 +202,10 @@ export default function R2MediaBrowser({
   };
 
   if (!isOpen) return null;
+
+  const folderParts = currentPrefix
+    ? currentPrefix.replace(/\/$/, '').split('/')
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -162,19 +226,34 @@ export default function R2MediaBrowser({
                   انتخاب رسانه از R2
                 </h3>
 
-                {/* Folder selector */}
-                <select
-                  value={selectedFolder}
-                  onChange={(e) => setSelectedFolder(e.target.value)}
-                  className="text-sm border border-gray-300 dark:border-slate-700 rounded px-3 py-2 dark:bg-slate-900 dark:text-slate-100"
-                  disabled={loading}
-                >
-                  {FOLDERS.map((folder) => (
-                    <option key={folder.value} value={folder.value}>
-                      {folder.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPrefix('')}
+                    className="font-medium hover:text-gray-900 dark:hover:text-white"
+                  >
+                    ریشه
+                  </button>
+                  {folderParts.map((part, index) => {
+                    const prefix = `${folderParts
+                      .slice(0, index + 1)
+                      .join('/')}/`;
+                    return (
+                      <span key={prefix} className="flex items-center gap-2">
+                        <span className="text-gray-400 dark:text-slate-500">
+                          /
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCurrentPrefix(prefix)}
+                          className="font-medium hover:text-gray-900 dark:hover:text-white"
+                        >
+                          {part}
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
 
               <button
@@ -201,79 +280,148 @@ export default function R2MediaBrowser({
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-300" />
               </div>
-            ) : objects.length === 0 ? (
+            ) : objects.length === 0 && folders.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-slate-400">
                 <FolderIcon className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-slate-500" />
                 <p>هیچ فایلی در این پوشه وجود ندارد</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {objects.map((obj) => {
-                  const isSelected = selectedUrls.has(obj.url);
-                  const isImg = isImage(obj.url);
-
-                  return (
-                    <div
-                      key={obj.key}
-                      className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                          : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
-                      }`}
-                      onClick={() => toggleSelection(obj.url)}
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-slate-200">
+                    پوشه‌ها
+                  </div>
+                  {currentPrefix && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPrefix(getParentPrefix(currentPrefix))
+                      }
+                      className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
                     >
-                      {/* Preview */}
-                      <div className="aspect-square bg-gray-100 dark:bg-slate-800 relative">
-                        {isImg ? (
-                          <Image
-                            src={optimizeImage.adminThumb(obj.url)}
-                            alt={obj.key}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <PhotoIcon className="h-12 w-12 text-gray-400 dark:text-slate-500" />
-                          </div>
-                        )}
-
-                        {/* Selection indicator */}
-                        {isSelected && (
-                          <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
-                            <CheckIcon className="h-4 w-4" />
-                          </div>
-                        )}
-
-                        {/* Delete button */}
+                      بازگشت به پوشه والد
+                    </button>
+                  )}
+                </div>
+                {folders.length === 0 ? (
+                  <div className="text-sm text-gray-500 dark:text-slate-400 mb-6">
+                    زیرپوشه‌ای وجود ندارد
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
+                    {folders.map((prefix) => {
+                      const label = prefix
+                        .replace(currentPrefix, '')
+                        .replace(/\/$/, '');
+                      return (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(obj.key);
-                          }}
-                          className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="حذف"
+                          key={prefix}
+                          type="button"
+                          onClick={() => setCurrentPrefix(prefix)}
+                          className="group border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-right bg-white dark:bg-slate-900 hover:border-gray-300 dark:hover:border-slate-600 transition"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <div className="flex items-center gap-2">
+                            <FolderIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
+                            <span className="text-sm text-gray-700 dark:text-slate-200 truncate">
+                              {label}
+                            </span>
+                          </div>
                         </button>
-                      </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-                      {/* Info */}
-                      <div className="p-2 bg-white dark:bg-slate-900">
-                        <p
-                          className="text-xs text-gray-600 dark:text-slate-300 truncate"
-                          title={obj.key}
+                <div className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">
+                  فایل‌ها
+                </div>
+                {objects.length === 0 ? (
+                  <div className="text-sm text-gray-500 dark:text-slate-400">
+                    فایلی در این پوشه وجود ندارد
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {objects.map((obj) => {
+                      const isSelected = selectedUrls.has(obj.url);
+                      const isImg = isImage(obj.url);
+
+                      return (
+                        <div
+                          key={obj.key}
+                          className={`relative group border-2 rounded-lg overflow-hidden cursor-pointer transition-all ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                              : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-600'
+                          }`}
+                          onClick={() => toggleSelection(obj.url)}
                         >
-                          {obj.key.split('/').pop()}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-slate-500">
-                          {(obj.size / 1024).toFixed(0)} KB
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          {/* Preview */}
+                          <div className="aspect-square bg-gray-100 dark:bg-slate-800 relative">
+                            {isImg ? (
+                              <Image
+                                src={optimizeImage.adminThumb(obj.url)}
+                                alt={obj.key}
+                                fill
+                                className="object-cover"
+                                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center h-full">
+                                <PhotoIcon className="h-12 w-12 text-gray-400 dark:text-slate-500" />
+                              </div>
+                            )}
+
+                            {/* Selection indicator */}
+                            {isSelected && (
+                              <div className="absolute top-2 left-2 bg-blue-600 text-white rounded-full p-1">
+                                <CheckIcon className="h-4 w-4" />
+                              </div>
+                            )}
+
+                            {/* Delete button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(obj.key);
+                              }}
+                              className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="حذف"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+
+                          {/* Info */}
+                          <div className="p-2 bg-white dark:bg-slate-900">
+                            <p
+                              className="text-xs text-gray-600 dark:text-slate-300 truncate"
+                              title={obj.key}
+                            >
+                              {obj.key.split('/').pop()}
+                            </p>
+                            <p className="text-xs text-gray-400 dark:text-slate-500">
+                              {(obj.size / 1024).toFixed(0)} KB
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {hasMore && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      type="button"
+                      onClick={() => loadObjects(false)}
+                      disabled={loadingMore}
+                      className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {loadingMore ? 'در حال بارگذاری...' : 'نمایش بیشتر'}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

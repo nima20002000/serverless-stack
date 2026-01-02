@@ -48,6 +48,8 @@ export interface StorageObject {
 export interface ListObjectsOptions {
   /** Prefix/folder to list (e.g., "products/images/") */
   prefix?: string;
+  /** Delimiter for grouping common prefixes (e.g., "/") */
+  delimiter?: string;
   /** Maximum number of items to return */
   maxKeys?: number;
   /** Continuation token for pagination */
@@ -59,6 +61,8 @@ export interface ListObjectsResult {
   success: boolean;
   /** List of objects */
   objects?: StorageObject[];
+  /** Folder-like prefixes when using delimiter */
+  prefixes?: string[];
   /** Continuation token for next page */
   nextContinuationToken?: string;
   /** Whether there are more results */
