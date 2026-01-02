@@ -160,24 +160,29 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     setIsSaving(true);
 
     try {
+      const payload: Record<string, unknown> = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        discountPercent: formData.discountPercent
+          ? parseInt(formData.discountPercent)
+          : null,
+        hasVariants: formData.hasVariants,
+        isFeatured: formData.isFeatured,
+        isActive: formData.isActive,
+        categoryId: formData.categoryId,
+        tagIds: selectedTags.map((t) => t.id),
+      };
+
+      if (!formData.hasVariants) {
+        payload.stock = parseInt(formData.stock);
+      }
+
       // Step 1: Update product basic info
       const response = await fetch(`/api/products/${params.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          discountPercent: formData.discountPercent
-            ? parseInt(formData.discountPercent)
-            : null,
-          stock: formData.hasVariants ? 0 : parseInt(formData.stock),
-          hasVariants: formData.hasVariants,
-          isFeatured: formData.isFeatured,
-          isActive: formData.isActive,
-          categoryId: formData.categoryId,
-          tagIds: selectedTags.map((t) => t.id),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
