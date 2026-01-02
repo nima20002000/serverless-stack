@@ -81,8 +81,8 @@ test.describe('E2E Infrastructure Smoke Tests', () => {
     // Wait for the drawer panel to be visible (Dialog.Panel with content)
     // HeadlessUI Dialog uses transitions, so we wait for the panel content to appear
     const drawerTitle = page
-      .locator('[role="dialog"] h2, [role="dialog"] [class*="font-bold"]')
-      .filter({ hasText: 'سبد خرید' });
+      .getByRole('dialog')
+      .getByRole('heading', { name: 'سبد خرید', exact: true });
     await expect(drawerTitle).toBeVisible({ timeout: 5000 });
 
     // Verify the cart content is rendered (empty cart message showing empty state)

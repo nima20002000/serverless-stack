@@ -78,7 +78,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev:plain',
+    command: 'node scripts/generate-build-version.js && npm run dev:plain',
     cwd: '../..',
     url: 'http://localhost:3000',
     reuseExistingServer: false,

@@ -10,6 +10,13 @@ import { test, expect } from '@playwright/test';
  * 4. Service worker caching behavior
  */
 test.describe('Cache Busting E2E', () => {
+  const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+
+  const allowVersionCheckCookie = {
+    name: 'e2e-allow-version-check',
+    value: 'true',
+    url: baseURL,
+  };
   test.describe('Version API', () => {
     test('should return version data from /api/version', async ({
       request,
@@ -91,6 +98,7 @@ test.describe('Cache Busting E2E', () => {
 
   test.describe('Browser Integration', () => {
     test('should register service worker on page load', async ({ page }) => {
+      await page.context().addCookies([allowVersionCheckCookie]);
       await page.goto('/');
 
       // Wait for service worker registration
@@ -111,6 +119,7 @@ test.describe('Cache Busting E2E', () => {
     test('should store version in localStorage after load', async ({
       page,
     }) => {
+      await page.context().addCookies([allowVersionCheckCookie]);
       await page.goto('/');
 
       // Wait for version check to complete
@@ -126,6 +135,7 @@ test.describe('Cache Busting E2E', () => {
     });
 
     test('stored version should match API version', async ({ page }) => {
+      await page.context().addCookies([allowVersionCheckCookie]);
       // First get the API version before loading the page
       const apiResponse = await page.request.get('/api/version');
       const apiData = await apiResponse.json();

@@ -78,14 +78,16 @@ test.describe('Authenticated User Checkout Journey', () => {
    */
   async function loginAsTestUser(page: import('@playwright/test').Page) {
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
 
     await page.locator('input[name="identifier"]').fill(testUserData.email);
     await page.locator('input[name="password"]').fill(testUserData.password);
     // Use submit button
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL('/', { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 30000 });
+    await expect(page.locator('header')).toBeVisible();
   }
 
   async function fillCheckoutFields(page: import('@playwright/test').Page) {
@@ -97,14 +99,15 @@ test.describe('Authenticated User Checkout Journey', () => {
     await expect(phoneInput).toBeVisible();
     await expect(fullNameInput).toBeVisible();
     await expect(addressInput).toBeVisible();
+    await page.waitForTimeout(300);
 
-    if (await fullNameInput.isEnabled()) {
+    if (!(await fullNameInput.isDisabled())) {
       await fullNameInput.fill(testUserData.name);
     }
-    if (await phoneInput.isEnabled()) {
+    if (!(await phoneInput.isDisabled())) {
       await phoneInput.fill(testUserData.phone);
     }
-    if (await addressInput.isEnabled()) {
+    if (!(await addressInput.isDisabled())) {
       await addressInput.fill(testUserData.shippingAddress || 'تهران');
     }
     if (

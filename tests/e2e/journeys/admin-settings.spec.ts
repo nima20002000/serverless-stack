@@ -84,7 +84,8 @@ test.describe('Admin Settings Journey', () => {
   const loginAsAdmin = async (page: import('@playwright/test').Page) => {
     // Use UI-based login like admin-panel.spec.ts
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
 
     // Fill login form
     await page.locator('input[name="identifier"]').fill(adminUser.email);
@@ -96,8 +97,8 @@ test.describe('Admin Settings Journey', () => {
     // Wait for successful login redirect (to home page)
     await page.waitForURL('/', { timeout: 20000 });
 
-    // Verify we're logged in by checking session
-    await page.waitForLoadState('networkidle');
+    // Verify we're logged in by checking header
+    await expect(page.locator('header')).toBeVisible();
   };
 
   test('should load and persist admin settings', async ({ page }) => {
@@ -108,7 +109,7 @@ test.describe('Admin Settings Journey', () => {
 
     // Navigate to admin settings
     await page.goto('/admin/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/\/admin\/settings$/, { timeout: 10000 });
 
     const pageHeading = page.getByRole('heading', { name: /تنظیمات سایت/i });
@@ -148,7 +149,7 @@ test.describe('Admin Settings Journey', () => {
     await expect(successAlert).toBeVisible({ timeout: 10000 });
 
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const siteNameAfterReload = page.getByRole('textbox');
     await expect(siteNameAfterReload).toHaveValue(newSiteName);

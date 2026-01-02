@@ -132,13 +132,15 @@ test.describe('Wishlist Journey', () => {
     const user = getTestUser();
 
     await page.goto('/login');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
 
     await page.locator('input[name="identifier"]').fill(user.email);
     await page.locator('input[name="password"]').fill(user.password);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL('/', { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 30000 });
+    await expect(page.locator('header')).toBeVisible();
   }
 
   test('should allow guests to view wishlist page with info banner', async ({
