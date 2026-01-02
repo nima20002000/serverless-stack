@@ -23,6 +23,8 @@ export const dynamic = 'force-dynamic';
 // GET /api/transactions/verify - Verify payment callback from Zarinpal
 async function getHandler(req: NextRequest) {
   const startTime = Date.now();
+  const isE2E =
+    process.env.E2E_TEST === 'true' || req.headers.get('x-e2e-test') === 'true';
 
   try {
     const searchParams = req.nextUrl.searchParams;
@@ -171,111 +173,117 @@ async function getHandler(req: NextRequest) {
     // Fetch full transaction data with variants for admin email
     const fullTransaction = await getTransactionWithVariants(transaction.id);
 
-    // Send admin confirmation email (await to ensure it completes in serverless)
-    if (fullTransaction) {
-      try {
-        const emailResult = await sendAdminOrderConfirmation(
-          fullTransaction,
-          verification.refId
-        );
+    if (!isE2E) {
+      // Send admin confirmation email (await to ensure it completes in serverless)
+      if (fullTransaction) {
+        try {
+          const emailResult = await sendAdminOrderConfirmation(
+            fullTransaction,
+            verification.refId
+          );
 
-        if (!emailResult.success) {
-          log.warn('Admin confirmation email not sent', {
+          if (!emailResult.success) {
+            log.warn('Admin confirmation email not sent', {
+              transactionId: transaction.id,
+              error: emailResult.error,
+            });
+          } else {
+            log.info('Admin confirmation email sent successfully', {
+              transactionId: transaction.id,
+              messageId: emailResult.messageId,
+            });
+          }
+        } catch (error) {
+          // Don't fail the payment if email fails
+          log.error('Failed to send admin confirmation email', {
             transactionId: transaction.id,
-            error: emailResult.error,
-          });
-        } else {
-          log.info('Admin confirmation email sent successfully', {
-            transactionId: transaction.id,
-            messageId: emailResult.messageId,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
-      } catch (error) {
-        // Don't fail the payment if email fails
-        log.error('Failed to send admin confirmation email', {
+      }
+
+      // Send order confirmation SMS to buyer (await to ensure it completes in serverless)
+      if (transaction.phone) {
+        try {
+          log.info('Attempting to send order confirmation SMS to buyer', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            transactionCode: transaction.transactionCode,
+          });
+
+          const smsResult = await sendOrderConfirmation(
+            transaction.phone,
+            transaction.transactionCode
+          );
+
+          if (!smsResult.success) {
+            log.warn('Order confirmation SMS not sent', {
+              transactionId: transaction.id,
+              phone: transaction.phone,
+              error: smsResult.error,
+            });
+          } else {
+            log.info('Order confirmation SMS sent successfully', {
+              transactionId: transaction.id,
+              phone: transaction.phone,
+              messageId: smsResult.messageId,
+            });
+          }
+        } catch (error) {
+          // Don't fail the payment if SMS fails
+          log.error('Failed to send order confirmation SMS', {
+            transactionId: transaction.id,
+            phone: transaction.phone,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      } else {
+        log.warn('No phone number available for order confirmation SMS', {
           transactionId: transaction.id,
-          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-    }
 
-    // Send order confirmation SMS to buyer (await to ensure it completes in serverless)
-    if (transaction.phone) {
-      try {
-        log.info('Attempting to send order confirmation SMS to buyer', {
-          transactionId: transaction.id,
-          phone: transaction.phone,
-          transactionCode: transaction.transactionCode,
-        });
-
-        const smsResult = await sendOrderConfirmation(
-          transaction.phone,
-          transaction.transactionCode
-        );
-
-        if (!smsResult.success) {
-          log.warn('Order confirmation SMS not sent', {
+      // Send order confirmation email to buyer (if email is provided during checkout)
+      if (fullTransaction && fullTransaction.email) {
+        try {
+          log.info('Attempting to send order confirmation email to buyer', {
             transactionId: transaction.id,
-            phone: transaction.phone,
-            error: smsResult.error,
+            email: fullTransaction.email,
+            transactionCode: transaction.transactionCode,
           });
-        } else {
-          log.info('Order confirmation SMS sent successfully', {
+
+          const emailResult = await sendBuyerOrderConfirmation(fullTransaction);
+
+          if (!emailResult.success) {
+            log.warn('Buyer confirmation email not sent', {
+              transactionId: transaction.id,
+              email: fullTransaction.email,
+              error: emailResult.error,
+            });
+          } else {
+            log.info('Buyer confirmation email sent successfully', {
+              transactionId: transaction.id,
+              email: fullTransaction.email,
+              messageId: emailResult.messageId,
+            });
+          }
+        } catch (error) {
+          // Don't fail the payment if email fails
+          log.error('Failed to send buyer confirmation email', {
             transactionId: transaction.id,
-            phone: transaction.phone,
-            messageId: smsResult.messageId,
+            email: fullTransaction.email,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
-      } catch (error) {
-        // Don't fail the payment if SMS fails
-        log.error('Failed to send order confirmation SMS', {
+      } else {
+        log.info('No buyer email provided, skipping buyer confirmation email', {
           transactionId: transaction.id,
-          phone: transaction.phone,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          hasEmail: !!fullTransaction?.email,
         });
       }
     } else {
-      log.warn('No phone number available for order confirmation SMS', {
+      log.info('Skipping order notifications during E2E run', {
         transactionId: transaction.id,
-      });
-    }
-
-    // Send order confirmation email to buyer (if email is provided during checkout)
-    if (fullTransaction && fullTransaction.email) {
-      try {
-        log.info('Attempting to send order confirmation email to buyer', {
-          transactionId: transaction.id,
-          email: fullTransaction.email,
-          transactionCode: transaction.transactionCode,
-        });
-
-        const emailResult = await sendBuyerOrderConfirmation(fullTransaction);
-
-        if (!emailResult.success) {
-          log.warn('Buyer confirmation email not sent', {
-            transactionId: transaction.id,
-            email: fullTransaction.email,
-            error: emailResult.error,
-          });
-        } else {
-          log.info('Buyer confirmation email sent successfully', {
-            transactionId: transaction.id,
-            email: fullTransaction.email,
-            messageId: emailResult.messageId,
-          });
-        }
-      } catch (error) {
-        // Don't fail the payment if email fails
-        log.error('Failed to send buyer confirmation email', {
-          transactionId: transaction.id,
-          email: fullTransaction.email,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    } else {
-      log.info('No buyer email provided, skipping buyer confirmation email', {
-        transactionId: transaction.id,
-        hasEmail: !!fullTransaction?.email,
       });
     }
 

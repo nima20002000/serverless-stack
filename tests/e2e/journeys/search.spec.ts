@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import { createE2ESupabaseClient } from '../utils/database';
 
 test.describe('Search UX', () => {
+  const escapeRegex = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const searchToken = `e2e-search-${Date.now().toString(36)}`;
   const now = new Date().toISOString();
 
@@ -119,21 +121,26 @@ test.describe('Search UX', () => {
     const searchInput = await openSearchInput(page, isMobile);
     await searchInput.fill(searchToken);
 
-    await expect(
-      page.getByRole('option', { name: activeProduct.name })
-    ).toBeVisible({ timeout: 10000 });
-    await expect(
-      page.getByRole('option', { name: activeCategory.name })
-    ).toBeVisible({ timeout: 10000 });
+    const activeProductOption = page.getByRole('option', {
+      name: new RegExp(`^${escapeRegex(activeProduct.name)}`),
+    });
+    const activeCategoryOption = page.getByRole('option', {
+      name: new RegExp(`^${escapeRegex(activeCategory.name)}`),
+    });
+    const inactiveProductOption = page.getByRole('option', {
+      name: new RegExp(`^${escapeRegex(inactiveProduct.name)}`),
+    });
+    const inactiveCategoryOption = page.getByRole('option', {
+      name: new RegExp(`^${escapeRegex(inactiveCategory.name)}`),
+    });
 
-    await expect(
-      page.getByRole('option', { name: inactiveProduct.name })
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole('option', { name: inactiveCategory.name })
-    ).toHaveCount(0);
+    await expect(activeProductOption).toBeVisible({ timeout: 10000 });
+    await expect(activeCategoryOption).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole('option', { name: activeProduct.name }).click();
+    await expect(inactiveProductOption).toHaveCount(0);
+    await expect(inactiveCategoryOption).toHaveCount(0);
+
+    await activeProductOption.click();
     await page.waitForURL(`/products/${activeProduct.id}`, {
       timeout: 10000,
     });
@@ -144,7 +151,7 @@ test.describe('Search UX', () => {
     const searchInputAgain = await openSearchInput(page, isMobile);
     await searchInputAgain.fill(searchToken);
 
-    await page.getByRole('option', { name: activeCategory.name }).click();
+    await activeCategoryOption.click();
     await page.waitForURL(
       new RegExp(`/products\\?category=${activeCategory.slug}$`),
       { timeout: 10000 }

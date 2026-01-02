@@ -231,6 +231,11 @@ test.describe('Promo Code Database Validation', () => {
     console.log(`Created promo DB test user: ${dbTestUserData.email}`);
   });
 
+  test.beforeEach(async () => {
+    const supabase = createE2ESupabaseClient();
+    await supabase.from('promo_codes').delete().eq('userId', dbTestUserData.id);
+  });
+
   test.afterAll(async () => {
     // Clean up only our test data
     const supabase = createE2ESupabaseClient();
@@ -324,24 +329,22 @@ test.describe('Promo Code Database Validation', () => {
   test('should correctly link promo code to user', async () => {
     const supabase = createE2ESupabaseClient();
     const userCode = `USER-${Date.now()}`;
+    const promoId = `e2e-promo-${randomUUID()}`;
 
     // Insert promo code linked to test user
-    await supabase.from('promo_codes').insert({
-      id: `e2e-promo-${randomUUID()}`,
-      code: userCode,
-      userId: testUserId,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      isUsed: false,
-    });
-
-    // Query promo codes for this user
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('promo_codes')
-      .select('*')
-      .eq('userId', testUserId)
-      .eq('code', userCode)
+      .insert({
+        id: promoId,
+        code: userCode,
+        userId: testUserId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        isUsed: false,
+      })
+      .select('id,userId,code')
       .single();
 
+    expect(error).toBeNull();
     expect(data).toBeTruthy();
     expect(data!.userId).toBe(testUserId);
     console.log(`Promo code correctly linked to user ${testUserId}`);
