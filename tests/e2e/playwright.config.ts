@@ -66,6 +66,7 @@ export default defineConfig({
       ...process.env,
       // Explicitly set E2E mock mode for payment verification
       E2E_MOCK_PAYMENTS: 'true',
+      NEXT_PUBLIC_E2E_MOCK_PAYMENTS: 'true',
     },
   },
 
