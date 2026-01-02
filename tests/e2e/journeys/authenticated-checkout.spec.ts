@@ -85,7 +85,34 @@ test.describe('Authenticated User Checkout Journey', () => {
     // Use submit button
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL(/^\/$/, { timeout: 20000 });
+    await page.waitForURL('/', { timeout: 20000 });
+  }
+
+  async function fillCheckoutFields(page: import('@playwright/test').Page) {
+    const phoneInput = page.locator('#phone');
+    const fullNameInput = page.locator('#fullName');
+    const addressInput = page.locator('#shippingAddress');
+    const postalCodeInput = page.locator('#postalCode');
+
+    await expect(phoneInput).toBeVisible();
+    await expect(fullNameInput).toBeVisible();
+    await expect(addressInput).toBeVisible();
+
+    if (await fullNameInput.isEnabled()) {
+      await fullNameInput.fill(testUserData.name);
+    }
+    if (await phoneInput.isEnabled()) {
+      await phoneInput.fill(testUserData.phone);
+    }
+    if (await addressInput.isEnabled()) {
+      await addressInput.fill(testUserData.shippingAddress || 'تهران');
+    }
+    if (
+      (await postalCodeInput.isVisible()) &&
+      (await postalCodeInput.isEnabled())
+    ) {
+      await postalCodeInput.fill(testUserData.postalCode || '1234567890');
+    }
   }
 
   test('should complete checkout as authenticated user', async ({ page }) => {
@@ -134,22 +161,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     // ============================================================
     await page.waitForLoadState('networkidle');
 
-    const phoneInput = page.locator('#phone');
-    const fullNameInput = page.locator('#fullName');
-    const addressInput = page.locator('#shippingAddress');
-    const postalCodeInput = page.locator('#postalCode');
-
-    // Check if form has any pre-filled values (may vary by implementation)
-    // At minimum, phone should be available to fill
-    await expect(phoneInput).toBeVisible();
-    await expect(fullNameInput).toBeVisible();
-    await expect(addressInput).toBeVisible();
-
-    // Fill in required fields (may need to override)
-    await fullNameInput.fill(testUserData.name);
-    await phoneInput.fill(testUserData.phone);
-    await addressInput.fill(testUserData.shippingAddress || 'تهران');
-    await postalCodeInput.fill(testUserData.postalCode || '1234567890');
+    await fillCheckoutFields(page);
 
     // ============================================================
     // STEP 5: Setup payment mocks and complete payment
@@ -240,10 +252,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await expect(page).toHaveURL('/checkout');
 
     // Fill checkout form
-    await page.locator('#fullName').fill(testUserData.name);
-    await page.locator('#phone').fill(testUserData.phone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
-    await page.locator('#postalCode').fill('1234567890');
+    await fillCheckoutFields(page);
 
     // Complete payment
     await mockZarinpalSuccess(page);
@@ -334,9 +343,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await expect(payButton).toBeVisible();
 
     // Fill required checkout fields
-    await page.locator('#fullName').fill(testUserData.name);
-    await page.locator('#phone').fill(testUserData.phone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await fillCheckoutFields(page);
 
     // Payment should be accessible without OTP
     await expect(payButton).toBeEnabled();

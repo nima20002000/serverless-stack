@@ -509,7 +509,7 @@ test.describe('Product Variant Selection', () => {
 
       // Check for error message or successful add
       const errorMessage = page.getByText(/انتخاب کنید|نوع محصول/i);
-      const successFeedback = page.getByText(/اضافه شد|سبد خرید/i);
+      const successFeedback = page.getByText(/محصول به سبد خرید اضافه شد/i);
 
       const hasError = await errorMessage.isVisible();
       const hasSuccess = await successFeedback.isVisible();

@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { createTestUser } from '../fixtures/users';
-import { createE2ESupabaseClient, createTestUserInDB } from '../utils/database';
+import {
+  createE2ESupabaseClient,
+  createTestUserInDB,
+  getTestProduct,
+} from '../utils/database';
 import { cleanupE2ETestData } from '../fixtures/cleanup';
 import { randomUUID } from 'crypto';
 
@@ -82,7 +86,7 @@ test.describe('Promo Code Journey', () => {
     await supabase.from('users').delete().eq('id', testUserData.id);
   });
 
-  test('should display active promo code on profile page', async ({ page }) => {
+  test('should apply promo code on checkout', async ({ page }) => {
     // Login as test user
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
@@ -95,26 +99,45 @@ test.describe('Promo Code Journey', () => {
     // Wait for successful login (to home page)
     await page.waitForURL('/', { timeout: 20000 });
 
-    // Navigate to profile
-    await page.goto('/profile');
+    const testProduct = await getTestProduct();
 
-    // Wait for promo code to load
+    await page.goto(`/products/${testProduct.id}`);
     await page.waitForLoadState('networkidle');
 
-    // Look for promo code on profile page
-    const promoCodeElement = page.getByText(testPromoCode);
-    await expect(promoCodeElement).toBeVisible({ timeout: 10000 });
+    const addToCartButton = page
+      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .first();
 
-    // Verify promo code section heading
-    const promoHeading = page.getByText(/کد تخفیف ویژه/i);
-    await expect(promoHeading).toBeVisible();
+    if (
+      !(await addToCartButton.isVisible()) ||
+      !(await addToCartButton.isEnabled())
+    ) {
+      test.skip(true, 'No product available for checkout promo test');
+      return;
+    }
 
-    console.log(`Promo code ${testPromoCode} visible on profile page`);
+    await addToCartButton.click();
+    await page.waitForTimeout(500);
+
+    await page.goto('/checkout');
+    await page.waitForLoadState('networkidle');
+
+    const promoInput = page.getByPlaceholder('کد تخفیف');
+    await expect(promoInput).toBeVisible({ timeout: 10000 });
+    await promoInput.fill(testPromoCode);
+
+    await page.getByRole('button', { name: 'اعمال' }).click();
+
+    const appliedPromo = page.locator('code', { hasText: testPromoCode });
+    await expect(appliedPromo).toBeVisible({ timeout: 10000 });
+
+    const discountApplied = page.getByText(/تخفیف اعمال شده/i);
+    await expect(discountApplied).toBeVisible({ timeout: 10000 });
+
+    console.log(`Promo code ${testPromoCode} applied on checkout`);
   });
 
-  test('should show countdown timer for active promo code', async ({
-    page,
-  }) => {
+  test('should return active promo code from API', async ({ page }) => {
     // Login as test user
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
@@ -127,15 +150,12 @@ test.describe('Promo Code Journey', () => {
     // Wait for successful login (to home page)
     await page.waitForURL('/', { timeout: 20000 });
 
-    // Navigate to profile
-    await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    const promoResponse = await page.request.get('/api/promo/active');
+    expect(promoResponse.ok()).toBeTruthy();
 
-    // Look for countdown timer text
-    const timerText = page.getByText(/زمان باقی‌مانده/i);
-    await expect(timerText).toBeVisible({ timeout: 10000 });
-
-    console.log('Promo code countdown timer visible');
+    const payload = await promoResponse.json();
+    expect(payload.promoCode).toBeTruthy();
+    expect(payload.promoCode.code).toBe(testPromoCode);
   });
 
   test('should mark promo code as used in database', async () => {
@@ -156,7 +176,7 @@ test.describe('Promo Code Journey', () => {
     console.log(`Promo code ${testPromoCode} marked as used in database`);
   });
 
-  test('should show used promo code message on profile', async ({ page }) => {
+  test('should return no active promo code after use', async ({ page }) => {
     // Login as test user
     await page.goto('/login');
     await page.waitForLoadState('networkidle');
@@ -169,15 +189,11 @@ test.describe('Promo Code Journey', () => {
     // Wait for successful login (to home page)
     await page.waitForURL('/', { timeout: 20000 });
 
-    // Navigate to profile
-    await page.goto('/profile');
-    await page.waitForLoadState('networkidle');
+    const promoResponse = await page.request.get('/api/promo/active');
+    expect(promoResponse.ok()).toBeTruthy();
 
-    // Look for "used" message
-    const usedMessage = page.getByText(/استفاده کرده‌اید/i);
-    await expect(usedMessage).toBeVisible({ timeout: 10000 });
-
-    console.log('Used promo code message visible on profile');
+    const payload = await promoResponse.json();
+    expect(payload.promoCode).toBeNull();
   });
 });
 
@@ -213,6 +229,11 @@ test.describe('Promo Code Database Validation', () => {
       isVerified: true,
     });
     console.log(`Created promo DB test user: ${dbTestUserData.email}`);
+  });
+
+  test.beforeEach(async () => {
+    const supabase = createE2ESupabaseClient();
+    await supabase.from('promo_codes').delete().eq('userId', dbTestUserData.id);
   });
 
   test.afterAll(async () => {
@@ -308,24 +329,22 @@ test.describe('Promo Code Database Validation', () => {
   test('should correctly link promo code to user', async () => {
     const supabase = createE2ESupabaseClient();
     const userCode = `USER-${Date.now()}`;
+    const promoId = `e2e-promo-${randomUUID()}`;
 
     // Insert promo code linked to test user
-    await supabase.from('promo_codes').insert({
-      id: `e2e-promo-${randomUUID()}`,
-      code: userCode,
-      userId: testUserId,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      isUsed: false,
-    });
-
-    // Query promo codes for this user
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('promo_codes')
-      .select('*')
-      .eq('userId', testUserId)
-      .eq('code', userCode)
+      .insert({
+        id: promoId,
+        code: userCode,
+        userId: testUserId,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        isUsed: false,
+      })
+      .select('id,userId,code')
       .single();
 
+    expect(error).toBeNull();
     expect(data).toBeTruthy();
     expect(data!.userId).toBe(testUserId);
     console.log(`Promo code correctly linked to user ${testUserId}`);
