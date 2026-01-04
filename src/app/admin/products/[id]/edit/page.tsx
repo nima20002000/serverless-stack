@@ -17,6 +17,7 @@ import type {
   MediaItem,
   Variant,
 } from '@/types/product-admin';
+import { toast } from '@/store/toast-store';
 
 interface EditProductPageProps {
   params: { id: string };
@@ -598,6 +599,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const errorMsg =
         error instanceof Error ? error.message : 'خطا در ذخیره محصول';
       setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSaving(false);
     }

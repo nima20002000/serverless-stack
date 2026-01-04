@@ -12,6 +12,7 @@ import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
 import type { ProductFormData, Tag } from '@/types/product-admin';
+import { toast } from '@/store/toast-store';
 
 async function readJsonResponse<T>(
   response: Response,
@@ -240,6 +241,7 @@ export default function NewProductPage() {
       const errorMsg =
         error instanceof Error ? error.message : 'خطا در ایجاد محصول';
       setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
