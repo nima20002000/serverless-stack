@@ -136,6 +136,42 @@ jobs:
             echo "Deployment successful!"
             pm2 status
 
-      - name: Notify on failure
+      - name: Notify on success (email)
+        if: success()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TO_EMAIL: "nimarezapoor@gmail.com"
+          FROM_EMAIL: "Kitia <noreply@kitia.ir>"
+          COMMIT_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          curl -sS -X POST "https://api.resend.com/emails" \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "'"${FROM_EMAIL}"'",
+              "to": ["'"${TO_EMAIL}"'"],
+              "subject": "VPS Deploy Success - '"${REPO}"' @ '"${COMMIT_SHA}"'",
+              "html": "<p>Deployment succeeded.</p><p><strong>Repo:</strong> '"${REPO}"'</p><p><strong>Commit:</strong> '"${COMMIT_SHA}"'</p><p><strong>Run:</strong> https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'</p>"
+            }'
+
+      - name: Notify on failure (email)
         if: failure()
-        run: echo "Deployment failed! Check logs above."
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TO_EMAIL: "nimarezapoor@gmail.com"
+          FROM_EMAIL: "Kitia <noreply@kitia.ir>"
+          COMMIT_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          curl -sS -X POST "https://api.resend.com/emails" \
+            -H "Authorization: Bearer ${RESEND_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "'"${FROM_EMAIL}"'",
+              "to": ["'"${TO_EMAIL}"'"],
+              "subject": "VPS Deploy Failed - '"${REPO}"' @ '"${COMMIT_SHA}"'",
+              "html": "<p><strong>Deployment failed.</strong></p><p><strong>Repo:</strong> '"${REPO}"'</p><p><strong>Commit:</strong> '"${COMMIT_SHA}"'</p><p><strong>Run:</strong> https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'</p>"
+            }'
