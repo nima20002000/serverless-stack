@@ -150,42 +150,42 @@ export default function NewProductPage() {
         throw new Error('شناسه محصول دریافت نشد');
       }
 
-      // Step 2: Create variants first (need their IDs for variant media)
-      const variantIdMapping: Record<string, string> = {}; // tempId -> realId
+      // Step 2: Create variants in batch (single API call instead of N+1 requests)
+      let variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
       if (variantManager.variants.length > 0) {
-        for (const variant of variantManager.variants) {
-          const variantResponse = await fetch(
-            `/api/products/${productId}/variants`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: variant.name,
-                sku: variant.sku || undefined,
-                color: variant.color || undefined,
-                size: variant.size || undefined,
-                material: variant.material || undefined,
-                priceAdjust: parseFloat(variant.priceAdjust),
-                stock: parseInt(variant.stock),
-                order: variant.order,
-                isActive: variant.isActive,
-              }),
-            }
-          );
+        const variantsToCreate = variantManager.variants.map((variant) => ({
+          tempId: variant.id,
+          name: variant.name,
+          sku: variant.sku || undefined,
+          color: variant.color || undefined,
+          size: variant.size || undefined,
+          material: variant.material || undefined,
+          priceAdjust: parseFloat(variant.priceAdjust),
+          stock: parseInt(variant.stock),
+          order: variant.order,
+          isActive: variant.isActive,
+        }));
 
-          const variantData = await readJsonResponse<{
-            error?: string;
-            variant?: { id?: string };
-          }>(variantResponse, 'خطا در ایجاد واریانت');
-          if (!variantResponse.ok) {
-            throw new Error(variantData.error || 'خطا در ایجاد واریانت');
+        const variantResponse = await fetch(
+          `/api/products/${productId}/variants`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ variants: variantsToCreate }),
           }
-          const variantId = variantData.variant?.id;
-          if (variantId) {
-            variantIdMapping[variant.id] = variantId;
-          }
+        );
+
+        const variantData = await readJsonResponse<{
+          error?: string;
+          idMapping?: Record<string, string>;
+        }>(variantResponse, 'خطا در ایجاد واریانت‌ها');
+
+        if (!variantResponse.ok) {
+          throw new Error(variantData.error || 'خطا در ایجاد واریانت‌ها');
         }
+
+        variantIdMapping = variantData.idMapping || {};
       }
 
       // Step 3: Batch add all media (product-level + variant) in a single request

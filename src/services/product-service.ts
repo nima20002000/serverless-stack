@@ -317,20 +317,50 @@ export async function getAllProducts(options?: {
     };
   }
 
-  // Fetch relations for all products in parallel (OPTIMIZATION)
-  const productsWithRelations: ProductWithRelations[] = [];
-  if (products && products.length > 0) {
-    const fetchPromises = products.map((product) =>
-      fetchProductWithRelations(product.id)
-    );
-    const results = await Promise.all(fetchPromises);
-
-    for (const fullProduct of results) {
-      if (fullProduct) {
-        productsWithRelations.push(fullProduct);
-      }
-    }
+  // OPTIMIZED: Batch fetch all relations in 5-6 queries instead of N*5 queries
+  // This eliminates the N+1 query problem for admin product listing
+  if (!products || products.length === 0) {
+    return {
+      data: [],
+      total: count || 0,
+      page,
+      perPage,
+      totalPages: Math.ceil((count || 0) / perPage),
+    };
   }
+
+  // Include inactive variants for admin views (includeInactive option)
+  const includeInactiveVariants = options?.includeInactive ?? false;
+  const { categoriesMap, tagsMap, mediaMap, variantsMap } =
+    await batchFetchProductRelations(products, includeInactiveVariants);
+
+  // Combine products with their relations
+  const productsWithRelations: ProductWithRelations[] = products.map(
+    (product) => {
+      const variants = variantsMap.get(product.id) || [];
+
+      // Calculate actual stock from variants if product has variants
+      let actualStock = product.stock;
+      if (product.hasVariants && variants.length > 0) {
+        actualStock = variants.reduce((sum, variant) => sum + variant.stock, 0);
+      }
+
+      // Get category from map
+      let category: Category | null = null;
+      if (product.categoryId) {
+        category = categoriesMap.get(product.categoryId) || null;
+      }
+
+      return {
+        ...product,
+        stock: actualStock,
+        category,
+        tags: tagsMap.get(product.id) || [],
+        media: mediaMap.get(product.id) || [],
+        variants,
+      };
+    }
+  );
 
   return {
     data: populateProductsImages(productsWithRelations),
@@ -354,9 +384,14 @@ export type ProductSortOption =
 
 /**
  * Batch fetch all relations for multiple products (OPTIMIZED - eliminates N+1 queries)
- * This function fetches all relations in just 4 queries instead of N*5 queries
+ * This function fetches all relations in just 5-6 queries instead of N*5 queries
+ * @param products - Array of products to fetch relations for
+ * @param includeInactiveVariants - Whether to include inactive variants (for admin views)
  */
-async function batchFetchProductRelations(products: Product[]): Promise<{
+async function batchFetchProductRelations(
+  products: Product[],
+  includeInactiveVariants = false
+): Promise<{
   categoriesMap: Map<string, Category>;
   tagsMap: Map<string, Tag[]>;
   mediaMap: Map<string, ProductMedia[]>;
@@ -452,14 +487,20 @@ async function batchFetchProductRelations(products: Product[]): Promise<{
   }
 
   // Query 4 & 5: Get all variants + their media (2 queries total)
-  // Only fetch active variants for public access
+  // Filter by isActive unless includeInactiveVariants is true (for admin views)
   const variantsMap = new Map<string, VariantWithMedia[]>();
-  const { data: allVariants } = await supabase
+  let variantsQuery = supabase
     .from('product_variants')
     .select('*')
-    .in('productId', productIds)
-    .eq('isActive', true)
-    .order('order', { ascending: true });
+    .in('productId', productIds);
+
+  if (!includeInactiveVariants) {
+    variantsQuery = variantsQuery.eq('isActive', true);
+  }
+
+  const { data: allVariants } = await variantsQuery.order('order', {
+    ascending: true,
+  });
 
   if (allVariants && allVariants.length > 0) {
     const variantIds = allVariants.map((v) => v.id);
