@@ -157,8 +157,10 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
           onUpdateAvailable(versionData);
         }
 
-        // Force reload to get fresh content
-        window.location.reload();
+        // Force a cache-bypassing reload by changing the URL
+        const reloadUrl = new URL(window.location.href);
+        reloadUrl.searchParams.set('v', newVersion);
+        window.location.replace(reloadUrl.toString());
       }
     } catch {
       // Silently fail - version check may fail due to network issues
