@@ -6,7 +6,6 @@ import {
   createTransaction,
   verifyStockAvailability,
 } from '@/services/transaction-service';
-import { getProductById } from '@/services/product-service';
 import { updateUserShippingInfo } from '@/services/user-service';
 import { validatePromoCode } from '@/services/promo-service';
 import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
@@ -218,8 +217,69 @@ async function postHandler(req: NextRequest) {
       })),
     });
 
+    // BATCH: Fetch all products in one query to avoid N+1
+    const supabaseBatch = createClient();
+    const productIds = [...new Set(items.map((i) => i.productId))];
+    const { data: products, error: productsError } = await supabaseBatch
+      .from('products')
+      .select('id, name, price, discountPercent, isActive, hasVariants')
+      .in('id', productIds);
+
+    if (productsError || !products) {
+      log.error('Failed to fetch products for transaction', {
+        error: productsError,
+      });
+      return NextResponse.json(
+        { error: 'خطا در دریافت اطلاعات محصولات' },
+        { status: 500 }
+      );
+    }
+
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    // BATCH: Fetch all variants in one query if any items have variants
+    const variantIds = items
+      .filter((i) => i.variantId)
+      .map((i) => i.variantId as string);
+    const variantMap = new Map<
+      string,
+      { priceAdjust: number; isActive: boolean; productId: string }
+    >();
+
+    if (variantIds.length > 0) {
+      const { data: variants, error: variantsError } = await supabaseBatch
+        .from('product_variants')
+        .select('id, priceAdjust, isActive, productId')
+        .in('id', variantIds);
+
+      if (variantsError) {
+        log.error('Failed to fetch variants for transaction', {
+          error: variantsError,
+        });
+        return NextResponse.json(
+          { error: 'خطا در دریافت اطلاعات واریانت‌ها' },
+          { status: 500 }
+        );
+      }
+
+      if (variants) {
+        for (const v of variants) {
+          variantMap.set(v.id, {
+            priceAdjust: v.priceAdjust,
+            isActive: v.isActive,
+            productId: v.productId,
+          });
+        }
+      }
+    }
+
+    // Now process items using the pre-fetched data
     for (const item of items) {
-      const product = await getProductById(item.productId);
+      const product = productMap.get(item.productId);
+
+      if (!product) {
+        return NextResponse.json({ error: 'محصول یافت نشد' }, { status: 400 });
+      }
 
       log.debug('Product fetched for transaction', {
         productId: product.id,
@@ -246,18 +306,12 @@ async function postHandler(req: NextRequest) {
 
       // If variant is specified, add variant's price adjustment
       if (item.variantId) {
-        const supabaseVariant = createClient();
-        const { data: variant, error: variantError } = await supabaseVariant
-          .from('product_variants')
-          .select('priceAdjust, isActive, productId')
-          .eq('id', item.variantId)
-          .single();
+        const variant = variantMap.get(item.variantId);
 
-        if (variantError || !variant) {
-          log.error('Variant not found or error fetching variant', {
+        if (!variant) {
+          log.error('Variant not found', {
             variantId: item.variantId,
             productId: product.id,
-            error: variantError,
           });
           return NextResponse.json(
             { error: `واریانت محصول ${product.name} یافت نشد` },

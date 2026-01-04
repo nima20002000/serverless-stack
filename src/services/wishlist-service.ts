@@ -73,6 +73,73 @@ async function getProductImages(productId: string): Promise<string[]> {
   return product?.images || [];
 }
 
+/**
+ * Batch fetch images for multiple products to avoid N+1 queries
+ * Returns a map of productId -> images array
+ */
+async function getBatchProductImages(
+  productIds: string[]
+): Promise<Map<string, string[]>> {
+  if (productIds.length === 0) {
+    return new Map();
+  }
+
+  const supabase = createClient();
+  const productImagesMap = new Map<string, string[]>();
+
+  // Batch fetch all product_media for these products
+  const { data: allMedia } = await supabase
+    .from('product_media')
+    .select('productId, url, isDefault, order')
+    .in('productId', productIds)
+    .is('variantId', null)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  // Group media by productId, taking up to 3 images per product
+  if (allMedia) {
+    const mediaByProduct = new Map<
+      string,
+      Array<{ url: string; isDefault: boolean | null; order: number }>
+    >();
+    for (const m of allMedia) {
+      if (!mediaByProduct.has(m.productId)) {
+        mediaByProduct.set(m.productId, []);
+      }
+      const arr = mediaByProduct.get(m.productId);
+      if (arr && arr.length < 3) {
+        arr.push({ url: m.url, isDefault: m.isDefault, order: m.order });
+      }
+    }
+
+    for (const [productId, mediaArr] of mediaByProduct) {
+      productImagesMap.set(
+        productId,
+        mediaArr.map((m) => m.url)
+      );
+    }
+  }
+
+  // For products without media, fetch their images array
+  const productsWithoutMedia = productIds.filter(
+    (id) => !productImagesMap.has(id)
+  );
+  if (productsWithoutMedia.length > 0) {
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, images')
+      .in('id', productsWithoutMedia);
+
+    if (products) {
+      for (const product of products) {
+        productImagesMap.set(product.id, product.images || []);
+      }
+    }
+  }
+
+  return productImagesMap;
+}
+
 // ========== WISHLIST QUERIES ==========
 
 /**
@@ -146,16 +213,11 @@ export async function getUserWishlist(
       }
     }
 
-    // Get product images for all products
+    // Get product images for all products in a single batch query
     const productIds = [
       ...new Set(wishlistItems.map((item) => item.product_id)),
     ];
-    const productImagesMap = new Map<string, string[]>();
-
-    for (const productId of productIds) {
-      const images = await getProductImages(productId);
-      productImagesMap.set(productId, images);
-    }
+    const productImagesMap = await getBatchProductImages(productIds);
 
     // Transform to WishlistItem format
     const items: WishlistItem[] = wishlistItems
@@ -664,6 +726,7 @@ export async function clearWishlist(
  * Merge local (guest) wishlist items with server wishlist
  * Called when a guest user logs in to transfer their local wishlist
  * Only adds items that don't already exist in server wishlist
+ * Uses batch queries to avoid N+1 patterns
  */
 export async function mergeWishlist(
   userId: string,
@@ -701,63 +764,116 @@ export async function mergeWishlist(
       }
     }
 
-    // Process each local item
-    for (const localItem of localItems) {
+    // Filter out items that already exist
+    const newItems = localItems.filter((localItem) => {
       const itemKey = localItem.variantId
         ? `${localItem.productId}:${localItem.variantId}`
         : localItem.productId;
+      return !existingSet.has(itemKey);
+    });
 
-      // Skip if already exists
-      if (existingSet.has(itemKey)) {
+    // Count skipped due to existing
+    const skippedDueToExisting = localItems.length - newItems.length;
+
+    if (newItems.length === 0) {
+      return { added: 0, skipped: skippedDueToExisting };
+    }
+
+    // BATCH: Fetch all products in one query
+    const productIds = [...new Set(newItems.map((item) => item.productId))];
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, isActive')
+      .in('id', productIds);
+
+    const activeProductIds = new Set(
+      (products || []).filter((p) => p.isActive).map((p) => p.id)
+    );
+
+    // BATCH: Fetch all variants in one query
+    const variantIds = newItems
+      .filter((item) => item.variantId)
+      .map((item) => item.variantId as string);
+
+    const activeVariantMap = new Map<string, string>(); // variantId -> productId
+    if (variantIds.length > 0) {
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('id, productId, isActive')
+        .in('id', variantIds);
+
+      if (variants) {
+        for (const v of variants) {
+          if (v.isActive) {
+            activeVariantMap.set(v.id, v.productId);
+          }
+        }
+      }
+    }
+
+    // Collect valid items for batch insert
+    const validItems: Array<{
+      user_id: string;
+      product_id: string;
+      variant_id: string | null;
+    }> = [];
+
+    for (const localItem of newItems) {
+      // Check if product is active
+      if (!activeProductIds.has(localItem.productId)) {
         skipped++;
         continue;
       }
 
-      // Validate product exists and is active
-      const { data: product } = await supabase
-        .from('products')
-        .select('id, isActive')
-        .eq('id', localItem.productId)
-        .single();
-
-      if (!product || !product.isActive) {
-        skipped++;
-        continue;
-      }
-
-      // Validate variant if provided
+      // Check variant if provided
       if (localItem.variantId) {
-        const { data: variant } = await supabase
-          .from('product_variants')
-          .select('id, isActive')
-          .eq('id', localItem.variantId)
-          .eq('productId', localItem.productId)
-          .single();
-
-        if (!variant || !variant.isActive) {
+        const variantProductId = activeVariantMap.get(localItem.variantId);
+        // Variant must exist, be active, and belong to the correct product
+        if (variantProductId !== localItem.productId) {
           skipped++;
           continue;
         }
       }
 
-      // Insert the item
-      const { error: insertError } = await supabase.from('wishlists').insert({
+      validItems.push({
         user_id: userId,
         product_id: localItem.productId,
         variant_id: localItem.variantId || null,
       });
+    }
+
+    // BATCH: Insert all valid items at once
+    if (validItems.length > 0) {
+      const { error: insertError, data: insertedData } = await supabase
+        .from('wishlists')
+        .insert(validItems)
+        .select('id');
 
       if (insertError) {
-        log.warn('Failed to merge wishlist item', {
+        log.warn('Failed to batch insert wishlist items', {
           userId,
-          productId: localItem.productId,
           error: insertError.message,
+          attemptedCount: validItems.length,
         });
-        skipped++;
+        // Fall back to individual inserts for better error handling
+        for (const item of validItems) {
+          const { error: singleError } = await supabase
+            .from('wishlists')
+            .insert(item);
+
+          if (singleError) {
+            skipped++;
+          } else {
+            added++;
+          }
+        }
       } else {
-        added++;
+        added = insertedData?.length || validItems.length;
       }
     }
+
+    // Add skipped due to existing to total
+    skipped += skippedDueToExisting;
 
     log.info('Wishlist merge completed', { userId, added, skipped });
     return { added, skipped };
