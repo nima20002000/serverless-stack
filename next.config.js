@@ -2,7 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    instrumentationHook: true,
     serverActions: {
       enabled: true,
       bodySizeLimit: '60mb', // Allow larger uploads for video files
