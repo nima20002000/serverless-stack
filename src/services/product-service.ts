@@ -1751,20 +1751,28 @@ export async function batchSyncProductMedia(
   }
 
   // Step 3: Update existing media
-  // For updates, we need to handle isDefault specially per variant group
+  // OPTIMIZED: Batch fetch variantIds for all updates in one query, then process
   if (operations.update.length > 0) {
+    const updateIds = operations.update.map((u) => u.id);
+
+    // Fetch all media variantIds in a single query
+    const { data: mediaVariantInfo } = await supabase
+      .from('product_media')
+      .select('id, variantId')
+      .in('id', updateIds);
+
+    // Create a map of id -> variantId
+    const variantIdByMediaId = new Map<string, string | null>();
+    if (mediaVariantInfo) {
+      for (const m of mediaVariantInfo) {
+        variantIdByMediaId.set(m.id, m.variantId);
+      }
+    }
+
     // Group updates by variantId to handle isDefault correctly
     const updatesByVariant = new Map<string | null, typeof operations.update>();
-
     for (const update of operations.update) {
-      // First, fetch the media to get its variantId
-      const { data: media } = await supabase
-        .from('product_media')
-        .select('variantId')
-        .eq('id', update.id)
-        .single();
-
-      const variantId = media?.variantId || null;
+      const variantId = variantIdByMediaId.get(update.id) ?? null;
       if (!updatesByVariant.has(variantId)) {
         updatesByVariant.set(variantId, []);
       }
@@ -1774,7 +1782,9 @@ export async function batchSyncProductMedia(
       }
     }
 
-    // Process each variant group
+    // Process each variant group - use Promise.all for parallel execution
+    const updatePromises: Promise<void>[] = [];
+
     for (const [variantId, updates] of updatesByVariant) {
       // Find if any update sets isDefault to true
       const newDefault = updates.find((u) => u.isDefault === true);
@@ -1792,10 +1802,10 @@ export async function batchSyncProductMedia(
           clearQuery = clearQuery.is('variantId', null);
         }
 
-        await clearQuery;
+        updatePromises.push(Promise.resolve(clearQuery).then(() => {}));
       }
 
-      // Apply all updates
+      // Apply all updates in parallel
       for (const update of updates) {
         const updateData: Record<string, unknown> = {};
         if (update.isDefault !== undefined)
@@ -1804,14 +1814,22 @@ export async function batchSyncProductMedia(
         if (update.order !== undefined) updateData.order = update.order;
 
         if (Object.keys(updateData).length > 0) {
-          await supabase
-            .from('product_media')
-            .update(updateData)
-            .eq('id', update.id);
-          updated++;
+          updatePromises.push(
+            Promise.resolve(
+              supabase
+                .from('product_media')
+                .update(updateData)
+                .eq('id', update.id)
+            ).then(() => {
+              updated++;
+            })
+          );
         }
       }
     }
+
+    // Wait for all updates to complete
+    await Promise.all(updatePromises);
   }
 
   log.info('Batch sync completed', { productId, deleted, added, updated });
@@ -1889,6 +1907,7 @@ export async function updateProductStockFromVariants(
 
 /**
  * Get all variants for a product (ordered by 'order' field)
+ * OPTIMIZED: Uses a single batch query to fetch all variant media instead of N+1 queries
  */
 export async function getProductVariants(
   productId: string
@@ -1906,21 +1925,40 @@ export async function getProductVariants(
     throw new Error('خطا در دریافت واریانت‌ها');
   }
 
-  // Fetch media for each variant
-  const variantsWithMedia: VariantWithMedia[] = [];
-  for (const variant of variants || []) {
-    const { data: media } = await supabase
-      .from('product_media')
-      .select('*')
-      .eq('variantId', variant.id)
-      .order('isDefault', { ascending: false })
-      .order('order', { ascending: true });
-
-    variantsWithMedia.push({
-      ...variant,
-      media: media || [],
-    });
+  if (!variants || variants.length === 0) {
+    return [];
   }
+
+  // OPTIMIZATION: Fetch all variant media in a single query instead of N+1 queries
+  const variantIds = variants.map((v) => v.id);
+  const { data: allVariantMedia } = await supabase
+    .from('product_media')
+    .select('*')
+    .in('variantId', variantIds)
+    .order('isDefault', { ascending: false })
+    .order('order', { ascending: true });
+
+  // Group media by variantId
+  const mediaByVariantId = new Map<string, ProductMedia[]>();
+  if (allVariantMedia) {
+    for (const media of allVariantMedia) {
+      if (media.variantId) {
+        if (!mediaByVariantId.has(media.variantId)) {
+          mediaByVariantId.set(media.variantId, []);
+        }
+        const variantMediaArray = mediaByVariantId.get(media.variantId);
+        if (variantMediaArray) {
+          variantMediaArray.push(media);
+        }
+      }
+    }
+  }
+
+  // Build variants with their media
+  const variantsWithMedia: VariantWithMedia[] = variants.map((variant) => ({
+    ...variant,
+    media: mediaByVariantId.get(variant.id) || [],
+  }));
 
   return variantsWithMedia;
 }
