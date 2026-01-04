@@ -119,9 +119,11 @@ async function fetchProductWithRelations(
   productId: string,
   includeInactiveVariants = false
 ): Promise<ProductWithRelations | null> {
+  const startTime = Date.now();
   const supabase = createClient();
 
   // Get product with category
+  const productQueryStart = Date.now();
   const { data: product, error } = await supabase
     .from('products')
     .select(
@@ -132,29 +134,53 @@ async function fetchProductWithRelations(
     )
     .eq('id', productId)
     .single();
+  log.info('fetchProductWithRelations: product query', {
+    productId,
+    durationMs: Date.now() - productQueryStart,
+    hasProduct: !!product,
+    error: error?.message,
+  });
 
   if (error || !product) {
+    log.warn('fetchProductWithRelations: product not found', {
+      productId,
+      durationMs: Date.now() - startTime,
+      error: error?.message,
+    });
     return null;
   }
 
   // Get tags via junction table
+  const productTagsQueryStart = Date.now();
   const { data: productToTags } = await supabase
     .from('_ProductToTag')
     .select('B')
     .eq('A', productId);
+  log.info('fetchProductWithRelations: product tags query', {
+    productId,
+    durationMs: Date.now() - productTagsQueryStart,
+    count: productToTags?.length ?? 0,
+  });
 
   const tagIds = productToTags?.map((pt) => pt.B) || [];
   let tags: Tag[] = [];
 
   if (tagIds.length > 0) {
+    const tagsQueryStart = Date.now();
     const { data: tagsData } = await supabase
       .from('tags')
       .select('*')
       .in('id', tagIds);
+    log.info('fetchProductWithRelations: tags query', {
+      productId,
+      durationMs: Date.now() - tagsQueryStart,
+      count: tagsData?.length ?? 0,
+    });
     tags = tagsData || [];
   }
 
   // Get product media (excluding variant-specific media)
+  const productMediaQueryStart = Date.now();
   const { data: media } = await supabase
     .from('product_media')
     .select('*')
@@ -162,6 +188,11 @@ async function fetchProductWithRelations(
     .is('variantId', null)
     .order('isDefault', { ascending: false })
     .order('order', { ascending: true });
+  log.info('fetchProductWithRelations: product media query', {
+    productId,
+    durationMs: Date.now() - productMediaQueryStart,
+    count: media?.length ?? 0,
+  });
 
   // Get variants with their media
   // Filter by isActive unless includeInactiveVariants is true (admin access)
@@ -174,13 +205,21 @@ async function fetchProductWithRelations(
     variantsQuery = variantsQuery.eq('isActive', true);
   }
 
+  const variantsQueryStart = Date.now();
   const { data: variants } = await variantsQuery.order('order', {
     ascending: true,
+  });
+  log.info('fetchProductWithRelations: variants query', {
+    productId,
+    durationMs: Date.now() - variantsQueryStart,
+    count: variants?.length ?? 0,
+    includeInactiveVariants,
   });
 
   // Fetch media for all variants in a single query (OPTIMIZATION)
   const variantsWithMedia: VariantWithMedia[] = [];
   if (variants && variants.length > 0) {
+    const variantMediaQueryStart = Date.now();
     const variantIds = variants.map((v) => v.id);
     const { data: allVariantMedia } = await supabase
       .from('product_media')
@@ -188,6 +227,11 @@ async function fetchProductWithRelations(
       .in('variantId', variantIds)
       .order('isDefault', { ascending: false })
       .order('order', { ascending: true });
+    log.info('fetchProductWithRelations: variant media query', {
+      productId,
+      durationMs: Date.now() - variantMediaQueryStart,
+      count: allVariantMedia?.length ?? 0,
+    });
 
     // Group media by variantId
     const mediaByVariantId = new Map<string, ProductMedia[]>();
