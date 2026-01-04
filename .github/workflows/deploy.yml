@@ -141,37 +141,69 @@ jobs:
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TO_EMAIL: "nimarezapoor@gmail.com"
-          FROM_EMAIL: "Kitia <noreply@kitia.ir>"
+          FROM_EMAIL: "Kitia Deploys <deploy@kitia.ir>"
           COMMIT_SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          curl -sS -X POST "https://api.resend.com/emails" \
+          # Escape commit message for JSON
+          ESCAPED_MSG=$(echo "$COMMIT_MSG" | head -1 | sed 's/"/\\"/g' | tr -d '\n')
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "https://api.resend.com/emails" \
             -H "Authorization: Bearer ${RESEND_API_KEY}" \
             -H "Content-Type: application/json" \
             -d '{
               "from": "'"${FROM_EMAIL}"'",
               "to": ["'"${TO_EMAIL}"'"],
-              "subject": "VPS Deploy Success - '"${REPO}"' @ '"${COMMIT_SHA}"'",
-              "html": "<p>Deployment succeeded.</p><p><strong>Repo:</strong> '"${REPO}"'</p><p><strong>Commit:</strong> '"${COMMIT_SHA}"'</p><p><strong>Run:</strong> https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'</p>"
-            }'
+              "reply_to": "nimarezapoor@gmail.com",
+              "subject": "✅ Kitia deployed: '"${ESCAPED_MSG}"'",
+              "html": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px;\"><h2 style=\"color: #22c55e;\">✅ Deployment Successful</h2><table style=\"border-collapse: collapse;\"><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">Commit:</td><td style=\"padding: 8px 0;\"><code>'"${SHORT_SHA}"'</code> - '"${ESCAPED_MSG}"'</td></tr><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">Repository:</td><td style=\"padding: 8px 0;\">'"${REPO}"'</td></tr><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">View Run:</td><td style=\"padding: 8px 0;\"><a href=\"https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'\">GitHub Actions</a></td></tr></table><p style=\"margin-top: 20px; color: #666; font-size: 12px;\">This is an automated message from Kitia CI/CD.</p></body></html>"
+            }')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "Response: $BODY"
+          echo "HTTP Code: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::warning::Email notification may have failed with HTTP $HTTP_CODE"
+          fi
 
       - name: Notify on failure (email)
         if: failure()
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           TO_EMAIL: "nimarezapoor@gmail.com"
-          FROM_EMAIL: "Kitia <noreply@kitia.ir>"
+          FROM_EMAIL: "Kitia Deploys <deploy@kitia.ir>"
           COMMIT_SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
-          curl -sS -X POST "https://api.resend.com/emails" \
+          # Escape commit message for JSON
+          ESCAPED_MSG=$(echo "$COMMIT_MSG" | head -1 | sed 's/"/\\"/g' | tr -d '\n')
+          SHORT_SHA="${COMMIT_SHA:0:7}"
+
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "https://api.resend.com/emails" \
             -H "Authorization: Bearer ${RESEND_API_KEY}" \
             -H "Content-Type: application/json" \
             -d '{
               "from": "'"${FROM_EMAIL}"'",
               "to": ["'"${TO_EMAIL}"'"],
-              "subject": "VPS Deploy Failed - '"${REPO}"' @ '"${COMMIT_SHA}"'",
-              "html": "<p><strong>Deployment failed.</strong></p><p><strong>Repo:</strong> '"${REPO}"'</p><p><strong>Commit:</strong> '"${COMMIT_SHA}"'</p><p><strong>Run:</strong> https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'</p>"
-            }'
+              "reply_to": "nimarezapoor@gmail.com",
+              "subject": "❌ Kitia deploy FAILED: '"${ESCAPED_MSG}"'",
+              "html": "<!DOCTYPE html><html><head><meta charset=\"utf-8\"></head><body style=\"font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px;\"><h2 style=\"color: #ef4444;\">❌ Deployment Failed</h2><table style=\"border-collapse: collapse;\"><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">Commit:</td><td style=\"padding: 8px 0;\"><code>'"${SHORT_SHA}"'</code> - '"${ESCAPED_MSG}"'</td></tr><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">Repository:</td><td style=\"padding: 8px 0;\">'"${REPO}"'</td></tr><tr><td style=\"padding: 8px 16px 8px 0; color: #666;\">View Run:</td><td style=\"padding: 8px 0;\"><a href=\"https://github.com/'"${REPO}"'/actions/runs/'"${RUN_ID}"'\">GitHub Actions</a></td></tr></table><p style=\"margin-top: 20px; color: #666; font-size: 12px;\">This is an automated message from Kitia CI/CD.</p></body></html>"
+            }')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "Response: $BODY"
+          echo "HTTP Code: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::warning::Email notification may have failed with HTTP $HTTP_CODE"
+          fi
