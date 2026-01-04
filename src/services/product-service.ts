@@ -2117,6 +2117,89 @@ export async function batchCreateProductVariants(
 }
 
 /**
+ * Batch update multiple product variants in a single operation
+ * OPTIMIZED: Updates all variants in parallel and recalculates stock only once at the end
+ * @param productId - Product ID (for stock recalculation)
+ * @param variants - Array of variant updates with id and data
+ */
+export async function batchUpdateProductVariants(
+  productId: string,
+  variants: Array<{
+    id: string;
+    name: string;
+    sku?: string;
+    color?: string;
+    size?: string;
+    material?: string;
+    priceAdjust?: number;
+    stock: number;
+    isActive?: boolean;
+  }>
+): Promise<{ updated: number }> {
+  if (variants.length === 0) {
+    return { updated: 0 };
+  }
+
+  log.info('Batch updating product variants', {
+    productId,
+    count: variants.length,
+  });
+
+  const supabase = createClient();
+
+  // Validate all SKUs for uniqueness (batch check)
+  const skusToCheck = variants.filter((v) => v.sku).map((v) => v.sku as string);
+  if (skusToCheck.length > 0) {
+    const { data: existingSkus } = await supabase
+      .from('product_variants')
+      .select('id, sku')
+      .in('sku', skusToCheck);
+
+    if (existingSkus) {
+      // Check if any existing SKU belongs to a different variant
+      for (const existing of existingSkus) {
+        const matchingVariant = variants.find((v) => v.sku === existing.sku);
+        if (matchingVariant && matchingVariant.id !== existing.id) {
+          throw new Error(`SKU "${existing.sku}" قبلاً ثبت شده است`);
+        }
+      }
+    }
+  }
+
+  const updatedAt = new Date().toISOString();
+
+  // Update all variants in parallel, skipping individual stock updates
+  await Promise.all(
+    variants.map((variant) =>
+      supabase
+        .from('product_variants')
+        .update({
+          name: variant.name,
+          sku: variant.sku || null,
+          color: variant.color || null,
+          size: variant.size || null,
+          material: variant.material || null,
+          priceAdjust: variant.priceAdjust || 0,
+          stock: variant.stock,
+          isActive: variant.isActive !== undefined ? variant.isActive : true,
+          updatedAt,
+        })
+        .eq('id', variant.id)
+    )
+  );
+
+  // Recalculate stock only once at the end
+  await updateProductStockFromVariants(productId);
+
+  log.info('Product variants batch updated successfully', {
+    productId,
+    count: variants.length,
+  });
+
+  return { updated: variants.length };
+}
+
+/**
  * Create product variant with auto-assigned order
  */
 export async function createProductVariant(data: {
@@ -2209,6 +2292,11 @@ export async function createProductVariant(data: {
 
 /**
  * Update product variant
+ * @param id - Variant ID
+ * @param data - Variant data to update
+ * @param options - Optional settings for batch operations
+ * @param options.skipStockUpdate - Skip stock recalculation (useful for batch updates where stock is recalculated once at the end)
+ * @param options.skipMediaFetch - Skip fetching variant media (useful when caller doesn't need media in response)
  */
 export async function updateProductVariant(
   id: string,
@@ -2221,7 +2309,11 @@ export async function updateProductVariant(
     priceAdjust: number;
     stock: number;
     isActive: boolean;
-  }>
+  }>,
+  options?: {
+    skipStockUpdate?: boolean;
+    skipMediaFetch?: boolean;
+  }
 ): Promise<VariantWithMedia> {
   log.info('Updating product variant', { variantId: id, data });
 
@@ -2266,8 +2358,8 @@ export async function updateProductVariant(
     throw new Error('خطا در بروزرسانی واریانت');
   }
 
-  // Update parent product stock if variant stock was changed
-  if (data.stock !== undefined) {
+  // Update parent product stock if variant stock was changed (unless skipped for batch ops)
+  if (data.stock !== undefined && !options?.skipStockUpdate) {
     await updateProductStockFromVariants(existingVariant.productId);
   }
 
@@ -2275,6 +2367,14 @@ export async function updateProductVariant(
     variantId: id,
     productId: existingVariant.productId,
   });
+
+  // Skip media fetch for batch operations where caller doesn't need the response
+  if (options?.skipMediaFetch) {
+    return {
+      ...variant,
+      media: [],
+    };
+  }
 
   // Fetch media for the variant
   const { data: media } = await supabase
@@ -2292,6 +2392,7 @@ export async function updateProductVariant(
 
 /**
  * Delete product variant
+ * OPTIMIZED: Uses parallel updates instead of sequential loop for renumbering
  */
 export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   log.info('Deleting product variant', { variantId: id });
@@ -2321,6 +2422,7 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
   }
 
   // Renumber remaining variants to fill the gap
+  // OPTIMIZED: Use parallel updates instead of sequential loop
   const { data: remainingVariants } = await supabase
     .from('product_variants')
     .select('id, order')
@@ -2328,15 +2430,18 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
     .gt('order', existingVariant.order);
 
   if (remainingVariants && remainingVariants.length > 0) {
-    for (const variant of remainingVariants) {
-      await supabase
-        .from('product_variants')
-        .update({
-          order: variant.order - 1,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq('id', variant.id);
-    }
+    const updatedAt = new Date().toISOString();
+    await Promise.all(
+      remainingVariants.map((variant) =>
+        supabase
+          .from('product_variants')
+          .update({
+            order: variant.order - 1,
+            updatedAt,
+          })
+          .eq('id', variant.id)
+      )
+    );
   }
 
   // Update parent product stock after deletion
@@ -2352,7 +2457,8 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
 
 /**
  * Reorder product variants
- * Updates the order field for multiple variants in a single transaction
+ * Updates the order field for multiple variants
+ * OPTIMIZED: Uses parallel updates instead of sequential loop
  */
 export async function reorderProductVariants(
   productId: string,
@@ -2364,24 +2470,28 @@ export async function reorderProductVariants(
   });
 
   const supabase = createClient();
+  const updatedAt = new Date().toISOString();
 
-  // Update each variant's order
-  for (const { id, order } of variantOrders) {
-    await supabase
-      .from('product_variants')
-      .update({
-        order,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', id);
-  }
+  // OPTIMIZED: Update all variants in parallel instead of sequential loop
+  await Promise.all(
+    variantOrders.map(({ id, order }) =>
+      supabase
+        .from('product_variants')
+        .update({
+          order,
+          updatedAt,
+        })
+        .eq('id', id)
+    )
+  );
 
   log.info('Product variants reordered successfully', { productId });
 }
 
 /**
  * Reorder products
- * Updates the displayOrder field for multiple products in a single transaction
+ * Updates the displayOrder field for multiple products
+ * OPTIMIZED: Uses parallel updates instead of sequential loop
  * This affects the display order on product listing pages, featured products, and discounted products sections
  */
 export async function reorderProducts(
@@ -2390,17 +2500,20 @@ export async function reorderProducts(
   log.info('Reordering products', { count: productOrders.length });
 
   const supabase = createClient();
+  const updatedAt = new Date().toISOString();
 
-  // Update each product's displayOrder
-  for (const { id, displayOrder } of productOrders) {
-    await supabase
-      .from('products')
-      .update({
-        displayOrder,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', id);
-  }
+  // OPTIMIZED: Update all products in parallel instead of sequential loop
+  await Promise.all(
+    productOrders.map(({ id, displayOrder }) =>
+      supabase
+        .from('products')
+        .update({
+          displayOrder,
+          updatedAt,
+        })
+        .eq('id', id)
+    )
+  );
 
   // Invalidate product cache after reordering
   await invalidateProductCache();

@@ -314,19 +314,21 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         );
       }
 
-      // Update changed variants in parallel
+      // Update changed variants using batch API (single request instead of N parallel requests)
       const variantsToUpdate = existingVariants.filter((variant) => {
         const original = originalVariants.find((v) => v.id === variant.id);
         return variantPropsChanged(variant, original);
       });
 
       if (variantsToUpdate.length > 0) {
-        await Promise.all(
-          variantsToUpdate.map((variant) =>
-            fetch(`/api/products/${id}/variants/${variant.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+        const batchUpdateResponse = await fetch(
+          `/api/products/${id}/variants`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              variants: variantsToUpdate.map((variant) => ({
+                id: variant.id,
                 name: variant.name,
                 sku: variant.sku || undefined,
                 color: variant.color || undefined,
@@ -335,10 +337,19 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 priceAdjust: parseFloat(variant.priceAdjust),
                 stock: parseInt(variant.stock),
                 isActive: variant.isActive,
-              }),
-            })
-          )
+              })),
+            }),
+          }
         );
+
+        if (!batchUpdateResponse.ok) {
+          throw new Error(
+            await readErrorMessage(
+              batchUpdateResponse,
+              'خطا در به‌روزرسانی واریانت‌ها'
+            )
+          );
+        }
       }
 
       // Map existing variant IDs
