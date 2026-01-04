@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface GradientColorPickerProps {
   label?: string;
@@ -22,30 +22,86 @@ export default function GradientColorPicker({
       ? 'gradient'
       : 'solid'
   );
-  const [solidColor, setSolidColor] = useState(
+  const [baseColor, setBaseColor] = useState(
     value &&
       !value.startsWith('linear-gradient') &&
       !value.startsWith('radial-gradient')
       ? value
       : '#000000'
   );
-  const [gradientColor1, setGradientColor1] = useState('#ff0000');
-  const [gradientColor2, setGradientColor2] = useState('#0000ff');
-  const [gradientAngle, setGradientAngle] = useState(90);
+  const gradientTemplates = useMemo(
+    () => [
+      {
+        id: 'mist',
+        label: 'مه نرم',
+        build: (color: string) =>
+          `linear-gradient(135deg, #ffffff 0%, ${color} 70%)`,
+      },
+      {
+        id: 'silk',
+        label: 'ابریشم',
+        build: (color: string) =>
+          `linear-gradient(45deg, #ffffff 0%, ${color} 55%)`,
+      },
+      {
+        id: 'breeze',
+        label: 'نسیم',
+        build: (color: string) =>
+          `linear-gradient(180deg, #ffffff 0%, ${color} 100%)`,
+      },
+      {
+        id: 'halo',
+        label: 'هاله',
+        build: (color: string) =>
+          `linear-gradient(270deg, #ffffff 0%, ${color} 65%)`,
+      },
+      {
+        id: 'pearl',
+        label: 'مروارید',
+        build: (color: string) =>
+          `linear-gradient(315deg, #ffffff 0%, ${color} 60%, #ffffff 100%)`,
+      },
+      {
+        id: 'stripe',
+        label: 'راه راه',
+        build: (color: string) =>
+          `repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 6px, rgba(255, 255, 255, 0) 6px 14px), linear-gradient(0deg, ${color}, ${color})`,
+      },
+    ],
+    []
+  );
+  const [gradientTemplateId, setGradientTemplateId] = useState(
+    gradientTemplates[0].id
+  );
 
-  // Parse existing gradient value if present
-  useState(() => {
+  const normalizeGradient = (input: string) =>
+    input.replace(/\s+/g, '').toLowerCase();
+  const isWhite = (color: string) =>
+    color.toLowerCase() === '#ffffff' || color.toLowerCase() === '#fff';
+
+  useEffect(() => {
+    if (!value) return;
+
     if (value.startsWith('linear-gradient')) {
-      const match = value.match(
-        /linear-gradient\((\d+)deg,\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}),\s*(#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3})\)/
-      );
-      if (match) {
-        setGradientAngle(parseInt(match[1]));
-        setGradientColor1(match[2]);
-        setGradientColor2(match[3]);
+      setMode('gradient');
+      const colors = value.match(/#[0-9a-fA-F]{3,6}/g) || [];
+      const nonWhite = colors.find((color) => !isWhite(color)) || colors[0];
+      if (nonWhite) {
+        setBaseColor(nonWhite);
+        const match = gradientTemplates.find(
+          (template) =>
+            normalizeGradient(template.build(nonWhite)) ===
+            normalizeGradient(value)
+        );
+        if (match) {
+          setGradientTemplateId(match.id);
+        }
       }
+    } else if (!value.startsWith('radial-gradient')) {
+      setMode('solid');
+      setBaseColor(value);
     }
-  });
+  }, [value, gradientTemplates]);
 
   const createChangeEvent = (
     newValue: string
@@ -58,48 +114,50 @@ export default function GradientColorPicker({
   const handleModeChange = (newMode: 'solid' | 'gradient') => {
     setMode(newMode);
     if (newMode === 'solid') {
-      onChange(createChangeEvent(solidColor));
+      onChange(createChangeEvent(baseColor));
     } else {
-      const gradientValue = `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`;
-      onChange(createChangeEvent(gradientValue));
+      const template = gradientTemplates.find(
+        (item) => item.id === gradientTemplateId
+      );
+      if (template) {
+        onChange(createChangeEvent(template.build(baseColor)));
+      }
     }
   };
 
-  const handleSolidColorChange = (newColor: string) => {
-    setSolidColor(newColor);
+  const handleBaseColorChange = (newColor: string) => {
+    setBaseColor(newColor);
     if (mode === 'solid') {
       onChange(createChangeEvent(newColor));
+      return;
+    }
+    const template = gradientTemplates.find(
+      (item) => item.id === gradientTemplateId
+    );
+    if (template) {
+      onChange(createChangeEvent(template.build(newColor)));
     }
   };
 
-  const handleGradientColor1Change = (newColor: string) => {
-    setGradientColor1(newColor);
+  const handleTemplateChange = (templateId: string) => {
+    setGradientTemplateId(templateId);
     if (mode === 'gradient') {
-      const gradientValue = `linear-gradient(${gradientAngle}deg, ${newColor}, ${gradientColor2})`;
-      onChange(createChangeEvent(gradientValue));
+      const template = gradientTemplates.find((item) => item.id === templateId);
+      if (template) {
+        onChange(createChangeEvent(template.build(baseColor)));
+      }
     }
   };
 
-  const handleGradientColor2Change = (newColor: string) => {
-    setGradientColor2(newColor);
-    if (mode === 'gradient') {
-      const gradientValue = `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${newColor})`;
-      onChange(createChangeEvent(gradientValue));
+  const currentValue = useMemo(() => {
+    if (mode === 'solid') {
+      return baseColor;
     }
-  };
-
-  const handleAngleChange = (newAngle: number) => {
-    setGradientAngle(newAngle);
-    if (mode === 'gradient') {
-      const gradientValue = `linear-gradient(${newAngle}deg, ${gradientColor1}, ${gradientColor2})`;
-      onChange(createChangeEvent(gradientValue));
-    }
-  };
-
-  const currentValue =
-    mode === 'solid'
-      ? solidColor
-      : `linear-gradient(${gradientAngle}deg, ${gradientColor1}, ${gradientColor2})`;
+    const template = gradientTemplates.find(
+      (item) => item.id === gradientTemplateId
+    );
+    return template ? template.build(baseColor) : baseColor;
+  }, [mode, baseColor, gradientTemplateId, gradientTemplates]);
 
   return (
     <div className="space-y-3">
@@ -140,14 +198,14 @@ export default function GradientColorPicker({
         <div className="flex items-center gap-3">
           <input
             type="color"
-            value={solidColor}
-            onChange={(e) => handleSolidColorChange(e.target.value)}
+            value={baseColor}
+            onChange={(e) => handleBaseColorChange(e.target.value)}
             className="w-20 h-10 rounded border border-gray-300 cursor-pointer"
           />
           <input
             type="text"
-            value={solidColor}
-            onChange={(e) => handleSolidColorChange(e.target.value)}
+            value={baseColor}
+            onChange={(e) => handleBaseColorChange(e.target.value)}
             placeholder={placeholder}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
             dir="ltr"
@@ -157,57 +215,47 @@ export default function GradientColorPicker({
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <label className="text-sm text-gray-700 w-20 text-right">
-              رنگ اول:
+              رنگ پایه:
             </label>
             <input
               type="color"
-              value={gradientColor1}
-              onChange={(e) => handleGradientColor1Change(e.target.value)}
+              value={baseColor}
+              onChange={(e) => handleBaseColorChange(e.target.value)}
               className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
             />
             <input
               type="text"
-              value={gradientColor1}
-              onChange={(e) => handleGradientColor1Change(e.target.value)}
+              value={baseColor}
+              onChange={(e) => handleBaseColorChange(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
               dir="ltr"
             />
           </div>
 
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">
-              رنگ دوم:
-            </label>
-            <input
-              type="color"
-              value={gradientColor2}
-              onChange={(e) => handleGradientColor2Change(e.target.value)}
-              className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={gradientColor2}
-              onChange={(e) => handleGradientColor2Change(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-              dir="ltr"
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">
-              زاویه:
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={gradientAngle}
-              onChange={(e) => handleAngleChange(parseInt(e.target.value))}
-              className="flex-1"
-            />
-            <span className="text-sm text-gray-600 w-12 text-left" dir="ltr">
-              {gradientAngle}°
-            </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {gradientTemplates.map((template) => {
+              const isSelected = template.id === gradientTemplateId;
+              return (
+                <button
+                  type="button"
+                  key={template.id}
+                  onClick={() => handleTemplateChange(template.id)}
+                  className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${
+                    isSelected
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="text-xs text-gray-700">
+                    {template.label}
+                  </span>
+                  <span
+                    className="flex-1 h-10 rounded-md border border-gray-200"
+                    style={{ background: template.build(baseColor) }}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
