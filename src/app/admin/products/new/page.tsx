@@ -13,6 +13,33 @@ import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
 import type { ProductFormData, Tag } from '@/types/product-admin';
 
+async function readJsonResponse<T>(
+  response: Response,
+  fallbackMessage: string
+): Promise<T> {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  const text = await response.text();
+  throw new Error(text || fallbackMessage);
+}
+
+async function readErrorMessage(
+  response: Response,
+  fallbackMessage: string
+): Promise<string> {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await response.json().catch(() => null);
+    if (data && typeof data.error === 'string') {
+      return data.error;
+    }
+  }
+  const text = await response.text();
+  return text || fallbackMessage;
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
@@ -108,7 +135,10 @@ export default function NewProductPage() {
         }),
       });
 
-      const productData = await productResponse.json();
+      const productData = await readJsonResponse<{
+        error?: string;
+        product?: { id: string };
+      }>(productResponse, 'خطا در ایجاد محصول');
 
       if (!productResponse.ok) {
         throw new Error(productData.error || 'خطا در ایجاد محصول');
@@ -135,8 +165,9 @@ export default function NewProductPage() {
           );
 
           if (!mediaResponse.ok) {
-            const errorData = await mediaResponse.json();
-            throw new Error(errorData.error || 'خطا در افزودن رسانه محصول');
+            throw new Error(
+              await readErrorMessage(mediaResponse, 'خطا در افزودن رسانه محصول')
+            );
           }
         }
       }
@@ -163,7 +194,13 @@ export default function NewProductPage() {
             }
           );
 
-          const variantData = await variantResponse.json();
+          const variantData = await readJsonResponse<{
+            error?: string;
+            variant?: { id?: string };
+          }>(variantResponse, 'خطا در ایجاد واریانت');
+          if (!variantResponse.ok) {
+            throw new Error(variantData.error || 'خطا در ایجاد واریانت');
+          }
           const variantId = variantData.variant?.id;
 
           // Step 4: Add variant-specific media
@@ -186,9 +223,11 @@ export default function NewProductPage() {
               );
 
               if (!variantMediaResponse.ok) {
-                const errorData = await variantMediaResponse.json();
                 throw new Error(
-                  errorData.error || 'خطا در افزودن رسانه واریانت'
+                  await readErrorMessage(
+                    variantMediaResponse,
+                    'خطا در افزودن رسانه واریانت'
+                  )
                 );
               }
             }

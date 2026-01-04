@@ -22,6 +22,33 @@ interface EditProductPageProps {
   params: { id: string };
 }
 
+async function readJsonResponse<T>(
+  response: Response,
+  fallbackMessage: string
+): Promise<T> {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+  const text = await response.text();
+  throw new Error(text || fallbackMessage);
+}
+
+async function readErrorMessage(
+  response: Response,
+  fallbackMessage: string
+): Promise<string> {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    const data = await response.json().catch(() => null);
+    if (data && typeof data.error === 'string') {
+      return data.error;
+    }
+  }
+  const text = await response.text();
+  return text || fallbackMessage;
+}
+
 export default function EditProductPage({ params }: EditProductPageProps) {
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
@@ -185,7 +212,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await readJsonResponse<{ error?: string }>(
+        response,
+        'خطا در به‌روزرسانی محصول'
+      );
 
       if (!response.ok) {
         throw new Error(data.error || 'خطا در به‌روزرسانی محصول');
@@ -196,7 +226,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const existingMediaResponse = await fetch(
         `/api/products/${params.id}/media`
       );
-      const existingMediaData = await existingMediaResponse.json();
+      if (!existingMediaResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            existingMediaResponse,
+            'خطا در دریافت رسانه‌های محصول'
+          )
+        );
+      }
+      const existingMediaData = await readJsonResponse<{
+        media: MediaItem[];
+      }>(existingMediaResponse, 'خطا در دریافت رسانه‌های محصول');
       const existingProductMedia = existingMediaData.media.filter(
         (m: MediaItem) => !m.variantId
       );
@@ -230,8 +270,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         });
 
         if (!mediaResponse.ok) {
-          const errorData = await mediaResponse.json();
-          throw new Error(errorData.error || 'خطا در افزودن رسانه محصول');
+          throw new Error(
+            await readErrorMessage(mediaResponse, 'خطا در افزودن رسانه محصول')
+          );
         }
       }
 
@@ -258,7 +299,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const existingVariantsResponse = await fetch(
         `/api/products/${params.id}/variants`
       );
-      const existingVariantsData = await existingVariantsResponse.json();
+      if (!existingVariantsResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            existingVariantsResponse,
+            'خطا در دریافت واریانت‌ها'
+          )
+        );
+      }
+      const existingVariantsData = await readJsonResponse<{
+        variants?: Variant[];
+      }>(existingVariantsResponse, 'خطا در دریافت واریانت‌ها');
       const existingVariantsFromDB = existingVariantsData.variants || [];
 
       // Delete variants that were removed
@@ -277,7 +328,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const allProductMediaResponse = await fetch(
         `/api/products/${params.id}/media`
       );
-      const allProductMediaData = await allProductMediaResponse.json();
+      if (!allProductMediaResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            allProductMediaResponse,
+            'خطا در دریافت رسانه‌های محصول'
+          )
+        );
+      }
+      const allProductMediaData = await readJsonResponse<{
+        media?: MediaItem[];
+      }>(allProductMediaResponse, 'خطا در دریافت رسانه‌های محصول');
       const allProductMedia = allProductMediaData.media || [];
 
       // Update or create variants
@@ -413,8 +474,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             );
 
             if (!variantMediaResponse.ok) {
-              const errorData = await variantMediaResponse.json();
-              throw new Error(errorData.error || 'خطا در افزودن رسانه واریانت');
+              throw new Error(
+                await readErrorMessage(
+                  variantMediaResponse,
+                  'خطا در افزودن رسانه واریانت'
+                )
+              );
             }
           }
 
@@ -461,7 +526,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           }
         );
 
-        const variantData = await variantResponse.json();
+        const variantData = await readJsonResponse<{
+          error?: string;
+          variant?: { id?: string };
+        }>(variantResponse, 'خطا در ایجاد واریانت');
+        if (!variantResponse.ok) {
+          throw new Error(variantData.error || 'خطا در ایجاد واریانت');
+        }
         const variantId = variantData.variant?.id;
 
         // Map temporary ID to real database ID
@@ -489,9 +560,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             );
 
             if (!newVariantMediaResponse.ok) {
-              const errorData = await newVariantMediaResponse.json();
               throw new Error(
-                errorData.error || 'خطا در افزودن رسانه واریانت جدید'
+                await readErrorMessage(
+                  newVariantMediaResponse,
+                  'خطا در افزودن رسانه واریانت جدید'
+                )
               );
             }
           }
