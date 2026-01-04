@@ -3,6 +3,7 @@ import Button from '@/components/ui/Button';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import type { MediaItem } from '@/types/product-admin';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
 
 interface MediaManagerProps {
   media: MediaItem[];
@@ -59,7 +60,7 @@ export default function MediaManager({
                 <div className="aspect-square relative bg-gray-200 dark:bg-slate-800">
                   {item.type === 'IMAGE' ? (
                     <Image
-                      src={item.url}
+                      src={optimizeImage.adminThumb(item.url)}
                       alt={item.alt || 'Product media'}
                       fill
                       className="object-cover"
@@ -109,7 +110,7 @@ export default function MediaManager({
         onClose={onCloseBrowser}
         onSelect={onMediaSelect}
         multiSelect={true}
-        initialFolder="products/images"
+        initialFolder="products"
       />
     </>
   );

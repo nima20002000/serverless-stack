@@ -31,7 +31,34 @@ interface R2MediaBrowserProps {
   initialFolder?: string;
 }
 
-const DEFAULT_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 80;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+type CachedListing = {
+  objects: R2Object[];
+  prefixes: string[];
+  nextToken: string | null;
+  hasMore: boolean;
+  timestamp: number;
+};
+
+const listingCache = new Map<string, CachedListing>();
+
+const getCacheKey = (prefix: string) => (prefix ? prefix : '__root__');
+
+const getCachedListing = (prefix: string) => {
+  const cached = listingCache.get(getCacheKey(prefix));
+  if (!cached) return null;
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    listingCache.delete(getCacheKey(prefix));
+    return null;
+  }
+  return cached;
+};
+
+const setCachedListing = (prefix: string, data: CachedListing) => {
+  listingCache.set(getCacheKey(prefix), data);
+};
 
 const normalizePrefix = (prefix?: string) => {
   if (!prefix) return '';
@@ -86,6 +113,7 @@ export default function R2MediaBrowser({
       setSelectedUrls(new Set());
       setError('');
     } else {
+      setError('');
       setCurrentPrefix(normalizePrefix(initialFolder));
     }
   }, [isOpen, initialFolder]);
@@ -95,8 +123,19 @@ export default function R2MediaBrowser({
     setSelectedUrls(new Set());
   }, [currentPrefix]);
 
-  const loadObjects = async (reset: boolean) => {
+  const loadObjects = async (reset: boolean, forceRefresh = false) => {
     try {
+      if (reset && !forceRefresh) {
+        const cached = getCachedListing(currentPrefix);
+        if (cached) {
+          setFolders(cached.prefixes);
+          setObjects(cached.objects);
+          setNextToken(cached.nextToken);
+          setHasMore(cached.hasMore);
+          return;
+        }
+      }
+
       if (reset) {
         setLoading(true);
       } else {
@@ -127,13 +166,39 @@ export default function R2MediaBrowser({
       const incomingPrefixes = data.prefixes || [];
 
       if (reset) {
+        const sortedObjects = sortByLastModified(incomingObjects);
+        const nextToken = data.nextContinuationToken || null;
+        const hasMoreNext = Boolean(
+          data.isTruncated && data.nextContinuationToken
+        );
+
         setFolders(incomingPrefixes);
-        setObjects(sortByLastModified(incomingObjects));
+        setObjects(sortedObjects);
+        setNextToken(nextToken);
+        setHasMore(hasMoreNext);
+
+        setCachedListing(currentPrefix, {
+          objects: sortedObjects,
+          prefixes: incomingPrefixes,
+          nextToken,
+          hasMore: hasMoreNext,
+          timestamp: Date.now(),
+        });
       } else {
-        setObjects((prev) => sortByLastModified([...prev, ...incomingObjects]));
+        setObjects((prev) => {
+          const merged = sortByLastModified([...prev, ...incomingObjects]);
+          setCachedListing(currentPrefix, {
+            objects: merged,
+            prefixes: folders,
+            nextToken: data.nextContinuationToken || null,
+            hasMore: Boolean(data.isTruncated && data.nextContinuationToken),
+            timestamp: Date.now(),
+          });
+          return merged;
+        });
+        setNextToken(data.nextContinuationToken || null);
+        setHasMore(Boolean(data.isTruncated && data.nextContinuationToken));
       }
-      setNextToken(data.nextContinuationToken || null);
-      setHasMore(Boolean(data.isTruncated && data.nextContinuationToken));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطای نامشخص');
       if (reset) {
@@ -191,7 +256,7 @@ export default function R2MediaBrowser({
       }
 
       // Reload objects after delete
-      await loadObjects(true);
+      await loadObjects(true, true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'خطای نامشخص');
     }
@@ -364,6 +429,7 @@ export default function R2MediaBrowser({
                                 fill
                                 className="object-cover"
                                 sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                                loading="lazy"
                               />
                             ) : (
                               <div className="flex items-center justify-center h-full">
