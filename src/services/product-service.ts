@@ -1669,6 +1669,155 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
   return { success: true };
 }
 
+/**
+ * Batch sync media for a product
+ * Handles deletions, additions, and updates in a single operation
+ * This is optimized for bulk updates to prevent timeout issues
+ */
+export async function batchSyncProductMedia(
+  productId: string,
+  operations: {
+    delete: string[]; // Media IDs to delete
+    add: Array<{
+      variantId?: string;
+      type: MediaType;
+      url: string;
+      alt?: string;
+      order?: number;
+      isDefault?: boolean;
+    }>;
+    update: Array<{
+      id: string;
+      isDefault?: boolean;
+      alt?: string;
+      order?: number;
+    }>;
+  }
+): Promise<{
+  success: boolean;
+  added: number;
+  deleted: number;
+  updated: number;
+}> {
+  log.info('Batch syncing product media', {
+    productId,
+    deleteCount: operations.delete.length,
+    addCount: operations.add.length,
+    updateCount: operations.update.length,
+  });
+
+  const supabase = createClient();
+  let deleted = 0;
+  let added = 0;
+  let updated = 0;
+
+  // Step 1: Delete media in bulk
+  if (operations.delete.length > 0) {
+    const { error, count } = await supabase
+      .from('product_media')
+      .delete({ count: 'exact' })
+      .in('id', operations.delete);
+
+    if (error) {
+      log.error('Failed to delete media in batch', { error });
+      throw new Error('خطا در حذف رسانه‌ها');
+    }
+    deleted = count || 0;
+  }
+
+  // Step 2: Add new media in bulk
+  if (operations.add.length > 0) {
+    const mediaToInsert = operations.add.map((item, index) => ({
+      id: randomUUID(),
+      productId,
+      variantId: item.variantId || null,
+      type: item.type,
+      url: item.url,
+      alt: item.alt || null,
+      order: item.order ?? index,
+      isDefault: item.isDefault ?? false,
+    }));
+
+    const { error, count } = await supabase
+      .from('product_media')
+      .insert(mediaToInsert)
+      .select();
+
+    if (error) {
+      log.error('Failed to add media in batch', { error });
+      throw new Error('خطا در افزودن رسانه‌ها');
+    }
+    added = count || mediaToInsert.length;
+  }
+
+  // Step 3: Update existing media
+  // For updates, we need to handle isDefault specially per variant group
+  if (operations.update.length > 0) {
+    // Group updates by variantId to handle isDefault correctly
+    const updatesByVariant = new Map<string | null, typeof operations.update>();
+
+    for (const update of operations.update) {
+      // First, fetch the media to get its variantId
+      const { data: media } = await supabase
+        .from('product_media')
+        .select('variantId')
+        .eq('id', update.id)
+        .single();
+
+      const variantId = media?.variantId || null;
+      if (!updatesByVariant.has(variantId)) {
+        updatesByVariant.set(variantId, []);
+      }
+      const updatesList = updatesByVariant.get(variantId);
+      if (updatesList) {
+        updatesList.push(update);
+      }
+    }
+
+    // Process each variant group
+    for (const [variantId, updates] of updatesByVariant) {
+      // Find if any update sets isDefault to true
+      const newDefault = updates.find((u) => u.isDefault === true);
+
+      if (newDefault) {
+        // Clear all isDefault for this variant group first
+        let clearQuery = supabase
+          .from('product_media')
+          .update({ isDefault: false })
+          .eq('productId', productId);
+
+        if (variantId) {
+          clearQuery = clearQuery.eq('variantId', variantId);
+        } else {
+          clearQuery = clearQuery.is('variantId', null);
+        }
+
+        await clearQuery;
+      }
+
+      // Apply all updates
+      for (const update of updates) {
+        const updateData: Record<string, unknown> = {};
+        if (update.isDefault !== undefined)
+          updateData.isDefault = update.isDefault;
+        if (update.alt !== undefined) updateData.alt = update.alt;
+        if (update.order !== undefined) updateData.order = update.order;
+
+        if (Object.keys(updateData).length > 0) {
+          await supabase
+            .from('product_media')
+            .update(updateData)
+            .eq('id', update.id);
+          updated++;
+        }
+      }
+    }
+  }
+
+  log.info('Batch sync completed', { productId, deleted, added, updated });
+  return { success: true, added, deleted, updated };
+}
+
 // ========== PRODUCT VARIANT FUNCTIONS ==========
 
 /**

@@ -150,33 +150,9 @@ export default function NewProductPage() {
         throw new Error('شناسه محصول دریافت نشد');
       }
 
-      // Step 2: Add media
-      if (productMedia.media.length > 0) {
-        for (const mediaItem of productMedia.media) {
-          const mediaResponse = await fetch(
-            `/api/products/${productId}/media`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: mediaItem.type,
-                url: mediaItem.url,
-                alt: mediaItem.alt,
-                order: mediaItem.order,
-                isDefault: mediaItem.isDefault,
-              }),
-            }
-          );
+      // Step 2: Create variants first (need their IDs for variant media)
+      const variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
-          if (!mediaResponse.ok) {
-            throw new Error(
-              await readErrorMessage(mediaResponse, 'خطا در افزودن رسانه محصول')
-            );
-          }
-        }
-      }
-
-      // Step 3: Add variants (with order)
       if (variantManager.variants.length > 0) {
         for (const variant of variantManager.variants) {
           const variantResponse = await fetch(
@@ -206,36 +182,72 @@ export default function NewProductPage() {
             throw new Error(variantData.error || 'خطا در ایجاد واریانت');
           }
           const variantId = variantData.variant?.id;
-
-          // Step 4: Add variant-specific media
-          if (variantId && variant.media && variant.media.length > 0) {
-            for (const mediaItem of variant.media) {
-              const variantMediaResponse = await fetch(
-                `/api/products/${productId}/media`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    variantId: variantId,
-                    type: mediaItem.type,
-                    url: mediaItem.url,
-                    alt: mediaItem.alt,
-                    order: mediaItem.order,
-                    isDefault: mediaItem.isDefault,
-                  }),
-                }
-              );
-
-              if (!variantMediaResponse.ok) {
-                throw new Error(
-                  await readErrorMessage(
-                    variantMediaResponse,
-                    'خطا در افزودن رسانه واریانت'
-                  )
-                );
-              }
-            }
+          if (variantId) {
+            variantIdMapping[variant.id] = variantId;
           }
+        }
+      }
+
+      // Step 3: Batch add all media (product-level + variant) in a single request
+      const mediaOperations = {
+        delete: [] as string[],
+        add: [] as Array<{
+          variantId?: string;
+          type: string;
+          url: string;
+          alt?: string;
+          order?: number;
+          isDefault?: boolean;
+        }>,
+        update: [] as Array<{
+          id: string;
+          isDefault?: boolean;
+        }>,
+      };
+
+      // Add product-level media
+      for (const mediaItem of productMedia.media) {
+        mediaOperations.add.push({
+          type: mediaItem.type,
+          url: mediaItem.url,
+          alt: mediaItem.alt,
+          order: mediaItem.order,
+          isDefault: mediaItem.isDefault,
+        });
+      }
+
+      // Add variant media
+      for (const variant of variantManager.variants) {
+        const realVariantId = variantIdMapping[variant.id];
+        if (realVariantId && variant.media && variant.media.length > 0) {
+          for (const mediaItem of variant.media) {
+            mediaOperations.add.push({
+              variantId: realVariantId,
+              type: mediaItem.type,
+              url: mediaItem.url,
+              alt: mediaItem.alt,
+              order: mediaItem.order,
+              isDefault: mediaItem.isDefault,
+            });
+          }
+        }
+      }
+
+      // Execute batch media sync if there are any media to add
+      if (mediaOperations.add.length > 0) {
+        const batchSyncResponse = await fetch(
+          `/api/products/${productId}/media`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mediaOperations),
+          }
+        );
+
+        if (!batchSyncResponse.ok) {
+          throw new Error(
+            await readErrorMessage(batchSyncResponse, 'خطا در افزودن رسانه‌ها')
+          );
         }
       }
 

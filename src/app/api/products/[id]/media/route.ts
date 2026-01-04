@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
-import { getProductMedia, addProductMedia } from '@/services/product-service';
+import {
+  getProductMedia,
+  addProductMedia,
+  batchSyncProductMedia,
+} from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
 const MAX_ID_LENGTH = 64;
@@ -74,6 +78,62 @@ export async function POST(
     console.error('Add product media error:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'خطا در افزودن رسانه' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/products/[id]/media - Batch sync all media for a product
+ * This endpoint handles bulk deletions, additions, and updates in a single request
+ * to prevent timeout issues when updating multiple variant images
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    if (!params.id || params.id.length > MAX_ID_LENGTH) {
+      return NextResponse.json(
+        { error: 'شناسه محصول نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { delete: toDelete = [], add = [], update = [] } = body;
+
+    // Validate operations structure
+    if (
+      !Array.isArray(toDelete) ||
+      !Array.isArray(add) ||
+      !Array.isArray(update)
+    ) {
+      return NextResponse.json(
+        { error: 'فرمت عملیات نامعتبر است' },
+        { status: 400 }
+      );
+    }
+
+    const result = await batchSyncProductMedia(params.id, {
+      delete: toDelete,
+      add,
+      update,
+    });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error('Batch sync media error:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'خطا در همگام‌سازی رسانه‌ها',
+      },
       { status: 500 }
     );
   }

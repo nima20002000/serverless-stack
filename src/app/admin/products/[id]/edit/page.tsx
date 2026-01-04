@@ -222,11 +222,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         throw new Error(data.error || 'خطا در به‌روزرسانی محصول');
       }
 
-      // Step 2: Sync media (delete old product-level media and add new ones)
-      // Get existing product-level media
-      const existingMediaResponse = await fetch(
-        `/api/products/${params.id}/media`
-      );
+      // Step 2: Fetch existing media and variants in parallel
+      const [existingMediaResponse, existingVariantsResponse] =
+        await Promise.all([
+          fetch(`/api/products/${params.id}/media`),
+          fetch(`/api/products/${params.id}/variants`),
+        ]);
+
       if (!existingMediaResponse.ok) {
         throw new Error(
           await readErrorMessage(
@@ -235,71 +237,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           )
         );
       }
-      const existingMediaData = await readJsonResponse<{
-        media: MediaItem[];
-      }>(existingMediaResponse, 'خطا در دریافت رسانه‌های محصول');
-      const existingProductMedia = existingMediaData.media.filter(
-        (m: MediaItem) => !m.variantId
-      );
-
-      // Delete old product-level media that are not in current media state
-      for (const oldMedia of existingProductMedia) {
-        const stillExists = productMedia.media.find(
-          (m) => m.id === oldMedia.id
-        );
-        if (!stillExists) {
-          await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
-            method: 'DELETE',
-          });
-        }
-      }
-
-      // Add new product-level media (those with temporary IDs starting with 'new-')
-      for (const mediaItem of productMedia.media) {
-        if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
-
-        const mediaResponse = await fetch(`/api/products/${params.id}/media`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: mediaItem.type,
-            url: mediaItem.url,
-            alt: mediaItem.alt,
-            order: mediaItem.order,
-            isDefault: mediaItem.isDefault,
-          }),
-        });
-
-        if (!mediaResponse.ok) {
-          throw new Error(
-            await readErrorMessage(mediaResponse, 'خطا در افزودن رسانه محصول')
-          );
-        }
-      }
-
-      // Update isDefault for existing product-level media (only if changed)
-      for (const mediaItem of productMedia.media) {
-        if (mediaItem.id.startsWith('new-')) continue; // Skip new media
-
-        // Check if isDefault actually changed
-        const oldMedia = existingProductMedia.find(
-          (m: MediaItem) => m.id === mediaItem.id
-        );
-        if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
-          await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              isDefault: mediaItem.isDefault,
-            }),
-          });
-        }
-      }
-
-      // Step 3: Sync variants
-      const existingVariantsResponse = await fetch(
-        `/api/products/${params.id}/variants`
-      );
       if (!existingVariantsResponse.ok) {
         throw new Error(
           await readErrorMessage(
@@ -308,42 +245,18 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           )
         );
       }
+
+      const existingMediaData = await readJsonResponse<{
+        media: MediaItem[];
+      }>(existingMediaResponse, 'خطا در دریافت رسانه‌های محصول');
       const existingVariantsData = await readJsonResponse<{
         variants?: Variant[];
       }>(existingVariantsResponse, 'خطا در دریافت واریانت‌ها');
+
+      const allExistingMedia = existingMediaData.media || [];
       const existingVariantsFromDB = existingVariantsData.variants || [];
 
-      // Delete variants that were removed
-      for (const oldVariant of existingVariantsFromDB) {
-        const stillExists = variantManager.variants.find(
-          (v) => v.id === oldVariant.id
-        );
-        if (!stillExists) {
-          await fetch(`/api/products/${params.id}/variants/${oldVariant.id}`, {
-            method: 'DELETE',
-          });
-        }
-      }
-
-      // Fetch all product media once (to avoid N+1 query pattern)
-      const allProductMediaResponse = await fetch(
-        `/api/products/${params.id}/media`
-      );
-      if (!allProductMediaResponse.ok) {
-        throw new Error(
-          await readErrorMessage(
-            allProductMediaResponse,
-            'خطا در دریافت رسانه‌های محصول'
-          )
-        );
-      }
-      const allProductMediaData = await readJsonResponse<{
-        media?: MediaItem[];
-      }>(allProductMediaResponse, 'خطا در دریافت رسانه‌های محصول');
-      const allProductMedia = allProductMediaData.media || [];
-
-      // Update or create variants
-      // Track created variant IDs for reordering later
+      // Step 3: Sync variants first (need IDs for new variant media)
       const variantIdMapping: Record<string, string> = {}; // tempId -> realId
 
       // Separate existing and new variants
@@ -359,7 +272,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         current: (typeof existingVariants)[0],
         original: (typeof originalVariants)[0] | undefined
       ) => {
-        if (!original) return true; // New variant or not found in original
+        if (!original) return true;
         return (
           current.name !== original.name ||
           current.sku !== original.sku ||
@@ -372,7 +285,22 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         );
       };
 
-      // Step 3.1: Update only changed variants in parallel
+      // Delete variants that were removed (in parallel)
+      const variantsToDelete = existingVariantsFromDB.filter(
+        (oldVariant) =>
+          !variantManager.variants.find((v) => v.id === oldVariant.id)
+      );
+      if (variantsToDelete.length > 0) {
+        await Promise.all(
+          variantsToDelete.map((v) =>
+            fetch(`/api/products/${params.id}/variants/${v.id}`, {
+              method: 'DELETE',
+            })
+          )
+        );
+      }
+
+      // Update changed variants in parallel
       const variantsToUpdate = existingVariants.filter((variant) => {
         const original = originalVariants.find((v) => v.id === variant.id);
         return variantPropsChanged(variant, original);
@@ -404,110 +332,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         variantIdMapping[variant.id] = variant.id;
       });
 
-      // Helper: Check if variant media changed
-      const variantMediaChanged = (
-        current: (typeof existingVariants)[0],
-        original: (typeof originalVariants)[0] | undefined
-      ) => {
-        if (!original) return true;
-        const currentMediaIds = (current.media || [])
-          .map((m) => m.id)
-          .sort()
-          .join(',');
-        const originalMediaIds = (original.media || [])
-          .map((m) => m.id)
-          .sort()
-          .join(',');
-        if (currentMediaIds !== originalMediaIds) return true;
-
-        // Check if isDefault changed for any media
-        return (current.media || []).some((currentMedia) => {
-          const originalMedia = (original.media || []).find(
-            (m) => m.id === currentMedia.id
-          );
-          return (
-            originalMedia && originalMedia.isDefault !== currentMedia.isDefault
-          );
-        });
-      };
-
-      // Step 3.2: Sync media only for variants where media changed
-      for (const variant of existingVariants) {
-        const original = originalVariants.find((v) => v.id === variant.id);
-
-        // Skip if media didn't change
-        if (!variantMediaChanged(variant, original)) continue;
-
-        // Sync variant media - use cached media data
-        const existingVariantMedia = allProductMedia.filter(
-          (m: MediaItem) => m.variantId === variant.id
-        );
-
-        // Delete old variant media
-        for (const oldMedia of existingVariantMedia) {
-          const stillExists = variant.media?.find((m) => m.id === oldMedia.id);
-          if (!stillExists) {
-            await fetch(`/api/products/${params.id}/media/${oldMedia.id}`, {
-              method: 'DELETE',
-            });
-          }
-        }
-
-        // Add new variant media (temporary IDs starting with 'new-')
-        if (variant.media) {
-          for (const mediaItem of variant.media) {
-            if (!mediaItem.id.startsWith('new-')) continue; // Only save new media
-
-            const variantMediaResponse = await fetch(
-              `/api/products/${params.id}/media`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  variantId: variant.id,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
-                  isDefault: mediaItem.isDefault,
-                }),
-              }
-            );
-
-            if (!variantMediaResponse.ok) {
-              throw new Error(
-                await readErrorMessage(
-                  variantMediaResponse,
-                  'خطا در افزودن رسانه واریانت'
-                )
-              );
-            }
-          }
-
-          // Update isDefault for existing variant media (only if changed)
-          for (const mediaItem of variant.media) {
-            if (mediaItem.id.startsWith('new-')) continue; // Skip new media
-
-            // Check if isDefault actually changed
-            const oldMedia = existingVariantMedia.find(
-              (m: MediaItem) => m.id === mediaItem.id
-            );
-            if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
-              await fetch(`/api/products/${params.id}/media/${mediaItem.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  isDefault: mediaItem.isDefault,
-                }),
-              });
-            }
-          }
-        }
-      }
-
-      // Step 3.3: Create new variants
+      // Create new variants (sequentially to get IDs, but this is typically few)
       for (const variant of newVariants) {
-        // Create new variant (including order)
         const variantResponse = await fetch(
           `/api/products/${params.id}/variants`,
           {
@@ -535,53 +361,161 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           throw new Error(variantData.error || 'خطا در ایجاد واریانت');
         }
         const variantId = variantData.variant?.id;
-
-        // Map temporary ID to real database ID
         if (variantId) {
           variantIdMapping[variant.id] = variantId;
         }
+      }
 
-        // Add variant media
-        if (variantId && variant.media && variant.media.length > 0) {
-          for (const mediaItem of variant.media) {
-            const newVariantMediaResponse = await fetch(
-              `/api/products/${params.id}/media`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  variantId: variantId,
-                  type: mediaItem.type,
-                  url: mediaItem.url,
-                  alt: mediaItem.alt,
-                  order: mediaItem.order,
-                  isDefault: mediaItem.isDefault,
-                }),
-              }
+      // Step 4: Batch sync ALL media (product-level + variant media) in a single request
+      // This is the key optimization - instead of N sequential requests, we do ONE batch request
+      const mediaOperations = {
+        delete: [] as string[],
+        add: [] as Array<{
+          variantId?: string;
+          type: string;
+          url: string;
+          alt?: string;
+          order?: number;
+          isDefault?: boolean;
+        }>,
+        update: [] as Array<{
+          id: string;
+          isDefault?: boolean;
+        }>,
+      };
+
+      // Calculate product-level media changes
+      const existingProductMedia = allExistingMedia.filter(
+        (m: MediaItem) => !m.variantId
+      );
+
+      // Media to delete (product-level)
+      for (const oldMedia of existingProductMedia) {
+        const stillExists = productMedia.media.find(
+          (m) => m.id === oldMedia.id
+        );
+        if (!stillExists) {
+          mediaOperations.delete.push(oldMedia.id);
+        }
+      }
+
+      // Media to add (product-level)
+      for (const mediaItem of productMedia.media) {
+        if (mediaItem.id.startsWith('new-')) {
+          mediaOperations.add.push({
+            type: mediaItem.type,
+            url: mediaItem.url,
+            alt: mediaItem.alt,
+            order: mediaItem.order,
+            isDefault: mediaItem.isDefault,
+          });
+        }
+      }
+
+      // Media to update isDefault (product-level)
+      for (const mediaItem of productMedia.media) {
+        if (mediaItem.id.startsWith('new-')) continue;
+        const oldMedia = existingProductMedia.find(
+          (m: MediaItem) => m.id === mediaItem.id
+        );
+        if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+          mediaOperations.update.push({
+            id: mediaItem.id,
+            isDefault: mediaItem.isDefault,
+          });
+        }
+      }
+
+      // Calculate variant media changes
+      for (const variant of variantManager.variants) {
+        const realVariantId = variantIdMapping[variant.id] || variant.id;
+        const isNewVariant = variant.id.startsWith('variant-');
+
+        // Get existing variant media from DB
+        const existingVariantMedia = allExistingMedia.filter(
+          (m: MediaItem) => m.variantId === variant.id
+        );
+
+        // For existing variants, find deleted media
+        if (!isNewVariant) {
+          for (const oldMedia of existingVariantMedia) {
+            const stillExists = variant.media?.find(
+              (m) => m.id === oldMedia.id
             );
+            if (!stillExists) {
+              mediaOperations.delete.push(oldMedia.id);
+            }
+          }
+        }
 
-            if (!newVariantMediaResponse.ok) {
-              throw new Error(
-                await readErrorMessage(
-                  newVariantMediaResponse,
-                  'خطا در افزودن رسانه واریانت جدید'
-                )
+        // Add new variant media
+        if (variant.media) {
+          for (const mediaItem of variant.media) {
+            if (mediaItem.id.startsWith('new-')) {
+              mediaOperations.add.push({
+                variantId: realVariantId,
+                type: mediaItem.type,
+                url: mediaItem.url,
+                alt: mediaItem.alt,
+                order: mediaItem.order,
+                isDefault: mediaItem.isDefault,
+              });
+            }
+          }
+
+          // Update isDefault for existing variant media
+          if (!isNewVariant) {
+            for (const mediaItem of variant.media) {
+              if (mediaItem.id.startsWith('new-')) continue;
+              const oldMedia = existingVariantMedia.find(
+                (m: MediaItem) => m.id === mediaItem.id
               );
+              if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+                mediaOperations.update.push({
+                  id: mediaItem.id,
+                  isDefault: mediaItem.isDefault,
+                });
+              }
             }
           }
         }
       }
 
-      // Step 4: Reorder variants only if order changed
+      // Execute batch media sync if there are any operations
+      if (
+        mediaOperations.delete.length > 0 ||
+        mediaOperations.add.length > 0 ||
+        mediaOperations.update.length > 0
+      ) {
+        const batchSyncResponse = await fetch(
+          `/api/products/${params.id}/media`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mediaOperations),
+          }
+        );
+
+        if (!batchSyncResponse.ok) {
+          throw new Error(
+            await readErrorMessage(
+              batchSyncResponse,
+              'خطا در همگام‌سازی رسانه‌ها'
+            )
+          );
+        }
+      }
+
+      // Step 5: Reorder variants only if order changed
       const orderChanged =
         variantManager.variants.some((variant) => {
           const original = originalVariants.find((v) => v.id === variant.id);
           return !original || original.order !== variant.order;
-        }) || newVariants.length > 0; // Always reorder if there are new variants
+        }) || newVariants.length > 0;
 
       if (orderChanged && variantManager.variants.length > 0) {
         const variantOrders = variantManager.variants.map((v) => ({
-          id: variantIdMapping[v.id] || v.id, // Use real ID from mapping
+          id: variantIdMapping[v.id] || v.id,
           order: v.order,
         }));
 
