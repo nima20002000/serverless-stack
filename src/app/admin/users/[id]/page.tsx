@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
@@ -11,7 +11,7 @@ import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
 
 interface UserDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 interface User {
@@ -40,6 +40,7 @@ interface User {
 }
 
 export default function UserDetailPage({ params }: UserDetailPageProps) {
+  const { id } = use(params);
   const router = useRouter();
   const { data: session } = useSession();
   const [user, setUser] = useState<User | null>(null);
@@ -48,12 +49,12 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const [successMessage, setSuccessMessage] = useState('');
 
   // Check if viewing own profile
-  const isOwnProfile = session?.user?.id === params.id;
+  const isOwnProfile = session?.user?.id === id;
 
   const fetchUser = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/admin/users/${params.id}`);
+      const response = await fetch(`/api/admin/users/${id}`);
       if (!response.ok) throw new Error('خطا در دریافت اطلاعات کاربر');
       const data = await response.json();
       setUser(data.user);
@@ -65,7 +66,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [params.id]);
+  }, [id]);
 
   useEffect(() => {
     fetchUser();
@@ -81,7 +82,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${params.id}`, {
+      const response = await fetch(`/api/admin/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
@@ -110,7 +111,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${params.id}`, {
+      const response = await fetch(`/api/admin/users/${id}`, {
         method: 'DELETE',
       });
 

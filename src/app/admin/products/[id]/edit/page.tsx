@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -20,7 +20,7 @@ import type {
 import { toast } from '@/store/toast-store';
 
 interface EditProductPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function readJsonResponse<T>(
@@ -51,6 +51,7 @@ async function readErrorMessage(
 }
 
 export default function EditProductPage({ params }: EditProductPageProps) {
+  const { id } = use(params);
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
@@ -81,7 +82,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     try {
       // includeInactive=true to show all variants including inactive ones for admin editing
       const response = await fetch(
-        `/api/products/${params.id}?includeRelations=true&includeInactive=true`
+        `/api/products/${id}?includeRelations=true&includeInactive=true`
       );
       if (!response.ok) throw new Error('محصول یافت نشد');
 
@@ -145,7 +146,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   useEffect(() => {
     fetchProduct();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id]);
+  }, [id]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -207,7 +208,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
 
       // Step 1: Update product basic info
-      const response = await fetch(`/api/products/${params.id}`, {
+      const response = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -225,8 +226,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Step 2: Fetch existing media and variants in parallel
       const [existingMediaResponse, existingVariantsResponse] =
         await Promise.all([
-          fetch(`/api/products/${params.id}/media`),
-          fetch(`/api/products/${params.id}/variants`),
+          fetch(`/api/products/${id}/media`),
+          fetch(`/api/products/${id}/variants`),
         ]);
 
       if (!existingMediaResponse.ok) {
@@ -293,7 +294,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       if (variantsToDelete.length > 0) {
         await Promise.all(
           variantsToDelete.map((v) =>
-            fetch(`/api/products/${params.id}/variants/${v.id}`, {
+            fetch(`/api/products/${id}/variants/${v.id}`, {
               method: 'DELETE',
             })
           )
@@ -309,7 +310,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       if (variantsToUpdate.length > 0) {
         await Promise.all(
           variantsToUpdate.map((variant) =>
-            fetch(`/api/products/${params.id}/variants/${variant.id}`, {
+            fetch(`/api/products/${id}/variants/${variant.id}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -334,24 +335,21 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       // Create new variants (sequentially to get IDs, but this is typically few)
       for (const variant of newVariants) {
-        const variantResponse = await fetch(
-          `/api/products/${params.id}/variants`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: variant.name,
-              sku: variant.sku || undefined,
-              color: variant.color || undefined,
-              size: variant.size || undefined,
-              material: variant.material || undefined,
-              priceAdjust: parseFloat(variant.priceAdjust),
-              stock: parseInt(variant.stock),
-              order: variant.order,
-              isActive: variant.isActive,
-            }),
-          }
-        );
+        const variantResponse = await fetch(`/api/products/${id}/variants`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: variant.name,
+            sku: variant.sku || undefined,
+            color: variant.color || undefined,
+            size: variant.size || undefined,
+            material: variant.material || undefined,
+            priceAdjust: parseFloat(variant.priceAdjust),
+            stock: parseInt(variant.stock),
+            order: variant.order,
+            isActive: variant.isActive,
+          }),
+        });
 
         const variantData = await readJsonResponse<{
           error?: string;
@@ -487,14 +485,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         mediaOperations.add.length > 0 ||
         mediaOperations.update.length > 0
       ) {
-        const batchSyncResponse = await fetch(
-          `/api/products/${params.id}/media`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(mediaOperations),
-          }
-        );
+        const batchSyncResponse = await fetch(`/api/products/${id}/media`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mediaOperations),
+        });
 
         if (!batchSyncResponse.ok) {
           throw new Error(
@@ -519,7 +514,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           order: v.order,
         }));
 
-        await fetch(`/api/products/${params.id}/variants/reorder`, {
+        await fetch(`/api/products/${id}/variants/reorder`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
