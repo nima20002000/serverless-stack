@@ -346,34 +346,39 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         variantIdMapping[variant.id] = variant.id;
       });
 
-      // Create new variants (sequentially to get IDs, but this is typically few)
-      for (const variant of newVariants) {
-        const variantResponse = await fetch(`/api/products/${id}/variants`, {
+      // Create new variants in batch (single API call instead of N sequential calls)
+      if (newVariants.length > 0) {
+        const batchResponse = await fetch(`/api/products/${id}/variants`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            name: variant.name,
-            sku: variant.sku || undefined,
-            color: variant.color || undefined,
-            size: variant.size || undefined,
-            material: variant.material || undefined,
-            priceAdjust: parseFloat(variant.priceAdjust),
-            stock: parseInt(variant.stock),
-            order: variant.order,
-            isActive: variant.isActive,
+            variants: newVariants.map((variant) => ({
+              tempId: variant.id,
+              name: variant.name,
+              sku: variant.sku || undefined,
+              color: variant.color || undefined,
+              size: variant.size || undefined,
+              material: variant.material || undefined,
+              priceAdjust: parseFloat(variant.priceAdjust),
+              stock: parseInt(variant.stock),
+              order: variant.order,
+              isActive: variant.isActive,
+            })),
           }),
         });
 
-        const variantData = await readJsonResponse<{
+        const batchData = await readJsonResponse<{
           error?: string;
-          variant?: { id?: string };
-        }>(variantResponse, 'خطا در ایجاد واریانت');
-        if (!variantResponse.ok) {
-          throw new Error(variantData.error || 'خطا در ایجاد واریانت');
+          idMapping?: Record<string, string>;
+        }>(batchResponse, 'خطا در ایجاد واریانت‌ها');
+
+        if (!batchResponse.ok) {
+          throw new Error(batchData.error || 'خطا در ایجاد واریانت‌ها');
         }
-        const variantId = variantData.variant?.id;
-        if (variantId) {
-          variantIdMapping[variant.id] = variantId;
+
+        // Merge the ID mapping from batch creation
+        if (batchData.idMapping) {
+          Object.assign(variantIdMapping, batchData.idMapping);
         }
       }
 

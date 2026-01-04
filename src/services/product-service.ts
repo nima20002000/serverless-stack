@@ -1964,6 +1964,118 @@ export async function getProductVariants(
 }
 
 /**
+ * Batch create multiple product variants in a single operation
+ * Returns a mapping of tempId -> realId for client-side reference
+ * OPTIMIZED: Creates all variants in a single DB insert instead of N+1 queries
+ */
+export async function batchCreateProductVariants(
+  productId: string,
+  variants: Array<{
+    tempId: string; // Client-side temporary ID for mapping
+    name: string;
+    sku?: string;
+    color?: string;
+    size?: string;
+    material?: string;
+    priceAdjust?: number;
+    stock: number;
+    order?: number;
+    isActive?: boolean;
+  }>
+): Promise<{
+  variants: VariantWithMedia[];
+  idMapping: Record<string, string>;
+}> {
+  if (variants.length === 0) {
+    return { variants: [], idMapping: {} };
+  }
+
+  log.info('Batch creating product variants', {
+    productId,
+    count: variants.length,
+  });
+
+  const supabase = createClient();
+
+  // Validate SKU uniqueness for all provided SKUs
+  const skusToCheck = variants.filter((v) => v.sku).map((v) => v.sku as string);
+  if (skusToCheck.length > 0) {
+    const { data: existingSkus } = await supabase
+      .from('product_variants')
+      .select('sku')
+      .in('sku', skusToCheck);
+
+    if (existingSkus && existingSkus.length > 0) {
+      const duplicateSku = existingSkus[0].sku;
+      throw new Error(`SKU "${duplicateSku}" قبلاً ثبت شده است`);
+    }
+  }
+
+  // Get the current max order for auto-assignment
+  const { data: maxOrderVariant } = await supabase
+    .from('product_variants')
+    .select('order')
+    .eq('productId', productId)
+    .order('order', { ascending: false })
+    .limit(1)
+    .single();
+
+  let currentMaxOrder = maxOrderVariant?.order ?? -1;
+
+  // Prepare all variants for bulk insert
+  const idMapping: Record<string, string> = {};
+  const variantsToInsert = variants.map((variant) => {
+    const variantId = randomUUID();
+    idMapping[variant.tempId] = variantId;
+
+    // Auto-assign order if not provided
+    const order = variant.order ?? ++currentMaxOrder;
+
+    return {
+      id: variantId,
+      productId,
+      name: variant.name,
+      sku: variant.sku || null,
+      color: variant.color || null,
+      size: variant.size || null,
+      material: variant.material || null,
+      priceAdjust: variant.priceAdjust || 0,
+      stock: variant.stock,
+      order,
+      isActive: variant.isActive !== undefined ? variant.isActive : true,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  // Bulk insert all variants in a single query
+  const { data: createdVariants, error } = await supabase
+    .from('product_variants')
+    .insert(variantsToInsert)
+    .select();
+
+  if (error || !createdVariants) {
+    log.error('Failed to batch create product variants', { error });
+    throw new Error('خطا در ایجاد واریانت‌ها');
+  }
+
+  // Update parent product stock
+  await updateProductStockFromVariants(productId);
+
+  log.info('Product variants batch created successfully', {
+    productId,
+    count: createdVariants.length,
+  });
+
+  // Return variants with empty media (new variants don't have media yet)
+  const variantsWithMedia: VariantWithMedia[] = createdVariants.map((v) => ({
+    ...v,
+    media: [],
+  }));
+
+  return { variants: variantsWithMedia, idMapping };
+}
+
+/**
  * Create product variant with auto-assigned order
  */
 export async function createProductVariant(data: {

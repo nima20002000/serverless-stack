@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/options';
 import {
   getProductVariants,
   createProductVariant,
+  batchCreateProductVariants,
 } from '@/services/product-service';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,12 @@ export async function GET(
   }
 }
 
+/**
+ * POST /api/products/[id]/variants
+ * Supports both single variant creation and batch creation
+ * - Single: { name, sku, ... } -> { variant }
+ * - Batch: { variants: [...] } -> { variants, idMapping }
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -53,6 +60,66 @@ export async function POST(
     }
 
     const body = await req.json();
+
+    // Check if this is a batch request
+    if (Array.isArray(body.variants)) {
+      // Batch creation - validate each variant
+      const variantsToCreate = body.variants;
+
+      for (const variant of variantsToCreate) {
+        if (!variant.name) {
+          return NextResponse.json(
+            { error: 'نام نوع محصول الزامی است' },
+            { status: 400 }
+          );
+        }
+        if (variant.stock === undefined || variant.stock < 0) {
+          return NextResponse.json(
+            { error: 'موجودی باید صفر یا بیشتر باشد' },
+            { status: 400 }
+          );
+        }
+        if (!variant.tempId) {
+          return NextResponse.json(
+            { error: 'شناسه موقت واریانت الزامی است' },
+            { status: 400 }
+          );
+        }
+      }
+
+      const result = await batchCreateProductVariants(
+        params.id,
+        variantsToCreate.map(
+          (v: {
+            tempId: string;
+            name: string;
+            sku?: string;
+            color?: string;
+            size?: string;
+            material?: string;
+            priceAdjust?: number;
+            stock: number;
+            order?: number;
+            isActive?: boolean;
+          }) => ({
+            tempId: v.tempId,
+            name: v.name,
+            sku: v.sku || undefined,
+            color: v.color || undefined,
+            size: v.size || undefined,
+            material: v.material || undefined,
+            priceAdjust: v.priceAdjust || 0,
+            stock: v.stock,
+            order: v.order,
+            isActive: v.isActive,
+          })
+        )
+      );
+
+      return NextResponse.json(result, { status: 201 });
+    }
+
+    // Single variant creation (backward compatibility)
     const { name, sku, color, size, material, priceAdjust, stock, isActive } =
       body;
 
