@@ -145,7 +145,10 @@ export default function NewProductPage() {
         throw new Error(productData.error || 'خطا در ایجاد محصول');
       }
 
-      const productId = productData.product.id;
+      const productId = productData.product?.id;
+      if (!productId) {
+        throw new Error('شناسه محصول دریافت نشد');
+      }
 
       // Step 2: Add media
       if (productMedia.media.length > 0) {
