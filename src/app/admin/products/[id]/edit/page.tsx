@@ -20,7 +20,20 @@ import type {
 import { toast } from '@/store/toast-store';
 
 interface EditProductPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }> | { id: string };
+}
+
+// Helper to safely unwrap params (handles both Promise and direct object)
+function unwrapParams(params: Promise<{ id: string }> | { id: string }): {
+  id: string;
+} {
+  // If it's a Promise, use() will handle it
+  // If it's already resolved, return it directly
+  if (params instanceof Promise) {
+    // This branch uses React.use() for Promises
+    return use(params);
+  }
+  return params;
 }
 
 async function readJsonResponse<T>(
@@ -51,7 +64,7 @@ async function readErrorMessage(
 }
 
 export default function EditProductPage({ params }: EditProductPageProps) {
-  const { id } = use(params);
+  const { id } = unwrapParams(params);
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
