@@ -1,0 +1,8 @@
+# Canonical schema parity checksums (`public` scope)
+# Generated: 2026-02-06
+# Metadata source files:
+# - database/schema-dumps/preview-public-metadata-canonical.txt
+# - database/schema-dumps/production-public-metadata-canonical.txt
+
+64bfc501fb2132f33b5a3eadab3dfc27534f8470e49d361b673e366ace1092ee  preview-public-metadata-canonical.txt
+64bfc501fb2132f33b5a3eadab3dfc27534f8470e49d361b673e366ace1092ee  production-public-metadata-canonical.txt

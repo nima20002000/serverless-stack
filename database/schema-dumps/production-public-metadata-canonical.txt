@@ -1,0 +1,237 @@
+column|_ProductToTag|A|text||NO
+column|_ProductToTag|B|text||NO
+column|categories|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|categories|description|text||YES
+column|categories|id|text|gen_random_uuid()|NO
+column|categories|image|text||YES
+column|categories|isActive|bool|true|NO
+column|categories|name|text||NO
+column|categories|parentId|text||YES
+column|categories|slug|text||NO
+column|categories|updatedAt|timestamp|CURRENT_TIMESTAMP|NO
+column|invoices|generatedAt|timestamp|CURRENT_TIMESTAMP|NO
+column|invoices|id|text||NO
+column|invoices|invoiceNumber|text||NO
+column|invoices|pdfUrl|text||YES
+column|invoices|transactionId|text||NO
+column|product_media|alt|text||YES
+column|product_media|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|product_media|id|text||NO
+column|product_media|isDefault|bool|false|YES
+column|product_media|order|int4|0|NO
+column|product_media|productId|text||NO
+column|product_media|type|MediaType||NO
+column|product_media|url|text||NO
+column|product_media|variantId|text||YES
+column|product_variants|color|text||YES
+column|product_variants|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|product_variants|id|text||NO
+column|product_variants|isActive|bool|true|NO
+column|product_variants|material|text||YES
+column|product_variants|name|text||NO
+column|product_variants|order|int4|0|NO
+column|product_variants|priceAdjust|numeric|0|NO
+column|product_variants|productId|text||NO
+column|product_variants|size|text||YES
+column|product_variants|sku|text||YES
+column|product_variants|stock|int4|0|NO
+column|product_variants|updatedAt|timestamp||NO
+column|products|categoryId|text||YES
+column|products|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|products|description|text||NO
+column|products|discountPercent|int4||YES
+column|products|displayOrder|int4|0|NO
+column|products|hasVariants|bool|false|NO
+column|products|id|text||NO
+column|products|images|_text||YES
+column|products|isActive|bool|true|NO
+column|products|isFeatured|bool|false|NO
+column|products|name|text||NO
+column|products|price|numeric||NO
+column|products|stock|int4|0|NO
+column|products|updatedAt|timestamp||NO
+column|promo_code_usages|id|text|(gen_random_uuid())::text|NO
+column|promo_code_usages|promoCodeId|text||NO
+column|promo_code_usages|transactionId|text||YES
+column|promo_code_usages|usedAt|timestamptz|now()|YES
+column|promo_code_usages|userId|text||YES
+column|promo_codes|code|text||NO
+column|promo_codes|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|promo_codes|currentUsageCount|int4|0|YES
+column|promo_codes|description|text||YES
+column|promo_codes|discountType|text|'PERCENT'::text|NO
+column|promo_codes|discountValue|numeric|10|NO
+column|promo_codes|expiresAt|timestamp||NO
+column|promo_codes|id|text||NO
+column|promo_codes|isActive|bool|true|YES
+column|promo_codes|isUsed|bool|false|NO
+column|promo_codes|maxDiscountAmount|numeric||YES
+column|promo_codes|maxUsageCount|int4||YES
+column|promo_codes|minOrderAmount|numeric||YES
+column|promo_codes|userId|text||YES
+column|site_settings|id|text|(gen_random_uuid())::text|NO
+column|site_settings|key|text||NO
+column|site_settings|updatedAt|timestamp|CURRENT_TIMESTAMP|NO
+column|site_settings|value|text||NO
+column|tags|createdAt|timestamp|now()|NO
+column|tags|id|text|gen_random_uuid()|NO
+column|tags|name|text||NO
+column|tags|slug|text||NO
+column|tags|updatedAt|timestamp|now()|NO
+column|transaction_items|id|text||NO
+column|transaction_items|price|numeric||NO
+column|transaction_items|productId|text||NO
+column|transaction_items|quantity|int4||NO
+column|transaction_items|transactionId|text||NO
+column|transaction_items|variantId|text||YES
+column|transactions|amount|numeric||NO
+column|transactions|createAccount|bool|false|YES
+column|transactions|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|transactions|discountAmount|numeric|0|YES
+column|transactions|email|text||YES
+column|transactions|fullName|text|''::text|YES
+column|transactions|gateway_fee|int4|0|YES
+column|transactions|id|text||NO
+column|transactions|ip_address|varchar||YES
+column|transactions|isGuest|bool|true|NO
+column|transactions|paymentMetadata|jsonb||YES
+column|transactions|paymentMethod|PaymentMethod|'STRIPE'::"PaymentMethod"|NO
+column|transactions|paymentProviderRef|text||YES
+column|transactions|paypalCaptureId|text||YES
+column|transactions|paypalOrderId|text||YES
+column|transactions|phone|text|''::text|YES
+column|transactions|postalCode|text||YES
+column|transactions|promoCodeId|text||YES
+column|transactions|shippingAddress|text|''::text|YES
+column|transactions|status|TransactionStatus|'PENDING'::"TransactionStatus"|NO
+column|transactions|stripeChargeId|text||YES
+column|transactions|stripeCheckoutSessionId|text||YES
+column|transactions|stripePaymentIntentId|text||YES
+column|transactions|subtotal|numeric||YES
+column|transactions|transactionCode|text||NO
+column|transactions|updatedAt|timestamp||NO
+column|transactions|userId|text||YES
+column|transactions|user_agent|text||YES
+column|user_activity_logs|activity_type|activity_type||NO
+column|user_activity_logs|created_at|timestamp|now()|YES
+column|user_activity_logs|error_message|text||YES
+column|user_activity_logs|id|uuid|gen_random_uuid()|NO
+column|user_activity_logs|ip_address|varchar||YES
+column|user_activity_logs|metadata|jsonb|'{}'::jsonb|YES
+column|user_activity_logs|success|bool|true|YES
+column|user_activity_logs|user_agent|text||YES
+column|user_activity_logs|user_id|text||YES
+column|users|createdAt|timestamp|CURRENT_TIMESTAMP|NO
+column|users|email|text||YES
+column|users|id|text||NO
+column|users|isVerified|bool|false|NO
+column|users|name|text||NO
+column|users|password|text||YES
+column|users|phone|text||YES
+column|users|postalCode|text||YES
+column|users|role|Role|'USER'::"Role"|NO
+column|users|shippingAddress|text||YES
+column|users|uid|text||NO
+column|users|updatedAt|timestamp||NO
+column|wishlists|created_at|timestamptz|now()|YES
+column|wishlists|id|uuid|gen_random_uuid()|NO
+column|wishlists|product_id|text||NO
+column|wishlists|user_id|text||NO
+column|wishlists|variant_id|text||YES
+enum|MediaType|IMAGE
+enum|MediaType|VIDEO
+enum|PaymentMethod|PAYPAL
+enum|PaymentMethod|STRIPE
+enum|Role|ADMIN
+enum|Role|USER
+enum|TransactionStatus|COMPLETED
+enum|TransactionStatus|FAILED
+enum|TransactionStatus|PENDING
+enum|activity_type|LOGIN_FAILED
+enum|activity_type|LOGIN_SUCCESS
+enum|activity_type|LOGOUT
+enum|activity_type|OTP_FAILED
+enum|activity_type|OTP_SENT
+enum|activity_type|OTP_VERIFIED
+enum|activity_type|PASSWORD_CHANGE
+enum|activity_type|PROFILE_UPDATE
+enum|activity_type|REGISTER
+index|public|_ProductToTag|_ProductToTag_AB_unique|CREATE UNIQUE INDEX "_ProductToTag_AB_unique" ON public."_ProductToTag" USING btree ("A", "B")
+index|public|_ProductToTag|_ProductToTag_B_index|CREATE INDEX "_ProductToTag_B_index" ON public."_ProductToTag" USING btree ("B")
+index|public|_ProductToTag|idx_product_to_tag_a|CREATE INDEX idx_product_to_tag_a ON public."_ProductToTag" USING btree ("A")
+index|public|categories|categories_pkey|CREATE UNIQUE INDEX categories_pkey ON public.categories USING btree (id)
+index|public|categories|categories_slug_key|CREATE UNIQUE INDEX categories_slug_key ON public.categories USING btree (slug)
+index|public|categories|idx_categories_active_name|CREATE INDEX idx_categories_active_name ON public.categories USING btree ("isActive", name)
+index|public|categories|idx_categories_parent_active_name|CREATE INDEX idx_categories_parent_active_name ON public.categories USING btree ("parentId", "isActive", name)
+index|public|invoices|invoices_invoiceNumber_key|CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON public.invoices USING btree ("invoiceNumber")
+index|public|invoices|invoices_pkey|CREATE UNIQUE INDEX invoices_pkey ON public.invoices USING btree (id)
+index|public|invoices|invoices_transactionId_key|CREATE UNIQUE INDEX "invoices_transactionId_key" ON public.invoices USING btree ("transactionId")
+index|public|product_media|idx_product_media_product_default_order|CREATE INDEX idx_product_media_product_default_order ON public.product_media USING btree ("productId", "isDefault" DESC, "order")
+index|public|product_media|idx_product_media_variant_default_order|CREATE INDEX idx_product_media_variant_default_order ON public.product_media USING btree ("variantId", "isDefault" DESC, "order")
+index|public|product_media|product_media_pkey|CREATE UNIQUE INDEX product_media_pkey ON public.product_media USING btree (id)
+index|public|product_variants|idx_product_variants_product_active_order|CREATE INDEX idx_product_variants_product_active_order ON public.product_variants USING btree ("productId", "isActive", "order")
+index|public|product_variants|idx_product_variants_product_order|CREATE INDEX idx_product_variants_product_order ON public.product_variants USING btree ("productId", "order")
+index|public|product_variants|product_variants_pkey|CREATE UNIQUE INDEX product_variants_pkey ON public.product_variants USING btree (id)
+index|public|product_variants|product_variants_sku_key|CREATE UNIQUE INDEX product_variants_sku_key ON public.product_variants USING btree (sku)
+index|public|products|idx_products_displayorder|CREATE INDEX idx_products_displayorder ON public.products USING btree ("displayOrder")
+index|public|products|products_isActive_idx|CREATE INDEX "products_isActive_idx" ON public.products USING btree ("isActive")
+index|public|products|products_isFeatured_idx|CREATE INDEX "products_isFeatured_idx" ON public.products USING btree ("isFeatured")
+index|public|products|products_pkey|CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id)
+index|public|promo_code_usages|idx_promo_usage_code|CREATE INDEX idx_promo_usage_code ON public.promo_code_usages USING btree ("promoCodeId")
+index|public|promo_code_usages|idx_promo_usage_transaction|CREATE INDEX idx_promo_usage_transaction ON public.promo_code_usages USING btree ("transactionId")
+index|public|promo_code_usages|idx_promo_usage_user|CREATE INDEX idx_promo_usage_user ON public.promo_code_usages USING btree ("userId")
+index|public|promo_code_usages|promo_code_usages_pkey|CREATE UNIQUE INDEX promo_code_usages_pkey ON public.promo_code_usages USING btree (id)
+index|public|promo_codes|idx_promo_codes_active|CREATE INDEX idx_promo_codes_active ON public.promo_codes USING btree ("isActive", "expiresAt")
+index|public|promo_codes|idx_promo_codes_code|CREATE INDEX idx_promo_codes_code ON public.promo_codes USING btree (code)
+index|public|promo_codes|promo_codes_code_key|CREATE UNIQUE INDEX promo_codes_code_key ON public.promo_codes USING btree (code)
+index|public|promo_codes|promo_codes_pkey|CREATE UNIQUE INDEX promo_codes_pkey ON public.promo_codes USING btree (id)
+index|public|promo_codes|promo_codes_userId_isUsed_idx|CREATE INDEX "promo_codes_userId_isUsed_idx" ON public.promo_codes USING btree ("userId", "isUsed")
+index|public|promo_codes|promo_codes_userId_key|CREATE UNIQUE INDEX "promo_codes_userId_key" ON public.promo_codes USING btree ("userId")
+index|public|promo_codes|unique_promo_code|CREATE UNIQUE INDEX unique_promo_code ON public.promo_codes USING btree (code)
+index|public|site_settings|site_settings_key_key|CREATE UNIQUE INDEX site_settings_key_key ON public.site_settings USING btree (key)
+index|public|site_settings|site_settings_pkey|CREATE UNIQUE INDEX site_settings_pkey ON public.site_settings USING btree (id)
+index|public|tags|tags_name_key|CREATE UNIQUE INDEX tags_name_key ON public.tags USING btree (name)
+index|public|tags|tags_pkey|CREATE UNIQUE INDEX tags_pkey ON public.tags USING btree (id)
+index|public|tags|tags_slug_key|CREATE UNIQUE INDEX tags_slug_key ON public.tags USING btree (slug)
+index|public|transaction_items|transaction_items_pkey|CREATE UNIQUE INDEX transaction_items_pkey ON public.transaction_items USING btree (id)
+index|public|transactions|idx_transactions_promo|CREATE INDEX idx_transactions_promo ON public.transactions USING btree ("promoCodeId")
+index|public|transactions|transactions_isguest_idx|CREATE INDEX transactions_isguest_idx ON public.transactions USING btree ("isGuest")
+index|public|transactions|transactions_paymentmethod_idx|CREATE INDEX transactions_paymentmethod_idx ON public.transactions USING btree ("paymentMethod")
+index|public|transactions|transactions_paypal_order_idx|CREATE INDEX transactions_paypal_order_idx ON public.transactions USING btree ("paypalOrderId") WHERE ("paypalOrderId" IS NOT NULL)
+index|public|transactions|transactions_pkey|CREATE UNIQUE INDEX transactions_pkey ON public.transactions USING btree (id)
+index|public|transactions|transactions_stripe_checkout_idx|CREATE INDEX transactions_stripe_checkout_idx ON public.transactions USING btree ("stripeCheckoutSessionId") WHERE ("stripeCheckoutSessionId" IS NOT NULL)
+index|public|transactions|transactions_stripe_paymentintent_idx|CREATE INDEX transactions_stripe_paymentintent_idx ON public.transactions USING btree ("stripePaymentIntentId") WHERE ("stripePaymentIntentId" IS NOT NULL)
+index|public|transactions|transactions_transactionCode_key|CREATE UNIQUE INDEX "transactions_transactionCode_key" ON public.transactions USING btree ("transactionCode")
+index|public|transactions|transactions_userId_createdAt_idx|CREATE INDEX "transactions_userId_createdAt_idx" ON public.transactions USING btree ("userId", "createdAt" DESC)
+index|public|user_activity_logs|idx_user_activity_created_at|CREATE INDEX idx_user_activity_created_at ON public.user_activity_logs USING btree (created_at DESC)
+index|public|user_activity_logs|idx_user_activity_type|CREATE INDEX idx_user_activity_type ON public.user_activity_logs USING btree (activity_type)
+index|public|user_activity_logs|idx_user_activity_user_id|CREATE INDEX idx_user_activity_user_id ON public.user_activity_logs USING btree (user_id)
+index|public|user_activity_logs|user_activity_logs_pkey|CREATE UNIQUE INDEX user_activity_logs_pkey ON public.user_activity_logs USING btree (id)
+index|public|users|users_email_idx|CREATE INDEX users_email_idx ON public.users USING btree (email)
+index|public|users|users_email_key|CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)
+index|public|users|users_phone_idx|CREATE INDEX users_phone_idx ON public.users USING btree (phone)
+index|public|users|users_phone_key|CREATE UNIQUE INDEX users_phone_key ON public.users USING btree (phone)
+index|public|users|users_pkey|CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)
+index|public|users|users_uid_idx|CREATE INDEX users_uid_idx ON public.users USING btree (uid)
+index|public|users|users_uid_key|CREATE UNIQUE INDEX users_uid_key ON public.users USING btree (uid)
+index|public|wishlists|idx_wishlists_created_at|CREATE INDEX idx_wishlists_created_at ON public.wishlists USING btree (created_at DESC)
+index|public|wishlists|idx_wishlists_product_id|CREATE INDEX idx_wishlists_product_id ON public.wishlists USING btree (product_id)
+index|public|wishlists|idx_wishlists_user_created|CREATE INDEX idx_wishlists_user_created ON public.wishlists USING btree (user_id, created_at DESC)
+index|public|wishlists|idx_wishlists_user_id|CREATE INDEX idx_wishlists_user_id ON public.wishlists USING btree (user_id)
+index|public|wishlists|unique_wishlist_item|CREATE UNIQUE INDEX unique_wishlist_item ON public.wishlists USING btree (user_id, product_id, variant_id)
+index|public|wishlists|wishlists_pkey|CREATE UNIQUE INDEX wishlists_pkey ON public.wishlists USING btree (id)
+table|_ProductToTag
+table|categories
+table|invoices
+table|product_media
+table|product_variants
+table|products
+table|promo_code_usages
+table|promo_codes
+table|site_settings
+table|tags
+table|transaction_items
+table|transactions
+table|user_activity_logs
+table|users
+table|wishlists

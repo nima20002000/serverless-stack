@@ -27,3 +27,17 @@ Create a single source of truth for the new schema (Stripe/PayPal + no OTP table
 
 ## Rollback
 - Stop refactor rollout and reconcile schema differences first; no app deploy until parity is restored.
+
+## Completion Notes (2026-02-06)
+- Status: Completed
+- Preview and production parity verified for `public` tables/columns/enums/indexes with identical canonical checksum:
+  - `64bfc501fb2132f33b5a3eadab3dfc27534f8470e49d361b673e366ace1092ee`
+- Drift resolved:
+  - Added missing production indexes `idx_promo_codes_code` and `idx_transactions_promo` (idempotent SQL applied to both environments).
+- Contract artifacts committed:
+  - `database/schema-contract.md`
+  - `database/schema-dumps/preview-public-metadata-canonical.txt`
+  - `database/schema-dumps/production-public-metadata-canonical.txt`
+  - `database/schema-dumps/public-schema-parity-checksums.txt`
+  - `scripts/db/validate_payment_schema.sql`
+- Validation script verified against both environments with `DO` success.
