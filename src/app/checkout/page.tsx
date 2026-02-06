@@ -18,16 +18,11 @@ import {
   type CartItem,
 } from '@/store/cart-store';
 import { toast } from '@/store/toast-store';
-import { DIGIPAY_CONFIG } from '@/config/constants';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import ZarinpalBadge from '@/components/payment/ZarinpalBadge';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
-import DigipayBadge from '@/components/payment/DigipayBadge';
-import ZibalBadge from '@/components/payment/ZibalBadge';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
-import DigipayGuidanceModal from '@/components/checkout/DigipayGuidanceModal';
 import PromoCodeInput from '@/components/checkout/PromoCodeInput';
 import { useCheckoutStore } from '@/store/checkout-store';
 
@@ -44,30 +39,15 @@ export default function CheckoutPage() {
   const { promoCode: appliedPromo } = useCheckoutStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<
-    'zarinpal' | 'digipay' | 'zibal'
-  >('zarinpal');
-  const [showDigipayModal, setShowDigipayModal] = useState(false);
-  const [pendingFormData, setPendingFormData] = useState<{
-    fullName: string;
-    phone: string;
-    email: string;
-    shippingAddress: string;
-    postalCode: string;
-  } | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>(
+    'stripe'
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Calculate discount and surcharge
+  // Calculate discount
   const discountAmount = appliedPromo?.discountAmount || 0;
   const subtotal = total; // Items total before discount
-  const afterDiscount = subtotal - discountAmount;
-
-  // Calculate surcharge for Digipay (on amount after discount)
-  const digipaySurcharge =
-    paymentMethod === 'digipay'
-      ? Math.round(afterDiscount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
-      : 0;
-  const finalTotal = afterDiscount + digipaySurcharge;
+  const finalTotal = Math.max(0, subtotal - discountAmount);
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
@@ -99,12 +79,7 @@ export default function CheckoutPage() {
               variantId: item.variantId,
               quantity: item.quantity,
             })),
-            paymentMethod:
-              paymentMethod === 'digipay'
-                ? 'DIGIPAY'
-                : paymentMethod === 'zibal'
-                  ? 'ZIBAL'
-                  : 'ZARINPAL',
+            paymentMethod: paymentMethod.toUpperCase(),
             shippingInfo: {
               fullName: formData.fullName,
               phone: formData.phone,
@@ -148,29 +123,10 @@ export default function CheckoutPage() {
       shippingAddress: string;
       postalCode: string;
     }) => {
-      // If digipay is selected, show guidance modal first
-      if (paymentMethod === 'digipay') {
-        setPendingFormData(formData);
-        setShowDigipayModal(true);
-        return;
-      }
-
-      // For other payment methods, process immediately
       processPayment(formData);
     },
-    [paymentMethod, processPayment]
+    [processPayment]
   );
-
-  const handleDigipayConfirm = useCallback(() => {
-    if (pendingFormData) {
-      processPayment(pendingFormData);
-    }
-  }, [pendingFormData, processPayment]);
-
-  const handleDigipayModalClose = useCallback(() => {
-    setShowDigipayModal(false);
-    setPendingFormData(null);
-  }, []);
 
   const handleRemoveItem = useCallback(
     (item: CartItem) => {
@@ -240,7 +196,7 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'zarinpal'
+                    paymentMethod === 'stripe'
                       ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
@@ -248,25 +204,27 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="zarinpal"
-                    checked={paymentMethod === 'zarinpal'}
-                    onChange={() => setPaymentMethod('zarinpal')}
+                    value="stripe"
+                    checked={paymentMethod === 'stripe'}
+                    onChange={() => setPaymentMethod('stripe')}
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
                     <div className="font-medium text-slate-900 text-sm">
-                      زرین‌پال
+                      Stripe
                     </div>
                     <div className="text-xs text-slate-500">
-                      پرداخت با کارت بانکی
+                      پرداخت امن بین‌المللی با کارت
                     </div>
                   </div>
-                  <ZarinpalBadge />
+                  <span className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
+                    Card
+                  </span>
                 </label>
 
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'zibal'
+                    paymentMethod === 'paypal'
                       ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
@@ -274,89 +232,28 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="zibal"
-                    checked={paymentMethod === 'zibal'}
-                    onChange={() => setPaymentMethod('zibal')}
+                    value="paypal"
+                    checked={paymentMethod === 'paypal'}
+                    onChange={() => setPaymentMethod('paypal')}
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
                     <div className="font-medium text-slate-900 text-sm">
-                      زیبال
+                      PayPal
                     </div>
                     <div className="text-xs text-slate-500">
-                      پرداخت با کارت بانکی
+                      پرداخت سریع با حساب پی‌پال
                     </div>
                   </div>
-                  <ZibalBadge />
-                </label>
-
-                <label
-                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'digipay'
-                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
-                      : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="digipay"
-                    checked={paymentMethod === 'digipay'}
-                    onChange={() => setPaymentMethod('digipay')}
-                    className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium text-slate-900 text-sm">
-                      دیجی‌پی
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      پرداخت اقساطی (+{DIGIPAY_CONFIG.SURCHARGE_PERCENT}٪
-                      کارمزد)
-                    </div>
-                  </div>
-                  <DigipayBadge />
+                  <span className="rounded bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700">
+                    Wallet
+                  </span>
                 </label>
               </div>
-
-              {/* Digipay Installment Info */}
-              {paymentMethod === 'digipay' && (
-                <div className="mt-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-emerald-800">
-                      ۴ قسط بدون بهره
-                    </span>
-                  </div>
-                  <div className="text-xs text-emerald-700 space-y-1">
-                    <div className="flex justify-between">
-                      <span>پیش‌پرداخت امروز:</span>
-                      <span className="font-medium">
-                        {formatPrice(Math.round(finalTotal / 4))}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>۳ قسط ماهانه:</span>
-                      <span className="font-medium">
-                        هر کدام {formatPrice(Math.round(finalTotal / 4))}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <p className="mt-3 text-xs text-slate-500">
+                اگر تایید پرداخت کمی زمان ببرد، وضعیت سفارش در صفحه نتیجه به
+                صورت خودکار به‌روزرسانی می‌شود.
+              </p>
             </div>
 
             {/* Shipping Form */}
@@ -384,9 +281,7 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
                 onClick={() => formRef.current?.requestSubmit()}
               >
-                {paymentMethod === 'digipay'
-                  ? `پرداخت ${formatPrice(Math.round(finalTotal / 4))}`
-                  : `پرداخت ${formatPrice(finalTotal)}`}
+                {`پرداخت ${formatPrice(finalTotal)}`}
               </Button>
               <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
                 <ShieldCheckIcon className="w-4 h-4" />
@@ -480,13 +375,6 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                {paymentMethod === 'digipay' && digipaySurcharge > 0 && (
-                  <div className="flex justify-between text-slate-600">
-                    <span>کارمزد دیجی‌پی</span>
-                    <span>+ {formatPrice(digipaySurcharge)}</span>
-                  </div>
-                )}
-
                 <div className="flex justify-between text-slate-600">
                   <span>هزینه ارسال</span>
                   <span>پس کرایه (محاسبه در مقصد)</span>
@@ -498,21 +386,11 @@ export default function CheckoutPage() {
 
               {/* Final Total */}
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-900">
-                  {paymentMethod === 'digipay' ? 'پرداخت امروز' : 'مبلغ نهایی'}
-                </span>
+                <span className="font-semibold text-slate-900">مبلغ نهایی</span>
                 <span className="text-lg font-bold text-slate-900">
-                  {paymentMethod === 'digipay'
-                    ? formatPrice(Math.round(finalTotal / 4))
-                    : formatPrice(finalTotal)}
+                  {formatPrice(finalTotal)}
                 </span>
               </div>
-
-              {paymentMethod === 'digipay' && (
-                <p className="text-xs text-slate-500 mt-1 text-left">
-                  مجموع: {formatPrice(finalTotal)}
-                </p>
-              )}
 
               {/* Submit Button - Desktop */}
               <div className="hidden lg:block mt-6">
@@ -524,9 +402,7 @@ export default function CheckoutPage() {
                   disabled={isProcessing}
                   onClick={() => formRef.current?.requestSubmit()}
                 >
-                  {paymentMethod === 'digipay'
-                    ? `پرداخت ${formatPrice(Math.round(finalTotal / 4))}`
-                    : `پرداخت ${formatPrice(finalTotal)}`}
+                  {`پرداخت ${formatPrice(finalTotal)}`}
                 </Button>
                 <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
                   <ShieldCheckIcon className="w-4 h-4" />
@@ -537,14 +413,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       </main>
-
-      {/* Digipay Guidance Modal */}
-      <DigipayGuidanceModal
-        isOpen={showDigipayModal}
-        onClose={handleDigipayModalClose}
-        onConfirm={handleDigipayConfirm}
-        isProcessing={isProcessing}
-      />
     </div>
   );
 }

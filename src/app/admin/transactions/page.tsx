@@ -175,7 +175,7 @@ export default function TransactionsManagementPage() {
     };
     return (
       <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
-        {labels[method as keyof typeof labels] || method}
+        {labels[method as keyof typeof labels] || 'UNKNOWN'}
       </span>
     );
   };
@@ -425,6 +425,22 @@ export default function TransactionsManagementPage() {
                         {transaction.paymentProviderRef && (
                           <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
                             Ref: {transaction.paymentProviderRef}
+                          </div>
+                        )}
+                        {transaction.stripePaymentIntentId && (
+                          <div
+                            className="text-xs text-indigo-600 dark:text-indigo-300 mt-1 break-all"
+                            dir="ltr"
+                          >
+                            PI: {transaction.stripePaymentIntentId}
+                          </div>
+                        )}
+                        {transaction.paypalOrderId && (
+                          <div
+                            className="text-xs text-sky-600 dark:text-sky-300 mt-1 break-all"
+                            dir="ltr"
+                          >
+                            PO: {transaction.paypalOrderId}
                           </div>
                         )}
                         {transaction.invoice && (

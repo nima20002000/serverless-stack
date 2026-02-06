@@ -32,6 +32,9 @@ interface Transaction {
   amount: string;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   paymentMethod: 'STRIPE' | 'PAYPAL';
+  paymentProviderRef?: string | null;
+  stripePaymentIntentId?: string | null;
+  paypalOrderId?: string | null;
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;

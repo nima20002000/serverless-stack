@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { formatPrice } from '@/lib/utils/format';
 import { format } from 'date-fns-jalali';
@@ -74,6 +75,8 @@ export default function TransactionDetailModal({
   onClose,
   transaction,
 }: TransactionDetailModalProps) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   if (!transaction) return null;
 
   const getStatusIcon = (status: string) => {
@@ -124,7 +127,20 @@ export default function TransactionDetailModal({
       STRIPE: 'استرایپ',
       PAYPAL: 'پی‌پال',
     };
-    return labels[method as keyof typeof labels] || method;
+    return labels[method as keyof typeof labels] || 'UNKNOWN';
+  };
+
+  const copyToClipboard = async (value: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopiedField(field);
+      setTimeout(
+        () => setCopiedField((current) => (current === field ? null : current)),
+        1800
+      );
+    } catch {
+      setCopiedField(null);
+    }
   };
 
   const totalItems = transaction.items.reduce(
@@ -182,33 +198,80 @@ export default function TransactionDetailModal({
                 </span>
               </div>
               {transaction.paymentProviderRef && (
-                <div className="flex justify-between items-center">
+                <div className="space-y-2">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
                     مرجع پرداخت:
                   </span>
-                  <code className="text-sm bg-white dark:bg-slate-800 px-2 py-1 rounded">
+                  <code
+                    className="block text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded break-all text-left"
+                    dir="ltr"
+                  >
                     {transaction.paymentProviderRef}
                   </code>
                 </div>
               )}
               {transaction.stripePaymentIntentId && (
-                <div className="flex justify-between items-center">
+                <div className="space-y-2">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
                     Stripe Intent:
                   </span>
-                  <code className="text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded">
-                    {transaction.stripePaymentIntentId.substring(0, 24)}...
-                  </code>
+                  <div className="flex items-center gap-2">
+                    <code
+                      className="flex-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded break-all text-left"
+                      dir="ltr"
+                    >
+                      {transaction.stripePaymentIntentId}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(
+                          transaction.stripePaymentIntentId as string,
+                          'stripe-intent'
+                        )
+                      }
+                      className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    >
+                      کپی
+                    </button>
+                  </div>
+                  {copiedField === 'stripe-intent' && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-300">
+                      شناسه Stripe کپی شد
+                    </span>
+                  )}
                 </div>
               )}
               {transaction.paypalOrderId && (
-                <div className="flex justify-between items-center">
+                <div className="space-y-2">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
                     PayPal Order:
                   </span>
-                  <code className="text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded">
-                    {transaction.paypalOrderId.substring(0, 24)}...
-                  </code>
+                  <div className="flex items-center gap-2">
+                    <code
+                      className="flex-1 text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded break-all text-left"
+                      dir="ltr"
+                    >
+                      {transaction.paypalOrderId}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(
+                          transaction.paypalOrderId as string,
+                          'paypal-order'
+                        )
+                      }
+                      className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
+                    >
+                      کپی
+                    </button>
+                  </div>
+                  {copiedField === 'paypal-order' && (
+                    <span className="text-xs text-emerald-600 dark:text-emerald-300">
+                      شناسه PayPal کپی شد
+                    </span>
+                  )}
                 </div>
               )}
               <div className="flex justify-between items-center">

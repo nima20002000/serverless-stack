@@ -12,7 +12,27 @@ function FailureContent() {
   const searchParams = useSearchParams();
 
   const transactionCode = searchParams.get('code');
+  const provider = searchParams.get('provider');
+  const paymentStatus = searchParams.get('status');
   const errorMessage = searchParams.get('error');
+  const isCancelled = paymentStatus === 'cancelled';
+  const isPending = paymentStatus === 'pending';
+
+  const title = isCancelled
+    ? 'پرداخت لغو شد'
+    : isPending
+      ? 'پرداخت در انتظار تایید'
+      : 'پرداخت ناموفق';
+  const subtitle = isCancelled
+    ? 'فرآیند پرداخت توسط شما لغو شد'
+    : isPending
+      ? 'تایید نهایی درگاه پرداخت هنوز تکمیل نشده است'
+      : 'متأسفانه پرداخت شما انجام نشد';
+  const infoMessage = isCancelled
+    ? 'سبد خرید شما حفظ شده است. می‌توانید روش پرداخت را تغییر دهید و دوباره تلاش کنید.'
+    : isPending
+      ? 'لطفاً چند دقیقه بعد وضعیت تراکنش را از پروفایل بررسی کنید.'
+      : 'مبلغی از حساب شما کسر نشده است. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.';
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -25,10 +45,8 @@ function FailureContent() {
             </div>
 
             {/* Error Message */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              پرداخت ناموفق
-            </h1>
-            <p className="text-gray-600 mb-6">متأسفانه پرداخت شما انجام نشد</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
+            <p className="text-gray-600 mb-6">{subtitle}</p>
 
             {/* Transaction Code if available */}
             {transactionCode && (
@@ -54,8 +72,12 @@ function FailureContent() {
             {/* Info Message */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
               <p className="text-sm text-yellow-800 text-right">
-                مبلغی از حساب شما کسر نشده است. لطفاً دوباره تلاش کنید یا با
-                پشتیبانی تماس بگیرید.
+                {infoMessage}
+                {provider && !isPending && (
+                  <span className="block mt-2 text-xs">
+                    Provider: {provider}
+                  </span>
+                )}
               </p>
             </div>
 

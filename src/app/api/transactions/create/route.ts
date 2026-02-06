@@ -8,7 +8,6 @@ import {
 } from '@/services/transaction-service';
 import { updateUserShippingInfo } from '@/services/user-service';
 import { validatePromoCode } from '@/services/promo-service';
-import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
 import {
   createStripeCheckoutSession,
   getStripeCurrency,
@@ -19,7 +18,6 @@ import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
 import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
-import { DIGIPAY_CONFIG } from '@/config/constants';
 import { getAppBaseUrl } from '@/lib/utils/url';
 
 export const dynamic = 'force-dynamic';
@@ -401,54 +399,39 @@ async function postHandler(req: NextRequest) {
       }
     }
 
-    // Enforce a strict API boundary and normalize legacy gateway values
-    // into canonical DB payment methods.
+    // Enforce strict payment contract for active providers only.
     const requestedGateway =
       typeof paymentMethod === 'string'
-        ? paymentMethod.toUpperCase()
+        ? paymentMethod.trim().toUpperCase()
         : 'STRIPE';
-    const gatewayToCanonical: Record<string, 'STRIPE' | 'PAYPAL'> = {
-      STRIPE: 'STRIPE',
-      PAYPAL: 'PAYPAL',
-      ZARINPAL: 'STRIPE',
-      ZIBAL: 'STRIPE',
-      DIGIPAY: 'STRIPE',
-    };
-    const validPaymentMethod = gatewayToCanonical[requestedGateway];
+    const validPaymentMethod =
+      requestedGateway === 'PAYPAL' ? 'PAYPAL' : 'STRIPE';
 
-    if (!validPaymentMethod) {
+    if (requestedGateway !== 'STRIPE' && requestedGateway !== 'PAYPAL') {
       return NextResponse.json(
         { error: 'روش پرداخت نامعتبر است' },
         { status: 400 }
       );
     }
 
-    // Calculate surcharge for Digipay payments (12%)
-    // The surcharge is stored separately and only used for payment gateway communication
-    const gatewayFee =
-      requestedGateway === 'DIGIPAY'
-        ? Math.round(totalAmount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
-        : 0;
-    // Amount sent to payment gateway (base + fee)
-    const paymentGatewayAmount = totalAmount + gatewayFee;
+    // Active providers currently have no gateway surcharge.
+    const gatewayFee = 0;
+    const paymentGatewayAmount = totalAmount;
 
     log.info('Payment amount calculation', {
       baseAmount: totalAmount,
       gatewayFee,
       paymentGatewayAmount,
       paymentMethod: validPaymentMethod,
-      surchargePercent:
-        requestedGateway === 'DIGIPAY' ? DIGIPAY_CONFIG.SURCHARGE_PERCENT : 0,
     });
 
     // Create transaction in database with shipping info
-    // Note: We store the base amount (without gateway fee) in 'amount'
-    // The gateway_fee is stored separately for accounting purposes
+    // Store the amount and provider metadata for webhook reconciliation.
     const transaction = await createTransaction({
       userId: session?.user?.id, // Optional for guest users
       items: transactionItems,
-      amount: totalAmount, // Final amount after promo discount, WITHOUT gateway fee
-      gatewayFee, // Gateway fee stored separately (only for Digipay)
+      amount: totalAmount,
+      gatewayFee,
       paymentMethod: validPaymentMethod,
       shippingInfo: {
         fullName: finalFullName,
@@ -523,7 +506,7 @@ async function postHandler(req: NextRequest) {
 
     // Create payment request with selected payment gateway
     let paymentUrl: string;
-    let paymentIdentifier: string; // checkout session ID, authority, ticket, or trackId
+    let paymentIdentifier: string; // checkout session ID or PayPal order ID
 
     if (requestedGateway === 'STRIPE') {
       const stripeCurrency = getStripeCurrency();
@@ -641,116 +624,11 @@ async function postHandler(req: NextRequest) {
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
       });
-    } else if (requestedGateway === 'DIGIPAY') {
-      // Digipay payment flow
-      const digipayClient = await import('@/lib/digipay/client');
-
-      const digipayRequest = await digipayClient.createPaymentRequest({
-        amount: paymentGatewayAmount, // In Tomans - includes 12% surcharge for Digipay
-        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-        cellNumber: finalPhone,
-        providerId: transaction.transactionCode, // Use transactionCode as unique providerId
-        callbackUrl: `${digipayClient.getCallbackUrl(req.url)}?ticket=${transaction.id}`,
-        // Optional: Allow user to select preferred gateway in UI
-        // preferredGateway: 'IPG' | 'WALLET'
-      });
-
-      // Update transaction with Digipay ticket
-      const supabaseTx = createClient();
-      await supabaseTx
-        .from('transactions')
-        .update({
-          paymentProviderRef: digipayRequest.ticket,
-          paymentMetadata: {
-            provider: 'DIGIPAY',
-            ticket: digipayRequest.ticket,
-          },
-        })
-        .eq('id', transaction.id);
-
-      paymentUrl = digipayRequest.redirectUrl;
-      paymentIdentifier = digipayRequest.ticket;
-
-      log.info('Digipay transaction created successfully', {
-        transactionId: transaction.id,
-        transactionCode: transaction.transactionCode,
-        baseAmount: totalAmount,
-        gatewayFee,
-        paymentGatewayAmount,
-        ticket: digipayRequest.ticket,
-        userId: session?.user?.id || 'guest',
-        elapsedMs: Date.now() - startTime,
-      });
-    } else if (requestedGateway === 'ZIBAL') {
-      // Zibal payment flow
-      const zibalClient = await import('@/lib/zibal/client');
-
-      const zibalRequest = await zibalClient.createPaymentRequest({
-        amount: paymentGatewayAmount, // In Tomans (no surcharge for Zibal, gatewayFee is 0)
-        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-        mobile: finalPhone,
-        orderId: transaction.transactionCode, // Use transactionCode as orderId
-        callbackUrl: zibalClient.getCallbackUrl(req.url),
-      });
-
-      // Update transaction with Zibal trackId
-      const supabaseTx = createClient();
-      await supabaseTx
-        .from('transactions')
-        .update({
-          paymentProviderRef: String(zibalRequest.trackId),
-          paymentMetadata: {
-            provider: 'ZIBAL',
-            trackId: String(zibalRequest.trackId),
-          },
-        })
-        .eq('id', transaction.id);
-
-      paymentUrl = zibalRequest.redirectUrl;
-      paymentIdentifier = String(zibalRequest.trackId);
-
-      log.info('Zibal transaction created successfully', {
-        transactionId: transaction.id,
-        transactionCode: transaction.transactionCode,
-        amount: totalAmount,
-        trackId: zibalRequest.trackId,
-        userId: session?.user?.id || 'guest',
-        elapsedMs: Date.now() - startTime,
-      });
     } else {
-      // Legacy Zarinpal payment flow (default fallback)
-      const paymentRequest = await createPaymentRequest({
-        amount: paymentGatewayAmount, // In Tomans (no surcharge for Zarinpal, gatewayFee is 0)
-        description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
-        email: finalEmail,
-        mobile: finalPhone,
-        callbackUrl: getCallbackUrl(req.url), // Pass request URL for dynamic origin (preview deployments)
-      });
-
-      // Update transaction with Zarinpal authority
-      const supabaseTx = createClient();
-      await supabaseTx
-        .from('transactions')
-        .update({
-          paymentProviderRef: paymentRequest.authority,
-          paymentMetadata: {
-            provider: 'ZARINPAL',
-            authority: paymentRequest.authority,
-          },
-        })
-        .eq('id', transaction.id);
-
-      paymentUrl = paymentRequest.url;
-      paymentIdentifier = paymentRequest.authority;
-
-      log.info('Zarinpal transaction created successfully', {
-        transactionId: transaction.id,
-        transactionCode: transaction.transactionCode,
-        amount: totalAmount,
-        authority: paymentRequest.authority,
-        userId: session?.user?.id || 'guest',
-        elapsedMs: Date.now() - startTime,
-      });
+      return NextResponse.json(
+        { error: 'روش پرداخت نامعتبر است' },
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({
@@ -760,11 +638,6 @@ async function postHandler(req: NextRequest) {
       amount: totalAmount, // Return base amount (without gateway fee) to frontend
       paymentMethod: validPaymentMethod,
       paymentUrl,
-      // For compatibility, include identifiers based on payment method
-      authority:
-        requestedGateway === 'ZARINPAL' ? paymentIdentifier : undefined,
-      ticket: requestedGateway === 'DIGIPAY' ? paymentIdentifier : undefined,
-      trackId: requestedGateway === 'ZIBAL' ? paymentIdentifier : undefined,
       checkoutSessionId:
         requestedGateway === 'STRIPE' ? paymentIdentifier : undefined,
       orderId: requestedGateway === 'PAYPAL' ? paymentIdentifier : undefined,

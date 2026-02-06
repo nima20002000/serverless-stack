@@ -8,6 +8,9 @@ interface Transaction {
   amount: string;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   paymentMethod: 'STRIPE' | 'PAYPAL';
+  paymentProviderRef?: string | null;
+  stripePaymentIntentId?: string | null;
+  paypalOrderId?: string | null;
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;
@@ -75,7 +78,7 @@ export default function TransactionHistory({
     };
     return (
       <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
-        {labels[method as keyof typeof labels] || method}
+        {labels[method as keyof typeof labels] || 'UNKNOWN'}
       </span>
     );
   }, []);
@@ -116,6 +119,27 @@ export default function TransactionHistory({
                 <div className="mt-2">
                   {getPaymentMethodBadge(transaction.paymentMethod)}
                 </div>
+                {transaction.paymentProviderRef && (
+                  <div className="mt-2 text-xs text-gray-600" dir="ltr">
+                    Ref: {transaction.paymentProviderRef}
+                  </div>
+                )}
+                {transaction.stripePaymentIntentId && (
+                  <div
+                    className="mt-1 text-xs text-indigo-600 break-all"
+                    dir="ltr"
+                  >
+                    Stripe Intent: {transaction.stripePaymentIntentId}
+                  </div>
+                )}
+                {transaction.paypalOrderId && (
+                  <div
+                    className="mt-1 text-xs text-sky-600 break-all"
+                    dir="ltr"
+                  >
+                    PayPal Order: {transaction.paypalOrderId}
+                  </div>
+                )}
               </div>
               {getStatusBadge(transaction.status)}
             </div>
