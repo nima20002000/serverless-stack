@@ -172,6 +172,8 @@ export async function updateTransactionStatus(
   providerReferenceId?: number,
   providerFields?: {
     stripePaymentIntentId?: string;
+    stripeCheckoutSessionId?: string;
+    stripeChargeId?: string;
     paypalOrderId?: string;
     paypalCaptureId?: string;
   }
@@ -210,6 +212,15 @@ export async function updateTransactionStatus(
 
     if (providerFields?.stripePaymentIntentId) {
       updateData.stripePaymentIntentId = providerFields.stripePaymentIntentId;
+    }
+
+    if (providerFields?.stripeCheckoutSessionId) {
+      updateData.stripeCheckoutSessionId =
+        providerFields.stripeCheckoutSessionId;
+    }
+
+    if (providerFields?.stripeChargeId) {
+      updateData.stripeChargeId = providerFields.stripeChargeId;
     }
 
     if (providerFields?.paypalOrderId) {

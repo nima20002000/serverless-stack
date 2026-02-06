@@ -9,6 +9,10 @@ import {
 import { updateUserShippingInfo } from '@/services/user-service';
 import { validatePromoCode } from '@/services/promo-service';
 import { createPaymentRequest, getCallbackUrl } from '@/lib/zarinpal/client';
+import {
+  createStripeCheckoutSession,
+  getStripeCurrency,
+} from '@/lib/stripe/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
@@ -517,9 +521,72 @@ async function postHandler(req: NextRequest) {
 
     // Create payment request with selected payment gateway
     let paymentUrl: string;
-    let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay, trackId for Zibal
+    let paymentIdentifier: string; // checkout session ID, authority, ticket, or trackId
 
-    if (requestedGateway === 'DIGIPAY') {
+    if (requestedGateway === 'STRIPE') {
+      const stripeCurrency = getStripeCurrency();
+      const stripeSession = await createStripeCheckoutSession({
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: paymentGatewayAmount,
+        currency: stripeCurrency,
+        customerEmail: finalEmail,
+      });
+
+      if (!stripeSession.url) {
+        log.error('Stripe Checkout session missing redirect URL', {
+          transactionId: transaction.id,
+          transactionCode: transaction.transactionCode,
+          sessionId: stripeSession.id,
+        });
+        throw new Error('خطا در ایجاد لینک پرداخت استرایپ');
+      }
+
+      const stripePaymentIntentId =
+        typeof stripeSession.payment_intent === 'string'
+          ? stripeSession.payment_intent
+          : null;
+
+      const supabaseTx = createClient();
+      const { error: stripeUpdateError } = await supabaseTx
+        .from('transactions')
+        .update({
+          paymentProviderRef: stripeSession.id,
+          stripeCheckoutSessionId: stripeSession.id,
+          stripePaymentIntentId,
+          paymentMetadata: {
+            provider: 'STRIPE',
+            checkoutSessionId: stripeSession.id,
+            paymentIntentId: stripePaymentIntentId,
+            currency: stripeCurrency.toUpperCase(),
+          },
+        })
+        .eq('id', transaction.id);
+
+      if (stripeUpdateError) {
+        log.error('Failed to persist Stripe provider identifiers', {
+          transactionId: transaction.id,
+          transactionCode: transaction.transactionCode,
+          sessionId: stripeSession.id,
+          error: stripeUpdateError,
+        });
+        throw new Error('خطا در ثبت اطلاعات پرداخت استرایپ');
+      }
+
+      paymentUrl = stripeSession.url;
+      paymentIdentifier = stripeSession.id;
+
+      log.info('Stripe transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        paymentGatewayAmount,
+        checkoutSessionId: stripeSession.id,
+        paymentIntentId: stripePaymentIntentId,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
+    } else if (requestedGateway === 'DIGIPAY') {
       // Digipay payment flow
       const digipayClient = await import('@/lib/digipay/client');
 
@@ -643,6 +710,8 @@ async function postHandler(req: NextRequest) {
         requestedGateway === 'ZARINPAL' ? paymentIdentifier : undefined,
       ticket: requestedGateway === 'DIGIPAY' ? paymentIdentifier : undefined,
       trackId: requestedGateway === 'ZIBAL' ? paymentIdentifier : undefined,
+      checkoutSessionId:
+        requestedGateway === 'STRIPE' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {

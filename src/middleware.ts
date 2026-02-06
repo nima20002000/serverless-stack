@@ -40,6 +40,9 @@ export async function middleware(req: NextRequest) {
       // Don't rate limit - this is an external callback from Zibal payment gateway
       // Users cannot trigger this directly; requires valid trackId from database
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/transactions/webhook-stripe') {
+      // Don't rate limit - this is a signed external callback from Stripe
+      shouldRateLimit = false;
     } else if (req.nextUrl.pathname === '/api/search') {
       // Dedicated bucket for search to avoid cross-endpoint blocking
       limiter = apiLimiter;
