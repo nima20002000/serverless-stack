@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getTransactionById,
+  updateTransactionStatus,
   reduceProductStock,
   getTransactionWithVariants,
   linkTransactionToUser,
@@ -9,7 +10,6 @@ import { createUser, getUserByPhone } from '@/services/user-service';
 import { recordPromoUsage } from '@/services/promo-service';
 import { verifyPayment } from '@/lib/digipay/client';
 import { withLogging } from '@/lib/api/with-logging';
-import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import {
   sendAdminOrderConfirmation,
@@ -266,38 +266,27 @@ async function getHandler(req: NextRequest) {
       elapsedMs: Date.now() - startTime,
     });
 
-    // Update transaction status with Digipay tracking code
-    const supabase = createClient();
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update({
-        status: 'COMPLETED',
-        digipayTrackingCode: verification.trackingCode,
-        updatedAt: now,
-      })
-      .eq('id', transaction.id);
+    const statusUpdate = await updateTransactionStatus(
+      transaction.id,
+      'COMPLETED',
+      verification.trackingCode
+    );
 
-    if (updateError) {
-      log.error('Failed to update transaction status to COMPLETED', {
-        transactionId: transaction.id,
-        trackingCode: verification.trackingCode,
-        error: updateError.message,
-      });
-      // Don't throw - the payment was verified successfully by Digipay
-      // Log the error but proceed with notifications since payment is confirmed
-      log.warn(
-        'Proceeding with notifications despite DB update error - payment was verified',
+    if (!statusUpdate.statusChanged) {
+      log.info(
+        'Skipping fulfillment side effects because transaction was already finalized',
         {
           transactionId: transaction.id,
           trackingCode: verification.trackingCode,
         }
       );
-    } else {
-      log.info('Transaction status updated to COMPLETED', {
-        transactionId: transaction.id,
-        trackingCode: verification.trackingCode,
-      });
+
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}&trackingCode=${verification.trackingCode}`
+        ),
+        303
+      );
     }
 
     // Reduce product stock

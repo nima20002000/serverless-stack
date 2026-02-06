@@ -169,10 +169,22 @@ export async function updateTransactionStatus(
   id: string,
   status: 'PENDING' | 'COMPLETED' | 'FAILED',
   paymentProviderRef?: string,
-  providerReferenceId?: number
+  providerReferenceId?: number,
+  providerFields?: {
+    stripePaymentIntentId?: string;
+    paypalOrderId?: string;
+    paypalCaptureId?: string;
+  }
 ) {
   const supabase = createClient();
   const now = new Date().toISOString();
+  const selectClause = `
+    *,
+    items:transaction_items(
+      *,
+      product:products(*)
+    )
+  `;
 
   log.info('Updating transaction status', {
     transactionId: id,
@@ -196,32 +208,76 @@ export async function updateTransactionStatus(
       };
     }
 
-    const { data: transaction, error } = await supabase
+    if (providerFields?.stripePaymentIntentId) {
+      updateData.stripePaymentIntentId = providerFields.stripePaymentIntentId;
+    }
+
+    if (providerFields?.paypalOrderId) {
+      updateData.paypalOrderId = providerFields.paypalOrderId;
+    }
+
+    if (providerFields?.paypalCaptureId) {
+      updateData.paymentMetadata = {
+        ...(typeof updateData.paymentMetadata === 'object' &&
+        updateData.paymentMetadata !== null
+          ? (updateData.paymentMetadata as Record<string, unknown>)
+          : {}),
+        paypalCaptureId: providerFields.paypalCaptureId,
+      };
+    }
+
+    let updateQuery = supabase
       .from('transactions')
       .update(updateData)
-      .eq('id', id)
-      .select(
-        `
-        *,
-        items:transaction_items(
-          *,
-          product:products(*)
-        )
-      `
-      )
-      .single();
+      .eq('id', id);
 
-    if (error || !transaction) {
+    // Idempotent guards:
+    // - COMPLETED transitions are one-way and should not re-apply.
+    // - FAILED transitions only apply while transaction is still pending.
+    if (status === 'COMPLETED') {
+      updateQuery = updateQuery.neq('status', 'COMPLETED');
+    } else if (status === 'FAILED') {
+      updateQuery = updateQuery.eq('status', 'PENDING');
+    }
+
+    const { data: transaction, error } = await updateQuery
+      .select(selectClause)
+      .maybeSingle();
+
+    if (!error && transaction) {
+      log.info('Transaction status updated successfully', {
+        transactionId: id,
+        newStatus: status,
+      });
+
+      return {
+        ...transaction,
+        statusChanged: true,
+      };
+    }
+
+    // If update was skipped by guard conditions, return current state as a no-op.
+    const { data: currentTransaction, error: currentError } = await supabase
+      .from('transactions')
+      .select(selectClause)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (currentError || !currentTransaction) {
       log.error('Failed to update transaction status', { id, error });
       throw new Error('خطا در بروزرسانی وضعیت تراکنش');
     }
 
-    log.info('Transaction status updated successfully', {
+    log.info('Transaction status update skipped (idempotent no-op)', {
       transactionId: id,
-      newStatus: status,
+      requestedStatus: status,
+      currentStatus: currentTransaction.status,
     });
 
-    return transaction;
+    return {
+      ...currentTransaction,
+      statusChanged: false,
+    };
   } catch (error) {
     log.error('Failed to update transaction status', {
       transactionId: id,
@@ -317,7 +373,7 @@ export async function getTransactionByCode(code: string) {
 /**
  * Get transaction by provider reference
  */
-export async function getTransactionByAuthority(authority: string) {
+export async function getTransactionByProviderRef(providerRef: string) {
   const supabase = createClient();
 
   const { data: transaction, error } = await supabase
@@ -327,96 +383,38 @@ export async function getTransactionByAuthority(authority: string) {
       *,
       items:transaction_items(
         *,
-        product:products(*)
+        product:products(*),
+        variant:product_variants(*)
+      ),
+      user:users(
+        id,
+        email,
+        name,
+        phone
       )
     `
     )
-    .eq('paymentProviderRef', authority)
+    .eq('paymentProviderRef', providerRef)
+    .order('createdAt', { ascending: false })
     .limit(1)
     .single();
 
   if (error || !transaction) {
-    log.error('Transaction not found', { authority, error });
-    throw new Error('تراکنش یافت نشد');
-  }
-
-  return transaction;
-}
-
-/**
- * Get transaction by Digipay ticket
- */
-export async function getTransactionByDigipayTicket(ticket: string) {
-  const supabase = createClient();
-
-  const { data: transaction, error } = await supabase
-    .from('transactions')
-    .select(
-      `
-      *,
-      items:transaction_items(
-        *,
-        product:products(*),
-        variant:product_variants(*)
-      ),
-      user:users(
-        id,
-        email,
-        name,
-        phone
-      )
-    `
-    )
-    .eq('paymentProviderRef', ticket)
-    .single();
-
-  if (error || !transaction) {
-    log.error('Transaction not found by Digipay ticket', {
-      ticket,
+    log.error('Transaction not found by provider reference', {
+      providerRef,
       error,
     });
     throw new Error('تراکنش یافت نشد');
   }
 
-  return transaction;
-}
+  const userData = Array.isArray(transaction.user)
+    ? transaction.user[0]
+    : transaction.user;
 
-/**
- * Get transaction by Zibal trackId
- */
-export async function getTransactionByZibalTrackId(trackId: string) {
-  const supabase = createClient();
-
-  const { data: transaction, error } = await supabase
-    .from('transactions')
-    .select(
-      `
-      *,
-      items:transaction_items(
-        *,
-        product:products(*),
-        variant:product_variants(*)
-      ),
-      user:users(
-        id,
-        email,
-        name,
-        phone
-      )
-    `
-    )
-    .eq('paymentProviderRef', trackId)
-    .single();
-
-  if (error || !transaction) {
-    log.error('Transaction not found by Zibal trackId', {
-      trackId,
-      error,
-    });
-    throw new Error('تراکنش یافت نشد');
-  }
-
-  return transaction;
+  return {
+    ...transaction,
+    user: userData || null,
+  };
 }
 
 /**

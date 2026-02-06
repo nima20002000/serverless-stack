@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTransactionByAuthority,
+  getTransactionByProviderRef,
   updateTransactionStatus,
   reduceProductStock,
   getTransactionWithVariants,
@@ -49,8 +49,8 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Find transaction by authority
-    const transaction = await getTransactionByAuthority(authority);
+    // Find transaction by provider reference
+    const transaction = await getTransactionByProviderRef(authority);
 
     log.info('Transaction found', {
       transactionId: transaction.id,
@@ -142,12 +142,30 @@ async function getHandler(req: NextRequest) {
     });
 
     // Update transaction status
-    await updateTransactionStatus(
+    const statusUpdate = await updateTransactionStatus(
       transaction.id,
       'COMPLETED',
       authority,
       verification.refId
     );
+
+    // Another callback already finalized this transaction.
+    if (!statusUpdate.statusChanged) {
+      log.info(
+        'Skipping fulfillment side effects because transaction was already finalized',
+        {
+          transactionId: transaction.id,
+          authority,
+          refId: verification.refId,
+        }
+      );
+
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}&refId=${verification.refId}`
+        )
+      );
+    }
 
     // Reduce product stock
     await reduceProductStock(transaction.id);
@@ -335,7 +353,7 @@ async function getHandler(req: NextRequest) {
 
     try {
       if (authority) {
-        const transaction = await getTransactionByAuthority(authority);
+        const transaction = await getTransactionByProviderRef(authority);
 
         // IMPORTANT: Don't mark as FAILED if already COMPLETED
         // This protects completed transactions from being incorrectly marked failed due to errors

@@ -395,14 +395,27 @@ async function postHandler(req: NextRequest) {
       }
     }
 
-    // Use Stripe/PayPal as canonical methods in DB while preserving
-    // compatibility with legacy gateway payload values during transition.
+    // Enforce a strict API boundary and normalize legacy gateway values
+    // into canonical DB payment methods.
     const requestedGateway =
       typeof paymentMethod === 'string'
         ? paymentMethod.toUpperCase()
         : 'STRIPE';
-    const validPaymentMethod: 'STRIPE' | 'PAYPAL' =
-      requestedGateway === 'PAYPAL' ? 'PAYPAL' : 'STRIPE';
+    const gatewayToCanonical: Record<string, 'STRIPE' | 'PAYPAL'> = {
+      STRIPE: 'STRIPE',
+      PAYPAL: 'PAYPAL',
+      ZARINPAL: 'STRIPE',
+      ZIBAL: 'STRIPE',
+      DIGIPAY: 'STRIPE',
+    };
+    const validPaymentMethod = gatewayToCanonical[requestedGateway];
+
+    if (!validPaymentMethod) {
+      return NextResponse.json(
+        { error: 'روش پرداخت نامعتبر است' },
+        { status: 400 }
+      );
+    }
 
     // Calculate surcharge for Digipay payments (12%)
     // The surcharge is stored separately and only used for payment gateway communication

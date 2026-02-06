@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  getTransactionByZibalTrackId,
+  getTransactionByProviderRef,
+  updateTransactionStatus,
   reduceProductStock,
   getTransactionWithVariants,
   linkTransactionToUser,
@@ -9,7 +10,6 @@ import { createUser, getUserByPhone } from '@/services/user-service';
 import { recordPromoUsage } from '@/services/promo-service';
 import { verifyPayment } from '@/lib/zibal/client';
 import { withLogging } from '@/lib/api/with-logging';
-import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import {
   sendAdminOrderConfirmation,
@@ -56,8 +56,8 @@ async function getHandler(req: NextRequest) {
       );
     }
 
-    // Find transaction by Zibal trackId
-    const transaction = await getTransactionByZibalTrackId(trackId);
+    // Find transaction by provider reference
+    const transaction = await getTransactionByProviderRef(trackId);
 
     log.info('Transaction found', {
       transactionId: transaction.id,
@@ -149,41 +149,28 @@ async function getHandler(req: NextRequest) {
       elapsedMs: Date.now() - startTime,
     });
 
-    // Update transaction status with Zibal tracking info
-    const supabase = createClient();
-    const now = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from('transactions')
-      .update({
-        status: 'COMPLETED',
-        zibalRefNumber: String(verification.refNumber),
-        updatedAt: now,
-      })
-      .eq('id', transaction.id);
+    const statusUpdate = await updateTransactionStatus(
+      transaction.id,
+      'COMPLETED',
+      trackId,
+      verification.refNumber
+    );
 
-    if (updateError) {
-      log.error('Failed to update transaction status to COMPLETED', {
-        transactionId: transaction.id,
-        trackId,
-        refNumber: verification.refNumber,
-        error: updateError.message,
-      });
-      // Don't throw - the payment was verified successfully by Zibal
-      // Log the error but proceed with notifications since payment is confirmed
-      log.warn(
-        'Proceeding with notifications despite DB update error - payment was verified',
+    if (!statusUpdate.statusChanged) {
+      log.info(
+        'Skipping fulfillment side effects because transaction was already finalized',
         {
           transactionId: transaction.id,
           trackId,
           refNumber: verification.refNumber,
         }
       );
-    } else {
-      log.info('Transaction status updated to COMPLETED', {
-        transactionId: transaction.id,
-        trackId,
-        refNumber: verification.refNumber,
-      });
+
+      return NextResponse.redirect(
+        createRedirectUrl(
+          `/payment/success?code=${transaction.transactionCode}&refId=${verification.refNumber}`
+        )
+      );
     }
 
     // Reduce product stock
@@ -356,7 +343,7 @@ async function getHandler(req: NextRequest) {
     try {
       if (failTrackId) {
         const failedTransaction =
-          await getTransactionByZibalTrackId(failTrackId);
+          await getTransactionByProviderRef(failTrackId);
 
         // IMPORTANT: Don't mark as FAILED if already COMPLETED
         if (failedTransaction.status === 'COMPLETED') {
