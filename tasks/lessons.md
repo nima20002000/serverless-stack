@@ -12,6 +12,7 @@
 - R2 bucket creation via API is straightforward, but S3 key management differs from API token handling.
 - Always validate new R2 credentials with a real S3 request before using them in production envs.
 - Keep `tasks/` ignored by default but force-add specific planning files when needed.
+- When user is editing concurrently, avoid touching their changed files and commit only explicit pathspecs.
 
 ## Implementation Guardrails
 - Keep schema and generated types in lockstep.

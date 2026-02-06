@@ -13,12 +13,14 @@ import {
   createStripeCheckoutSession,
   getStripeCurrency,
 } from '@/lib/stripe/client';
+import { createPayPalOrder, getPayPalCurrency } from '@/lib/paypal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { withRateLimit } from '@/lib/api/with-rate-limit';
 import { apiLimiter } from '@/lib/rate-limit';
 import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 import { DIGIPAY_CONFIG } from '@/config/constants';
+import { getAppBaseUrl } from '@/lib/utils/url';
 
 export const dynamic = 'force-dynamic';
 
@@ -586,6 +588,59 @@ async function postHandler(req: NextRequest) {
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
       });
+    } else if (requestedGateway === 'PAYPAL') {
+      const paypalCurrency = getPayPalCurrency();
+      const appBaseUrl = getAppBaseUrl().replace(/\/$/, '');
+      const returnUrl = `${appBaseUrl}/api/transactions/paypal/capture?transactionId=${encodeURIComponent(transaction.id)}`;
+      const cancelUrl = `${appBaseUrl}/payment/failure?code=${encodeURIComponent(transaction.transactionCode)}&provider=paypal&status=cancelled`;
+
+      const paypalOrder = await createPayPalOrder({
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: paymentGatewayAmount,
+        currency: paypalCurrency,
+        returnUrl,
+        cancelUrl,
+        description: `Kitia order ${transaction.transactionCode}`,
+      });
+
+      const supabaseTx = createClient();
+      const { error: paypalUpdateError } = await supabaseTx
+        .from('transactions')
+        .update({
+          paymentProviderRef: paypalOrder.id,
+          paypalOrderId: paypalOrder.id,
+          paymentMetadata: {
+            provider: 'PAYPAL',
+            orderId: paypalOrder.id,
+            currency: paypalCurrency,
+          },
+        })
+        .eq('id', transaction.id);
+
+      if (paypalUpdateError) {
+        log.error('Failed to persist PayPal provider identifiers', {
+          transactionId: transaction.id,
+          transactionCode: transaction.transactionCode,
+          orderId: paypalOrder.id,
+          error: paypalUpdateError,
+        });
+        throw new Error('خطا در ثبت اطلاعات پرداخت پی‌پال');
+      }
+
+      paymentUrl = paypalOrder.approvalUrl;
+      paymentIdentifier = paypalOrder.id;
+
+      log.info('PayPal transaction created successfully', {
+        transactionId: transaction.id,
+        transactionCode: transaction.transactionCode,
+        amount: totalAmount,
+        paymentGatewayAmount,
+        orderId: paypalOrder.id,
+        orderStatus: paypalOrder.status,
+        userId: session?.user?.id || 'guest',
+        elapsedMs: Date.now() - startTime,
+      });
     } else if (requestedGateway === 'DIGIPAY') {
       // Digipay payment flow
       const digipayClient = await import('@/lib/digipay/client');
@@ -712,6 +767,7 @@ async function postHandler(req: NextRequest) {
       trackId: requestedGateway === 'ZIBAL' ? paymentIdentifier : undefined,
       checkoutSessionId:
         requestedGateway === 'STRIPE' ? paymentIdentifier : undefined,
+      orderId: requestedGateway === 'PAYPAL' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {

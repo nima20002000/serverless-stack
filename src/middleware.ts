@@ -43,6 +43,12 @@ export async function middleware(req: NextRequest) {
     } else if (req.nextUrl.pathname === '/api/transactions/webhook-stripe') {
       // Don't rate limit - this is a signed external callback from Stripe
       shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/transactions/webhook-paypal') {
+      // Don't rate limit - this is a signed external callback from PayPal
+      shouldRateLimit = false;
+    } else if (req.nextUrl.pathname === '/api/transactions/paypal/capture') {
+      // Don't rate limit - this is a PayPal return/callback endpoint
+      shouldRateLimit = false;
     } else if (req.nextUrl.pathname === '/api/search') {
       // Dedicated bucket for search to avoid cross-endpoint blocking
       limiter = apiLimiter;

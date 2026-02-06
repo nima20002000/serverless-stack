@@ -228,6 +228,7 @@ export async function updateTransactionStatus(
     }
 
     if (providerFields?.paypalCaptureId) {
+      updateData.paypalCaptureId = providerFields.paypalCaptureId;
       updateData.paymentMetadata = {
         ...(typeof updateData.paymentMetadata === 'object' &&
         updateData.paymentMetadata !== null
