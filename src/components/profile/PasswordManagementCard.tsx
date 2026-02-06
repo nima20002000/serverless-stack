@@ -10,15 +10,11 @@ import { useFormState } from '@/hooks/useFormState';
 interface PasswordManagementCardProps {
   hasPassword: boolean;
   onPasswordUpdate: () => Promise<void>;
-  onStartOtpReset?: () => void;
-  showOtpResetOption?: boolean;
 }
 
 export default function PasswordManagementCard({
   hasPassword,
   onPasswordUpdate,
-  onStartOtpReset,
-  showOtpResetOption = false,
 }: PasswordManagementCardProps) {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -180,17 +176,6 @@ export default function PasswordManagementCard({
             >
               {hasPassword ? 'تغییر رمز عبور' : 'تنظیم رمز عبور'}
             </Button>
-            {showOtpResetOption && hasPassword && onStartOtpReset && (
-              <p className="text-sm text-gray-500">
-                رمز عبور خود را فراموش کرده‌اید؟{' '}
-                <span
-                  className="text-rose-600 hover:text-rose-700 cursor-pointer"
-                  onClick={onStartOtpReset}
-                >
-                  بازیابی از طریق OTP
-                </span>
-              </p>
-            )}
           </div>
         </div>
       )}

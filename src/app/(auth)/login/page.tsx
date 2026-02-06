@@ -23,7 +23,6 @@ export default function LoginPage() {
   const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(
     null
   );
-  const [loginWithOTP, setLoginWithOTP] = useState(false);
 
   // Detect if identifier is email or phone
   const detectIdentifierType = (
@@ -51,8 +50,7 @@ export default function LoginPage() {
       }
     }
 
-    // Password is only required for password-based login
-    if (!loginWithOTP && !formData.password) {
+    if (!formData.password) {
       newErrors.password = 'رمز عبور الزامی است';
     }
 
@@ -74,55 +72,6 @@ export default function LoginPage() {
     try {
       const identifierType = detectIdentifierType(formData.identifier);
 
-      // LOGIN WITH OTP: Send OTP code (supports both phone and email)
-      if (loginWithOTP) {
-        // Allow OTP login for both phone and email
-        if (identifierType !== 'phone' && identifierType !== 'email') {
-          throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
-        }
-
-        // Normalize phone number if it's a phone identifier
-        const identifier =
-          identifierType === 'phone'
-            ? normalizePhoneNumber(formData.identifier)
-            : formData.identifier;
-
-        const requestBody =
-          identifierType === 'phone'
-            ? { phone: identifier, purpose: 'login' }
-            : { email: identifier, purpose: 'login' };
-
-        const otpResponse = await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (otpResponse.status === 429) {
-          const rateLimitData = await otpResponse.json();
-          setRateLimitRetryAfter(
-            rateLimitData.retryAfter || Date.now() + 120000
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const otpData = await otpResponse.json();
-
-        if (!otpResponse.ok) {
-          throw new Error(otpData.error || 'خطا در ارسال کد تایید');
-        }
-
-        // Redirect to OTP verification page
-        const params = new URLSearchParams({
-          [identifierType === 'phone' ? 'phone' : 'email']: identifier,
-          purpose: 'login',
-        });
-        router.push(`/verify-otp?${params.toString()}`);
-        return;
-      }
-
-      // NORMAL LOGIN WITH PASSWORD
       // Normalize identifier before sending
       const normalizedIdentifier =
         identifierType === 'phone'
@@ -188,9 +137,6 @@ export default function LoginPage() {
   const identifierType = formData.identifier
     ? detectIdentifierType(formData.identifier)
     : null;
-  const isPhone = identifierType === 'phone';
-  const isEmail = identifierType === 'email';
-  const canUseOTP = isPhone || isEmail;
 
   return (
     <Card>
@@ -236,18 +182,16 @@ export default function LoginPage() {
           }
         />
 
-        {!loginWithOTP && (
-          <Input
-            label="رمز عبور"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            error={errors.password}
-            disabled={isLoading}
-            placeholder="رمز عبور خود را وارد کنید"
-          />
-        )}
+        <Input
+          label="رمز عبور"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          error={errors.password}
+          disabled={isLoading}
+          placeholder="رمز عبور خود را وارد کنید"
+        />
 
         <Button
           type="submit"
@@ -256,29 +200,8 @@ export default function LoginPage() {
           isLoading={isLoading}
           disabled={isLoading}
         >
-          {loginWithOTP ? 'ارسال کد تایید' : 'ورود'}
+          ورود
         </Button>
-
-        {canUseOTP && (
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginWithOTP(!loginWithOTP);
-                setFormData((prev) => ({ ...prev, password: '' }));
-                setErrors({});
-              }}
-              className="text-sm text-rose-600 hover:text-rose-700 font-medium"
-              disabled={isLoading}
-            >
-              {loginWithOTP
-                ? 'ورود با رمز عبور'
-                : isPhone
-                  ? 'ورود با کد تایید (SMS)'
-                  : 'ورود با کد تایید (Email)'}
-            </button>
-          </div>
-        )}
       </form>
 
       <div className="mt-6 text-center">

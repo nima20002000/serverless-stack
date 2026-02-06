@@ -10,7 +10,6 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import ProfileEditForm from '@/components/profile/ProfileEditForm';
 import PasswordManagementCard from '@/components/profile/PasswordManagementCard';
-import OTPPasswordReset from '@/components/profile/OTPPasswordReset';
 import TransactionHistory from '@/components/profile/TransactionHistory';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
@@ -77,9 +76,6 @@ export default function ProfilePage() {
   // Edit mode states
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFormState, editFormActions] = useFormState();
-
-  // Password management states
-  const [isResettingWithOTP, setIsResettingWithOTP] = useState(false);
 
   // Ensure minimum skeleton display time
   useEffect(() => {
@@ -177,19 +173,6 @@ export default function ProfilePage() {
     },
     [fetchUserProfile, update, editFormActions]
   );
-
-  const handleStartOtpReset = useCallback(() => {
-    setIsResettingWithOTP(true);
-  }, []);
-
-  const handleCancelOtpReset = useCallback(() => {
-    setIsResettingWithOTP(false);
-  }, []);
-
-  const handleOtpResetSuccess = useCallback(async () => {
-    setIsResettingWithOTP(false);
-    await fetchUserProfile();
-  }, [fetchUserProfile]);
 
   // This useEffect depends on callbacks, so must be after their definition
   useEffect(() => {
@@ -323,21 +306,10 @@ export default function ProfilePage() {
             مدیریت رمز عبور
           </h2>
 
-          {isResettingWithOTP ? (
-            <OTPPasswordReset
-              userPhone={userProfile.phone}
-              userEmail={userProfile.email}
-              onSuccess={handleOtpResetSuccess}
-              onCancel={handleCancelOtpReset}
-            />
-          ) : (
-            <PasswordManagementCard
-              hasPassword={userProfile.hasPassword}
-              onPasswordUpdate={fetchUserProfile}
-              onStartOtpReset={handleStartOtpReset}
-              showOtpResetOption={!!(userProfile.phone || userProfile.email)}
-            />
-          )}
+          <PasswordManagementCard
+            hasPassword={userProfile.hasPassword}
+            onPasswordUpdate={fetchUserProfile}
+          />
         </Card>
 
         {/* Transaction History Card */}

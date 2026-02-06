@@ -15,7 +15,6 @@ import {
   sendAdminOrderConfirmation,
   sendBuyerOrderConfirmation,
 } from '@/lib/email/client';
-import { sendOrderConfirmation } from '@/services/sms-service';
 import { createRedirectUrl } from '@/lib/utils/url';
 
 export const dynamic = 'force-dynamic';
@@ -357,47 +356,6 @@ async function getHandler(req: NextRequest) {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-    }
-
-    // Send order confirmation SMS to buyer (await to ensure it completes in serverless)
-    if (transaction.phone) {
-      try {
-        log.info('Attempting to send order confirmation SMS to buyer', {
-          transactionId: transaction.id,
-          phone: transaction.phone,
-          transactionCode: transaction.transactionCode,
-        });
-
-        const smsResult = await sendOrderConfirmation(
-          transaction.phone,
-          transaction.transactionCode
-        );
-
-        if (!smsResult.success) {
-          log.warn('Order confirmation SMS not sent', {
-            transactionId: transaction.id,
-            phone: transaction.phone,
-            error: smsResult.error,
-          });
-        } else {
-          log.info('Order confirmation SMS sent successfully', {
-            transactionId: transaction.id,
-            phone: transaction.phone,
-            messageId: smsResult.messageId,
-          });
-        }
-      } catch (error) {
-        // Don't fail the payment if SMS fails
-        log.error('Failed to send order confirmation SMS', {
-          transactionId: transaction.id,
-          phone: transaction.phone,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-      }
-    } else {
-      log.warn('No phone number available for order confirmation SMS', {
-        transactionId: transaction.id,
-      });
     }
 
     // Send order confirmation email to buyer (if email is provided during checkout)

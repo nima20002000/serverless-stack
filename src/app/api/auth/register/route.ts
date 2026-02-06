@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createUser } from '@/services/user-service';
+import { createUser, detectIdentifierType } from '@/services/user-service';
 import { logUserActivity } from '@/services/activity-log-service';
 import { getClientInfo } from '@/lib/request-utils';
 import { withLogging } from '@/lib/api/with-logging';
@@ -13,12 +13,23 @@ async function postHandler(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { email, password, name } = body;
+    const { identifier, email, phone, password, name } = body;
+    const providedIdentifier = identifier || email || phone;
 
     // Validate required fields (name is optional)
-    if (!email || !password) {
+    if (!providedIdentifier || !password) {
       return NextResponse.json(
-        { error: 'ایمیل و رمز عبور الزامی هستند' },
+        { error: 'ایمیل یا شماره تلفن به همراه رمز عبور الزامی هستند' },
+        { status: 400 }
+      );
+    }
+
+    const normalizedIdentifier = String(providedIdentifier).trim();
+    const identifierType = detectIdentifierType(normalizedIdentifier);
+
+    if (identifierType === 'invalid') {
+      return NextResponse.json(
+        { error: 'فرمت ایمیل یا شماره تلفن نامعتبر است' },
         { status: 400 }
       );
     }
@@ -26,7 +37,8 @@ async function postHandler(req: NextRequest) {
     // Create user (validation happens in service)
     // If name is not provided, use empty string as default
     const user = await createUser({
-      email,
+      email: identifierType === 'email' ? normalizedIdentifier : undefined,
+      phone: identifierType === 'phone' ? normalizedIdentifier : undefined,
       password,
       name: name || '',
     });
@@ -39,7 +51,7 @@ async function postHandler(req: NextRequest) {
       userAgent,
       success: true,
       metadata: {
-        has_email: !!email,
+        identifier_type: identifierType,
       },
     }).catch((err) => {
       log.warn('Failed to log registration', {

@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Session } from 'next-auth';
-import { signIn, useSession } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
@@ -23,8 +22,6 @@ interface CheckoutFormProps {
     email: string;
     shippingAddress: string;
     postalCode: string;
-    createAccount: boolean;
-    phoneVerified: boolean;
   }) => void;
   isProcessing: boolean;
   hideSubmitButton?: boolean;
@@ -40,34 +37,24 @@ export default function CheckoutForm({
   formRef,
   compact = false,
 }: CheckoutFormProps) {
-  const { update: updateSession } = useSession();
   const {
     formData: savedFormData,
     setFormData: saveFormData,
     _hasHydrated,
   } = useCheckoutStore();
+
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
   const [postalCode, setPostalCode] = useState('');
-  const [createAccount, setCreateAccount] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCooldown, setOtpCooldown] = useState(0);
-  const [otpError, setOtpError] = useState('');
-  const [otpSuccess, setOtpSuccess] = useState('');
+  const [formError, setFormError] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
-  const [isSendingOTP, setIsSendingOTP] = useState(false);
-  const [pendingLogin, setPendingLogin] = useState(false); // Track if user needs to be logged in on payment
   const [hasLoadedSavedData, setHasLoadedSavedData] = useState(false);
   const [loadedProfileForUserId, setLoadedProfileForUserId] = useState<
     string | null
   >(null);
 
-  // Track initial profile values loaded from database (to determine which fields should be locked)
   const [initialProfileData, setInitialProfileData] = useState<{
     name: string | null;
     phone: string | null;
@@ -78,23 +65,16 @@ export default function CheckoutForm({
     email: null,
   });
 
-  // Load user data: use session for basic info, fetch API only for shipping data
-  // Wait for Zustand hydration before loading saved data
   useEffect(() => {
-    // Don't load until Zustand has hydrated from localStorage
     if (!_hasHydrated) return;
 
     const currentUserId = session?.user?.id || null;
-
-    // Skip if we've already loaded data for this specific user
     if (currentUserId && loadedProfileForUserId === currentUserId) {
       return;
     }
 
     const loadUserData = async () => {
       if (session?.user) {
-        // Use session data directly for basic user info (no API call needed)
-        // Session already contains: name, email, phone, isVerified
         setInitialProfileData({
           name: session.user.name || null,
           phone: session.user.phone || null,
@@ -105,38 +85,22 @@ export default function CheckoutForm({
         setPhone(session.user.phone || '');
         setEmail(session.user.email || '');
 
-        // If user has a verified phone, mark as verified
-        if (session.user.phone && session.user.isVerified) {
-          setPhoneVerified(true);
-        }
-
-        // Only fetch from API if we need shipping data (not in session)
-        // Use saved form data as fallback while fetching
         setShippingAddress(savedFormData.shippingAddress || '');
         setPostalCode(savedFormData.postalCode || '');
 
-        // Fetch shipping data from API in background (non-blocking)
         try {
           const response = await fetch('/api/user/profile');
           if (response.ok) {
             const data = await response.json();
-            // Only update shipping fields if API has data
-            if (data.shippingAddress) {
-              setShippingAddress(data.shippingAddress);
-            }
-            if (data.postalCode) {
-              setPostalCode(data.postalCode);
-            }
+            if (data.shippingAddress) setShippingAddress(data.shippingAddress);
+            if (data.postalCode) setPostalCode(data.postalCode);
           }
         } catch (error) {
-          // Non-critical: shipping data fetch failed, user can still enter manually
           console.error('Error loading shipping data:', error);
         }
 
-        // Mark that we've loaded data for this user
         setLoadedProfileForUserId(session.user.id);
       } else if (!hasLoadedSavedData) {
-        // Guest user: load saved form data from localStorage (only once)
         if (savedFormData.fullName) setFullName(savedFormData.fullName);
         if (savedFormData.phone) setPhone(savedFormData.phone);
         if (savedFormData.email) setEmail(savedFormData.email);
@@ -144,6 +108,7 @@ export default function CheckoutForm({
           setShippingAddress(savedFormData.shippingAddress);
         if (savedFormData.postalCode) setPostalCode(savedFormData.postalCode);
       }
+
       setHasLoadedSavedData(true);
       setIsLoadingProfile(false);
     };
@@ -152,30 +117,7 @@ export default function CheckoutForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id, _hasHydrated]);
 
-  // Cooldown timer for OTP
   useEffect(() => {
-    if (otpCooldown > 0) {
-      const timer = setTimeout(() => setOtpCooldown(otpCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [otpCooldown]);
-
-  // Reset OTP state when createAccount is unchecked
-  useEffect(() => {
-    if (!createAccount && !session) {
-      setOtpSent(false);
-      setOtpCode('');
-      setPhoneVerified(false);
-      setOtpError('');
-      setOtpSuccess('');
-      setPendingLogin(false);
-    }
-  }, [createAccount, session]);
-
-  // Save form data to localStorage when fields change (for persistence after failed payments)
-  useEffect(() => {
-    // Only save after initial data is loaded to prevent overwriting with empty values
     if (!hasLoadedSavedData) return;
 
     saveFormData({
@@ -195,222 +137,42 @@ export default function CheckoutForm({
     saveFormData,
   ]);
 
-  const handleSendOTP = async () => {
-    // Validate phone - normalize first to handle Persian digits
-    const normalizedPhone = normalizePhoneNumber(phone);
-    if (!phone || !isValidIranianPhone(normalizedPhone)) {
-      setOtpError(
-        'لطفاً یک شماره تلفن معتبر وارد کنید (مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا 09123456789)'
-      );
-      return;
-    }
-
-    try {
-      setIsSendingOTP(true);
-      setOtpError('');
-      setOtpSuccess('');
-
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: normalizedPhone,
-          purpose: 'checkout', // Special purpose for checkout (allows both existing and new users)
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'خطا در ارسال کد تایید');
-      }
-
-      setOtpSent(true);
-      setOtpCooldown(60);
-      setOtpSuccess('کد تایید به شماره تلفن شما ارسال شد');
-    } catch (error) {
-      setOtpError(
-        error instanceof Error ? error.message : 'خطا در ارسال کد تایید'
-      );
-    } finally {
-      setIsSendingOTP(false);
-    }
-  };
-
-  const handleVerifyOTP = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      setOtpError('لطفاً کد 6 رقمی را وارد کنید');
-      return;
-    }
-
-    if (!phone) {
-      setOtpError('لطفاً شماره تلفن خود را وارد کنید');
-      return;
-    }
-
-    // Normalize phone before sending
-    const normalizedPhone = normalizePhoneNumber(phone);
-
-    try {
-      setIsVerifyingOTP(true);
-      setOtpError('');
-      setOtpSuccess('');
-
-      const response = await fetch('/api/auth/checkout-verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: normalizedPhone,
-          code: otpCode,
-          purpose: 'checkout',
-          createAccount: createAccount,
-          name: fullName || undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'کد تایید اشتباه است');
-      }
-
-      // Handle different scenarios based on response
-      if (data.action === 'login' || data.action === 'register') {
-        if (!data.otpToken) {
-          throw new Error('توکن تایید یافت نشد');
-        }
-
-        // Set success message and mark for login on payment
-        setPhoneVerified(true);
-        setPendingLogin(true);
-        setOtpSuccess(
-          data.action === 'register'
-            ? 'حساب کاربری با موفقیت ایجاد شد! اکنون می‌توانید پرداخت کنید'
-            : 'ورود با موفقیت انجام شد! اکنون می‌توانید پرداخت کنید'
-        );
-        setOtpSent(false);
-        setOtpCode('');
-
-        // Store identifier for later login
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('pendingLoginIdentifier', data.identifier);
-          sessionStorage.setItem('pendingLoginOtpToken', data.otpToken);
-        }
-      }
-    } catch (error) {
-      setOtpError(error instanceof Error ? error.message : 'خطا در تایید کد');
-    } finally {
-      setIsVerifyingOTP(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError('');
 
-    // Clear previous errors
-    setOtpError('');
-
-    // Validation
     if (!fullName.trim()) {
-      setOtpError('لطفاً نام و نام خانوادگی خود را وارد کنید');
+      setFormError('لطفاً نام و نام خانوادگی خود را وارد کنید');
       return;
     }
 
     if (fullName.trim() && !isValidName(fullName)) {
-      setOtpError('نام و نام خانوادگی باید شامل حروف فارسی یا انگلیسی باشد');
+      setFormError('نام و نام خانوادگی باید شامل حروف فارسی یا انگلیسی باشد');
       return;
     }
 
-    // Normalize phone for validation
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
-      setOtpError(
+      setFormError(
         'لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)'
       );
       return;
     }
 
     if (!shippingAddress.trim()) {
-      setOtpError('لطفاً آدرس ارسال را وارد کنید');
+      setFormError('لطفاً آدرس ارسال را وارد کنید');
       return;
     }
 
-    // Only require OTP verification if user wants to create account
-    if (!session && createAccount && !phoneVerified) {
-      setOtpError('لطفاً ابتدا شماره تلفن خود را با کد تایید تایید کنید');
-      return;
-    }
-
-    // If user verified OTP and needs login, log them in first
-    if (pendingLogin && !session && typeof window !== 'undefined') {
-      const identifier = sessionStorage.getItem('pendingLoginIdentifier');
-      const otpToken = sessionStorage.getItem('pendingLoginOtpToken');
-      if (identifier && otpToken) {
-        try {
-          // Sign in with NextAuth
-          const result = await signIn('credentials', {
-            identifier: identifier,
-            otpToken: otpToken,
-            redirect: false,
-          });
-
-          if (result?.ok) {
-            // Clear pending login state
-            if (typeof window !== 'undefined') {
-              sessionStorage.removeItem('pendingLoginIdentifier');
-              sessionStorage.removeItem('pendingLoginOtpToken');
-            }
-            setPendingLogin(false);
-
-            // Force NextAuth session to refresh
-            await updateSession();
-
-            // Wait a brief moment for session state to propagate
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // Now proceed with checkout - session will be available on server
-            onSubmit({
-              fullName,
-              phone,
-              email,
-              shippingAddress,
-              postalCode,
-              createAccount: false, // Account already created during OTP verification if needed
-              phoneVerified,
-            });
-            return;
-          } else {
-            setOtpError('خطا در ورود به حساب کاربری. لطفاً دوباره تلاش کنید.');
-            return;
-          }
-        } catch (error) {
-          console.error('Login error:', error);
-          setOtpError('خطا در ورود به حساب کاربری');
-          return;
-        }
-      } else {
-        setOtpError('اطلاعات تایید یافت نشد. لطفاً دوباره تلاش کنید.');
-        return;
-      }
-    }
-
-    // Proceed with checkout - normalize phone before submitting
     onSubmit({
       fullName,
       phone: normalizedPhone,
       email,
       shippingAddress,
       postalCode,
-      createAccount: false, // Account already created during OTP verification if needed
-      phoneVerified,
     });
   };
 
-  // Show loading while waiting for hydration or profile data
   if (!_hasHydrated || (isLoadingProfile && session)) {
     if (compact) {
       return (
@@ -428,13 +190,11 @@ export default function CheckoutForm({
     );
   }
 
-  const hasVerifiedPhone = !!(session?.user.phone && session.user.isVerified);
   const isLoggedIn = !!session;
-
-  // Check which fields are already filled in user profile (based on initial data loaded from DB, not current form state)
   const hasProfileName = !!(isLoggedIn && initialProfileData.name);
   const hasProfilePhone = !!(isLoggedIn && initialProfileData.phone);
   const hasProfileEmail = !!(isLoggedIn && initialProfileData.email);
+
   const textareaClassName = [
     'w-full min-h-[96px] px-4 py-2',
     'text-slate-900 text-sm text-right placeholder:text-slate-400',
@@ -448,14 +208,12 @@ export default function CheckoutForm({
 
   const formContent = (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-      {/* Form-level Error Message - shown for validation errors or when createAccount is off */}
-      {otpError && (!createAccount || (createAccount && phoneVerified)) && (
-        <Alert type="error" onClose={() => setOtpError('')}>
-          {otpError}
+      {formError && (
+        <Alert type="error" onClose={() => setFormError('')}>
+          {formError}
         </Alert>
       )}
 
-      {/* Full Name */}
       <div>
         <Input
           id="fullName"
@@ -478,7 +236,6 @@ export default function CheckoutForm({
         )}
       </div>
 
-      {/* Phone */}
       <div>
         <Input
           id="phone"
@@ -502,14 +259,8 @@ export default function CheckoutForm({
             مراجعه کنید
           </p>
         )}
-        {hasVerifiedPhone && !isLoggedIn && (
-          <p className="text-sm text-green-600 text-right mt-2">
-            ✓ شماره تلفن تایید شده
-          </p>
-        )}
       </div>
 
-      {/* Email (Optional) */}
       <div>
         <Input
           id="email"
@@ -531,7 +282,6 @@ export default function CheckoutForm({
         )}
       </div>
 
-      {/* Shipping Address */}
       <div>
         <label
           htmlFor="shippingAddress"
@@ -550,7 +300,6 @@ export default function CheckoutForm({
         />
       </div>
 
-      {/* Postal Code (Optional) */}
       <div>
         <Input
           id="postalCode"
@@ -566,135 +315,28 @@ export default function CheckoutForm({
         />
       </div>
 
-      {/* Shipping Fee Notice */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
         <p className="text-sm text-amber-800 text-right">
           📦 هزینه ارسال به صورت پس کرایه درب منزل محاسبه خواهد شد.
         </p>
       </div>
 
-      {/* Create Account Section (Only for guest users) */}
-      {!session && (
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
-          {/* Checkbox Row */}
-          <div className="flex items-center gap-2 justify-end">
-            <label
-              htmlFor="createAccount"
-              className="text-sm font-medium text-slate-700 cursor-pointer"
-            >
-              ساخت حساب کاربری
-            </label>
-            <input
-              type="checkbox"
-              id="createAccount"
-              checked={createAccount}
-              onChange={(e) => setCreateAccount(e.target.checked)}
-              className="w-4 h-4 text-slate-700 border-slate-300 rounded focus:ring-slate-400"
-            />
-          </div>
-
-          {/* Helper Text */}
-          <p className="text-xs text-slate-600 text-right">
-            {createAccount
-              ? 'با فعال کردن این گزینه و تایید شماره تلفن، حساب کاربری برای شما ایجاد می‌شود'
-              : 'خرید به عنوان کاربر مهمان انجام می‌شود (نیازی به ایجاد حساب کاربری نیست)'}
-          </p>
-
-          {/* OTP Verification Section - Only shown when createAccount is checked */}
-          {createAccount && (
-            <div className="pt-2 border-t border-slate-200 space-y-2">
-              {!phoneVerified ? (
-                <>
-                  {!otpSent ? (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleSendOTP}
-                      disabled={otpCooldown > 0 || isSendingOTP}
-                      className="w-full"
-                      isLoading={isSendingOTP}
-                    >
-                      {otpCooldown > 0
-                        ? `ارسال مجدد (${otpCooldown}ثانیه)`
-                        : 'ارسال کد تایید'}
-                    </Button>
-                  ) : (
-                    <div className="space-y-2">
-                      <Input
-                        type="text"
-                        value={otpCode}
-                        onChange={(e) =>
-                          setOtpCode(
-                            e.target.value.replace(/\D/g, '').slice(0, 6)
-                          )
-                        }
-                        className="text-center tracking-widest"
-                        placeholder="کد 6 رقمی را وارد کنید"
-                        maxLength={6}
-                        dir="ltr"
-                      />
-                      <Button
-                        type="button"
-                        variant="primary"
-                        onClick={handleVerifyOTP}
-                        className="w-full"
-                        disabled={isVerifyingOTP}
-                        isLoading={isVerifyingOTP}
-                      >
-                        تایید کد
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-700 text-right">
-                    ✓ شماره تلفن تایید شد
-                  </p>
-                </div>
-              )}
-
-              {otpError && (
-                <Alert type="error" onClose={() => setOtpError('')}>
-                  {otpError}
-                </Alert>
-              )}
-
-              {otpSuccess && (
-                <Alert type="success" onClose={() => setOtpSuccess('')}>
-                  {otpSuccess}
-                </Alert>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Submit Button - hidden on mobile when hideSubmitButton is true */}
       {!hideSubmitButton && (
         <Button
           type="submit"
           variant="primary"
           className="w-full"
           isLoading={isProcessing}
-          disabled={
-            isProcessing || (!isLoggedIn && createAccount && !phoneVerified)
-          }
+          disabled={isProcessing}
         >
-          {!isLoggedIn && createAccount && !phoneVerified
-            ? 'ابتدا شماره تلفن را تایید کنید'
-            : 'پرداخت'}
+          پرداخت
         </Button>
       )}
     </form>
   );
 
-  // In compact mode, return just the form without Card wrapper
-  if (compact) {
-    return formContent;
-  }
+  if (compact) return formContent;
 
-  // Normal mode: wrap in Card with header
   return (
     <Card className="mt-6">
       <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">

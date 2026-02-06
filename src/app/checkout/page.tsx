@@ -54,8 +54,6 @@ export default function CheckoutPage() {
     email: string;
     shippingAddress: string;
     postalCode: string;
-    createAccount: boolean;
-    phoneVerified: boolean;
   } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -73,7 +71,6 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     // Only redirect if cart is empty AND session is not loading
-    // This prevents redirect during session updates (e.g., after OTP login)
     if (status !== 'loading' && items.length === 0) {
       router.push('/cart');
     }
@@ -86,8 +83,6 @@ export default function CheckoutPage() {
       email: string;
       shippingAddress: string;
       postalCode: string;
-      createAccount: boolean;
-      phoneVerified: boolean;
     }) => {
       try {
         setError('');
@@ -116,7 +111,6 @@ export default function CheckoutPage() {
               email: formData.email || undefined,
               shippingAddress: formData.shippingAddress,
               postalCode: formData.postalCode || undefined,
-              createAccount: formData.createAccount,
             },
             // Include promo code if applied
             promoCode: appliedPromo?.code,
@@ -153,8 +147,6 @@ export default function CheckoutPage() {
       email: string;
       shippingAddress: string;
       postalCode: string;
-      createAccount: boolean;
-      phoneVerified: boolean;
     }) => {
       // If digipay is selected, show guidance modal first
       if (paymentMethod === 'digipay') {

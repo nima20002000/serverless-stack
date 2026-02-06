@@ -3,7 +3,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@/lib/supabase/server';
 import { detectIdentifierType } from '@/services/user-service';
-import { verifyOtpToken } from '@/lib/auth/otp-token';
 
 // Extend the built-in types
 declare module 'next-auth' {
@@ -46,11 +45,10 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         identifier: { label: 'ایمیل یا شماره تلفن', type: 'text' },
         password: { label: 'رمز عبور', type: 'password' },
-        otpToken: { label: 'OTP Token', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.identifier) {
-          throw new Error('ایمیل یا شماره تلفن الزامی است');
+        if (!credentials?.identifier || !credentials.password) {
+          throw new Error('ایمیل یا شماره تلفن و رمز عبور الزامی است');
         }
 
         // Detect if identifier is email or phone
@@ -76,47 +74,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('کاربری با این مشخصات یافت نشد');
         }
 
-        // For authentication without password (OTP-verified)
-        // Allow passwordless login for both phone and email after OTP verification
-        if (!credentials.password) {
-          const secret = process.env.NEXTAUTH_SECRET;
-          const otpToken = credentials.otpToken;
-
-          if (!secret || !otpToken) {
-            throw new Error('تایید دو مرحله‌ای نامعتبر است');
-          }
-
-          const otpVerification = verifyOtpToken({
-            token: otpToken,
-            identifier: credentials.identifier,
-            secret,
-            allowedPurposes: ['login', 'checkout'],
-          });
-
-          if (!otpVerification.valid) {
-            throw new Error('تایید دو مرحله‌ای نامعتبر است');
-          }
-
-          // This path is used after OTP verification
-          // The OTP was already verified before calling signIn
-          // Security: Only allow if user is verified (went through OTP for phone)
-          if (identifierType === 'phone' && !user.isVerified) {
-            throw new Error('لطفاً ابتدا شماره تلفن خود را تایید کنید');
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            phone: user.phone,
-            name: user.name,
-            role: user.role,
-            isVerified: user.isVerified,
-          };
-        }
-
-        // For email/phone authentication with password
         if (!user.password) {
-          throw new Error('برای این حساب از ورود با کد تایید استفاده کنید');
+          throw new Error(
+            'این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید'
+          );
         }
 
         const isPasswordValid = await bcrypt.compare(

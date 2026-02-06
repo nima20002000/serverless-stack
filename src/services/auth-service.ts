@@ -62,7 +62,7 @@ export async function authenticateUser(
         identifier,
         userId: user.id,
       });
-      throw new Error('برای این حساب کاربری از ورود با کد تایید استفاده کنید');
+      throw new Error('این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);

@@ -26,3 +26,32 @@ Remove OTP and SMS code paths so runtime no longer depends on `otp_verifications
 
 ## Rollback
 - Feature flag the OTP removal branch and keep legacy routes disabled but recoverable for emergency access.
+
+## Completion Notes (2026-02-07)
+- Status: Completed
+- Completed implementation:
+  - Removed OTP runtime routes and flows:
+    - deleted `src/app/api/auth/send-otp/route.ts`
+    - deleted `src/app/api/auth/verify-otp/route.ts`
+    - deleted `src/app/api/auth/checkout-verify-otp/route.ts`
+    - deleted `src/app/(auth)/verify-otp/page.tsx`
+    - deleted `src/components/auth/OTPInput.tsx`
+  - Removed OTP/SMS runtime services and token helper:
+    - deleted `src/services/otp-service.ts`
+    - deleted `src/services/sms-service.ts`
+    - deleted `src/lib/auth/otp-token.ts`
+  - Removed OTP/SMS runtime dependencies from active app paths:
+    - `src/lib/auth/options.ts` now enforces password-based credentials only.
+    - `src/app/(auth)/login/page.tsx` removed OTP login mode.
+    - `src/app/(auth)/register/page.tsx` now registers directly via `/api/auth/register`.
+    - `src/app/api/auth/register/route.ts` accepts phone/email identifier registration.
+    - `src/components/checkout/CheckoutForm.tsx` removed OTP/account-verification UI states.
+    - `src/app/checkout/page.tsx` removed OTP-derived payload fields.
+    - `src/app/profile/page.tsx` and `src/components/profile/PasswordManagementCard.tsx` removed OTP password reset UX.
+    - `src/middleware.ts` removed OTP endpoint rate-limit branches.
+    - `src/app/api/transactions/verify*.ts` removed SMS confirmation calls/imports.
+- Verification:
+  - `rg -n "send-otp|verify-otp|checkout-verify-otp|reset-password-otp" src` (no matches)
+  - `rg -n "otp_verifications" src` (no matches)
+  - `rg -n "@/lib/kavenegar/client|lib/kavenegar/client" src` (no matches)
+  - `npm run build` (pass)

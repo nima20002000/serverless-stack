@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
@@ -90,50 +91,58 @@ export default function RegisterPage() {
     try {
       const identifierType = detectIdentifierType(formData.identifier);
 
-      // OTP FLOW: Send OTP for both phone and email
-      if (identifierType === 'phone' || identifierType === 'email') {
-        // Normalize phone number if it's a phone identifier
-        const identifier =
-          identifierType === 'phone'
-            ? normalizePhoneNumber(formData.identifier)
-            : formData.identifier;
+      if (identifierType !== 'phone' && identifierType !== 'email') {
+        throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
+      }
 
-        const requestBody =
-          identifierType === 'phone'
-            ? { phone: identifier, purpose: 'register' }
-            : { email: identifier, purpose: 'register' };
+      const identifier =
+        identifierType === 'phone'
+          ? normalizePhoneNumber(formData.identifier)
+          : formData.identifier;
 
-        const otpResponse = await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (otpResponse.status === 429) {
-          const rateLimitData = await otpResponse.json();
-          setRateLimitRetryAfter(
-            rateLimitData.retryAfter || Date.now() + 120000
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const otpData = await otpResponse.json();
-
-        if (!otpResponse.ok) {
-          throw new Error(otpData.error || 'خطا در ارسال کد تایید');
-        }
-
-        // Redirect to OTP verification page with data
-        const params = new URLSearchParams({
-          [identifierType === 'phone' ? 'phone' : 'email']: identifier,
-          name: formData.name,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier,
           password: formData.password,
-          purpose: 'register',
-        });
-        router.push(`/verify-otp?${params.toString()}`);
+          name: formData.name,
+        }),
+      });
+
+      if (response.status === 429) {
+        const rateLimitData = await response.json();
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
+        setIsLoading(false);
         return;
       }
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'خطا در ثبت‌نام');
+      }
+
+      const signInResult = await signIn('credentials', {
+        identifier,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) {
+        setSuccessMessage(
+          'ثبت‌نام انجام شد. برای ورود از فرم ورود استفاده کنید.'
+        );
+        return;
+      }
+
+      if (signInResult?.ok) {
+        router.push('/');
+        return;
+      }
+
+      setSuccessMessage(
+        'ثبت‌نام انجام شد. برای ورود از فرم ورود استفاده کنید.'
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -213,7 +222,7 @@ export default function RegisterPage() {
             identifierType === 'email'
               ? 'ایمیل وارد شده است'
               : identifierType === 'phone'
-                ? 'شماره تلفن وارد شده است - کد تایید ارسال خواهد شد'
+                ? 'شماره تلفن وارد شده است'
                 : 'ایمیل یا شماره موبایل خود را وارد کنید'
           }
         />
@@ -248,7 +257,7 @@ export default function RegisterPage() {
           isLoading={isLoading}
           disabled={isLoading}
         >
-          {identifierType === 'phone' ? 'ارسال کد تایید' : 'ثبت‌نام'}
+          ثبت‌نام
         </Button>
       </form>
 
