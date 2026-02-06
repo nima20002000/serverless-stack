@@ -34,6 +34,7 @@ yarn-error.log*
 
 # credentials (consolidated)
 CREDENTIALS.md
+credentials.md
 
 # production sync script (contains credentials)
 sync-to-production.sh
@@ -43,6 +44,9 @@ CLAUDE.md
 
 # tasks folder (project notes and planning)
 /tasks
+
+# database dumps and local schema artifacts
+/database
 
 # mcp config
 .mcp.json
