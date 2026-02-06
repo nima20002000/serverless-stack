@@ -41,6 +41,7 @@
 - Point at logs, errors, failing tests - then resolve them
 - Zero context switching required from the user
 - Go fix failing CI tests without being told how
+- You can run tests in tmp folder after every feature you add to make sure they work as expected or not.
 
 ## Task Management
 
