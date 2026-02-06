@@ -42,12 +42,12 @@ type TransactionWithDetails = {
   fullName: string;
   email: string | null;
   phone: string;
-  address: string;
-  city: string;
+  shippingAddress: string;
   postalCode: string;
-  zarinpalAuthority: string | null;
-  zarinpalRefId: string | null;
-  paymentMethod: 'zarinpal' | null;
+  paymentProviderRef: string | null;
+  stripePaymentIntentId: string | null;
+  paypalOrderId: string | null;
+  paymentMethod: 'STRIPE' | 'PAYPAL';
   createdAt: string;
   updatedAt: string;
   user: {

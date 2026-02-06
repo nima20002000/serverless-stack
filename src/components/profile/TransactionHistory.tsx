@@ -7,7 +7,7 @@ interface Transaction {
   id: string;
   amount: string;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  paymentMethod: 'STRIPE' | 'PAYPAL';
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;
@@ -70,8 +70,8 @@ export default function TransactionHistory({
 
   const getPaymentMethodBadge = useCallback((method: string) => {
     const labels = {
-      ZARINPAL: 'زرین‌پال',
-      DIGIPAY: 'دیجی‌پی',
+      STRIPE: 'استرایپ',
+      PAYPAL: 'پی‌پال',
     };
     return (
       <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">

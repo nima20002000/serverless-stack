@@ -14,11 +14,12 @@ interface Transaction {
   transactionCode: string;
   amount: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  paymentMethod: 'STRIPE' | 'PAYPAL';
   isGuest: boolean;
   createdAt: string;
-  zarinpalAuthority?: string | null;
-  zarinpalRefId?: string | null;
+  paymentProviderRef?: string | null;
+  stripePaymentIntentId?: string | null;
+  paypalOrderId?: string | null;
   fullName: string;
   phone: string;
   email: string | null;
@@ -169,8 +170,8 @@ export default function TransactionsManagementPage() {
 
   const getPaymentMethodBadge = (method: string) => {
     const labels = {
-      ZARINPAL: 'زرین‌پال',
-      DIGIPAY: 'دیجی‌پی',
+      STRIPE: 'استرایپ',
+      PAYPAL: 'پی‌پال',
     };
     return (
       <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
@@ -421,9 +422,9 @@ export default function TransactionsManagementPage() {
                         <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                           {transaction.transactionCode}
                         </code>
-                        {transaction.zarinpalRefId && (
+                        {transaction.paymentProviderRef && (
                           <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
-                            Ref: {transaction.zarinpalRefId}
+                            Ref: {transaction.paymentProviderRef}
                           </div>
                         )}
                         {transaction.invoice && (

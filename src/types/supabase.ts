@@ -10,43 +10,10 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '13.0.5';
+    PostgrestVersion: '14.1';
   };
   public: {
     Tables: {
-      _prisma_migrations: {
-        Row: {
-          applied_steps_count: number;
-          checksum: string;
-          finished_at: string | null;
-          id: string;
-          logs: string | null;
-          migration_name: string;
-          rolled_back_at: string | null;
-          started_at: string;
-        };
-        Insert: {
-          applied_steps_count?: number;
-          checksum: string;
-          finished_at?: string | null;
-          id: string;
-          logs?: string | null;
-          migration_name: string;
-          rolled_back_at?: string | null;
-          started_at?: string;
-        };
-        Update: {
-          applied_steps_count?: number;
-          checksum?: string;
-          finished_at?: string | null;
-          id?: string;
-          logs?: string | null;
-          migration_name?: string;
-          rolled_back_at?: string | null;
-          started_at?: string;
-        };
-        Relationships: [];
-      };
       _ProductToTag: {
         Row: {
           A: string;
@@ -152,39 +119,6 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
-      };
-      otp_verifications: {
-        Row: {
-          attempts: number;
-          code: string;
-          createdAt: string;
-          expiresAt: string;
-          id: string;
-          identifier: string;
-          maxAttempts: number;
-          purpose: string;
-        };
-        Insert: {
-          attempts?: number;
-          code: string;
-          createdAt?: string;
-          expiresAt: string;
-          id: string;
-          identifier: string;
-          maxAttempts?: number;
-          purpose: string;
-        };
-        Update: {
-          attempts?: number;
-          code?: string;
-          createdAt?: string;
-          expiresAt?: string;
-          id?: string;
-          identifier?: string;
-          maxAttempts?: number;
-          purpose?: string;
-        };
-        Relationships: [];
       };
       product_media: {
         Row: {
@@ -563,8 +497,6 @@ export type Database = {
           amount: number;
           createAccount: boolean | null;
           createdAt: string;
-          digipayTicket: string | null;
-          digipayTrackingCode: string | null;
           discountAmount: number | null;
           email: string | null;
           fullName: string | null;
@@ -572,28 +504,29 @@ export type Database = {
           id: string;
           ip_address: string | null;
           isGuest: boolean;
+          paymentMetadata: Json | null;
           paymentMethod: Database['public']['Enums']['PaymentMethod'];
+          paymentProviderRef: string | null;
+          paypalCaptureId: string | null;
+          paypalOrderId: string | null;
           phone: string | null;
           postalCode: string | null;
           promoCodeId: string | null;
           shippingAddress: string | null;
           status: Database['public']['Enums']['TransactionStatus'];
+          stripeChargeId: string | null;
+          stripeCheckoutSessionId: string | null;
+          stripePaymentIntentId: string | null;
           subtotal: number | null;
           transactionCode: string;
           updatedAt: string;
           user_agent: string | null;
           userId: string | null;
-          zarinpalAuthority: string | null;
-          zarinpalRefId: string | null;
-          zibalRefNumber: string | null;
-          zibalTrackId: string | null;
         };
         Insert: {
           amount: number;
           createAccount?: boolean | null;
           createdAt?: string;
-          digipayTicket?: string | null;
-          digipayTrackingCode?: string | null;
           discountAmount?: number | null;
           email?: string | null;
           fullName?: string | null;
@@ -601,28 +534,29 @@ export type Database = {
           id: string;
           ip_address?: string | null;
           isGuest?: boolean;
+          paymentMetadata?: Json | null;
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
+          paymentProviderRef?: string | null;
+          paypalCaptureId?: string | null;
+          paypalOrderId?: string | null;
           phone?: string | null;
           postalCode?: string | null;
           promoCodeId?: string | null;
           shippingAddress?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
+          stripeChargeId?: string | null;
+          stripeCheckoutSessionId?: string | null;
+          stripePaymentIntentId?: string | null;
           subtotal?: number | null;
           transactionCode: string;
           updatedAt: string;
           user_agent?: string | null;
           userId?: string | null;
-          zarinpalAuthority?: string | null;
-          zarinpalRefId?: string | null;
-          zibalRefNumber?: string | null;
-          zibalTrackId?: string | null;
         };
         Update: {
           amount?: number;
           createAccount?: boolean | null;
           createdAt?: string;
-          digipayTicket?: string | null;
-          digipayTrackingCode?: string | null;
           discountAmount?: number | null;
           email?: string | null;
           fullName?: string | null;
@@ -630,21 +564,24 @@ export type Database = {
           id?: string;
           ip_address?: string | null;
           isGuest?: boolean;
+          paymentMetadata?: Json | null;
           paymentMethod?: Database['public']['Enums']['PaymentMethod'];
+          paymentProviderRef?: string | null;
+          paypalCaptureId?: string | null;
+          paypalOrderId?: string | null;
           phone?: string | null;
           postalCode?: string | null;
           promoCodeId?: string | null;
           shippingAddress?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
+          stripeChargeId?: string | null;
+          stripeCheckoutSessionId?: string | null;
+          stripePaymentIntentId?: string | null;
           subtotal?: number | null;
           transactionCode?: string;
           updatedAt?: string;
           user_agent?: string | null;
           userId?: string | null;
-          zarinpalAuthority?: string | null;
-          zarinpalRefId?: string | null;
-          zibalRefNumber?: string | null;
-          zibalTrackId?: string | null;
         };
         Relationships: [
           {
@@ -818,7 +755,7 @@ export type Database = {
         | 'OTP_VERIFIED'
         | 'OTP_FAILED';
       MediaType: 'IMAGE' | 'VIDEO';
-      PaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
+      PaymentMethod: 'STRIPE' | 'PAYPAL';
       Role: 'USER' | 'ADMIN';
       TransactionStatus: 'PENDING' | 'COMPLETED' | 'FAILED';
     };
@@ -963,7 +900,7 @@ export const Constants = {
         'OTP_FAILED',
       ],
       MediaType: ['IMAGE', 'VIDEO'],
-      PaymentMethod: ['ZARINPAL', 'DIGIPAY', 'ZIBAL'],
+      PaymentMethod: ['STRIPE', 'PAYPAL'],
       Role: ['USER', 'ADMIN'],
       TransactionStatus: ['PENDING', 'COMPLETED', 'FAILED'],
     },

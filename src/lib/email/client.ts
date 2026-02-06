@@ -14,7 +14,7 @@ export type TransactionEmailData = {
   id: string;
   transactionCode: string;
   amount: string | number;
-  paymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
+  paymentMethod: 'STRIPE' | 'PAYPAL';
   fullName: string | null;
   phone: string | null;
   email: string | null;
@@ -368,11 +368,7 @@ export async function sendBuyerOrderConfirmation(
 
   // Payment method label
   const paymentMethodLabel =
-    transaction.paymentMethod === 'DIGIPAY'
-      ? 'دیجی‌پی'
-      : transaction.paymentMethod === 'ZIBAL'
-        ? 'زیبال'
-        : 'زرین‌پال';
+    transaction.paymentMethod === 'PAYPAL' ? 'پی‌پال' : 'استرایپ';
 
   const emailHTML = `
 <!DOCTYPE html>
@@ -713,11 +709,7 @@ export async function sendAdminOrderConfirmation(
 
   // Payment method label
   const paymentMethodLabel =
-    transaction.paymentMethod === 'DIGIPAY'
-      ? 'دیجی‌پی'
-      : transaction.paymentMethod === 'ZIBAL'
-        ? 'زیبال'
-        : 'زرین‌پال';
+    transaction.paymentMethod === 'PAYPAL' ? 'پی‌پال' : 'استرایپ';
 
   const emailHTML = `
 <!DOCTYPE html>

@@ -22,11 +22,12 @@ interface Transaction {
   transactionCode: string;
   amount: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  paymentMethod: 'ZARINPAL' | 'DIGIPAY';
+  paymentMethod: 'STRIPE' | 'PAYPAL';
   isGuest: boolean;
   createdAt: string;
-  zarinpalAuthority?: string | null;
-  zarinpalRefId?: string | null;
+  paymentProviderRef?: string | null;
+  stripePaymentIntentId?: string | null;
+  paypalOrderId?: string | null;
   fullName: string;
   phone: string;
   email: string | null;
@@ -120,8 +121,8 @@ export default function TransactionDetailModal({
 
   const getPaymentMethodLabel = (method: string) => {
     const labels = {
-      ZARINPAL: 'زرین‌پال',
-      DIGIPAY: 'دیجی‌پی',
+      STRIPE: 'استرایپ',
+      PAYPAL: 'پی‌پال',
     };
     return labels[method as keyof typeof labels] || method;
   };
@@ -180,23 +181,33 @@ export default function TransactionDetailModal({
                   {getPaymentMethodLabel(transaction.paymentMethod)}
                 </span>
               </div>
-              {transaction.zarinpalRefId && (
+              {transaction.paymentProviderRef && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
-                    کد رهگیری:
+                    مرجع پرداخت:
                   </span>
                   <code className="text-sm bg-white dark:bg-slate-800 px-2 py-1 rounded">
-                    {transaction.zarinpalRefId}
+                    {transaction.paymentProviderRef}
                   </code>
                 </div>
               )}
-              {transaction.zarinpalAuthority && (
+              {transaction.stripePaymentIntentId && (
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
-                    Authority:
+                    Stripe Intent:
                   </span>
                   <code className="text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded">
-                    {transaction.zarinpalAuthority.substring(0, 20)}...
+                    {transaction.stripePaymentIntentId.substring(0, 24)}...
+                  </code>
+                </div>
+              )}
+              {transaction.paypalOrderId && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600 dark:text-slate-400">
+                    PayPal Order:
+                  </span>
+                  <code className="text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded">
+                    {transaction.paypalOrderId.substring(0, 24)}...
                   </code>
                 </div>
               )}

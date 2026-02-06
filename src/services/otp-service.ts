@@ -1,314 +1,263 @@
 import 'server-only';
-import { createClient } from '@/lib/supabase/server';
-import { sendOTPSMS } from '@/lib/kavenegar/client';
+import { redis } from '@/lib/redis/client';
 import { sendOTPEmail } from '@/lib/email/client';
 import { log } from '@/lib/logger';
 
-/**
- * Generate 6-digit OTP code
- */
+type OTPPurpose = 'register' | 'login' | 'checkout';
+
+type OTPRecord = {
+  code: string;
+  attempts: number;
+  maxAttempts: number;
+  createdAt: number;
+  expiresAt: number;
+};
+
+type SendOTPSuccess = {
+  success: true;
+  expiresAt: number;
+};
+
+type SendOTPFailure = {
+  success: false;
+  expiresAt: number;
+  error: string;
+  errorCode: 'RATE_LIMIT' | 'SEND_FAILED';
+};
+
+const OTP_EXPIRY_SECONDS = 5 * 60;
+const OTP_EXPIRY_MS = OTP_EXPIRY_SECONDS * 1000;
+const OTP_RATE_LIMIT_MS = 2 * 60 * 1000;
+const OTP_MAX_SENDS_PER_WINDOW = 3;
+const OTP_MAX_ATTEMPTS = 5;
+
+// Fallback store for environments without Redis.
+const memoryStore = new Map<string, { value: string; expiresAt: number }>();
+
+function normalizeIdentifier(identifier: string): string {
+  return identifier.trim().toLowerCase();
+}
+
+function isPhoneIdentifier(identifier: string): boolean {
+  return identifier.startsWith('09');
+}
+
+function isEmailIdentifier(identifier: string): boolean {
+  return identifier.includes('@');
+}
+
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-/**
- * Send OTP to phone number or email
- * Implements rate limiting (1 OTP per 2 minutes per identifier)
- */
-export async function sendOTP(
-  identifier: string, // Email or phone
-  purpose: 'register' | 'login' | 'checkout' = 'register'
-): Promise<{
-  success: boolean;
-  expiresAt: number;
-  error?: string;
-  errorCode?: 'RATE_LIMIT' | 'SEND_FAILED';
-}> {
-  try {
-    log.info('🔵 sendOTP called', {
-      identifier,
-      purpose,
-      timestamp: new Date().toISOString(),
-    });
+function keyForRecord(identifier: string, purpose: OTPPurpose): string {
+  return `otp:record:${purpose}:${identifier}`;
+}
 
-    const supabase = createClient();
+function keyForSendLog(identifier: string, purpose: OTPPurpose): string {
+  return `otp:sendlog:${purpose}:${identifier}`;
+}
 
-    // FIRST: Delete all expired OTPs to prevent stale records from blocking new requests
-    const { count: deletedExpiredCount, error: deleteExpiredError } =
-      await supabase
-        .from('otp_verifications')
-        .delete({ count: 'exact' })
-        .eq('identifier', identifier)
-        .eq('purpose', purpose)
-        .lt('expiresAt', new Date().toISOString());
-
-    if (!deleteExpiredError) {
-      log.info('🔵 Cleaned up expired OTPs', {
-        identifier,
-        purpose,
-        count: deletedExpiredCount,
-      });
+async function getStoreValue<T>(key: string): Promise<T | null> {
+  if (redis) {
+    const raw = await redis.get<string>(key);
+    if (!raw) {
+      return null;
     }
 
-    // THEN: Check rate limiting for RECENT non-expired OTPs (max 3 OTPs per 2 minutes)
-    const twoMinutesAgo = new Date(Date.now() - 120000).toISOString();
-    const now = new Date().toISOString();
+    try {
+      return JSON.parse(raw) as T;
+    } catch {
+      return null;
+    }
+  }
 
-    const { data: recentOTPs, error: recentError } = await supabase
-      .from('otp_verifications')
-      .select('*')
-      .eq('identifier', identifier)
-      .eq('purpose', purpose)
-      .gte('createdAt', twoMinutesAgo)
-      .gte('expiresAt', now)
-      .order('createdAt', { ascending: false });
+  const entry = memoryStore.get(key);
+  if (!entry) {
+    return null;
+  }
 
-    log.info('🔵 Rate limit check', {
-      identifier,
-      purpose,
-      recentOTPCount: recentOTPs?.length || 0,
-      recentOTPLatestCreatedAt: recentOTPs?.[0]?.createdAt,
-      recentOTPLatestExpiresAt: recentOTPs?.[0]?.expiresAt,
-      now: new Date().toISOString(),
-    });
+  if (entry.expiresAt <= Date.now()) {
+    memoryStore.delete(key);
+    return null;
+  }
 
-    if (!recentError && (recentOTPs?.length || 0) >= 3) {
-      // Parse timestamp as UTC (Supabase returns timestamp without timezone)
-      const createdAt = new Date(recentOTPs[0].createdAt + 'Z').getTime();
-      const rateLimitExpiresAt = createdAt + 120000; // Rate limit expires 2 minutes after latest creation
-      const waitTime = Math.ceil((rateLimitExpiresAt - Date.now()) / 1000);
-      log.warn('🔴 OTP rate limit hit', {
-        identifier,
-        purpose,
-        waitTime,
-        recentOTPId: recentOTPs[0].id,
-        recentOTPCount: recentOTPs.length,
-      });
+  try {
+    return JSON.parse(entry.value) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function setStoreValue<T>(
+  key: string,
+  value: T,
+  ttlSeconds: number
+): Promise<void> {
+  const payload = JSON.stringify(value);
+
+  if (redis) {
+    await redis.setex(key, ttlSeconds, payload);
+    return;
+  }
+
+  memoryStore.set(key, {
+    value: payload,
+    expiresAt: Date.now() + ttlSeconds * 1000,
+  });
+}
+
+async function deleteStoreValue(key: string): Promise<void> {
+  if (redis) {
+    await redis.del(key);
+    return;
+  }
+
+  memoryStore.delete(key);
+}
+
+async function sendPhoneOTP(
+  identifier: string,
+  code: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Lazy-load Kavenegar so local startup doesn't fail unless SMS path is used.
+    const { sendOTPSMS } = await import('@/lib/kavenegar/client');
+    const result = await sendOTPSMS(identifier, code);
+    return {
+      success: result.success,
+      error: result.error,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+export async function sendOTP(
+  identifier: string,
+  purpose: OTPPurpose = 'register'
+): Promise<SendOTPSuccess | SendOTPFailure> {
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  const now = Date.now();
+
+  try {
+    const sendLogKey = keyForSendLog(normalizedIdentifier, purpose);
+    const recordKey = keyForRecord(normalizedIdentifier, purpose);
+    const recentRaw =
+      (await getStoreValue<number[]>(sendLogKey))?.filter(
+        (timestamp) => now - timestamp < OTP_RATE_LIMIT_MS
+      ) || [];
+
+    if (recentRaw.length >= OTP_MAX_SENDS_PER_WINDOW) {
+      const latestSend = Math.max(...recentRaw);
+      const retryAt = latestSend + OTP_RATE_LIMIT_MS;
+      const waitSeconds = Math.max(1, Math.ceil((retryAt - now) / 1000));
+
       return {
         success: false,
-        expiresAt: rateLimitExpiresAt,
-        error: `لطفاً ${waitTime} ثانیه صبر کنید`,
+        expiresAt: retryAt,
+        error: `لطفاً ${waitSeconds} ثانیه صبر کنید`,
         errorCode: 'RATE_LIMIT',
       };
     }
 
-    // Delete any remaining old OTPs for this identifier and purpose
-    const { count: deletedRemainingCount } = await supabase
-      .from('otp_verifications')
-      .delete({ count: 'exact' })
-      .eq('identifier', identifier)
-      .eq('purpose', purpose);
-
-    log.info('🔵 Deleted remaining OTPs', {
-      identifier,
-      purpose,
-      count: deletedRemainingCount,
-    });
-
-    // Generate new OTP
     const code = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = now + OTP_EXPIRY_MS;
+    const record: OTPRecord = {
+      code,
+      attempts: 0,
+      maxAttempts: OTP_MAX_ATTEMPTS,
+      createdAt: now,
+      expiresAt,
+    };
 
-    log.info('🔵 Creating new OTP record', {
-      identifier,
-      purpose,
-      expiresAt: expiresAt.toISOString(),
-    });
+    await setStoreValue(recordKey, record, OTP_EXPIRY_SECONDS);
+    await setStoreValue(sendLogKey, [...recentRaw, now], 2 * 60);
 
-    // Store OTP in database
-    const { data: otpRecord, error: createError } = await supabase
-      .from('otp_verifications')
-      .insert({
-        id: crypto.randomUUID(),
-        identifier,
-        code,
-        purpose,
-        expiresAt: expiresAt.toISOString(),
-        attempts: 0,
-        maxAttempts: 5,
-      })
-      .select()
-      .single();
-
-    if (createError || !otpRecord) {
-      log.error('🔴 Failed to create OTP record', {
-        identifier,
-        purpose,
-        error: createError,
-      });
-      throw new Error('خطا در ایجاد کد تایید');
+    let deliveryResult: { success: boolean; error?: string };
+    if (isPhoneIdentifier(normalizedIdentifier)) {
+      deliveryResult = await sendPhoneOTP(normalizedIdentifier, code);
+    } else if (isEmailIdentifier(normalizedIdentifier)) {
+      const emailResult = await sendOTPEmail(normalizedIdentifier, code);
+      deliveryResult = {
+        success: emailResult.success,
+        error: emailResult.error,
+      };
+    } else {
+      deliveryResult = {
+        success: false,
+        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است',
+      };
     }
 
-    log.info('🔵 OTP generated and stored', {
-      identifier,
-      purpose,
-      expiresAt: expiresAt.toISOString(),
-      otpRecordId: otpRecord.id,
-      createdAt: otpRecord.createdAt,
-    });
-
-    // Test hook: force delivery failures for integration tests
-    const forceSendFail =
-      process.env.NODE_ENV === 'test'
-        ? process.env.TEST_OTP_FORCE_SEND_FAIL
-        : undefined;
-
-    // Send OTP via appropriate channel based on identifier type
-    if (identifier.startsWith('09')) {
-      if (forceSendFail === 'sms') {
-        await supabase
-          .from('otp_verifications')
-          .delete()
-          .eq('id', otpRecord.id);
-        log.warn('Forced OTP SMS failure for tests', {
-          identifier,
-          otpRecordId: otpRecord.id,
-        });
-        return {
-          success: false,
-          expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.',
-          errorCode: 'SEND_FAILED',
-        };
-      }
-
-      // Phone number: Send SMS via Kavenegar
-      const result = await sendOTPSMS(identifier, code);
-      if (!result.success) {
-        // Delete the OTP record since sending failed
-        await supabase
-          .from('otp_verifications')
-          .delete()
-          .eq('id', otpRecord.id);
-
-        log.error('Failed to send OTP SMS', {
-          identifier,
-          error: result.error,
-        });
-        return {
-          success: false,
-          expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.',
-          errorCode: 'SEND_FAILED',
-        };
-      }
-    } else if (identifier.includes('@')) {
-      if (forceSendFail === 'email') {
-        await supabase
-          .from('otp_verifications')
-          .delete()
-          .eq('id', otpRecord.id);
-        log.warn('Forced OTP email failure for tests', {
-          identifier,
-          otpRecordId: otpRecord.id,
-        });
-        return {
-          success: false,
-          expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.',
-          errorCode: 'SEND_FAILED',
-        };
-      }
-
-      // Email address: Send email
-      log.info('🔵 Attempting to send OTP email', {
-        identifier,
-        otpRecordId: otpRecord.id,
-      });
-      const result = await sendOTPEmail(identifier, code);
-      log.info('🔵 Email send result', {
-        identifier,
-        success: result.success,
-        error: result.error,
-      });
-
-      if (!result.success) {
-        // Delete the OTP record since sending failed
-        await supabase
-          .from('otp_verifications')
-          .delete()
-          .eq('id', otpRecord.id);
-
-        log.error('🔴 Failed to send OTP email - deleted OTP record', {
-          identifier,
-          error: result.error,
-          otpRecordId: otpRecord.id,
-        });
-        return {
-          success: false,
-          expiresAt: expiresAt.getTime(),
-          error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.',
-          errorCode: 'SEND_FAILED',
-        };
-      }
-    } else {
-      // Delete the OTP record since format is invalid
-      await supabase.from('otp_verifications').delete().eq('id', otpRecord.id);
-
-      log.error('Invalid identifier format', { identifier });
+    if (!deliveryResult.success) {
+      await deleteStoreValue(recordKey);
       return {
         success: false,
-        expiresAt: expiresAt.getTime(),
-        error: 'فرمت ایمیل یا شماره تلفن نامعتبر است',
+        expiresAt,
+        error:
+          deliveryResult.error ||
+          'خطا در ارسال کد تایید. لطفاً دوباره تلاش کنید.',
         errorCode: 'SEND_FAILED',
       };
     }
 
-    log.info('OTP sent successfully', { identifier, purpose });
+    log.info('OTP sent successfully', {
+      identifier: normalizedIdentifier,
+      purpose,
+      expiresAt,
+    });
 
-    return { success: true, expiresAt: expiresAt.getTime() };
+    return {
+      success: true,
+      expiresAt,
+    };
   } catch (error) {
-    log.error('Failed to send OTP', { identifier, purpose, error });
-    throw new Error('خطا در ارسال کد تایید');
+    log.error('Failed to send OTP', {
+      identifier: normalizedIdentifier,
+      purpose,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return {
+      success: false,
+      expiresAt: now + OTP_EXPIRY_MS,
+      error: 'خطا در ارسال کد تایید',
+      errorCode: 'SEND_FAILED',
+    };
   }
 }
 
-/**
- * Verify OTP code
- * Implements attempt limiting (max 3 attempts)
- */
 export async function verifyOTP(
   identifier: string,
   code: string,
-  purpose: 'register' | 'login' | 'checkout' = 'register'
+  purpose: OTPPurpose = 'register'
 ): Promise<{ success: boolean; error?: string; attemptsLeft?: number }> {
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  const recordKey = keyForRecord(normalizedIdentifier, purpose);
+
   try {
-    const supabase = createClient();
-
-    const { data: stored, error: fetchError } = await supabase
-      .from('otp_verifications')
-      .select('*')
-      .eq('identifier', identifier)
-      .eq('purpose', purpose)
-      .order('createdAt', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (fetchError || !stored) {
-      log.warn('OTP verification failed: not found', { identifier, purpose });
-      return { success: false, error: 'کد تایید یافت نشد یا منقضی شده است' };
+    const record = await getStoreValue<OTPRecord>(recordKey);
+    if (!record) {
+      return {
+        success: false,
+        error: 'کد تایید یافت نشد یا منقضی شده است',
+      };
     }
 
-    // Check expiration (parse timestamp as UTC - Supabase returns timestamp without timezone)
-    if (new Date() > new Date(stored.expiresAt + 'Z')) {
-      await supabase.from('otp_verifications').delete().eq('id', stored.id);
-
-      log.warn('OTP verification failed: expired', { identifier, purpose });
+    const now = Date.now();
+    if (now > record.expiresAt) {
+      await deleteStoreValue(recordKey);
       return {
         success: false,
         error: 'کد تایید منقضی شده است. لطفاً کد جدید درخواست کنید',
       };
     }
 
-    // Check max attempts
-    if (stored.attempts >= stored.maxAttempts) {
-      await supabase.from('otp_verifications').delete().eq('id', stored.id);
-
-      log.warn('OTP verification failed: max attempts exceeded', {
-        identifier,
-        purpose,
-        attempts: stored.attempts,
-      });
+    if (record.attempts >= record.maxAttempts) {
+      await deleteStoreValue(recordKey);
       return {
         success: false,
         error:
@@ -316,38 +265,52 @@ export async function verifyOTP(
       };
     }
 
-    // Increment attempts
-    await supabase
-      .from('otp_verifications')
-      .update({ attempts: stored.attempts + 1 })
-      .eq('id', stored.id);
+    const nextAttempts = record.attempts + 1;
+    const attemptsLeft = Math.max(0, record.maxAttempts - nextAttempts);
+    const remainingTTLSeconds = Math.max(
+      1,
+      Math.ceil((record.expiresAt - now) / 1000)
+    );
 
-    // Verify code
-    if (code === stored.code) {
-      // Delete OTP after successful verification
-      await supabase.from('otp_verifications').delete().eq('id', stored.id);
-
-      log.info('OTP verified successfully', { identifier, purpose });
+    if (code === record.code) {
+      await deleteStoreValue(recordKey);
       return { success: true };
     }
 
-    const attemptsLeft = stored.maxAttempts - (stored.attempts + 1);
-    log.warn('OTP verification failed: invalid code', {
-      identifier,
-      purpose,
+    if (attemptsLeft === 0) {
+      await deleteStoreValue(recordKey);
+      return {
+        success: false,
+        error:
+          'تعداد تلاش‌های شما به حداکثر رسیده است. لطفاً کد جدید درخواست کنید',
+        attemptsLeft,
+      };
+    }
+
+    await setStoreValue(
+      recordKey,
+      {
+        ...record,
+        attempts: nextAttempts,
+      },
+      remainingTTLSeconds
+    );
+
+    return {
+      success: false,
+      error: `کد تایید اشتباه است. ${attemptsLeft} تلاش باقی‌مانده`,
       attemptsLeft,
+    };
+  } catch (error) {
+    log.error('Failed to verify OTP', {
+      identifier: normalizedIdentifier,
+      purpose,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
 
     return {
       success: false,
-      error:
-        attemptsLeft > 0
-          ? `کد تایید اشتباه است. ${attemptsLeft} تلاش باقی‌مانده`
-          : 'کد تایید اشتباه است',
-      attemptsLeft,
+      error: 'خطا در تایید کد',
     };
-  } catch (error) {
-    log.error('Failed to verify OTP', { identifier, purpose, error });
-    throw new Error('خطا در تایید کد');
   }
 }

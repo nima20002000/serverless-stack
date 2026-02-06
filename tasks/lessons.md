@@ -3,6 +3,8 @@
 ## Session Lessons
 - Supabase paused projects block schema dumps and linking operations.
 - For this environment, Supabase direct DB hosts resolved to IPv6 and failed; pooler endpoints worked.
+- For type generation, use Supabase CLI with project ref: `supabase gen types typescript --project-id <ref> --schema public > src/types/supabase.ts`.
+- Avoid `supabase gen types --db-url ...` in this environment; it attempted a Docker-backed path and failed when Docker daemon was unavailable.
 - Raw `pg_dump` output is not fully idempotent on Supabase; `CREATE SCHEMA` and `ALTER DEFAULT PRIVILEGES` can fail.
 - Applying dumps to Supabase requires filtering unsupported privilege statements.
 - DB-first migrations can break app runtime immediately when code still references removed tables/columns.
@@ -13,6 +15,7 @@
 
 ## Implementation Guardrails
 - Keep schema and generated types in lockstep.
+- Prefer `--project-id` generation from Supabase CLI as the default regeneration method for `src/types/supabase.ts`.
 - Make payment callbacks idempotent before enabling live traffic.
 - Use preview-first rollout with explicit drift checks between preview and production.
 - Maintain a single migration runbook with exact commands and expected outputs.

@@ -32,7 +32,7 @@ async function postHandler(req: NextRequest) {
     log.info('Transaction creation started', {
       userId: session?.user?.id || 'guest',
       itemCount: items?.length || 0,
-      paymentMethod: paymentMethod || 'ZARINPAL',
+      paymentMethod: paymentMethod || 'STRIPE',
       ip:
         req.headers.get('x-forwarded-for') ||
         req.headers.get('x-real-ip') ||
@@ -395,18 +395,19 @@ async function postHandler(req: NextRequest) {
       }
     }
 
-    // Validate payment method
-    let validPaymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL' = 'ZARINPAL';
-    if (paymentMethod === 'DIGIPAY') {
-      validPaymentMethod = 'DIGIPAY';
-    } else if (paymentMethod === 'ZIBAL') {
-      validPaymentMethod = 'ZIBAL';
-    }
+    // Use Stripe/PayPal as canonical methods in DB while preserving
+    // compatibility with legacy gateway payload values during transition.
+    const requestedGateway =
+      typeof paymentMethod === 'string'
+        ? paymentMethod.toUpperCase()
+        : 'STRIPE';
+    const validPaymentMethod: 'STRIPE' | 'PAYPAL' =
+      requestedGateway === 'PAYPAL' ? 'PAYPAL' : 'STRIPE';
 
     // Calculate surcharge for Digipay payments (12%)
     // The surcharge is stored separately and only used for payment gateway communication
     const gatewayFee =
-      validPaymentMethod === 'DIGIPAY'
+      requestedGateway === 'DIGIPAY'
         ? Math.round(totalAmount * (DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100))
         : 0;
     // Amount sent to payment gateway (base + fee)
@@ -418,7 +419,7 @@ async function postHandler(req: NextRequest) {
       paymentGatewayAmount,
       paymentMethod: validPaymentMethod,
       surchargePercent:
-        validPaymentMethod === 'DIGIPAY' ? DIGIPAY_CONFIG.SURCHARGE_PERCENT : 0,
+        requestedGateway === 'DIGIPAY' ? DIGIPAY_CONFIG.SURCHARGE_PERCENT : 0,
     });
 
     // Create transaction in database with shipping info
@@ -505,7 +506,7 @@ async function postHandler(req: NextRequest) {
     let paymentUrl: string;
     let paymentIdentifier: string; // authority for Zarinpal, ticket for Digipay, trackId for Zibal
 
-    if (validPaymentMethod === 'DIGIPAY') {
+    if (requestedGateway === 'DIGIPAY') {
       // Digipay payment flow
       const digipayClient = await import('@/lib/digipay/client');
 
@@ -523,7 +524,13 @@ async function postHandler(req: NextRequest) {
       const supabaseTx = createClient();
       await supabaseTx
         .from('transactions')
-        .update({ digipayTicket: digipayRequest.ticket })
+        .update({
+          paymentProviderRef: digipayRequest.ticket,
+          paymentMetadata: {
+            provider: 'DIGIPAY',
+            ticket: digipayRequest.ticket,
+          },
+        })
         .eq('id', transaction.id);
 
       paymentUrl = digipayRequest.redirectUrl;
@@ -539,7 +546,7 @@ async function postHandler(req: NextRequest) {
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
       });
-    } else if (validPaymentMethod === 'ZIBAL') {
+    } else if (requestedGateway === 'ZIBAL') {
       // Zibal payment flow
       const zibalClient = await import('@/lib/zibal/client');
 
@@ -555,7 +562,13 @@ async function postHandler(req: NextRequest) {
       const supabaseTx = createClient();
       await supabaseTx
         .from('transactions')
-        .update({ zibalTrackId: String(zibalRequest.trackId) })
+        .update({
+          paymentProviderRef: String(zibalRequest.trackId),
+          paymentMetadata: {
+            provider: 'ZIBAL',
+            trackId: String(zibalRequest.trackId),
+          },
+        })
         .eq('id', transaction.id);
 
       paymentUrl = zibalRequest.redirectUrl;
@@ -570,7 +583,7 @@ async function postHandler(req: NextRequest) {
         elapsedMs: Date.now() - startTime,
       });
     } else {
-      // Zarinpal payment flow (default)
+      // Legacy Zarinpal payment flow (default fallback)
       const paymentRequest = await createPaymentRequest({
         amount: paymentGatewayAmount, // In Tomans (no surcharge for Zarinpal, gatewayFee is 0)
         description: `خرید از فروشگاه کیتیا - کد تراکنش: ${transaction.transactionCode}`,
@@ -583,7 +596,13 @@ async function postHandler(req: NextRequest) {
       const supabaseTx = createClient();
       await supabaseTx
         .from('transactions')
-        .update({ zarinpalAuthority: paymentRequest.authority })
+        .update({
+          paymentProviderRef: paymentRequest.authority,
+          paymentMetadata: {
+            provider: 'ZARINPAL',
+            authority: paymentRequest.authority,
+          },
+        })
         .eq('id', transaction.id);
 
       paymentUrl = paymentRequest.url;
@@ -608,9 +627,9 @@ async function postHandler(req: NextRequest) {
       paymentUrl,
       // For compatibility, include identifiers based on payment method
       authority:
-        validPaymentMethod === 'ZARINPAL' ? paymentIdentifier : undefined,
-      ticket: validPaymentMethod === 'DIGIPAY' ? paymentIdentifier : undefined,
-      trackId: validPaymentMethod === 'ZIBAL' ? paymentIdentifier : undefined,
+        requestedGateway === 'ZARINPAL' ? paymentIdentifier : undefined,
+      ticket: requestedGateway === 'DIGIPAY' ? paymentIdentifier : undefined,
+      trackId: requestedGateway === 'ZIBAL' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {

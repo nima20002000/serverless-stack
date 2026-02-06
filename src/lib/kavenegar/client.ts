@@ -2,14 +2,16 @@ import 'server-only';
 import Kavenegar from 'kavenegar';
 import { log } from '@/lib/logger';
 
-const apiKey = process.env.KAVENEGAR_API_KEY;
-if (!apiKey) {
-  throw new Error('KAVENEGAR_API_KEY environment variable is required');
-}
+const apiKey = process.env.KAVENEGAR_API_KEY || '';
+const api = apiKey
+  ? Kavenegar.KavenegarApi({
+      apikey: apiKey,
+    })
+  : null;
 
-const api = Kavenegar.KavenegarApi({
-  apikey: apiKey,
-});
+if (!api) {
+  log.warn('Kavenegar API key not configured. SMS sending is disabled.');
+}
 
 export interface SendOTPResult {
   success: boolean;
@@ -31,6 +33,13 @@ export async function sendOTPSMS(
   phone: string,
   otp: string
 ): Promise<SendOTPResult> {
+  if (!api) {
+    return {
+      success: false,
+      error: 'KAVENEGAR_API_KEY environment variable is required',
+    };
+  }
+
   return new Promise((resolve) => {
     api.VerifyLookup(
       {
@@ -71,6 +80,13 @@ export async function sendOrderConfirmationSMS(
   phone: string,
   transactionCode: string
 ): Promise<SendOrderConfirmationResult> {
+  if (!api) {
+    return {
+      success: false,
+      error: 'KAVENEGAR_API_KEY environment variable is required',
+    };
+  }
+
   return new Promise((resolve) => {
     const templateName =
       process.env.KAVENEGAR_ORDER_CONFIRMATION_TEMPLATE_NAME ||

@@ -32,7 +32,7 @@ export async function createTransaction(data: {
   }>;
   amount: number;
   gatewayFee?: number; // Payment gateway fee (e.g., Digipay 12% surcharge)
-  paymentMethod?: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
+  paymentMethod?: 'STRIPE' | 'PAYPAL';
   shippingInfo: {
     fullName: string;
     phone: string;
@@ -76,7 +76,7 @@ export async function createTransaction(data: {
         gateway_fee: data.gatewayFee || 0, // Store gateway fee separately
         status: 'PENDING',
         transactionCode,
-        paymentMethod: data.paymentMethod || 'ZARINPAL',
+        paymentMethod: data.paymentMethod || 'STRIPE',
         isGuest: !data.userId,
         fullName: data.shippingInfo.fullName,
         phone: data.shippingInfo.phone,
@@ -163,13 +163,13 @@ export async function createTransaction(data: {
 }
 
 /**
- * Update transaction status and Zarinpal authority
+ * Update transaction status and provider reference data
  */
 export async function updateTransactionStatus(
   id: string,
   status: 'PENDING' | 'COMPLETED' | 'FAILED',
-  zarinpalAuthority?: string,
-  refId?: number
+  paymentProviderRef?: string,
+  providerReferenceId?: number
 ) {
   const supabase = createClient();
   const now = new Date().toISOString();
@@ -177,7 +177,7 @@ export async function updateTransactionStatus(
   log.info('Updating transaction status', {
     transactionId: id,
     status,
-    refId,
+    providerReferenceId,
   });
 
   try {
@@ -186,12 +186,14 @@ export async function updateTransactionStatus(
       updatedAt: now,
     };
 
-    if (zarinpalAuthority) {
-      updateData.zarinpalAuthority = zarinpalAuthority;
+    if (paymentProviderRef) {
+      updateData.paymentProviderRef = paymentProviderRef;
     }
 
-    if (refId) {
-      updateData.zarinpalRefId = refId;
+    if (providerReferenceId) {
+      updateData.paymentMetadata = {
+        providerReferenceId,
+      };
     }
 
     const { data: transaction, error } = await supabase
@@ -313,7 +315,7 @@ export async function getTransactionByCode(code: string) {
 }
 
 /**
- * Get transaction by Zarinpal authority
+ * Get transaction by provider reference
  */
 export async function getTransactionByAuthority(authority: string) {
   const supabase = createClient();
@@ -329,7 +331,7 @@ export async function getTransactionByAuthority(authority: string) {
       )
     `
     )
-    .eq('zarinpalAuthority', authority)
+    .eq('paymentProviderRef', authority)
     .limit(1)
     .single();
 
@@ -365,7 +367,7 @@ export async function getTransactionByDigipayTicket(ticket: string) {
       )
     `
     )
-    .eq('digipayTicket', ticket)
+    .eq('paymentProviderRef', ticket)
     .single();
 
   if (error || !transaction) {
@@ -403,7 +405,7 @@ export async function getTransactionByZibalTrackId(trackId: string) {
       )
     `
     )
-    .eq('zibalTrackId', trackId)
+    .eq('paymentProviderRef', trackId)
     .single();
 
   if (error || !transaction) {
