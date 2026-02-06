@@ -98,46 +98,14 @@ describe('middleware', () => {
       );
     });
 
-    it('uses apiLimiter with "otp-send" bucket for /api/auth/send-otp', async () => {
-      const req = createRequest('/api/auth/send-otp');
+    it('skips rate limiting for non-login/register /api/auth/* routes', async () => {
+      const req = createRequest('/api/auth/custom-endpoint');
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
       await middleware(req);
 
-      expect(checkRateLimitMock).toHaveBeenCalledWith(
-        req,
-        expect.objectContaining({ name: 'apiLimiter' }),
-        'otp-send'
-      );
-    });
-
-    it('uses apiLimiter with "otp-verify" bucket for /api/auth/verify-otp', async () => {
-      const req = createRequest('/api/auth/verify-otp');
-      mockRateLimitSuccess();
-      getTokenMock.mockResolvedValue(null);
-
-      await middleware(req);
-
-      expect(checkRateLimitMock).toHaveBeenCalledWith(
-        req,
-        expect.objectContaining({ name: 'apiLimiter' }),
-        'otp-verify'
-      );
-    });
-
-    it('uses apiLimiter with "otp-checkout-verify" bucket for /api/auth/checkout-verify-otp', async () => {
-      const req = createRequest('/api/auth/checkout-verify-otp');
-      mockRateLimitSuccess();
-      getTokenMock.mockResolvedValue(null);
-
-      await middleware(req);
-
-      expect(checkRateLimitMock).toHaveBeenCalledWith(
-        req,
-        expect.objectContaining({ name: 'apiLimiter' }),
-        'otp-checkout-verify'
-      );
+      expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
 
     it('skips rate limiting for /api/transactions/verify (Zarinpal callback)', async () => {

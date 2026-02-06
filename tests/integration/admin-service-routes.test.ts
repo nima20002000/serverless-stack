@@ -86,7 +86,7 @@ async function createTestTransaction(
     email: string | null;
     shippingAddress: string | null;
     postalCode: string | null;
-    paymentMethod: 'ZARINPAL' | 'DIGIPAY' | 'ZIBAL';
+    paymentMethod: 'STRIPE' | 'PAYPAL';
     isGuest: boolean;
     createdAt: string;
     updatedAt: string;
@@ -103,7 +103,7 @@ async function createTestTransaction(
     email: overrides.email ?? 'tx-test@example.com',
     shippingAddress: overrides.shippingAddress ?? 'تهران، خیابان تست',
     postalCode: overrides.postalCode ?? '1234567890',
-    paymentMethod: overrides.paymentMethod ?? 'ZARINPAL',
+    paymentMethod: overrides.paymentMethod ?? 'STRIPE',
     isGuest: overrides.isGuest ?? true,
     createdAt: overrides.createdAt ?? now,
     updatedAt: overrides.updatedAt ?? now,

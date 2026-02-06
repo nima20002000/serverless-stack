@@ -31,7 +31,7 @@ describe('Email Service Integration Tests', () => {
       id: randomUUID(),
       transactionCode: `KT-TEST${Math.floor(Math.random() * 10000)}`,
       amount: 250000,
-      paymentMethod: 'ZARINPAL',
+      paymentMethod: 'STRIPE',
       fullName: 'خریدار تست',
       phone: '09120000055',
       email,

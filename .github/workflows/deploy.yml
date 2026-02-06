@@ -29,22 +29,22 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED: ${{ secrets.NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED }}
           # Server env vars (needed for static generation)
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
-          KAVENEGAR_API_KEY: ${{ secrets.KAVENEGAR_API_KEY }}
           UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
           UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          ZARINPAL_MERCHANT_ID: ${{ secrets.ZARINPAL_MERCHANT_ID }}
-          ZARINPAL_SANDBOX: "false"
-          DIGIPAY_BASE_URL: ${{ secrets.DIGIPAY_BASE_URL }}
-          DIGIPAY_CLIENT_ID: ${{ secrets.DIGIPAY_CLIENT_ID }}
-          DIGIPAY_CLIENT_SECRET: ${{ secrets.DIGIPAY_CLIENT_SECRET }}
-          DIGIPAY_USERNAME: ${{ secrets.DIGIPAY_USERNAME }}
-          DIGIPAY_PASSWORD: ${{ secrets.DIGIPAY_PASSWORD }}
-          DIGIPAY_SANDBOX: "false"
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_CURRENCY: "usd"
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+          PAYPAL_WEBHOOK_ID: ${{ secrets.PAYPAL_WEBHOOK_ID }}
+          PAYPAL_ENV: "live"
+          PAYPAL_CURRENCY: "USD"
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}

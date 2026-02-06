@@ -1,275 +1,136 @@
-# Payment Method & Guest Tracking Deployment Guide
+# Stripe + PayPal Deployment Runbook
 
-## Overview
+## Scope
 
-This feature adds comprehensive payment gateway tracking and explicit guest status to the transaction system, enabling multi-gateway support (Zarinpal, Digipay, and future gateways).
+- This runbook covers payment cutover for `STRIPE` and `PAYPAL`.
+- It includes environment setup, webhook registration, smoke checks, rollback, and reconciliation.
 
-## What Changed
+## 1) Environment Variables
 
-### Database Changes
+Set these in local, preview, and production:
 
-- **New Enum**: `PaymentMethod` with values `ZARINPAL`, `DIGIPAY`
-- **New Column**: `paymentMethod` in transactions table (default: ZARINPAL)
-- **New Column**: `isGuest` in transactions table (boolean)
-- **New Indexes**: Performance indexes on `paymentMethod` and `isGuest`
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_CURRENCY` (optional, default `usd`)
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_WEBHOOK_ID`
+- `PAYPAL_ENV` (`sandbox` or `live`)
+- `PAYPAL_CURRENCY` (optional, default `USD`)
 
-### Code Changes
+Also required for app/runtime:
 
-- Updated Prisma schema with new fields
-- Modified transaction creation service to accept payment method
-- Enhanced API routes to validate and log payment methods
-- Updated admin dashboard to display payment gateway badges
-- Added TypeScript types across frontend components
-- Fixed guest-to-user conversion to update `isGuest` flag
+- `NEXT_PUBLIC_APP_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME`
+- `R2_PUBLIC_URL`
 
-## Database Migration Status
+## 2) Webhook Registration
 
-### ✅ Preview Database (gozxjxtnrbuurmstjydo)
+### Stripe
 
-**Status**: COMPLETED
+Register endpoint:
 
-- PaymentMethod enum created
-- Columns added with defaults
-- 9 existing transactions backfilled
-- Indexes created
+- `https://<env-domain>/api/transactions/webhook-stripe`
 
-### ⚠️ Local Database
+Subscribe to:
 
-**Status**: NOT MIGRATED
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.expired`
+- `checkout.session.async_payment_failed`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `payment_intent.canceled`
+- `charge.refunded`
+- `charge.refund.updated`
 
-- Run migration manually before testing locally
+Set `STRIPE_WEBHOOK_SECRET` to the secret for each environment (preview/prod are different).
 
-### ⚠️ Production Database (tanqgnztclrucfldxhuk)
+### PayPal
 
-**Status**: NOT MIGRATED
+Register endpoint:
 
-- Apply migration when ready for production deployment
+- `https://<env-domain>/api/transactions/webhook-paypal`
 
-## Deployment Steps
+Subscribe to:
 
-### Step 1: Apply Local Database Migration (For Testing)
+- `PAYMENT.CAPTURE.COMPLETED`
+- `CHECKOUT.ORDER.COMPLETED`
+- `PAYMENT.CAPTURE.DENIED`
+- `PAYMENT.CAPTURE.DECLINED`
+- `CHECKOUT.ORDER.EXPIRED`
+- `CHECKOUT.ORDER.VOIDED`
+- `PAYMENT.CAPTURE.REFUNDED`
+- `PAYMENT.CAPTURE.REVERSED`
 
-```bash
-# Connect to local database
-PGPASSWORD="kitia_password" psql -h localhost -U kitia_user -d kitia
+Set `PAYPAL_WEBHOOK_ID` to the webhook ID for each environment.
 
-# Run migration
-\i migrations/add_payment_method_tracking.sql
+## 3) Preview Smoke Checklist
 
-# Verify
-SELECT "paymentMethod", "isGuest", COUNT(*)
-FROM transactions
-GROUP BY "paymentMethod", "isGuest";
+Run in preview before production:
+
+1. Create transaction from checkout with `STRIPE`.
+2. Complete Stripe payment and confirm redirect to success page.
+3. Confirm transaction row moved `PENDING -> COMPLETED`.
+4. Confirm admin transaction page shows provider refs (session/payment intent when available).
+5. Repeat with `PAYPAL` including return/capture path.
+6. Trigger one failed flow per provider and confirm `FAILED` behavior/UX.
+7. Replay a successful webhook payload once per provider and confirm idempotent no-op (no duplicate completion side effects).
+
+## 4) Post-Deploy Checks (Production)
+
+After deploy:
+
+1. Verify webhook deliveries are `2xx` in Stripe and PayPal dashboards.
+2. Confirm recent transaction statuses in DB align with provider dashboards.
+3. Confirm admin transaction listing and user profile history show expected statuses.
+4. Confirm no growth in pending transactions beyond expected checkout abandonment baseline.
+
+## 5) Rollback Plan (Target < 10 Minutes)
+
+1. Disable provider selection in checkout UI (hotfix branch) so only the stable provider is selectable.
+2. Keep webhook endpoints active to process late provider events.
+3. Reconcile pending transactions using provider references:
+   - `paymentProviderRef`
+   - `stripePaymentIntentId`
+   - `paypalOrderId`
+   - `paypalCaptureId`
+4. Redeploy last known stable release.
+
+Reconciliation query template:
+
+```sql
+select
+  id,
+  "transactionCode",
+  status,
+  "paymentMethod",
+  "paymentProviderRef",
+  "stripePaymentIntentId",
+  "paypalOrderId",
+  "paypalCaptureId",
+  "updatedAt"
+from transactions
+where "updatedAt" > now() - interval '24 hours'
+order by "updatedAt" desc;
 ```
 
-### Step 2: Test Locally
+## 6) R2 Media Path Validation Before CDN Cutover
 
-```bash
-# Generate Prisma client
-npx prisma generate
+Before switching to the custom media domain:
 
-# Run development server
-npm run dev
-
-# Test scenarios:
-# 1. Guest checkout (no login)
-# 2. Registered user checkout
-# 3. Guest checkout with account creation
-# 4. View transactions in admin dashboard
-# 5. View transactions in user profile
-```
-
-### Step 3: Deploy to Preview Environment
-
-```bash
-# Push branch to GitHub (DONE)
-git push origin feature/payment-method-tracking
-
-# Vercel will auto-deploy to preview URL
-# Preview database already has migration applied
-```
-
-### Step 4: Merge to Main (After Testing)
-
-```bash
-# Create pull request on GitHub
-# Review changes
-# Merge to main branch
-```
-
-### Step 5: Apply Production Database Migration
-
-**IMPORTANT**: Run this AFTER merging to main and BEFORE Vercel deploys production
-
-```bash
-# Connect to production database
-PGPASSWORD="BHZnE4rPyZO4lSmA" psql \
-  -h aws-1-ap-southeast-1.pooler.supabase.com \
-  -U postgres.tanqgnztclrucfldxhuk \
-  -d postgres \
-  -p 6543
-
-# Run migration
-\i migrations/add_payment_method_tracking.sql
-
-# Verify
-SELECT "paymentMethod", "isGuest", COUNT(*)
-FROM transactions
-GROUP BY "paymentMethod", "isGuest";
-```
-
-### Step 6: Deploy to Production
-
-```bash
-# Vercel will auto-deploy from main branch
-# Or trigger manual deployment
-vercel --prod
-```
-
-## Edge Cases Handled
-
-### 1. ✅ Checkout Without Payment Method Selection
-
-- **Issue**: Checkout form doesn't send `paymentMethod` parameter
-- **Solution**: API defaults to ZARINPAL if not provided
-- **Future**: Add payment gateway selector UI when Digipay is integrated
-
-### 2. ✅ Guest User Account Creation
-
-- **Issue**: When guest creates account after payment, `isGuest` wasn't updated
-- **Solution**: Transaction verify endpoint now sets `isGuest=false` when linking user
-
-### 3. ✅ Existing Transactions Backfill
-
-- **Issue**: Existing transactions don't have new fields
-- **Solution**: Migration sets default values and backfills `isGuest` based on `userId`
-
-### 4. ✅ Query Compatibility
-
-- **Issue**: Existing queries might not include new fields
-- **Solution**: Prisma automatically includes all columns; TypeScript types updated
-
-### 5. ✅ Index Performance
-
-- **Issue**: Filtering by payment method or guest status could be slow
-- **Solution**: Created indexes on both fields
-
-## API Behavior
-
-### Transaction Creation
-
-```json
-POST /api/transactions/create
-{
-  "items": [...],
-  "shippingInfo": {...},
-  "paymentMethod": "ZARINPAL" // Optional, defaults to ZARINPAL
-}
-```
-
-### Admin Transaction List
-
-Returns transactions with:
-
-- `paymentMethod`: "ZARINPAL" | "DIGIPAY"
-- `isGuest`: true | false
-
-### User Transaction History
-
-Returns user's transactions with new fields included
-
-## Frontend Updates
-
-### Admin Dashboard
-
-- New column: "درگاه" (Gateway) showing payment method badge
-- Enhanced user column: Gray "مهمان" badge for guest users
-- Color-coded badges:
-  - Blue badge: Payment gateway (زرین‌پال / دیجی‌پی)
-  - Gray badge: Guest indicator
-
-### User Profile
-
-- Transaction interface updated with new fields
-- No visual changes yet (can be added later)
-
-## Future Work
-
-### Phase 1: Add Digipay Integration
-
-1. Implement Digipay client similar to Zarinpal
-2. Add payment gateway selector UI in checkout
-3. Update transaction verify endpoint to handle Digipay callbacks
-4. Test full flow with Digipay
-
-### Phase 2: Analytics Dashboard
-
-1. Add payment gateway breakdown charts
-2. Show guest conversion rate metrics
-3. Compare gateway performance (success rates, speed)
-
-### Phase 3: User UID (Optional)
-
-1. Add human-readable `uid` field to users table
-2. Display in user profile ("شناسه کاربری: U-000123")
-3. Use for customer support lookups
-
-## Rollback Plan
-
-If issues arise in production:
-
-```bash
-# Rollback code (git)
-git revert <commit-hash>
-git push origin main
-
-# Rollback database (PostgreSQL)
-# CAUTION: This will delete the new columns and data
-ALTER TABLE transactions DROP COLUMN "paymentMethod";
-ALTER TABLE transactions DROP COLUMN "isGuest";
-DROP INDEX transactions_paymentmethod_idx;
-DROP INDEX transactions_isguest_idx;
-DROP TYPE "PaymentMethod";
-```
-
-## Testing Checklist
-
-- [ ] Local database migration applied successfully
-- [ ] Build passes without errors
-- [ ] Guest checkout creates transaction with `isGuest=true`
-- [ ] Registered user checkout creates transaction with `isGuest=false`
-- [ ] Guest account creation updates `isGuest=false`
-- [ ] Admin dashboard shows payment method badge
-- [ ] Admin dashboard shows guest indicator
-- [ ] User profile loads transaction history
-- [ ] Payment verification works (Zarinpal callback)
-- [ ] Transaction status updates correctly
-- [ ] Stock reduction happens after payment
-
-## Support
-
-For questions or issues:
-
-1. Check GitHub issues: https://github.com/nima20002000/kitia/issues
-2. Review commit: `55070d4` - feat: add payment method and guest tracking
-3. Review this deployment guide
-
-## Database Connection Strings
-
-### Local Development
-
-```
-postgresql://kitia_user:kitia_password@localhost:5432/kitia
-```
-
-### Preview (gozxjxtnrbuurmstjydo)
-
-```
-postgresql://postgres.gozxjxtnrbuurmstjydo:PawK0YK7sYbCzzMi@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true
-```
-
-### Production (tanqgnztclrucfldxhuk)
-
-```
-postgresql://postgres.tanqgnztclrucfldxhuk:BHZnE4rPyZO4lSmA@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true
-```
+1. Verify `R2_PUBLIC_URL` points to the target host.
+2. Confirm at least one image URL resolves with HTTP `200`.
+3. Confirm checkout/product pages load media from `R2_PUBLIC_URL` without mixed-domain regressions.
+4. Only then switch DNS/custom-domain routing to final host.

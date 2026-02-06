@@ -353,7 +353,7 @@ describe('User Service Integration Tests', () => {
       amount: 250000,
       status: 'PENDING',
       transactionCode,
-      paymentMethod: 'ZARINPAL',
+      paymentMethod: 'STRIPE',
       isGuest: true,
       fullName: 'مهمان تست',
       phone,

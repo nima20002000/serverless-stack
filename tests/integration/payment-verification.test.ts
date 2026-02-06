@@ -1,43 +1,19 @@
-/**
- * Payment Verification Integration Tests
- *
- * Tests the complete flow from callback to database state,
- * using real service calls with mocked external APIs.
- *
- * CRITICAL: Tests idempotency, state transitions, and race conditions.
- */
-
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import {
-  createSupabaseMock,
-  createQueryMock,
-} from '../unit/helpers/supabase-mock';
 
-// Store mock states for integration testing
-let mockTransactionStore: Record<string, any> = {};
+type MockTransaction = {
+  id: string;
+  transactionCode: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  amount: number;
+  gateway_fee: number;
+  paymentProviderRef: string | null;
+  paypalCaptureId?: string | null;
+  stripePaymentIntentId?: string | null;
+  stripeCheckoutSessionId?: string | null;
+};
 
-// Mock only external services, not internal services
-vi.mock('@/lib/zarinpal/client', () => ({
-  verifyPayment: vi.fn(),
-}));
-
-vi.mock('@/lib/digipay/client', () => ({
-  verifyPayment: vi.fn(),
-}));
-
-vi.mock('@/lib/zibal/client', () => ({
-  verifyPayment: vi.fn(),
-}));
-
-vi.mock('@/lib/email/client', () => ({
-  sendAdminOrderConfirmation: vi.fn(),
-  sendBuyerOrderConfirmation: vi.fn(),
-}));
-
-vi.mock('@/services/sms-service', () => ({
-  sendOrderConfirmation: vi.fn(),
-}));
+const transactionStore = new Map<string, MockTransaction>();
 
 vi.mock('@/lib/api/with-logging', () => ({
   withLogging: (fn: Function) => fn,
@@ -52,518 +28,271 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-vi.mock('@/lib/utils/url', () => ({
-  createRedirectUrl: (path: string) => `https://kitia.ir${path}`,
+vi.mock('@/lib/stripe/client', () => ({
+  getStripeCurrency: vi.fn(() => 'usd'),
+  toStripeMinorUnits: vi.fn((amount: number) => Math.round(amount * 100)),
+  verifyStripeWebhookEvent: vi.fn(),
 }));
 
-vi.mock('server-only', () => ({}));
-
-// Mock Supabase with state management
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => {
-    return {
-      from: (table: string) => {
-        if (table === 'transactions') {
-          return {
-            select: vi.fn(() => ({
-              eq: vi.fn((field: string, value: string) => ({
-                single: vi.fn(async () => {
-                  // Find transaction by different fields
-                  let tx = null;
-                  if (field === 'authority') {
-                    tx = Object.values(mockTransactionStore).find(
-                      (t: any) => t.authority === value
-                    );
-                  } else if (field === 'id') {
-                    tx = mockTransactionStore[value];
-                  } else if (field === 'zibalTrackId') {
-                    tx = Object.values(mockTransactionStore).find(
-                      (t: any) => t.zibalTrackId === value
-                    );
-                  }
-                  if (tx) {
-                    return { data: tx, error: null };
-                  }
-                  return { data: null, error: { message: 'Not found' } };
-                }),
-              })),
-            })),
-            update: vi.fn((data: any) => ({
-              eq: vi.fn((field: string, value: string) => {
-                if (mockTransactionStore[value]) {
-                  mockTransactionStore[value] = {
-                    ...mockTransactionStore[value],
-                    ...data,
-                  };
-                }
-                return Promise.resolve({ data: null, error: null });
-              }),
-            })),
-          };
-        }
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              single: vi.fn(async () => ({ data: null, error: null })),
-            })),
-          })),
-          update: vi.fn(() => ({
-            eq: vi.fn(() => Promise.resolve({ data: null, error: null })),
-          })),
-        };
-      },
-    };
-  }),
+vi.mock('@/lib/paypal/client', () => ({
+  getPayPalOrder: vi.fn(),
+  getPayPalCurrency: vi.fn(() => 'USD'),
+  parsePayPalAmountValue: vi.fn((value: string) => Number(value)),
+  verifyPayPalWebhookSignature: vi.fn(),
 }));
 
-// Mock transaction service to use our store
 vi.mock('@/services/transaction-service', () => ({
-  getTransactionByAuthority: vi.fn(async (authority: string) => {
-    const tx = Object.values(mockTransactionStore).find(
-      (t: any) => t.authority === authority
-    );
-    if (!tx) throw new Error('تراکنش یافت نشد');
-    return tx;
-  }),
-  getTransactionById: vi.fn(async (id: string) => {
-    const tx = mockTransactionStore[id];
-    if (!tx) throw new Error('تراکنش یافت نشد');
-    return tx;
-  }),
-  getTransactionByZibalTrackId: vi.fn(async (trackId: string) => {
-    const tx = Object.values(mockTransactionStore).find(
-      (t: any) => t.zibalTrackId === trackId
-    );
-    if (!tx) throw new Error('تراکنش یافت نشد');
-    return tx;
-  }),
-  updateTransactionStatus: vi.fn(
-    async (id: string, status: string, authority?: string, refId?: number) => {
-      if (mockTransactionStore[id]) {
-        mockTransactionStore[id] = {
-          ...mockTransactionStore[id],
-          status,
-          refId: refId || mockTransactionStore[id].refId,
-        };
-      }
-    }
-  ),
-  reduceProductStock: vi.fn(async () => {}),
-  getTransactionWithVariants: vi.fn(async (id: string) => {
-    return mockTransactionStore[id] || null;
-  }),
-  linkTransactionToUser: vi.fn(async () => {}),
+  getTransactionById: vi.fn(),
+  getTransactionByProviderRef: vi.fn(),
+  updateTransactionStatus: vi.fn(),
 }));
 
-vi.mock('@/services/user-service', () => ({
-  createUser: vi.fn(async () => ({ id: 'new-user-1' })),
-  getUserByPhone: vi.fn(async () => null),
+vi.mock('@/lib/payments/finalize-successful-transaction', () => ({
+  finalizeSuccessfulTransaction: vi.fn(),
 }));
 
-// Import mocked modules
-import { verifyPayment as zarinpalVerify } from '@/lib/zarinpal/client';
-import { verifyPayment as digipayVerify } from '@/lib/digipay/client';
-import { verifyPayment as zibalVerify } from '@/lib/zibal/client';
+import { verifyStripeWebhookEvent } from '@/lib/stripe/client';
 import {
-  sendAdminOrderConfirmation,
-  sendBuyerOrderConfirmation,
-} from '@/lib/email/client';
-import { sendOrderConfirmation } from '@/services/sms-service';
+  getPayPalOrder,
+  verifyPayPalWebhookSignature,
+} from '@/lib/paypal/client';
 import {
-  getTransactionByAuthority,
+  getTransactionById,
+  getTransactionByProviderRef,
   updateTransactionStatus,
-  reduceProductStock,
 } from '@/services/transaction-service';
+import { finalizeSuccessfulTransaction } from '@/lib/payments/finalize-successful-transaction';
 
-function createMockTransaction(id: string, overrides = {}) {
-  return {
-    id,
-    transactionCode: `KT-${id.toUpperCase()}`,
-    status: 'PENDING',
-    amount: 50000,
-    phone: '09123456789',
-    email: 'test@test.com',
-    fullName: 'Test User',
-    userId: null,
-    createAccount: false,
-    authority: `AUTH-${id}`,
-    zibalTrackId: `ZIBAL-${id}`,
-    ...overrides,
-  };
+function createStripeWebhookRequest(event: Record<string, unknown>) {
+  return new NextRequest(
+    'http://localhost:3000/api/transactions/webhook-stripe',
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'stripe-signature': 't=1,v1=sig',
+      },
+      body: JSON.stringify(event),
+    }
+  );
 }
 
-describe('Payment Verification Integration Tests', () => {
+function createPayPalWebhookRequest(event: Record<string, unknown>) {
+  return new NextRequest(
+    'http://localhost:3000/api/transactions/webhook-paypal',
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'paypal-auth-algo': 'SHA256withRSA',
+        'paypal-cert-url': 'https://api-m.sandbox.paypal.com/certs',
+        'paypal-transmission-id': 'transmission-1',
+        'paypal-transmission-sig': 'sig',
+        'paypal-transmission-time': new Date().toISOString(),
+      },
+      body: JSON.stringify(event),
+    }
+  );
+}
+
+describe('Payment Webhook Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
-    mockTransactionStore = {};
-  });
+    transactionStore.clear();
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-    mockTransactionStore = {};
-  });
-
-  describe('Full Zarinpal Flow - Happy Path', () => {
-    it('processes Zarinpal callback end-to-end', async () => {
-      // Setup: Create mock transaction in "DB"
-      const txId = 'tx-zp-1';
-      mockTransactionStore[txId] = createMockTransaction(txId);
-
-      // Mock external API
-      vi.mocked(zarinpalVerify).mockResolvedValue({
-        status: 100,
-        refId: 1234567890,
-      });
-      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-1',
-      });
-      vi.mocked(sendOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'sms-1',
-      });
-      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-2',
-      });
-
-      // Import handler
-      const { GET } = await import('@/app/api/transactions/verify/route');
-
-      // Create request
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-zp-1');
-      url.searchParams.set('Status', 'OK');
-      const req = new NextRequest(url);
-
-      // Execute
-      const response = await GET(req);
-
-      // Verify transaction status updated
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        txId,
-        'COMPLETED',
-        'AUTH-tx-zp-1',
-        1234567890
-      );
-
-      // Verify stock reduced
-      expect(reduceProductStock).toHaveBeenCalledWith(txId);
-
-      // Verify redirect
-      expect(response.status).toBe(307);
-      expect(response.headers.get('Location')).toContain('/payment/success');
+    vi.mocked(getTransactionById).mockImplementation(async (id: string) => {
+      const transaction = transactionStore.get(id);
+      if (!transaction) {
+        throw new Error('تراکنش یافت نشد');
+      }
+      return { ...transaction } as any;
     });
+
+    vi.mocked(getTransactionByProviderRef).mockImplementation(
+      async (providerRef: string) => {
+        const transaction = Array.from(transactionStore.values()).find(
+          (tx) => tx.paymentProviderRef === providerRef
+        );
+        if (!transaction) {
+          throw new Error('تراکنش یافت نشد');
+        }
+        return { ...transaction } as any;
+      }
+    );
+
+    vi.mocked(updateTransactionStatus).mockImplementation(
+      async (
+        id: string,
+        status: 'PENDING' | 'COMPLETED' | 'FAILED',
+        paymentProviderRef?: string,
+        _providerReferenceId?: number,
+        providerFields?: {
+          stripePaymentIntentId?: string;
+          stripeCheckoutSessionId?: string;
+          stripeChargeId?: string;
+          paypalOrderId?: string;
+          paypalCaptureId?: string;
+        }
+      ) => {
+        const transaction = transactionStore.get(id);
+        if (!transaction) {
+          throw new Error('تراکنش یافت نشد');
+        }
+
+        let statusChanged = true;
+        if (status === 'COMPLETED' && transaction.status === 'COMPLETED') {
+          statusChanged = false;
+        }
+        if (status === 'FAILED' && transaction.status !== 'PENDING') {
+          statusChanged = false;
+        }
+
+        if (statusChanged) {
+          transaction.status = status;
+        }
+
+        if (paymentProviderRef) {
+          transaction.paymentProviderRef = paymentProviderRef;
+        }
+        if (providerFields?.paypalCaptureId) {
+          transaction.paypalCaptureId = providerFields.paypalCaptureId;
+        }
+        if (providerFields?.stripePaymentIntentId) {
+          transaction.stripePaymentIntentId =
+            providerFields.stripePaymentIntentId;
+        }
+        if (providerFields?.stripeCheckoutSessionId) {
+          transaction.stripeCheckoutSessionId =
+            providerFields.stripeCheckoutSessionId;
+        }
+
+        transactionStore.set(id, transaction);
+
+        return {
+          ...transaction,
+          statusChanged,
+        } as any;
+      }
+    );
   });
 
-  describe('Full Digipay Flow - Happy Path', () => {
-    it('processes Digipay callback end-to-end', async () => {
-      const txId = 'tx-dp-1';
-      mockTransactionStore[txId] = createMockTransaction(txId);
+  it('handles repeated Stripe completion callbacks idempotently', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-stripe/route');
 
-      vi.mocked(digipayVerify).mockResolvedValue({
-        trackingCode: 'DGP-VERIFIED',
-        fpName: 'Test Bank',
-      });
-      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-1',
-      });
-      vi.mocked(sendOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'sms-1',
-      });
+    transactionStore.set('tx-stripe-1', {
+      id: 'tx-stripe-1',
+      transactionCode: 'KT-STRIPE1',
+      status: 'PENDING',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: null,
+    });
 
-      const { POST } =
-        await import('@/app/api/transactions/verify-digipay/route');
-
-      const url = new URL(
-        'http://localhost:3000/api/transactions/verify-digipay'
-      );
-      url.searchParams.set('ticket', txId);
-
-      const req = new NextRequest(url, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/x-www-form-urlencoded',
+    vi.mocked(verifyStripeWebhookEvent).mockReturnValue({
+      id: 'evt-stripe-1',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_test_1',
+          metadata: { transactionId: 'tx-stripe-1' },
+          amount_total: 1000,
+          currency: 'usd',
+          payment_status: 'paid',
+          payment_intent: 'pi_test_1',
         },
-        body: new URLSearchParams({
-          result: 'SUCCESS',
-          trackingCode: 'DGP123',
-          providerId: 'KT-TX-DP-1',
-        }).toString(),
-      });
+      },
+    } as any);
 
-      const response = await POST(req);
+    const requestPayload = { mocked: true };
+    const firstResponse = await POST(
+      createStripeWebhookRequest(requestPayload)
+    );
+    const secondResponse = await POST(
+      createStripeWebhookRequest(requestPayload)
+    );
 
-      expect(response.status).toBe(303);
-      expect(response.headers.get('Location')).toContain('/payment/success');
-    });
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(await firstResponse.json()).toEqual(
+      expect.objectContaining({
+        handled: true,
+        reason: 'completed',
+      })
+    );
+    expect(await secondResponse.json()).toEqual(
+      expect.objectContaining({
+        handled: true,
+        reason: 'already_completed',
+      })
+    );
+    expect(finalizeSuccessfulTransaction).toHaveBeenCalledTimes(1);
+    expect(transactionStore.get('tx-stripe-1')?.status).toBe('COMPLETED');
   });
 
-  describe('Concurrent Callback Handling', () => {
-    it('handles race condition when multiple callbacks arrive', async () => {
-      const txId = 'tx-race-1';
-      mockTransactionStore[txId] = createMockTransaction(txId);
+  it('handles repeated PayPal completion callbacks idempotently', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-paypal/route');
 
-      vi.mocked(zarinpalVerify).mockResolvedValue({
-        status: 100,
-        refId: 1234567890,
-      });
-      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-1',
-      });
-      vi.mocked(sendOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'sms-1',
-      });
-      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-2',
-      });
-
-      const { GET } = await import('@/app/api/transactions/verify/route');
-
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-race-1');
-      url.searchParams.set('Status', 'OK');
-
-      // First callback - should process normally
-      const req1 = new NextRequest(url);
-      const response1 = await GET(req1);
-
-      expect(response1.status).toBe(307);
-      expect(response1.headers.get('Location')).toContain('/payment/success');
-
-      // Manually update the mock store to reflect COMPLETED status
-      mockTransactionStore[txId].status = 'COMPLETED';
-
-      // Reset mocks to verify second callback behavior
-      vi.mocked(zarinpalVerify).mockClear();
-      vi.mocked(updateTransactionStatus).mockClear();
-      vi.mocked(reduceProductStock).mockClear();
-
-      // Second callback - should recognize already completed
-      const req2 = new NextRequest(url);
-      const response2 = await GET(req2);
-
-      // Should still redirect to success
-      expect(response2.status).toBe(307);
-      expect(response2.headers.get('Location')).toContain('/payment/success');
-
-      // Should NOT reprocess
-      expect(zarinpalVerify).not.toHaveBeenCalled();
-      expect(reduceProductStock).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('Transaction State Machine', () => {
-    it('allows PENDING -> COMPLETED transition', async () => {
-      const txId = 'tx-state-1';
-      mockTransactionStore[txId] = createMockTransaction(txId, {
-        status: 'PENDING',
-      });
-
-      vi.mocked(zarinpalVerify).mockResolvedValue({
-        status: 100,
-        refId: 1234567890,
-      });
-      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-1',
-      });
-      vi.mocked(sendOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'sms-1',
-      });
-      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-2',
-      });
-
-      const { GET } = await import('@/app/api/transactions/verify/route');
-
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-state-1');
-      url.searchParams.set('Status', 'OK');
-      const req = new NextRequest(url);
-
-      const response = await GET(req);
-
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        txId,
-        'COMPLETED',
-        expect.any(String),
-        expect.any(Number)
-      );
-      expect(response.headers.get('Location')).toContain('/payment/success');
+    transactionStore.set('tx-paypal-1', {
+      id: 'tx-paypal-1',
+      transactionCode: 'KT-PAYPAL1',
+      status: 'PENDING',
+      amount: 15,
+      gateway_fee: 0,
+      paymentProviderRef: 'ORDER-PP-1',
     });
 
-    it('allows PENDING -> FAILED transition', async () => {
-      const txId = 'tx-state-2';
-      mockTransactionStore[txId] = createMockTransaction(txId, {
-        status: 'PENDING',
-      });
+    vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
+    vi.mocked(getPayPalOrder).mockResolvedValue({
+      id: 'ORDER-PP-1',
+      purchase_units: [
+        {
+          custom_id: 'tx-paypal-1',
+          invoice_id: 'KT-PAYPAL1',
+          amount: {
+            currency_code: 'USD',
+            value: '15.00',
+          },
+        },
+      ],
+    } as any);
 
-      const { GET } = await import('@/app/api/transactions/verify/route');
+    const eventPayload = {
+      id: 'WH-PP-1',
+      event_type: 'PAYMENT.CAPTURE.COMPLETED',
+      resource: {
+        id: 'CAP-PP-1',
+        amount: {
+          currency_code: 'USD',
+          value: '15.00',
+        },
+        supplementary_data: {
+          related_ids: {
+            order_id: 'ORDER-PP-1',
+          },
+        },
+      },
+    };
 
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-state-2');
-      url.searchParams.set('Status', 'NOK');
-      const req = new NextRequest(url);
+    const firstResponse = await POST(createPayPalWebhookRequest(eventPayload));
+    const secondResponse = await POST(createPayPalWebhookRequest(eventPayload));
 
-      const response = await GET(req);
-
-      expect(updateTransactionStatus).toHaveBeenCalledWith(
-        txId,
-        'FAILED',
-        'AUTH-tx-state-2'
-      );
-      expect(response.headers.get('Location')).toContain('/payment/failure');
-    });
-
-    it('blocks COMPLETED -> FAILED transition', async () => {
-      const txId = 'tx-state-3';
-      mockTransactionStore[txId] = createMockTransaction(txId, {
-        status: 'COMPLETED',
-      });
-
-      const { GET } = await import('@/app/api/transactions/verify/route');
-
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-state-3');
-      url.searchParams.set('Status', 'NOK'); // Late failure callback
-      const req = new NextRequest(url);
-
-      const response = await GET(req);
-
-      // Should NOT update status for already completed transaction
-      expect(updateTransactionStatus).not.toHaveBeenCalled();
-      // Should redirect to success (idempotency)
-      expect(response.headers.get('Location')).toContain('/payment/success');
-    });
-
-    it('blocks FAILED -> COMPLETED transition', async () => {
-      const txId = 'tx-state-4';
-      mockTransactionStore[txId] = createMockTransaction(txId, {
-        status: 'FAILED',
-      });
-
-      const { GET } = await import('@/app/api/transactions/verify/route');
-
-      const url = new URL('http://localhost:3000/api/transactions/verify');
-      url.searchParams.set('Authority', 'AUTH-tx-state-4');
-      url.searchParams.set('Status', 'OK'); // Late success callback
-      const req = new NextRequest(url);
-
-      const response = await GET(req);
-
-      // Should NOT process for already failed transaction
-      expect(zarinpalVerify).not.toHaveBeenCalled();
-      expect(updateTransactionStatus).not.toHaveBeenCalled();
-      // Should redirect to failure (idempotency)
-      expect(response.headers.get('Location')).toContain('/payment/failure');
-    });
-  });
-
-  describe('Full Zibal Flow - Happy Path', () => {
-    it('processes Zibal callback end-to-end', async () => {
-      const txId = 'tx-zb-1';
-      mockTransactionStore[txId] = createMockTransaction(txId, {
-        zibalTrackId: '12345678',
-      });
-
-      vi.mocked(zibalVerify).mockResolvedValue({
-        trackId: 12345678,
-        refNumber: 9876543210,
-      });
-      vi.mocked(sendAdminOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-1',
-      });
-      vi.mocked(sendOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'sms-1',
-      });
-      vi.mocked(sendBuyerOrderConfirmation).mockResolvedValue({
-        success: true,
-        messageId: 'msg-2',
-      });
-
-      const { GET } = await import('@/app/api/transactions/verify-zibal/route');
-
-      const url = new URL(
-        'http://localhost:3000/api/transactions/verify-zibal'
-      );
-      url.searchParams.set('trackId', '12345678');
-      url.searchParams.set('success', '1');
-      const req = new NextRequest(url);
-
-      const response = await GET(req);
-
-      expect(zibalVerify).toHaveBeenCalledWith({
-        trackId: 12345678,
-        amount: 50000,
-      });
-      expect(response.status).toBe(307);
-      expect(response.headers.get('Location')).toContain('/payment/success');
-    });
-  });
-
-  describe('Cross-Gateway Consistency', () => {
-    it('all gateways follow same idempotency pattern', async () => {
-      // Test that each gateway handles completed transactions consistently
-
-      // Zarinpal
-      const zpTx = createMockTransaction('tx-zp-idem', { status: 'COMPLETED' });
-      mockTransactionStore['tx-zp-idem'] = zpTx;
-
-      const { GET: zarinpalGET } =
-        await import('@/app/api/transactions/verify/route');
-      const zpUrl = new URL('http://localhost:3000/api/transactions/verify');
-      zpUrl.searchParams.set('Authority', 'AUTH-tx-zp-idem');
-      zpUrl.searchParams.set('Status', 'OK');
-      const zpResponse = await zarinpalGET(new NextRequest(zpUrl));
-      expect(zpResponse.headers.get('Location')).toContain('/payment/success');
-
-      // Digipay
-      const dpTx = createMockTransaction('tx-dp-idem', { status: 'COMPLETED' });
-      mockTransactionStore['tx-dp-idem'] = dpTx;
-
-      const { GET: digipayGET } =
-        await import('@/app/api/transactions/verify-digipay/route');
-      const dpUrl = new URL(
-        'http://localhost:3000/api/transactions/verify-digipay'
-      );
-      dpUrl.searchParams.set('ticket', 'tx-dp-idem');
-      dpUrl.searchParams.set('trackingCode', 'DGP123');
-      dpUrl.searchParams.set('status', 'SUCCESS');
-      const dpResponse = await digipayGET(new NextRequest(dpUrl));
-      expect(dpResponse.headers.get('Location')).toContain('/payment/success');
-
-      // Zibal
-      const zbTx = createMockTransaction('tx-zb-idem', {
-        status: 'COMPLETED',
-        zibalTrackId: '99999999',
-      });
-      mockTransactionStore['tx-zb-idem'] = zbTx;
-
-      const { GET: zibalGET } =
-        await import('@/app/api/transactions/verify-zibal/route');
-      const zbUrl = new URL(
-        'http://localhost:3000/api/transactions/verify-zibal'
-      );
-      zbUrl.searchParams.set('trackId', '99999999');
-      zbUrl.searchParams.set('success', '1');
-      const zbResponse = await zibalGET(new NextRequest(zbUrl));
-      expect(zbResponse.headers.get('Location')).toContain('/payment/success');
-
-      // None should have called verification APIs for already completed transactions
-      expect(zarinpalVerify).not.toHaveBeenCalled();
-      expect(digipayVerify).not.toHaveBeenCalled();
-      expect(zibalVerify).not.toHaveBeenCalled();
-    });
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(await firstResponse.json()).toEqual(
+      expect.objectContaining({
+        handled: true,
+        reason: 'completed',
+      })
+    );
+    expect(await secondResponse.json()).toEqual(
+      expect.objectContaining({
+        handled: true,
+        reason: 'already_completed',
+      })
+    );
+    expect(finalizeSuccessfulTransaction).toHaveBeenCalledTimes(1);
+    expect(transactionStore.get('tx-paypal-1')?.status).toBe('COMPLETED');
   });
 });

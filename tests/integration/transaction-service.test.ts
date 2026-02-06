@@ -71,7 +71,7 @@ describe('Transaction Service Integration Tests', () => {
           amount: productData.price,
           status: 'PENDING',
           transactionCode,
-          paymentMethod: 'ZARINPAL',
+          paymentMethod: 'STRIPE',
           isGuest: true,
           fullName: 'مهمان تستی',
           phone: '09123456789',
@@ -162,7 +162,7 @@ describe('Transaction Service Integration Tests', () => {
           amount: productData.price,
           status: 'PENDING',
           transactionCode: `TEST-${Date.now()}`,
-          paymentMethod: 'ZARINPAL',
+          paymentMethod: 'STRIPE',
           isGuest: false,
           fullName: 'کاربر تستی',
           phone: '09123456789',
@@ -353,7 +353,7 @@ describe('Transaction Service Integration Tests', () => {
         .from('transactions')
         .update({
           status: 'COMPLETED',
-          zarinpalRefId: 'REF123456',
+          paymentProviderRef: 'pi_test_123456',
           updatedAt: new Date().toISOString(),
         })
         .eq('id', transactionId);
@@ -363,7 +363,7 @@ describe('Transaction Service Integration Tests', () => {
       // Verify status change
       const { data: transaction } = await supabase
         .from('transactions')
-        .select('status, zarinpalRefId')
+        .select('status, paymentProviderRef')
         .eq('id', transactionId)
         .single();
 
@@ -371,7 +371,7 @@ describe('Transaction Service Integration Tests', () => {
         throw new Error('Expected transaction to be returned');
       }
       expect(transaction.status).toBe('COMPLETED');
-      expect(transaction.zarinpalRefId).toBe('REF123456');
+      expect(transaction.paymentProviderRef).toBe('pi_test_123456');
     });
 
     it('should update transaction status to FAILED', async () => {
@@ -410,33 +410,33 @@ describe('Transaction Service Integration Tests', () => {
       expect(transaction.status).toBe('FAILED');
     });
 
-    it('should track Zarinpal authority', async () => {
+    it('should track provider reference', async () => {
       const transactionId = randomUUID();
-      const authority = 'A00000000000000000000000000001234';
+      const providerRef = 'ORDER-TEST-123456';
 
       await supabase.from('transactions').insert({
         id: transactionId,
         amount: 10000,
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
-        zarinpalAuthority: authority,
+        paymentProviderRef: providerRef,
         fullName: 'Test',
         phone: '09123456789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
 
-      // Verify authority
+      // Verify provider reference
       const { data: transaction } = await supabase
         .from('transactions')
-        .select('zarinpalAuthority')
+        .select('paymentProviderRef')
         .eq('id', transactionId)
         .single();
 
       if (!transaction) {
         throw new Error('Expected transaction to be returned');
       }
-      expect(transaction.zarinpalAuthority).toBe(authority);
+      expect(transaction.paymentProviderRef).toBe(providerRef);
     });
   });
 
@@ -778,8 +778,8 @@ describe('Transaction Service Integration Tests', () => {
       expect(transaction.transactionCode).toBe(transactionCode);
     });
 
-    it('should retrieve transaction by Zarinpal authority', async () => {
-      const authority = `TEST-AUTH-${Date.now()}`;
+    it('should retrieve transaction by provider reference', async () => {
+      const providerRef = `TEST-REF-${Date.now()}`;
       const transactionId = randomUUID();
 
       await supabase.from('transactions').insert({
@@ -787,18 +787,18 @@ describe('Transaction Service Integration Tests', () => {
         amount: 10000,
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
-        zarinpalAuthority: authority,
+        paymentProviderRef: providerRef,
         fullName: 'Test',
         phone: '09123456789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
 
-      // Retrieve by authority
+      // Retrieve by provider reference
       const { data: transaction } = await supabase
         .from('transactions')
         .select('*')
-        .eq('zarinpalAuthority', authority)
+        .eq('paymentProviderRef', providerRef)
         .single();
 
       expect(transaction).toBeDefined();
@@ -806,7 +806,7 @@ describe('Transaction Service Integration Tests', () => {
         throw new Error('Expected transaction to be returned');
       }
       expect(transaction.id).toBe(transactionId);
-      expect(transaction.zarinpalAuthority).toBe(authority);
+      expect(transaction.paymentProviderRef).toBe(providerRef);
     });
 
     it('should retrieve user transaction history with pagination', async () => {
@@ -1148,24 +1148,34 @@ describe('Transaction Service Integration Tests', () => {
       expect(error.code).toBe('23505'); // Unique violation
     });
 
-    it('should track payment method (ZARINPAL vs DIGIPAY)', async () => {
+    it('should track payment method (STRIPE vs PAYPAL)', async () => {
       const tx1Id = randomUUID();
 
-      // Create ZARINPAL transaction
+      // Create STRIPE transaction
       await supabase.from('transactions').insert({
         id: tx1Id,
         amount: 10000,
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}-Z`,
-        paymentMethod: 'ZARINPAL',
+        paymentMethod: 'STRIPE',
         fullName: 'Test',
         phone: '09123456789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
 
-      // Note: DIGIPAY is being removed from the system
-      // This test documents the legacy behavior
+      const tx2Id = randomUUID();
+      await supabase.from('transactions').insert({
+        id: tx2Id,
+        amount: 20000,
+        status: 'PENDING',
+        transactionCode: `TEST-${Date.now()}-P`,
+        paymentMethod: 'PAYPAL',
+        fullName: 'Test',
+        phone: '09123456789',
+        shippingAddress: 'Address',
+        updatedAt: new Date().toISOString(),
+      });
 
       // Verify payment method
       const { data: tx1 } = await supabase
@@ -1174,10 +1184,20 @@ describe('Transaction Service Integration Tests', () => {
         .eq('id', tx1Id)
         .single();
 
+      const { data: tx2 } = await supabase
+        .from('transactions')
+        .select('paymentMethod')
+        .eq('id', tx2Id)
+        .single();
+
       if (!tx1) {
         throw new Error('Expected transaction to be returned');
       }
-      expect(tx1.paymentMethod).toBe('ZARINPAL');
+      if (!tx2) {
+        throw new Error('Expected second transaction to be returned');
+      }
+      expect(tx1.paymentMethod).toBe('STRIPE');
+      expect(tx2.paymentMethod).toBe('PAYPAL');
     });
   });
 });

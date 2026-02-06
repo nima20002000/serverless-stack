@@ -7,7 +7,6 @@
 
 import { beforeAll } from 'vitest';
 import nodemailer from 'nodemailer';
-import Kavenegar from 'kavenegar';
 import {
   verifySupabaseConnection,
   verifyRedisConnection,
@@ -82,30 +81,6 @@ async function requireSmtpConnectionIfConfigured() {
   await nodemailer.createTestAccount();
 }
 
-async function requireKavenegarConnectionIfConfigured() {
-  if (!process.env.KAVENEGAR_API_KEY) {
-    return;
-  }
-
-  const api = Kavenegar.KavenegarApi({
-    apikey: process.env.KAVENEGAR_API_KEY,
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    api.AccountInfo({}, function (response, status, message) {
-      if (status === 200) {
-        resolve();
-      } else {
-        reject(
-          new Error(
-            `Kavenegar API check failed: ${message || `status ${status}`}`
-          )
-        );
-      }
-    });
-  });
-}
-
 async function requireR2ConnectionIfConfigured() {
   if (
     !process.env.R2_ACCOUNT_ID ||
@@ -129,6 +104,5 @@ beforeAll(async () => {
   await requireRedisConnectionIfConfigured();
   await requireResendConnectionIfConfigured();
   await requireSmtpConnectionIfConfigured();
-  await requireKavenegarConnectionIfConfigured();
   await requireR2ConnectionIfConfigured();
 });

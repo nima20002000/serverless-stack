@@ -393,14 +393,14 @@ describe('Middleware Rate Limiting Integration', () => {
   // ============================================
 
   describe('Exempt Endpoints', () => {
-    it('never rate limits OTP endpoints', async () => {
-      const otpEndpoints = [
-        '/api/auth/send-otp',
-        '/api/auth/verify-otp',
-        '/api/auth/checkout-verify-otp',
+    it('never rate limits non-login/register auth endpoints', async () => {
+      const authEndpoints = [
+        '/api/auth/session',
+        '/api/auth/providers',
+        '/api/auth/csrf',
       ];
 
-      for (const endpoint of otpEndpoints) {
+      for (const endpoint of authEndpoints) {
         checkRateLimitMock.mockClear();
 
         const req = createRequest(endpoint);

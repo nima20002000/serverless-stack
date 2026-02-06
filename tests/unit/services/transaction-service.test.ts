@@ -157,7 +157,13 @@ describe('transaction-service', () => {
   it('updates transaction status with optional fields', async () => {
     const supabase = createSupabaseMock();
     const updateQuery = createQueryMock({
-      data: { id: 'tx-1', status: 'COMPLETED' },
+      data: {
+        id: 'tx-1',
+        status: 'COMPLETED',
+        paymentProviderRef: 'pi_123',
+        stripePaymentIntentId: 'pi_123',
+        stripeCheckoutSessionId: 'cs_123',
+      },
       error: null,
     });
 
@@ -167,18 +173,89 @@ describe('transaction-service', () => {
     const result = await transactionService.updateTransactionStatus(
       'tx-1',
       'COMPLETED',
-      'AUTH-1',
-      123
+      'pi_123',
+      undefined,
+      {
+        stripePaymentIntentId: 'pi_123',
+        stripeCheckoutSessionId: 'cs_123',
+      }
     );
 
-    expect(result).toEqual({ id: 'tx-1', status: 'COMPLETED' });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'tx-1',
+        status: 'COMPLETED',
+        statusChanged: true,
+      })
+    );
     expect(updateQuery.update).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'COMPLETED',
-        zarinpalAuthority: 'AUTH-1',
-        zarinpalRefId: 123,
+        paymentProviderRef: 'pi_123',
+        stripePaymentIntentId: 'pi_123',
+        stripeCheckoutSessionId: 'cs_123',
       })
     );
+    expect(updateQuery.neq).toHaveBeenCalledWith('status', 'COMPLETED');
+  });
+
+  it('returns statusChanged=false when completed transition is idempotent no-op', async () => {
+    const supabase = createSupabaseMock();
+    const guardedUpdateQuery = createQueryMock({
+      data: null,
+      error: null,
+    });
+    const currentTransactionQuery = createQueryMock({
+      data: { id: 'tx-1', status: 'COMPLETED' },
+      error: null,
+    });
+
+    supabase.from
+      .mockReturnValueOnce(guardedUpdateQuery)
+      .mockReturnValueOnce(currentTransactionQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await transactionService.updateTransactionStatus(
+      'tx-1',
+      'COMPLETED',
+      'cs_live_123'
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'tx-1',
+        status: 'COMPLETED',
+        statusChanged: false,
+      })
+    );
+    expect(guardedUpdateQuery.neq).toHaveBeenCalledWith('status', 'COMPLETED');
+    expect(currentTransactionQuery.eq).toHaveBeenCalledWith('id', 'tx-1');
+  });
+
+  it('allows FAILED transition only while transaction is pending', async () => {
+    const supabase = createSupabaseMock();
+    const updateFailedQuery = createQueryMock({
+      data: { id: 'tx-2', status: 'FAILED' },
+      error: null,
+    });
+
+    supabase.from.mockReturnValue(updateFailedQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    const result = await transactionService.updateTransactionStatus(
+      'tx-2',
+      'FAILED',
+      'pi_failed_1'
+    );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'tx-2',
+        status: 'FAILED',
+        statusChanged: true,
+      })
+    );
+    expect(updateFailedQuery.eq).toHaveBeenCalledWith('status', 'PENDING');
   });
 
   it('returns transaction with flattened invoice data', async () => {
