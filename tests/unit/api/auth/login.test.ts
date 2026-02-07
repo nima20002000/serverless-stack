@@ -88,10 +88,6 @@ describe('POST /api/auth/login', () => {
         name: 'Test User',
         role: 'USER',
       },
-      credentials: {
-        email: 'test@example.com',
-        password: 'Pass1234',
-      },
     });
     expect(logUserActivityMock).toHaveBeenCalledWith(
       expect.objectContaining({ activityType: 'LOGIN_SUCCESS', success: true })

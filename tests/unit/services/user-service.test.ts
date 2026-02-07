@@ -85,12 +85,9 @@ describe('user-service', () => {
       error: null,
     });
 
-    const cleanupQuery = createQueryMock({ data: null, error: null });
-
     supabase.from
       .mockReturnValueOnce(uidQuery)
-      .mockReturnValueOnce(insertQuery)
-      .mockReturnValueOnce(cleanupQuery);
+      .mockReturnValueOnce(insertQuery);
 
     createClientMock.mockReturnValue(supabase as unknown);
 
@@ -117,7 +114,6 @@ describe('user-service', () => {
     });
 
     expect(insertQuery.insert).toHaveBeenCalled();
-    expect(cleanupQuery.delete).toHaveBeenCalled();
   });
 
   it('updates user profile and normalizes dates', async () => {

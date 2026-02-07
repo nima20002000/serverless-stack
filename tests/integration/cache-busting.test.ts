@@ -251,9 +251,9 @@ describe('Cache Busting', () => {
       expect(hookContent).toContain('caches.delete');
     });
 
-    it('should reload page after update', () => {
+    it('should force navigation after update', () => {
       const hookContent = fs.readFileSync(hookPath, 'utf8');
-      expect(hookContent).toContain('window.location.reload');
+      expect(hookContent).toContain('window.location.replace');
     });
 
     it('should check on visibility change', () => {

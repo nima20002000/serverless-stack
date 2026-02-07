@@ -5,15 +5,18 @@ const deleteMock = vi.fn();
 const getPublicUrlMock = vi.fn();
 const existsMock = vi.fn();
 const listMock = vi.fn();
-
-vi.mock('@/lib/storage/adapters/r2', () => ({
-  R2StorageAdapter: vi.fn(() => ({
+const R2StorageAdapterMock = vi.fn(function R2StorageAdapterMock() {
+  return {
     upload: uploadMock,
     delete: deleteMock,
     getPublicUrl: getPublicUrlMock,
     exists: existsMock,
     list: listMock,
-  })),
+  };
+});
+
+vi.mock('@/lib/storage/adapters/r2', () => ({
+  R2StorageAdapter: R2StorageAdapterMock,
 }));
 
 describe('storage', () => {

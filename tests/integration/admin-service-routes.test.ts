@@ -429,7 +429,7 @@ describe('Admin Service Route Integration Tests', () => {
 
     const { GET, POST } = await loadSettingsHandlers();
 
-    const response = await GET();
+    const response = await GET(createRequest('/api/admin/settings'));
     expect(response.status).toBe(200);
     const payload = await response.json();
     const matched = payload.settings.find(
@@ -484,7 +484,7 @@ describe('Admin Service Route Integration Tests', () => {
       },
     } as any);
 
-    const forbidden = await GET();
+    const forbidden = await GET(createRequest('/api/admin/settings'));
     expect(forbidden.status).toBe(403);
   });
 });

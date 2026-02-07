@@ -1,18 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const limitMock = vi.fn();
+const RedisMock = vi.fn(function RedisMock() {
+  return {};
+});
+const RatelimitMock = vi.fn(function RatelimitMock() {
+  return {
+    limit: limitMock,
+  };
+});
+(RatelimitMock as any).slidingWindow = vi.fn(() => 'window');
 
 vi.mock('@upstash/redis', () => ({
-  Redis: vi.fn(),
+  Redis: RedisMock,
 }));
 
 vi.mock('@upstash/ratelimit', () => ({
-  Ratelimit: Object.assign(
-    vi.fn(() => ({
-      limit: limitMock,
-    })),
-    { slidingWindow: vi.fn(() => 'window') }
-  ),
+  Ratelimit: RatelimitMock,
 }));
 
 vi.mock('@/lib/logger', () => ({

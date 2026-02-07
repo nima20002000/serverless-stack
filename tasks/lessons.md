@@ -16,6 +16,7 @@
 - When running Vitest with configs under `tests/`, execute from the `tests/` working directory (or adjust paths) so `setup.ts` resolves correctly.
 - Vitest v4 constructor mocks must provide constructable implementations for class-like dependencies (for example, `new Resend(...)`).
 - During gateway/OTP deprecations, remove stale route/service tests first, then re-baseline middleware and payment-flow assertions to current endpoints.
+- Keep `tests/.env` synchronized with root env profile keys (including key-name mappings like publishable key aliases) before trusting test-suite results.
 
 ## Implementation Guardrails
 - Keep schema and generated types in lockstep.
@@ -24,3 +25,6 @@
 - Use preview-first rollout with explicit drift checks between preview and production.
 - Maintain a single migration runbook with exact commands and expected outputs.
 - Keep deploy workflow env blocks aligned with active providers; stale secret keys in CI can silently rot release readiness.
+- Prefer behavior-driven test expectations from current route/service contracts; update brittle response/message assertions immediately after contract changes.
+- When Next.js route handlers accept `NextRequest`, integration/unit tests must call handlers with a request object; `GET()` without args can produce false 500 failures.
+- For integrations touching third-party APIs (email/SMS), gate strict success assertions behind real credential detection and validate graceful fallback behavior for placeholder/local configs.

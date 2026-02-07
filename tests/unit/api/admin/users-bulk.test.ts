@@ -292,7 +292,7 @@ describe('POST /api/admin/users/bulk', () => {
       createPostRequest({
         action: 'update',
         userIds: ['u1'],
-        updates: { role: 'USER' },
+        updates: { role: 'ADMIN' },
       })
     );
 

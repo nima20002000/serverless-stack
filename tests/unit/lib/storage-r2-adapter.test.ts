@@ -1,13 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const sendMock = vi.fn();
-const putCommandMock = vi.fn((input) => ({ input }));
-const deleteCommandMock = vi.fn();
-const headCommandMock = vi.fn();
-const listCommandMock = vi.fn();
+const putCommandMock = vi.fn(function PutObjectCommandMock(input) {
+  return { input };
+});
+const deleteCommandMock = vi.fn(function DeleteObjectCommandMock(input) {
+  return { input };
+});
+const headCommandMock = vi.fn(function HeadObjectCommandMock(input) {
+  return { input };
+});
+const listCommandMock = vi.fn(function ListObjectsV2CommandMock(input) {
+  return { input };
+});
+const S3ClientMock = vi.fn(function S3ClientMock() {
+  return { send: sendMock };
+});
+const NodeHttpHandlerMock = vi.fn(function NodeHttpHandlerMock() {
+  return {};
+});
 
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn(() => ({ send: sendMock })),
+  S3Client: S3ClientMock,
   PutObjectCommand: putCommandMock,
   DeleteObjectCommand: deleteCommandMock,
   HeadObjectCommand: headCommandMock,
@@ -15,7 +29,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
 }));
 
 vi.mock('@smithy/node-http-handler', () => ({
-  NodeHttpHandler: vi.fn(),
+  NodeHttpHandler: NodeHttpHandlerMock,
 }));
 
 vi.mock('@/lib/logger', () => ({

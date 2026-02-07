@@ -6,6 +6,9 @@ import { getClientInfo } from '@/lib/request-utils';
 
 vi.mock('@/services/user-service', () => ({
   createUser: vi.fn(),
+  detectIdentifierType: vi.fn((identifier: string) =>
+    identifier.includes('@') ? 'email' : 'phone'
+  ),
 }));
 
 vi.mock('@/services/activity-log-service', () => ({
@@ -64,7 +67,7 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'ایمیل و رمز عبور الزامی هستند',
+      error: 'ایمیل یا شماره تلفن به همراه رمز عبور الزامی هستند',
     });
   });
 

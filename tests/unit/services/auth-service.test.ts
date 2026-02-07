@@ -79,7 +79,7 @@ describe('auth-service', () => {
 
     await expect(
       authenticateUser('user@example.com', 'password123')
-    ).rejects.toThrow('برای این حساب کاربری از ورود با کد تایید استفاده کنید');
+    ).rejects.toThrow('این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید');
     expect(supabase.from).toHaveBeenCalledWith('users');
     expect(query.eq).toHaveBeenCalledWith('email', 'user@example.com');
   });

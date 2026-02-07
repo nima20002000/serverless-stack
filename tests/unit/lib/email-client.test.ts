@@ -3,11 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const resendSendMock = vi.fn();
 const nodemailerSendMock = vi.fn();
 const createTransportMock = vi.fn(() => ({ sendMail: nodemailerSendMock }));
+const ResendMock = vi.fn(function ResendMock() {
+  return {
+    emails: { send: resendSendMock },
+  };
+});
 
 vi.mock('resend', () => ({
-  Resend: vi.fn(() => ({
-    emails: { send: resendSendMock },
-  })),
+  Resend: ResendMock,
 }));
 
 vi.mock('nodemailer', () => ({

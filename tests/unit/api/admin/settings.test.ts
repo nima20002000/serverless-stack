@@ -45,6 +45,10 @@ describe('admin settings API', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
+  const createGetRequest = () =>
+    new NextRequest('http://localhost/api/admin/settings', {
+      method: 'GET',
+    });
 
   const loadHandlers = async () => {
     const handlers = await import('@/app/api/admin/settings/route');
@@ -60,7 +64,7 @@ describe('admin settings API', () => {
     getServerSessionMock.mockResolvedValue(null);
     const { GET } = await loadHandlers();
 
-    const response = await GET();
+    const response = await GET(createGetRequest());
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
@@ -73,7 +77,7 @@ describe('admin settings API', () => {
     } as any);
     const { GET } = await loadHandlers();
 
-    const response = await GET();
+    const response = await GET(createGetRequest());
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
@@ -88,7 +92,7 @@ describe('admin settings API', () => {
     ]);
     const { GET } = await loadHandlers();
 
-    const response = await GET();
+    const response = await GET(createGetRequest());
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -105,7 +109,7 @@ describe('admin settings API', () => {
     getAllSettingsMock.mockRejectedValue(new Error('db down'));
     const { GET } = await loadHandlers();
 
-    const response = await GET();
+    const response = await GET(createGetRequest());
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
