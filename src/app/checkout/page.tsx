@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import {
-  ArrowRightIcon,
+  ArrowLeftIcon,
   TrashIcon,
   ShieldCheckIcon,
   LockClosedIcon,
@@ -39,8 +39,8 @@ export default function CheckoutPage() {
   const { promoCode: appliedPromo } = useCheckoutStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>(
-    'stripe'
+  const [paymentMethod, setPaymentMethod] = useState<'STRIPE' | 'PAYPAL'>(
+    'STRIPE'
   );
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -79,7 +79,7 @@ export default function CheckoutPage() {
               variantId: item.variantId,
               quantity: item.quantity,
             })),
-            paymentMethod: paymentMethod.toUpperCase(),
+            paymentMethod,
             shippingInfo: {
               fullName: formData.fullName,
               phone: formData.phone,
@@ -102,13 +102,15 @@ export default function CheckoutPage() {
           ) {
             removeUnavailableItems(data.unavailableProductIds);
           }
-          throw new Error(data.error || 'خطا در ایجاد تراکنش');
+          throw new Error(data.error || 'Unable to start checkout.');
         }
 
         // Redirect to payment gateway
         window.location.href = data.paymentUrl;
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'خطا در ایجاد تراکنش');
+        setError(
+          err instanceof Error ? err.message : 'Unable to start checkout.'
+        );
         setIsProcessing(false);
       }
     },
@@ -131,7 +133,7 @@ export default function CheckoutPage() {
   const handleRemoveItem = useCallback(
     (item: CartItem) => {
       removeItem(item.productId, item.variantId);
-      toast.info(`${item.name} از سبد خرید حذف شد`);
+      toast.info(`${item.name} removed from cart.`);
     },
     [removeItem]
   );
@@ -141,7 +143,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          <span className="text-slate-500 text-sm">در حال بارگذاری...</span>
+          <span className="text-slate-500 text-sm">Loading...</span>
         </div>
       </div>
     );
@@ -161,17 +163,17 @@ export default function CheckoutPage() {
               href="/cart"
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
-              <ArrowRightIcon className="w-4 h-4" />
-              <span className="text-sm">بازگشت به سبد خرید</span>
+              <ArrowLeftIcon className="w-4 h-4" />
+              <span className="text-sm">Back to cart</span>
             </Link>
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold bg-gradient-to-l from-rose-600 to-pink-500 bg-clip-text text-transparent">
-                کیتیا
+              <span className="text-xl font-bold text-slate-950">
+                Commerce Starter
               </span>
             </Link>
             <div className="flex items-center gap-1.5 text-slate-500">
               <LockClosedIcon className="w-4 h-4" />
-              <span className="text-xs">پرداخت امن</span>
+              <span className="text-xs">Secure checkout</span>
             </div>
           </div>
         </div>
@@ -191,12 +193,12 @@ export default function CheckoutPage() {
             {/* Payment Method Selection */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-base font-semibold text-slate-900 mb-4">
-                روش پرداخت
+                Payment method
               </h2>
               <div className="space-y-2">
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'stripe'
+                    paymentMethod === 'STRIPE'
                       ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
@@ -204,9 +206,9 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="stripe"
-                    checked={paymentMethod === 'stripe'}
-                    onChange={() => setPaymentMethod('stripe')}
+                    value="STRIPE"
+                    checked={paymentMethod === 'STRIPE'}
+                    onChange={() => setPaymentMethod('STRIPE')}
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
@@ -214,7 +216,7 @@ export default function CheckoutPage() {
                       Stripe
                     </div>
                     <div className="text-xs text-slate-500">
-                      پرداخت امن بین‌المللی با کارت
+                      Pay by card through Stripe Checkout.
                     </div>
                   </div>
                   <span className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
@@ -224,7 +226,7 @@ export default function CheckoutPage() {
 
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'paypal'
+                    paymentMethod === 'PAYPAL'
                       ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
@@ -232,9 +234,9 @@ export default function CheckoutPage() {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="paypal"
-                    checked={paymentMethod === 'paypal'}
-                    onChange={() => setPaymentMethod('paypal')}
+                    value="PAYPAL"
+                    checked={paymentMethod === 'PAYPAL'}
+                    onChange={() => setPaymentMethod('PAYPAL')}
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
@@ -242,7 +244,7 @@ export default function CheckoutPage() {
                       PayPal
                     </div>
                     <div className="text-xs text-slate-500">
-                      پرداخت سریع با حساب پی‌پال
+                      Pay with a PayPal account or supported wallet.
                     </div>
                   </div>
                   <span className="rounded bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700">
@@ -251,15 +253,15 @@ export default function CheckoutPage() {
                 </label>
               </div>
               <p className="mt-3 text-xs text-slate-500">
-                اگر تایید پرداخت کمی زمان ببرد، وضعیت سفارش در صفحه نتیجه به
-                صورت خودکار به‌روزرسانی می‌شود.
+                Payment details are collected by your selected provider. This
+                store never receives raw card or PayPal credentials.
               </p>
             </div>
 
             {/* Shipping Form */}
             <div className="bg-white rounded-xl border border-slate-200 p-5">
               <h2 className="text-base font-semibold text-slate-900 mb-4">
-                اطلاعات ارسال
+                Shipping information
               </h2>
               <CheckoutForm
                 session={session}
@@ -281,11 +283,11 @@ export default function CheckoutPage() {
                 disabled={isProcessing}
                 onClick={() => formRef.current?.requestSubmit()}
               >
-                {`پرداخت ${formatPrice(finalTotal)}`}
+                {`Pay ${formatPrice(finalTotal)}`}
               </Button>
               <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
                 <ShieldCheckIcon className="w-4 h-4" />
-                <span className="text-xs">پرداخت امن و رمزگذاری شده</span>
+                <span className="text-xs">Encrypted provider checkout</span>
               </div>
             </div>
           </div>
@@ -294,7 +296,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-5">
             <div className="bg-white rounded-xl border border-slate-200 p-5 lg:sticky lg:top-8">
               <h2 className="text-base font-semibold text-slate-900 mb-4">
-                خلاصه سفارش
+                Order summary
               </h2>
 
               {/* Items */}
@@ -315,7 +317,7 @@ export default function CheckoutPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-slate-400">
-                          <span className="text-[10px]">بدون تصویر</span>
+                          <span className="text-[10px]">No image</span>
                         </div>
                       )}
                       <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
@@ -339,7 +341,7 @@ export default function CheckoutPage() {
                       type="button"
                       onClick={() => handleRemoveItem(item)}
                       className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
-                      aria-label={`حذف ${item.name}`}
+                      aria-label={`Remove ${item.name}`}
                     >
                       <TrashIcon className="w-4 h-4" />
                     </button>
@@ -353,7 +355,7 @@ export default function CheckoutPage() {
               {/* Promo Code Input */}
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-slate-700 mb-2">
-                  کد تخفیف
+                  Promo code
                 </h3>
                 <PromoCodeInput subtotal={subtotal} />
               </div>
@@ -364,20 +366,22 @@ export default function CheckoutPage() {
               {/* Totals */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-slate-600">
-                  <span>{itemCount} کالا</span>
+                  <span>
+                    {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                  </span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
 
                 {appliedPromo && discountAmount > 0 && (
                   <div className="flex justify-between text-emerald-600">
-                    <span>تخفیف ({appliedPromo.code})</span>
+                    <span>Discount ({appliedPromo.code})</span>
                     <span>- {formatPrice(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-slate-600">
-                  <span>هزینه ارسال</span>
-                  <span>پس کرایه (محاسبه در مقصد)</span>
+                  <span>Shipping</span>
+                  <span>Calculated later</span>
                 </div>
               </div>
 
@@ -386,7 +390,7 @@ export default function CheckoutPage() {
 
               {/* Final Total */}
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-900">مبلغ نهایی</span>
+                <span className="font-semibold text-slate-900">Total</span>
                 <span className="text-lg font-bold text-slate-900">
                   {formatPrice(finalTotal)}
                 </span>
@@ -402,11 +406,11 @@ export default function CheckoutPage() {
                   disabled={isProcessing}
                   onClick={() => formRef.current?.requestSubmit()}
                 >
-                  {`پرداخت ${formatPrice(finalTotal)}`}
+                  {`Pay ${formatPrice(finalTotal)}`}
                 </Button>
                 <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
                   <ShieldCheckIcon className="w-4 h-4" />
-                  <span className="text-xs">پرداخت امن و رمزگذاری شده</span>
+                  <span className="text-xs">Encrypted provider checkout</span>
                 </div>
               </div>
             </div>

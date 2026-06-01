@@ -18,9 +18,9 @@ export default function ProfileSkeleton() {
             <Skeleton className="h-10 w-20 rounded-lg" />
           </div>
 
-          <div className="space-y-3 text-right">
+          <div className="space-y-3">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex gap-2 justify-end">
+              <div key={i} className="flex gap-2">
                 <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-5 w-24" />
               </div>

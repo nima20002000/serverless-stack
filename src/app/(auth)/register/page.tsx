@@ -36,7 +36,7 @@ export default function RegisterPage() {
     value: string
   ): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Normalize phone number first to handle localized digits
+    // Normalize phone number before validation.
     const normalizedPhone = normalizePhoneNumber(value);
 
     if (emailRegex.test(value)) return 'email';
@@ -49,27 +49,27 @@ export default function RegisterPage() {
 
     // Validate name if provided (optional but must be valid if present)
     if (formData.name.trim() && !isValidName(formData.name)) {
-      newErrors.name = 'نام باید شامل حروف فارسی یا انگلیسی باشد';
+      newErrors.name =
+        'Name can contain letters, spaces, hyphens, periods, and apostrophes.';
     }
 
     if (!formData.identifier.trim()) {
-      newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
+      newErrors.identifier = 'Email or phone number is required.';
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier =
-          'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
+        newErrors.identifier = 'Enter a valid email address or phone number.';
       }
     }
 
     if (!formData.password) {
-      newErrors.password = 'رمز عبور الزامی است';
+      newErrors.password = 'Password is required.';
     } else if (formData.password.length < 8) {
-      newErrors.password = 'رمز عبور باید حداقل ۸ کاراکتر باشد';
+      newErrors.password = 'Password must be at least 8 characters.';
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'رمز عبور و تکرار آن مطابقت ندارند';
+      newErrors.confirmPassword = 'Passwords do not match.';
     }
 
     setErrors(newErrors);
@@ -92,7 +92,7 @@ export default function RegisterPage() {
       const identifierType = detectIdentifierType(formData.identifier);
 
       if (identifierType !== 'phone' && identifierType !== 'email') {
-        throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
+        throw new Error('Enter a valid email address or phone number.');
       }
 
       const identifier =
@@ -119,7 +119,7 @@ export default function RegisterPage() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'خطا در ثبت‌نام');
+        throw new Error(data.error || 'Unable to create account.');
       }
 
       const signInResult = await signIn('credentials', {
@@ -129,9 +129,7 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.error) {
-        setSuccessMessage(
-          'ثبت‌نام انجام شد. برای ورود از فرم ورود استفاده کنید.'
-        );
+        setSuccessMessage('Account created. Use the sign-in form to continue.');
         return;
       }
 
@@ -140,14 +138,12 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccessMessage(
-        'ثبت‌نام انجام شد. برای ورود از فرم ورود استفاده کنید.'
-      );
+      setSuccessMessage('Account created. Use the sign-in form to continue.');
     } catch (error) {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.';
+          : 'Unable to create account. Please try again.';
       setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
@@ -168,8 +164,8 @@ export default function RegisterPage() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-6 text-rose-900">
-        ثبت‌نام
+      <h2 className="text-2xl font-bold text-center mb-6 text-slate-950">
+        Create account
       </h2>
 
       {rateLimitRetryAfter && (
@@ -198,56 +194,56 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="نام (اختیاری)"
+          label="Name (optional)"
           name="name"
           type="text"
           value={formData.name}
           onChange={handleChange}
           error={errors.name}
           disabled={isLoading}
-          placeholder="نام خود را وارد کنید"
+          placeholder="Enter your name"
         />
 
         <Input
-          label="ایمیل یا شماره تلفن"
+          label="Email or phone number"
           name="identifier"
           type="text"
           value={formData.identifier}
           onChange={handleChange}
           error={errors.identifier}
           disabled={isLoading}
-          placeholder="example@email.com یا 09123456789"
+          placeholder="name@example.com or +12125551234"
           dir="ltr"
           helperText={
             identifierType === 'email'
-              ? 'ایمیل وارد شده است'
+              ? 'Email detected'
               : identifierType === 'phone'
-                ? 'شماره تلفن وارد شده است'
-                : 'ایمیل یا شماره موبایل خود را وارد کنید'
+                ? 'Phone number detected'
+                : 'Enter your email address or phone number'
           }
         />
 
         <Input
-          label="رمز عبور"
+          label="Password"
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
           disabled={isLoading}
-          placeholder="حداقل ۸ کاراکتر"
-          helperText="رمز عبور باید حداقل ۸ کاراکتر باشد"
+          placeholder="At least 8 characters"
+          helperText="Password must be at least 8 characters."
         />
 
         <Input
-          label="تکرار رمز عبور"
+          label="Confirm password"
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
           onChange={handleChange}
           error={errors.confirmPassword}
           disabled={isLoading}
-          placeholder="رمز عبور را دوباره وارد کنید"
+          placeholder="Enter your password again"
         />
 
         <Button
@@ -257,18 +253,18 @@ export default function RegisterPage() {
           isLoading={isLoading}
           disabled={isLoading}
         >
-          ثبت‌نام
+          Create account
         </Button>
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-rose-500">
-          قبلاً ثبت‌نام کرده‌اید؟{' '}
+        <p className="text-slate-600">
+          Already have an account?{' '}
           <Link
             href="/login"
-            className="text-rose-600 hover:text-rose-700 font-medium"
+            className="text-slate-950 hover:text-slate-700 font-medium underline-offset-4 hover:underline"
           >
-            وارد شوید
+            Sign in
           </Link>
         </p>
       </div>

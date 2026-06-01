@@ -144,7 +144,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // Click the pay button (there might be multiple, get the visible one)
     const payButton = page
-      .getByRole('button', { name: /پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
       .first();
     await expect(payButton).toBeEnabled();
     await payButton.click();
@@ -253,7 +253,7 @@ test.describe('Guest Checkout Journey', () => {
 
     // Click pay
     const payButton = page
-      .getByRole('button', { name: /پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
       .first();
     await payButton.click();
 
@@ -313,7 +313,7 @@ test.describe('Guest Checkout Journey', () => {
 
     // Try to submit without filling required fields
     const payButton = page
-      .getByRole('button', { name: /پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
       .first();
 
     // HTML5 validation should prevent submission

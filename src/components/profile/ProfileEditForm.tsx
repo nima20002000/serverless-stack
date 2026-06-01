@@ -33,9 +33,9 @@ export default function ProfileEditForm({
   const [formData, setFormData] = useState(initialData);
   const textareaClassName = [
     'w-full min-h-[96px] px-4 py-2',
-    'text-rose-900 text-sm text-right placeholder:text-rose-300',
-    'bg-white border border-rose-200 rounded-2xl',
-    'focus:outline-none focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80',
+    'text-slate-900 text-sm text-start placeholder:text-slate-400',
+    'bg-white border border-slate-200 rounded-lg',
+    'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
     'transition-all duration-200 ease-out',
     'disabled:opacity-50 disabled:cursor-not-allowed',
     'dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500',
@@ -45,7 +45,9 @@ export default function ProfileEditForm({
   const handleSubmit = async () => {
     // Validate name
     if (formData.name.trim() && !isValidName(formData.name)) {
-      onValidationError('نام باید شامل حروف فارسی یا انگلیسی باشد');
+      onValidationError(
+        'Name can contain letters, spaces, hyphens, periods, and apostrophes.'
+      );
       return;
     }
 
@@ -53,9 +55,7 @@ export default function ProfileEditForm({
     if (formData.phone.trim()) {
       const normalizedPhone = normalizePhoneNumber(formData.phone);
       if (!isValidPhoneNumber(normalizedPhone)) {
-        onValidationError(
-          'شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)'
-        );
+        onValidationError('Please enter a valid phone number.');
         return;
       }
     }
@@ -72,31 +72,34 @@ export default function ProfileEditForm({
   };
 
   return (
-    <div className="space-y-4 text-right">
+    <div className="space-y-4">
       <Input
-        label="نام"
+        label="Name"
         type="text"
         value={formData.name}
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        autoComplete="name"
       />
       <Input
-        label="ایمیل"
+        label="Email"
         type="email"
         dir="ltr"
         value={formData.email}
         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        autoComplete="email"
       />
       <Input
-        label="شماره تلفن"
-        type="text"
+        label="Phone number"
+        type="tel"
         dir="ltr"
         value={formData.phone}
         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        placeholder="09xxxxxxxxx"
+        placeholder="+12125551234"
+        autoComplete="tel"
       />
       <div>
-        <label className="block text-sm font-medium text-rose-700 mb-2">
-          آدرس ارسال
+        <label className="block text-sm font-medium text-slate-700 mb-2">
+          Shipping address
         </label>
         <textarea
           value={formData.shippingAddress}
@@ -105,24 +108,31 @@ export default function ProfileEditForm({
           }
           className={textareaClassName}
           rows={3}
+          dir="auto"
+          autoComplete="street-address"
         />
       </div>
       <Input
-        label="کد پستی"
+        label="Postal code"
         type="text"
         dir="ltr"
         value={formData.postalCode}
         onChange={(e) =>
-          setFormData({ ...formData, postalCode: e.target.value })
+          setFormData({
+            ...formData,
+            postalCode: e.target.value.slice(0, 32),
+          })
         }
-        placeholder="1234567890"
+        placeholder="10001 or SW1A 1AA"
+        maxLength={32}
+        autoComplete="postal-code"
       />
       <div className="flex gap-3 justify-end">
         <Button variant="secondary" onClick={onCancel} disabled={isUpdating}>
-          انصراف
+          Cancel
         </Button>
         <Button variant="primary" onClick={handleSubmit} disabled={isUpdating}>
-          {isUpdating ? 'در حال ذخیره...' : 'ذخیره تغییرات'}
+          {isUpdating ? 'Saving...' : 'Save changes'}
         </Button>
       </div>
     </div>

@@ -142,25 +142,25 @@ export default function CheckoutForm({
     setFormError('');
 
     if (!fullName.trim()) {
-      setFormError('لطفاً نام و نام خانوادگی خود را وارد کنید');
+      setFormError('Please enter your full name.');
       return;
     }
 
     if (fullName.trim() && !isValidName(fullName)) {
-      setFormError('نام و نام خانوادگی باید شامل حروف فارسی یا انگلیسی باشد');
+      setFormError(
+        'Name can contain letters, spaces, hyphens, periods, and apostrophes.'
+      );
       return;
     }
 
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone.trim() || !isValidPhoneNumber(normalizedPhone)) {
-      setFormError(
-        'لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)'
-      );
+      setFormError('Please enter a valid phone number.');
       return;
     }
 
     if (!shippingAddress.trim()) {
-      setFormError('لطفاً آدرس ارسال را وارد کنید');
+      setFormError('Please enter a shipping address.');
       return;
     }
 
@@ -175,17 +175,11 @@ export default function CheckoutForm({
 
   if (!_hasHydrated || (isLoadingProfile && session)) {
     if (compact) {
-      return (
-        <div className="text-center py-8 text-slate-500">
-          در حال بارگذاری...
-        </div>
-      );
+      return <div className="text-center py-8 text-slate-500">Loading...</div>;
     }
     return (
       <Card className="mt-6">
-        <div className="text-center py-8 text-slate-500">
-          در حال بارگذاری...
-        </div>
+        <div className="text-center py-8 text-slate-500">Loading...</div>
       </Card>
     );
   }
@@ -197,8 +191,8 @@ export default function CheckoutForm({
 
   const textareaClassName = [
     'w-full min-h-[96px] px-4 py-2',
-    'text-slate-900 text-sm text-right placeholder:text-slate-400',
-    'bg-white border border-slate-200 rounded-2xl',
+    'text-slate-900 text-sm text-start placeholder:text-slate-400',
+    'bg-white border border-slate-200 rounded-lg',
     'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
     'transition-all duration-200 ease-out',
     'disabled:opacity-50 disabled:cursor-not-allowed',
@@ -217,21 +211,22 @@ export default function CheckoutForm({
       <div>
         <Input
           id="fullName"
-          label="نام و نام خانوادگی *"
+          label="Full name *"
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           required
-          dir="rtl"
+          dir="auto"
           disabled={hasProfileName}
+          autoComplete="name"
         />
         {hasProfileName && (
-          <p className="text-sm text-slate-500 text-right mt-2">
-            💡 برای تغییر نام، به{' '}
+          <p className="text-sm text-slate-500 text-start mt-2">
+            To change your name, go to{' '}
             <Link href="/profile" className="underline hover:text-slate-700">
-              صفحه پروفایل
-            </Link>{' '}
-            مراجعه کنید
+              your profile
+            </Link>
+            .
           </p>
         )}
       </div>
@@ -240,23 +235,23 @@ export default function CheckoutForm({
         <Input
           id="phone"
           name="phone"
-          label="شماره تلفن *"
+          label="Phone number *"
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="09123456789"
+          placeholder="+12125551234"
           required
           dir="ltr"
           disabled={hasProfilePhone}
-          autoComplete="off"
+          autoComplete="tel"
         />
         {hasProfilePhone && (
-          <p className="text-sm text-slate-500 text-right mt-2">
-            💡 برای تغییر شماره تلفن، به{' '}
+          <p className="text-sm text-slate-500 text-start mt-2">
+            To change your phone number, go to{' '}
             <Link href="/profile" className="underline hover:text-slate-700">
-              صفحه پروفایل
-            </Link>{' '}
-            مراجعه کنید
+              your profile
+            </Link>
+            .
           </p>
         )}
       </div>
@@ -264,20 +259,21 @@ export default function CheckoutForm({
       <div>
         <Input
           id="email"
-          label="ایمیل (اختیاری)"
+          label="Email (optional)"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           dir="ltr"
           disabled={hasProfileEmail}
+          autoComplete="email"
         />
         {hasProfileEmail && (
-          <p className="text-sm text-slate-500 text-right mt-2">
-            💡 برای تغییر ایمیل، به{' '}
+          <p className="text-sm text-slate-500 text-start mt-2">
+            To change your email, go to{' '}
             <Link href="/profile" className="underline hover:text-slate-700">
-              صفحه پروفایل
-            </Link>{' '}
-            مراجعه کنید
+              your profile
+            </Link>
+            .
           </p>
         )}
       </div>
@@ -285,9 +281,9 @@ export default function CheckoutForm({
       <div>
         <label
           htmlFor="shippingAddress"
-          className="block text-sm font-medium text-slate-700 text-right mb-2"
+          className="block text-sm font-medium text-slate-700 text-start mb-2"
         >
-          آدرس ارسال *
+          Shipping address *
         </label>
         <textarea
           id="shippingAddress"
@@ -296,28 +292,28 @@ export default function CheckoutForm({
           rows={3}
           className={`${textareaClassName} resize-none`}
           required
-          dir="rtl"
+          dir="auto"
+          autoComplete="street-address"
         />
       </div>
 
       <div>
         <Input
           id="postalCode"
-          label="کد پستی (اختیاری)"
+          label="Postal code (optional)"
           type="text"
           value={postalCode}
-          onChange={(e) =>
-            setPostalCode(e.target.value.replace(/\D/g, '').slice(0, 10))
-          }
-          placeholder="1234567890"
-          maxLength={10}
+          onChange={(e) => setPostalCode(e.target.value.slice(0, 32))}
+          placeholder="10001 or SW1A 1AA"
+          maxLength={32}
           dir="ltr"
+          autoComplete="postal-code"
         />
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-        <p className="text-sm text-amber-800 text-right">
-          📦 هزینه ارسال به صورت پس کرایه درب منزل محاسبه خواهد شد.
+        <p className="text-sm text-amber-800 text-start">
+          Shipping and tax are calculated by the configured fulfillment setup.
         </p>
       </div>
 
@@ -329,7 +325,7 @@ export default function CheckoutForm({
           isLoading={isProcessing}
           disabled={isProcessing}
         >
-          پرداخت
+          Continue to payment
         </Button>
       )}
     </form>
@@ -339,8 +335,8 @@ export default function CheckoutForm({
 
   return (
     <Card className="mt-6">
-      <h2 className="text-lg font-bold text-slate-900 text-right mb-4 border-b border-slate-100 pb-3">
-        اطلاعات ارسال
+      <h2 className="text-lg font-bold text-slate-900 text-start mb-4 border-b border-slate-100 pb-3">
+        Shipping information
       </h2>
       {formContent}
     </Card>

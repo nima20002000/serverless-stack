@@ -23,7 +23,7 @@ describe('useVariantManager', () => {
       result().addOrUpdateVariant();
     });
 
-    expect(window.alert).toHaveBeenCalledWith('نام نوع محصول الزامی است');
+    expect(window.alert).toHaveBeenCalledWith('Variant name is required');
     expect(result().variants).toHaveLength(0);
 
     unmount();

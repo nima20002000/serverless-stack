@@ -29,7 +29,7 @@ export default function LoginPage() {
     value: string
   ): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Normalize phone number first to handle localized digits
+    // Normalize phone number before validation.
     const normalizedPhone = normalizePhoneNumber(value);
 
     if (emailRegex.test(value)) return 'email';
@@ -41,17 +41,16 @@ export default function LoginPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.identifier.trim()) {
-      newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
+      newErrors.identifier = 'Email or phone number is required.';
     } else {
       const type = detectIdentifierType(formData.identifier);
       if (type === 'invalid') {
-        newErrors.identifier =
-          'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
+        newErrors.identifier = 'Enter a valid email address or phone number.';
       }
     }
 
     if (!formData.password) {
-      newErrors.password = 'رمز عبور الزامی است';
+      newErrors.password = 'Password is required.';
     }
 
     setErrors(newErrors);
@@ -100,7 +99,7 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'خطا در ورود');
+        throw new Error(data.error || 'Unable to sign in.');
       }
 
       // Use NextAuth's signIn to create the session
@@ -119,7 +118,7 @@ export default function LoginPage() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : 'خطا در ورود. لطفاً دوباره تلاش کنید.';
+          : 'Unable to sign in. Please try again.';
       setErrorMessage(errorMessage);
     } finally {
       setIsLoading(false);
@@ -140,8 +139,8 @@ export default function LoginPage() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-6 text-rose-900">
-        ورود
+      <h2 className="text-2xl font-bold text-center mb-6 text-slate-950">
+        Sign in
       </h2>
 
       {rateLimitRetryAfter && (
@@ -164,33 +163,33 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="ایمیل یا شماره تلفن"
+          label="Email or phone number"
           name="identifier"
           type="text"
           value={formData.identifier}
           onChange={handleChange}
           error={errors.identifier}
           disabled={isLoading}
-          placeholder="example@email.com یا 09123456789"
+          placeholder="name@example.com or +12125551234"
           dir="ltr"
           helperText={
             identifierType === 'email'
-              ? 'ایمیل وارد شده است'
+              ? 'Email detected'
               : identifierType === 'phone'
-                ? 'شماره تلفن وارد شده است'
-                : 'ایمیل یا شماره موبایل خود را وارد کنید'
+                ? 'Phone number detected'
+                : 'Enter your email address or phone number'
           }
         />
 
         <Input
-          label="رمز عبور"
+          label="Password"
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           error={errors.password}
           disabled={isLoading}
-          placeholder="رمز عبور خود را وارد کنید"
+          placeholder="Enter your password"
         />
 
         <Button
@@ -200,18 +199,18 @@ export default function LoginPage() {
           isLoading={isLoading}
           disabled={isLoading}
         >
-          ورود
+          Sign in
         </Button>
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-rose-500">
-          حساب کاربری ندارید؟{' '}
+        <p className="text-slate-600">
+          Need an account?{' '}
           <Link
             href="/register"
-            className="text-rose-600 hover:text-rose-700 font-medium"
+            className="text-slate-950 hover:text-slate-700 font-medium underline-offset-4 hover:underline"
           >
-            ثبت‌نام کنید
+            Create one
           </Link>
         </p>
       </div>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import ButtonV4 from '@/components/ui-v4/Button';
-import InputV4 from '@/components/ui-v4/Input';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import {
   TicketIcon,
   XMarkIcon,
@@ -28,7 +28,7 @@ export default function PromoCodeInput({
 
   const handleApplyCode = async () => {
     if (!inputCode.trim()) {
-      setError('لطفاً کد تخفیف را وارد کنید');
+      setError('Enter a promo code.');
       return;
     }
 
@@ -48,7 +48,7 @@ export default function PromoCodeInput({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'کد تخفیف نامعتبر است');
+        setError(data.error || 'Promo code is not valid.');
         return;
       }
 
@@ -64,7 +64,7 @@ export default function PromoCodeInput({
       setInputCode('');
       onPromoApplied?.(appliedPromo);
     } catch {
-      setError('خطا در بررسی کد تخفیف');
+      setError('Unable to validate this promo code.');
     } finally {
       setIsLoading(false);
     }
@@ -76,7 +76,7 @@ export default function PromoCodeInput({
     onPromoApplied?.(null);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !isLoading) {
       e.preventDefault();
       handleApplyCode();
@@ -92,26 +92,26 @@ export default function PromoCodeInput({
             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl flex items-center justify-center">
               <CheckCircleIcon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div className="text-right">
+            <div>
               <div className="flex items-center gap-2">
                 <code className="text-sm font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded">
                   {promoCode.code}
                 </code>
                 <span className="text-xs text-emerald-600 dark:text-emerald-400">
                   {promoCode.discountType === 'PERCENT'
-                    ? `${promoCode.discountValue}٪ تخفیف`
-                    : `${formatPrice(promoCode.discountValue)} تخفیف`}
+                    ? `${promoCode.discountValue}% off`
+                    : `${formatPrice(promoCode.discountValue)} off`}
                 </span>
               </div>
               <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
-                تخفیف اعمال شده: {formatPrice(promoCode.discountAmount)}
+                Discount applied: {formatPrice(promoCode.discountAmount)}
               </p>
             </div>
           </div>
           <button
             onClick={handleRemoveCode}
             className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-xl transition-colors"
-            aria-label="حذف کد تخفیف"
+            aria-label="Remove promo code"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -125,29 +125,29 @@ export default function PromoCodeInput({
     <div className="space-y-3">
       <div className="flex gap-2">
         <div className="flex-1">
-          <InputV4
-            placeholder="کد تخفیف"
+          <Input
+            placeholder="Promo code"
             value={inputCode}
             onChange={(e) => {
               setInputCode(e.target.value.toUpperCase());
               if (error) setError(null);
             }}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             icon={<TicketIcon className="w-5 h-5" />}
-            iconPosition="end"
+            iconPosition="start"
             error={error || undefined}
             disabled={isLoading}
             className="font-mono text-left"
           />
         </div>
-        <ButtonV4
+        <Button
           variant="secondary"
           onClick={handleApplyCode}
           isLoading={isLoading}
           disabled={!inputCode.trim() || isLoading}
         >
-          اعمال
-        </ButtonV4>
+          Apply
+        </Button>
       </div>
     </div>
   );

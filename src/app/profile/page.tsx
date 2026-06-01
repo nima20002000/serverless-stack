@@ -158,17 +158,17 @@ export default function ProfilePage() {
 
         if (!response.ok) {
           editFormActions.setError(
-            responseData.error || 'خطا در به‌روزرسانی پروفایل'
+            responseData.error || 'Unable to update your profile.'
           );
           return;
         }
 
-        editFormActions.setSuccess('پروفایل با موفقیت به‌روزرسانی شد');
+        editFormActions.setSuccess('Profile updated successfully.');
         setIsEditingProfile(false);
         await fetchUserProfile();
         await update(); // Update session
       } catch (error) {
-        editFormActions.setError('خطا در به‌روزرسانی پروفایل');
+        editFormActions.setError('Unable to update your profile.');
         console.error('Error updating profile:', error);
       } finally {
         editFormActions.setIsSubmitting(false);
@@ -200,10 +200,10 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white py-8">
+    <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-rose-900 mb-8 text-right">
-          پروفایل کاربری
+        <h1 className="text-3xl font-bold text-slate-950 mb-8">
+          Account profile
         </h1>
 
         {/* Success/Error Messages */}
@@ -225,12 +225,12 @@ export default function ProfilePage() {
         {/* User Info Card */}
         <Card className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-rose-900 text-right">
-              اطلاعات کاربری
+            <h2 className="text-xl font-semibold text-slate-950">
+              Profile details
             </h2>
             {!isEditingProfile && (
               <Button variant="secondary" onClick={handleEditProfile}>
-                ویرایش
+                Edit
               </Button>
             )}
           </div>
@@ -250,52 +250,52 @@ export default function ProfilePage() {
               onValidationError={editFormActions.setError}
             />
           ) : (
-            <div className="space-y-3 text-right">
+            <div className="space-y-3">
               <div>
-                <span className="text-rose-600">شناسه کاربری:</span>{' '}
-                <code className="font-medium text-rose-700 bg-rose-50 px-2 py-1 rounded-xl text-sm border border-rose-100">
+                <span className="text-slate-600">Account ID:</span>{' '}
+                <code className="font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded-lg text-sm border border-slate-200">
                   {userProfile.uid}
                 </code>
               </div>
               <div>
-                <span className="text-rose-600">نام:</span>{' '}
-                <span className="font-medium text-rose-900">
-                  {userProfile.name}
+                <span className="text-slate-600">Name:</span>{' '}
+                <span className="font-medium text-slate-950">
+                  {userProfile.name || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">ایمیل:</span>{' '}
-                <span className="font-medium text-rose-900" dir="ltr">
-                  {userProfile.email || 'وارد نشده'}
+                <span className="text-slate-600">Email:</span>{' '}
+                <span className="font-medium text-slate-950" dir="ltr">
+                  {userProfile.email || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">شماره تلفن:</span>{' '}
-                <span className="font-medium text-rose-900" dir="ltr">
-                  {userProfile.phone || 'وارد نشده'}
+                <span className="text-slate-600">Phone number:</span>{' '}
+                <span className="font-medium text-slate-950" dir="ltr">
+                  {userProfile.phone || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">آدرس ارسال:</span>{' '}
-                <span className="font-medium text-rose-900">
-                  {userProfile.shippingAddress || 'وارد نشده'}
+                <span className="text-slate-600">Shipping address:</span>{' '}
+                <span className="font-medium text-slate-950">
+                  {userProfile.shippingAddress || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">کد پستی:</span>{' '}
-                <span className="font-medium text-rose-900" dir="ltr">
-                  {userProfile.postalCode || 'وارد نشده'}
+                <span className="text-slate-600">Postal code:</span>{' '}
+                <span className="font-medium text-slate-950" dir="ltr">
+                  {userProfile.postalCode || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">نقش:</span>{' '}
-                <span className="font-medium text-rose-900">
-                  {userProfile.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
+                <span className="text-slate-600">Role:</span>{' '}
+                <span className="font-medium text-slate-950">
+                  {userProfile.role === 'ADMIN' ? 'Admin' : 'User'}
                 </span>
               </div>
               <div>
-                <span className="text-rose-600">عضو از:</span>{' '}
-                <span className="font-medium text-rose-900">
+                <span className="text-slate-600">Joined:</span>{' '}
+                <span className="font-medium text-slate-950">
                   {formatDate(userProfile.createdAt)}
                 </span>
               </div>
@@ -305,8 +305,8 @@ export default function ProfilePage() {
 
         {/* Password Management Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-rose-900 mb-4 text-right">
-            مدیریت رمز عبور
+          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+            Password
           </h2>
 
           <PasswordManagementCard
@@ -317,8 +317,8 @@ export default function ProfilePage() {
 
         {/* Transaction History Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-rose-900 mb-4 text-right">
-            تاریخچه تراکنش‌ها
+          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+            Transactions
           </h2>
           <TransactionHistory
             transactions={transactions}
@@ -332,7 +332,7 @@ export default function ProfilePage() {
             variant="danger"
             onClick={() => signOut({ callbackUrl: '/' })}
           >
-            خروج از حساب کاربری
+            Sign out
           </Button>
         </div>
       </div>

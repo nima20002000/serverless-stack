@@ -55,14 +55,16 @@ describe('useVersionCheck', () => {
     const { unmount } = renderHook(() => useVersionCheck());
     await waitForEffects();
 
-    expect(localStorage.getItem('kitia_build_version')).toBe('build-1');
+    expect(localStorage.getItem('commerce_boilerplate_build_version')).toBe(
+      'build-1'
+    );
     expect(reloadSpy).not.toHaveBeenCalled();
 
     unmount();
   });
 
   it('clears caches and reloads when version changes', async () => {
-    localStorage.setItem('kitia_build_version', 'build-old');
+    localStorage.setItem('commerce_boilerplate_build_version', 'build-old');
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -96,7 +98,9 @@ describe('useVersionCheck', () => {
     expect(onUpdateAvailable).toHaveBeenCalledWith(
       expect.objectContaining({ buildId: 'build-new' })
     );
-    expect(localStorage.getItem('kitia_build_version')).toBe('build-new');
+    expect(localStorage.getItem('commerce_boilerplate_build_version')).toBe(
+      'build-new'
+    );
     expect(reloadSpy).toHaveBeenCalled();
 
     unmount();

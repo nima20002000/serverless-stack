@@ -34,7 +34,13 @@ export default function PasswordManagementCard({
       passwordForm.confirmPassword
     );
     if (!validation.isValid) {
-      formActions.setError(validation.error || 'خطا در اعتبارسنجی رمز عبور');
+      formActions.setError(validation.error || 'Enter a valid password.');
+      formActions.setIsSubmitting(false);
+      return;
+    }
+
+    if (hasPassword && !passwordForm.currentPassword) {
+      formActions.setError('Enter your current password.');
       formActions.setIsSubmitting(false);
       return;
     }
@@ -59,11 +65,11 @@ export default function PasswordManagementCard({
       const data = await response.json();
 
       if (!response.ok) {
-        formActions.setError(data.error || 'خطا در مدیریت رمز عبور');
+        formActions.setError(data.error || 'Unable to update password.');
         return;
       }
 
-      formActions.setSuccess(data.message);
+      formActions.setSuccess(data.message || 'Password updated successfully.');
       setPasswordForm({
         currentPassword: '',
         newPassword: '',
@@ -72,7 +78,7 @@ export default function PasswordManagementCard({
       setIsChangingPassword(false);
       await onPasswordUpdate();
     } catch (error) {
-      formActions.setError('خطا در مدیریت رمز عبور');
+      formActions.setError('Unable to update password.');
       console.error('Error managing password:', error);
     } finally {
       formActions.setIsSubmitting(false);
@@ -107,10 +113,10 @@ export default function PasswordManagementCard({
       )}
 
       {isChangingPassword ? (
-        <div className="space-y-4 text-right">
+        <div className="space-y-4">
           {hasPassword && (
             <Input
-              label="رمز عبور فعلی"
+              label="Current password"
               type="password"
               value={passwordForm.currentPassword}
               onChange={(e) =>
@@ -119,11 +125,12 @@ export default function PasswordManagementCard({
                   currentPassword: e.target.value,
                 })
               }
-              placeholder="رمز عبور فعلی خود را وارد کنید"
+              placeholder="Enter your current password"
+              autoComplete="current-password"
             />
           )}
           <Input
-            label="رمز عبور جدید"
+            label="New password"
             type="password"
             value={passwordForm.newPassword}
             onChange={(e) =>
@@ -132,10 +139,11 @@ export default function PasswordManagementCard({
                 newPassword: e.target.value,
               })
             }
-            placeholder="حداقل ۸ کاراکتر"
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
           />
           <Input
-            label="تکرار رمز عبور جدید"
+            label="Confirm new password"
             type="password"
             value={passwordForm.confirmPassword}
             onChange={(e) =>
@@ -144,6 +152,7 @@ export default function PasswordManagementCard({
                 confirmPassword: e.target.value,
               })
             }
+            autoComplete="new-password"
           />
           <div className="flex gap-3 justify-end">
             <Button
@@ -151,30 +160,30 @@ export default function PasswordManagementCard({
               onClick={handleCancel}
               disabled={formState.isSubmitting}
             >
-              انصراف
+              Cancel
             </Button>
             <Button
               variant="primary"
               onClick={handlePasswordSubmit}
               disabled={formState.isSubmitting}
             >
-              {formState.isSubmitting ? 'در حال ذخیره...' : 'ذخیره رمز عبور'}
+              {formState.isSubmitting ? 'Saving...' : 'Save password'}
             </Button>
           </div>
         </div>
       ) : (
-        <div className="text-right">
+        <div>
           <p className="text-gray-600 mb-4">
             {hasPassword
-              ? 'شما می‌توانید رمز عبور خود را تغییر دهید.'
-              : 'شما می‌توانید برای حساب کاربری خود رمز عبور تنظیم کنید'}
+              ? 'Use a strong password and update it when needed.'
+              : 'Set a password to sign in with your account credentials.'}
           </p>
           <div className="flex gap-3 items-center">
             <Button
               variant="secondary"
               onClick={() => setIsChangingPassword(true)}
             >
-              {hasPassword ? 'تغییر رمز عبور' : 'تنظیم رمز عبور'}
+              {hasPassword ? 'Change password' : 'Set password'}
             </Button>
           </div>
         </div>

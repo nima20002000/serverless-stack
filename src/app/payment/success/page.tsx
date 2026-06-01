@@ -23,6 +23,13 @@ interface TransactionStatusResponse {
   paypalOrderId: string | null;
 }
 
+function providerLabel(provider: string | null) {
+  const normalizedProvider = provider?.toLowerCase();
+  if (normalizedProvider === 'stripe') return 'Stripe';
+  if (normalizedProvider === 'paypal') return 'PayPal';
+  return null;
+}
+
 function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,7 +52,10 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!transactionCode) {
-      router.push('/');
+      setStatusError(
+        'We could not find a transaction code for this payment return.'
+      );
+      setIsLoading(false);
       return () => undefined;
     }
 
@@ -69,7 +79,7 @@ function SuccessContent() {
           throw new Error(
             typeof data.error === 'string'
               ? data.error
-              : 'خطا در بررسی وضعیت پرداخت'
+              : 'Unable to load payment status.'
           );
         }
 
@@ -111,7 +121,9 @@ function SuccessContent() {
           return;
         }
         setStatusError(
-          error instanceof Error ? error.message : 'خطا در بررسی وضعیت پرداخت'
+          error instanceof Error
+            ? error.message
+            : 'Unable to load payment status.'
         );
       } finally {
         if (isMounted) {
@@ -132,24 +144,34 @@ function SuccessContent() {
         clearInterval(intervalId);
       }
     };
-  }, [clearCart, clearCheckoutFormData, router, transactionCode]);
+  }, [clearCart, clearCheckoutFormData, transactionCode]);
 
   const showPollingNotice = status === 'PENDING' && attempts > 0;
   const isPendingLong = status === 'PENDING' && attempts >= 30;
 
-  let title = 'در حال بررسی پرداخت';
-  let description = 'پرداخت شما ثبت شده و در حال تایید نهایی است.';
+  const readableProvider = providerLabel(provider);
+  const hasMissingCode = !transactionCode;
+
+  let title = 'Payment pending';
+  let description =
+    'Your payment is still being confirmed by the payment provider.';
   let icon = <ClockIcon className="w-20 h-20 text-amber-500 mx-auto" />;
   let noticeClass = 'bg-amber-50 border border-amber-200 text-amber-800';
 
-  if (status === 'COMPLETED') {
-    title = 'پرداخت موفق';
-    description = 'خرید شما با موفقیت انجام شد';
+  if (hasMissingCode) {
+    title = 'Payment status unavailable';
+    description =
+      'The payment provider returned without a transaction code. Your cart has not been cleared.';
+    icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
+    noticeClass = 'bg-red-50 border border-red-200 text-red-800';
+  } else if (status === 'COMPLETED') {
+    title = 'Payment Completed';
+    description = 'Your order has been recorded successfully.';
     icon = <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto" />;
     noticeClass = 'bg-blue-50 border border-blue-200 text-blue-800';
   } else if (status === 'FAILED') {
-    title = 'پرداخت ناموفق';
-    description = 'پرداخت تایید نشد. می‌توانید دوباره تلاش کنید.';
+    title = 'Payment Failed';
+    description = 'The payment provider did not complete this payment.';
     icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
     noticeClass = 'bg-red-50 border border-red-200 text-red-800';
   }
@@ -170,14 +192,23 @@ function SuccessContent() {
                   <span className="font-mono font-bold text-gray-900">
                     {transactionCode}
                   </span>
-                  <span className="text-gray-600">کد تراکنش</span>
+                  <span className="text-gray-600">Transaction code</span>
+                </div>
+              )}
+
+              {readableProvider && (
+                <div className="flex justify-between text-sm border-t pt-3">
+                  <span className="font-medium text-gray-900">
+                    {readableProvider}
+                  </span>
+                  <span className="text-gray-600">Provider</span>
                 </div>
               )}
 
               {refId && (
                 <div className="flex justify-between text-sm border-t pt-3">
                   <span className="font-mono text-gray-900">{refId}</span>
-                  <span className="text-gray-600">شماره پیگیری</span>
+                  <span className="text-gray-600">Reference</span>
                 </div>
               )}
 
@@ -202,49 +233,48 @@ function SuccessContent() {
 
             <div className={`rounded-lg p-4 mb-6 ${noticeClass}`}>
               {isLoading && (
-                <p className="text-sm text-right">
-                  در حال بررسی وضعیت پرداخت...
+                <p className="text-sm">
+                  Checking the payment provider for the latest status...
                 </p>
               )}
               {!isLoading && status === 'COMPLETED' && (
-                <p className="text-sm text-right">
-                  تراکنش تایید شد. وضعیت سفارش را از پروفایل می‌توانید پیگیری
-                  کنید.
+                <p className="text-sm">
+                  Your cart has been cleared. You can review this transaction
+                  from your profile.
                 </p>
               )}
               {!isLoading && status === 'FAILED' && (
-                <p className="text-sm text-right">
-                  سفارش شما تکمیل نشده است و سبد خرید شما حفظ شده تا دوباره تلاش
-                  کنید.
+                <p className="text-sm">
+                  Your cart is still available so you can retry checkout.
                 </p>
               )}
               {!isLoading && status === 'PENDING' && !isPendingLong && (
-                <p className="text-sm text-right">
-                  درگاه پرداخت پاسخ نهایی را هنوز ارسال نکرده است. این صفحه
-                  خودکار وضعیت را بررسی می‌کند.
+                <p className="text-sm">
+                  Keep this page open while we poll for confirmation, or return
+                  to the cart if you need to try again.
                 </p>
               )}
               {!isLoading && status === 'PENDING' && isPendingLong && (
-                <p className="text-sm text-right">
-                  تایید پرداخت بیش از حد معمول زمان برده است. چند دقیقه دیگر
-                  دوباره بررسی کنید یا از پروفایل وضعیت را ببینید.
+                <p className="text-sm">
+                  Confirmation is taking longer than expected. Check your
+                  profile later or return to the cart.
                 </p>
               )}
               {!isLoading && !status && statusError && (
-                <p className="text-sm text-right">{statusError}</p>
+                <p className="text-sm">{statusError}</p>
               )}
               {!isLoading && showPollingNotice && (
-                <p className="text-xs mt-2 text-right opacity-80">
-                  در حال بررسی مجدد...
+                <p className="text-xs mt-2 opacity-80">
+                  Status check {attempts} of 30.
                 </p>
               )}
             </div>
 
             <div className="space-y-3">
-              {status === 'FAILED' ? (
+              {status === 'FAILED' || status === 'PENDING' || hasMissingCode ? (
                 <Link href="/cart" className="block">
                   <Button variant="primary" className="w-full">
-                    بازگشت به سبد خرید
+                    Return to cart
                   </Button>
                 </Link>
               ) : (
@@ -253,23 +283,15 @@ function SuccessContent() {
                   className="w-full"
                   onClick={() => router.push('/products')}
                 >
-                  ادامه خرید
+                  Continue shopping
                 </Button>
               )}
 
               <Link href="/profile" className="block">
                 <Button variant="secondary" className="w-full">
-                  مشاهده تراکنش‌ها
+                  View transactions
                 </Button>
               </Link>
-
-              {status === 'PENDING' && provider === 'stripe' && (
-                <Link href="/cart" className="block">
-                  <Button variant="secondary" className="w-full">
-                    بازگشت به سبد خرید
-                  </Button>
-                </Link>
-              )}
             </div>
           </div>
         </Card>
@@ -283,7 +305,7 @@ export default function PaymentSuccessPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-gray-600">در حال بارگذاری...</div>
+          <div className="text-gray-600">Loading...</div>
         </div>
       }
     >
