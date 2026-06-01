@@ -15,7 +15,8 @@ interface VersionCheckOptions {
 }
 
 const DEFAULT_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const STORAGE_KEY = 'kitia_build_version';
+const STORAGE_KEY = 'commerce_boilerplate_build_version';
+const LEGACY_STORAGE_KEY = 'kitia_build_version';
 
 /**
  * Hook that monitors for new app versions and handles cache clearing.
@@ -48,7 +49,17 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
   const getStoredVersion = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     try {
-      return localStorage.getItem(STORAGE_KEY);
+      const storedVersion = localStorage.getItem(STORAGE_KEY);
+      if (storedVersion) return storedVersion;
+
+      const legacyVersion = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacyVersion) {
+        localStorage.setItem(STORAGE_KEY, legacyVersion);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        return legacyVersion;
+      }
+
+      return null;
     } catch {
       return null;
     }
@@ -58,6 +69,7 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(STORAGE_KEY, version);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch {
       // localStorage might be disabled
     }

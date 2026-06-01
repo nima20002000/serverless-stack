@@ -1,6 +1,6 @@
 'use client';
 
-import { InputHTMLAttributes, forwardRef, ReactNode } from 'react';
+import { InputHTMLAttributes, forwardRef, ReactNode, useId } from 'react';
 
 export interface InputV4Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -24,83 +24,55 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
       variant = 'default',
       className = '',
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
+    const generatedId = useId();
+    const inputId = id ?? generatedId;
     const hasIcon = !!icon;
 
-    const baseInputStyles = `
-      w-full h-11 px-4
-      text-rose-900 text-sm text-right
-      placeholder:text-rose-300
-      transition-all duration-200 ease-out
-      focus:outline-none
-      disabled:opacity-50 disabled:cursor-not-allowed
-      dark:text-slate-100 dark:placeholder:text-slate-500
-    `;
-
     const variantStyles = {
-      default: `
-        bg-white
-        border border-rose-200
-        rounded-2xl
-        focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80
-        hover:border-rose-300
-        disabled:bg-rose-50
-        dark:bg-slate-900 dark:border-slate-700 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:border-slate-600 dark:disabled:bg-slate-800
-      `,
-      filled: `
-        bg-rose-50/80
-        border border-rose-100
-        rounded-2xl
-        focus:bg-white focus:border-rose-300 focus:ring-4 focus:ring-rose-100/70
-        hover:bg-rose-50
-        disabled:bg-rose-100
-        dark:bg-slate-900/70 dark:border-slate-700 dark:focus:bg-slate-900 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:bg-slate-800/80 dark:disabled:bg-slate-800
-      `,
-      minimal: `
-        bg-transparent
-        border-b border-rose-200
-        rounded-none
-        focus:border-rose-400
-        hover:border-rose-300
-        disabled:bg-transparent
-        dark:border-slate-700 dark:focus:border-slate-500 dark:hover:border-slate-600
-      `,
+      default:
+        'bg-card border border-input rounded-lg hover:border-muted-foreground/40 focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:bg-muted',
+      filled:
+        'bg-muted border border-transparent rounded-lg hover:border-border focus:bg-card focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:bg-muted',
+      minimal:
+        'bg-transparent border-b border-input rounded-none hover:border-muted-foreground/40 focus:border-ring disabled:bg-transparent',
     };
-
-    const errorStyles = error
-      ? `
-        border-red-300 focus:border-red-400 focus:ring-red-100/70
-        placeholder:text-red-300
-        dark:border-rose-600 dark:focus:border-rose-500 dark:focus:ring-rose-900/60 dark:placeholder:text-rose-400
-      `
-      : '';
-
-    const iconPaddingStyles = hasIcon
-      ? iconPosition === 'start'
-        ? 'pe-4 ps-11'
-        : 'ps-4 pe-11'
-      : '';
 
     return (
       <div className={fullWidth ? 'w-full' : 'w-auto'}>
         {label && (
-          <label className="block text-sm font-medium text-rose-700 dark:text-slate-300 mb-2 text-right">
+          <label
+            htmlFor={inputId}
+            className="mb-2 block text-start text-sm font-medium text-foreground"
+          >
             {label}
           </label>
         )}
 
-        <div className="relative group">
+        <div className="group relative">
           <input
             ref={ref}
+            id={inputId}
             disabled={disabled}
+            aria-invalid={!!error || undefined}
+            aria-describedby={
+              error
+                ? `${inputId}-error`
+                : helperText
+                  ? `${inputId}-helper`
+                  : undefined
+            }
             className={`
-              ${baseInputStyles}
+              h-10 w-full px-3 text-start text-sm text-foreground placeholder:text-muted-foreground
+              transition-colors duration-200 ease-out focus:outline-none
+              disabled:cursor-not-allowed disabled:opacity-50
               ${variantStyles[variant]}
-              ${errorStyles}
-              ${iconPaddingStyles}
+              ${error ? 'border-danger focus:border-danger focus:ring-danger/25' : ''}
+              ${hasIcon ? (iconPosition === 'start' ? 'ps-10' : 'pe-10') : ''}
               ${className}
             `}
             {...props}
@@ -109,13 +81,10 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
           {hasIcon && (
             <div
               className={`
-                absolute top-1/2 -translate-y-1/2
-                flex items-center justify-center
-                w-5 h-5 text-rose-400 dark:text-slate-500
-                pointer-events-none
-                transition-colors duration-200
-                group-focus-within:text-rose-500 dark:group-focus-within:text-slate-200
-                ${iconPosition === 'start' ? 'start-4' : 'end-4'}
+                pointer-events-none absolute top-1/2 flex h-5 w-5 -translate-y-1/2
+                items-center justify-center text-muted-foreground transition-colors
+                group-focus-within:text-foreground
+                ${iconPosition === 'start' ? 'start-3' : 'end-3'}
               `}
             >
               {icon}
@@ -124,20 +93,19 @@ const InputV4 = forwardRef<HTMLInputElement, InputV4Props>(
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-500 dark:text-rose-300 text-right flex items-center gap-1 justify-end">
-            <span>{error}</span>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
+          <p
+            id={`${inputId}-error`}
+            className="mt-2 text-start text-sm text-danger"
+          >
+            {error}
           </p>
         )}
 
         {helperText && !error && (
-          <p className="mt-2 text-sm text-rose-400 dark:text-slate-500 text-right">
+          <p
+            id={`${inputId}-helper`}
+            className="mt-2 text-start text-sm text-muted-foreground"
+          >
             {helperText}
           </p>
         )}

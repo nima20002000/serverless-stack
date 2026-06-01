@@ -40,7 +40,7 @@ export function useApiWithRateLimit(): UseApiWithRateLimitResult {
           setRateLimitInfo({
             isRateLimited: true,
             retryAfter: data.retryAfter || Date.now() + 60000, // Default 1 minute
-            error: data.error || 'تعداد درخواست‌های شما بیش از حد مجاز است',
+            error: data.error || 'Too many requests. Please try again later.',
           });
           return null;
         }
@@ -48,7 +48,7 @@ export function useApiWithRateLimit(): UseApiWithRateLimitResult {
         // Check for other errors
         if (!response.ok) {
           const data = await response.json();
-          throw new Error(data.error || 'خطا در دریافت اطلاعات');
+          throw new Error(data.error || 'Request failed. Please try again.');
         }
 
         // Clear any previous rate limit info on success

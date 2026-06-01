@@ -32,76 +32,42 @@ const ButtonV4 = forwardRef<HTMLButtonElement, ButtonV4Props>(
   ) => {
     const baseStyles = `
       inline-flex items-center justify-center gap-2
-      font-semibold tracking-[0.01em]
-      transition-all duration-200 ease-out
-      focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-200/70 dark:focus-visible:ring-slate-700/60
+      font-semibold
+      transition-colors duration-200 ease-out
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background
       disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none
-      active:translate-y-[1px]
       select-none
     `;
 
     const variantStyles = {
-      primary: `
-        bg-rose-500 text-white
-        hover:bg-rose-600
-        shadow-[0_18px_30px_-18px_rgba(244,63,94,0.7)]
-        dark:bg-blue-500 dark:hover:bg-blue-400 dark:shadow-[0_18px_30px_-18px_rgba(37,99,235,0.6)]
-      `,
-      secondary: `
-        bg-white text-rose-600
-        border border-rose-200
-        hover:bg-rose-50 hover:border-rose-300
-        dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700
-      `,
-      outline: `
-        bg-transparent text-rose-600
-        border-2 border-rose-300
-        hover:border-rose-400 hover:bg-rose-50
-        dark:text-slate-100 dark:border-slate-600 dark:hover:border-slate-500 dark:hover:bg-slate-800/60
-      `,
-      ghost: `
-        bg-transparent text-rose-500
-        hover:bg-rose-50
-        dark:text-slate-200 dark:hover:bg-slate-800/60
-      `,
-      danger: `
-        bg-rose-600 text-white
-        hover:bg-rose-700
-        shadow-[0_18px_30px_-18px_rgba(225,29,72,0.7)]
-        dark:bg-rose-600 dark:hover:bg-rose-500 dark:shadow-[0_18px_30px_-18px_rgba(190,18,60,0.6)]
-      `,
-      soft: `
-        bg-rose-50 text-rose-700
-        border border-rose-100
-        hover:bg-rose-100/70
-        dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 dark:hover:bg-slate-700
-      `,
+      primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      secondary:
+        'bg-card text-foreground border border-border hover:bg-muted dark:bg-card dark:hover:bg-muted',
+      outline:
+        'bg-transparent text-foreground border border-border hover:bg-muted',
+      ghost: 'bg-transparent text-foreground hover:bg-muted',
+      danger: 'bg-danger text-danger-foreground hover:bg-danger/90',
+      soft: 'bg-primary-muted text-foreground border border-transparent hover:bg-primary-muted/80 dark:text-foreground',
     };
 
     const sizeStyles = {
-      sm: 'h-9 px-4 text-xs',
-      md: 'h-11 px-5 text-sm',
-      lg: 'h-12 px-6 text-base',
+      sm: 'h-9 px-3 text-xs',
+      md: 'h-10 px-4 text-sm',
+      lg: 'h-11 px-5 text-base',
     };
 
     const roundedStyles = {
-      default:
-        size === 'sm'
-          ? 'rounded-xl'
-          : size === 'md'
-            ? 'rounded-2xl'
-            : 'rounded-[20px]',
+      default: 'rounded-lg',
       full: 'rounded-full',
     };
 
-    const widthStyles = fullWidth ? 'w-full' : '';
-
     const LoadingSpinner = () => (
       <svg
-        className="animate-spin h-4 w-4"
+        className="h-4 w-4 animate-spin"
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
+        aria-hidden="true"
       >
         <circle
           className="opacity-25"
@@ -123,12 +89,13 @@ const ButtonV4 = forwardRef<HTMLButtonElement, ButtonV4Props>(
       <button
         ref={ref}
         disabled={disabled || isLoading}
+        aria-busy={isLoading || undefined}
         className={`
           ${baseStyles}
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${roundedStyles[rounded]}
-          ${widthStyles}
+          ${fullWidth ? 'w-full' : ''}
           ${className}
         `}
         {...props}
@@ -136,7 +103,7 @@ const ButtonV4 = forwardRef<HTMLButtonElement, ButtonV4Props>(
         {isLoading ? (
           <>
             <LoadingSpinner />
-            <span>در حال پردازش...</span>
+            <span>Loading...</span>
           </>
         ) : (
           <>

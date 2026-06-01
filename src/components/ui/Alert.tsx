@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import AlertV4 from '../ui-v4/Alert';
 
-interface AlertProps {
+export interface AlertProps {
   type?: 'success' | 'error' | 'warning' | 'info';
   children: ReactNode;
   title?: string;

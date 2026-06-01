@@ -22,20 +22,18 @@ const SkeletonV4 = forwardRef<HTMLDivElement, SkeletonV4Props>(
     },
     ref
   ) => {
-    const baseStyles =
-      'bg-gradient-to-r from-rose-100/80 via-rose-50 to-pink-100/80 dark:from-slate-800 dark:via-slate-700/80 dark:to-slate-800 bg-[length:200%_100%]';
-
     const variantStyles = {
-      text: 'h-4 w-full rounded-lg',
+      text: 'h-4 w-full rounded',
       circular: 'rounded-full',
       rectangular: '',
-      rounded: 'rounded-2xl',
+      rounded: 'rounded-lg',
     };
 
     const animationStyles = {
-      pulse: 'animate-pulse',
-      shimmer: 'skeleton-shimmer',
-      none: '',
+      pulse: 'animate-pulse bg-muted',
+      shimmer:
+        'bg-gradient-to-r from-muted via-background to-muted bg-[length:200%_100%] skeleton-shimmer',
+      none: 'bg-muted',
     };
 
     const computedStyle = {
@@ -55,7 +53,6 @@ const SkeletonV4 = forwardRef<HTMLDivElement, SkeletonV4Props>(
         <div
           ref={ref}
           className={`
-            ${baseStyles}
             ${variantStyles[variant]}
             ${animationStyles[animation]}
             ${className}
@@ -111,7 +108,7 @@ export function SkeletonText({
 export function SkeletonCard({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`p-5 space-y-4 bg-white rounded-3xl border border-rose-100 dark:bg-slate-900 dark:border-slate-800 ${className}`}
+      className={`space-y-4 rounded-lg border border-border bg-card p-5 ${className}`}
     >
       <SkeletonV4 variant="rounded" height={180} />
       <SkeletonV4 variant="text" width="55%" />
@@ -144,14 +141,14 @@ export function SkeletonAvatar({
 export function SkeletonProduct({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`p-4 space-y-4 bg-white rounded-3xl border border-rose-100 dark:bg-slate-900 dark:border-slate-800 ${className}`}
+      className={`space-y-4 rounded-lg border border-border bg-card p-4 ${className}`}
     >
       <SkeletonV4 variant="rounded" height={200} />
       <div className="space-y-2">
         <SkeletonV4 variant="text" width="80%" />
         <SkeletonV4 variant="text" width="50%" />
       </div>
-      <div className="flex justify-between items-center pt-2">
+      <div className="flex items-center justify-between pt-2">
         <SkeletonV4 variant="rounded" width={100} height={38} />
         <SkeletonV4 variant="text" width={60} height={20} />
       </div>

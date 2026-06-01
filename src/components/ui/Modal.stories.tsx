@@ -1,11 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import { fn } from 'storybook/test';
-import Modal from './Modal';
 import Button from './Button';
+import Input from './Input';
+import Modal from './Modal';
+
+const noop = () => {};
 
 const meta: Meta<typeof Modal> = {
-  title: 'UI/Modal',
+  title: 'Design System/Modal',
   component: Modal,
   parameters: {
     layout: 'fullscreen',
@@ -15,15 +17,12 @@ const meta: Meta<typeof Modal> = {
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg', 'xl', '2xl'],
-      description: 'Modal size',
     },
     isOpen: {
       control: 'boolean',
-      description: 'Whether the modal is open',
     },
     title: {
       control: 'text',
-      description: 'Modal title',
     },
   },
 };
@@ -34,14 +33,12 @@ type Story = StoryObj<typeof Modal>;
 export const Default: Story = {
   args: {
     isOpen: true,
-    onClose: fn(),
-    title: 'عنوان مودال',
+    onClose: noop,
+    title: 'Edit product',
     children: (
-      <div className="text-right">
-        <p className="text-gray-600">
-          این محتوای مودال است. شما می‌توانید هر چیزی را در اینجا قرار دهید.
-        </p>
-      </div>
+      <p className="text-muted-foreground">
+        Modal content can contain forms, summaries, or confirmation details.
+      </p>
     ),
   },
 };
@@ -49,47 +46,25 @@ export const Default: Story = {
 export const Small: Story = {
   args: {
     isOpen: true,
-    onClose: fn(),
-    title: 'مودال کوچک',
+    onClose: noop,
+    title: 'Small modal',
     size: 'sm',
-    children: <p className="text-gray-600">این یک مودال کوچک است.</p>,
-  },
-};
-
-export const Large: Story = {
-  args: {
-    isOpen: true,
-    onClose: fn(),
-    title: 'مودال بزرگ',
-    size: 'xl',
-    children: (
-      <div className="text-right space-y-4">
-        <p className="text-gray-600">
-          این یک مودال بزرگ است که می‌تواند محتوای بیشتری را در خود جای دهد.
-        </p>
-        <p className="text-gray-600">
-          لورم ایپسوم متن ساختگی با تولید سادگی نامفهوم از صنعت چاپ و با استفاده
-          از طراحان گرافیک است.
-        </p>
-      </div>
-    ),
+    children: <p className="text-muted-foreground">Compact dialog content.</p>,
   },
 };
 
 export const ConfirmationDialog: Story = {
   args: {
     isOpen: true,
-    onClose: fn(),
-    title: 'تایید حذف',
+    onClose: noop,
+    title: 'Delete item',
     size: 'sm',
     children: (
-      <div className="text-right space-y-4">
-        <p className="text-gray-600">
-          آیا از حذف این مورد اطمینان دارید؟ این عمل قابل بازگشت نیست.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <Button variant="secondary">انصراف</Button>
-          <Button variant="danger">حذف</Button>
+      <div className="space-y-4">
+        <p className="text-muted-foreground">This action cannot be undone.</p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary">Cancel</Button>
+          <Button variant="danger">Delete</Button>
         </div>
       </div>
     ),
@@ -99,34 +74,16 @@ export const ConfirmationDialog: Story = {
 export const FormModal: Story = {
   args: {
     isOpen: true,
-    onClose: fn(),
-    title: 'ویرایش پروفایل',
+    onClose: noop,
+    title: 'Customer details',
     size: 'md',
     children: (
-      <div className="text-right space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            نام
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            placeholder="نام خود را وارد کنید"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            ایمیل
-          </label>
-          <input
-            type="email"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            placeholder="email@example.com"
-          />
-        </div>
-        <div className="flex gap-3 justify-end pt-4">
-          <Button variant="secondary">انصراف</Button>
-          <Button variant="primary">ذخیره</Button>
+      <div className="space-y-4">
+        <Input label="Name" placeholder="Alex Morgan" />
+        <Input label="Email" type="email" placeholder="alex@example.com" />
+        <div className="flex justify-end gap-3 pt-4">
+          <Button variant="secondary">Cancel</Button>
+          <Button variant="primary">Save</Button>
         </div>
       </div>
     ),
@@ -138,19 +95,18 @@ const InteractiveModalComponent = () => {
 
   return (
     <div className="p-8">
-      <Button onClick={() => setIsOpen(true)}>باز کردن مودال</Button>
+      <Button onClick={() => setIsOpen(true)}>Open modal</Button>
       <Modal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        title="مودال تعاملی"
+        title="Interactive modal"
       >
-        <div className="text-right space-y-4">
-          <p className="text-gray-600">
-            این یک مودال تعاملی است. روی دکمه بستن یا خارج از مودال کلیک کنید تا
-            بسته شود.
+        <div className="space-y-4">
+          <p className="text-muted-foreground">
+            Close the modal with the button, backdrop, or Escape key.
           </p>
           <div className="flex justify-end">
-            <Button onClick={() => setIsOpen(false)}>بستن</Button>
+            <Button onClick={() => setIsOpen(false)}>Close</Button>
           </div>
         </div>
       </Modal>

@@ -38,14 +38,14 @@ export default function RateLimitError({
 
   const formatTime = (seconds: number): string => {
     if (seconds < 60) {
-      return `${seconds} ثانیه`;
+      return `${seconds} seconds`;
     }
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     if (remainingSeconds === 0) {
-      return `${minutes} دقیقه`;
+      return `${minutes} minute`;
     }
-    return `${minutes} دقیقه و ${remainingSeconds} ثانیه`;
+    return `${minutes} minute and ${remainingSeconds} seconds`;
   };
 
   if (timeRemaining === 0) {
@@ -58,16 +58,12 @@ export default function RateLimitError({
       : 0;
 
   return (
-    <Alert
-      type="warning"
-      title="تعداد درخواست‌های شما بیش از حد مجاز است"
-      className={className}
-    >
+    <Alert type="warning" title="Too many requests" className={className}>
       <div className="flex flex-col gap-2">
-        <p>لطفاً {formatTime(timeRemaining)} صبر کنید و دوباره تلاش نمایید.</p>
-        <div className="mt-1 bg-yellow-100 rounded-full h-2 overflow-hidden">
+        <p>Please wait {formatTime(timeRemaining)} before trying again.</p>
+        <div className="mt-1 h-2 overflow-hidden rounded-full bg-warning-muted">
           <div
-            className="bg-yellow-600 h-full transition-all duration-1000 ease-linear"
+            className="h-full bg-warning transition-all duration-1000 ease-linear"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>

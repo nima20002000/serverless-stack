@@ -17,7 +17,7 @@ export interface ModalV4Props {
 
 const closeIcon = (
   <svg
-    className="w-5 h-5"
+    className="h-5 w-5"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -48,8 +48,8 @@ export default function ModalV4({
   useEffect(() => {
     if (!closeOnEscape) return undefined;
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
         onClose();
       }
     };
@@ -85,8 +85,8 @@ export default function ModalV4({
     full: 'max-w-[calc(100vw-2rem)]',
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (closeOnBackdrop && e.target === e.currentTarget) {
+  const handleBackdropClick = (event: React.MouseEvent) => {
+    if (closeOnBackdrop && event.target === event.currentTarget) {
       onClose();
     }
   };
@@ -97,7 +97,7 @@ export default function ModalV4({
       onClick={handleBackdropClick}
     >
       <div
-        className="absolute inset-0 bg-rose-950/10 dark:bg-slate-950/70 backdrop-blur-sm animate-[fadeIn_200ms_ease-out]"
+        className="absolute inset-0 bg-black/45 backdrop-blur-sm animate-[fadeIn_200ms_ease-out]"
         aria-hidden="true"
       />
 
@@ -109,27 +109,20 @@ export default function ModalV4({
         aria-describedby={description ? 'modal-description' : undefined}
         tabIndex={-1}
         className={`
-          relative
-          bg-white dark:bg-slate-900
-          rounded-[28px]
-          shadow-[0_28px_70px_-40px_rgba(236,72,153,0.6)]
-          border border-rose-100 dark:border-slate-800
-          w-full ${sizeStyles[size]}
-          max-h-[calc(100vh-2rem)]
-          flex flex-col
+          relative flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden
+          rounded-lg border border-border bg-card text-card-foreground shadow-xl
+          ${sizeStyles[size]}
           animate-[slideUp_250ms_cubic-bezier(0.16,1,0.3,1)]
         `}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-200 via-pink-300 to-rose-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 rounded-t-[28px]" />
-
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between p-6 pb-4 border-b border-rose-100 dark:border-slate-800">
-            <div className="flex-1 text-right pe-4">
+          <div className="flex items-start justify-between gap-4 border-b border-border p-6 pb-4">
+            <div className="min-w-0 flex-1 text-start">
               {title && (
                 <h2
                   id="modal-title"
-                  className="text-xl font-semibold text-rose-900 dark:text-slate-100"
+                  className="text-xl font-semibold text-foreground"
                 >
                   {title}
                 </h2>
@@ -137,7 +130,7 @@ export default function ModalV4({
               {description && (
                 <p
                   id="modal-description"
-                  className="mt-1 text-sm text-rose-400 dark:text-slate-400"
+                  className="mt-1 text-sm text-muted-foreground"
                 >
                   {description}
                 </p>
@@ -146,18 +139,10 @@ export default function ModalV4({
 
             {showCloseButton && (
               <button
+                type="button"
                 onClick={onClose}
-                className={`
-                  flex-shrink-0
-                  p-2 -mt-1 -ms-1
-                  text-rose-400 hover:text-rose-600
-                  hover:bg-rose-50
-                  dark:text-slate-400 dark:hover:text-slate-200
-                  dark:hover:bg-slate-800
-                  rounded-2xl
-                  transition-all duration-200
-                `}
-                aria-label="بستن"
+                className="flex-shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Close dialog"
               >
                 {closeIcon}
               </button>
@@ -207,13 +192,7 @@ export function ModalFooter({
 }) {
   return (
     <div
-      className={`
-        flex items-center justify-end gap-3
-        p-6 pt-4 border-t border-rose-100 dark:border-slate-800
-        bg-gradient-to-b from-white to-rose-50/30 dark:from-slate-900 dark:to-slate-900/60
-        rounded-b-[28px]
-        ${className}
-      `}
+      className={`flex items-center justify-end gap-3 border-t border-border bg-muted/40 p-6 pt-4 ${className}`}
     >
       {children}
     </div>

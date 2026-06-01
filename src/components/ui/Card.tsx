@@ -1,11 +1,10 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { HTMLAttributes, ReactNode } from 'react';
 import CardV4 from '../ui-v4/Card';
 
-interface CardProps {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
-  className?: string;
   padding?: 'sm' | 'md' | 'lg';
 }
 
@@ -13,6 +12,7 @@ export default function Card({
   children,
   className = '',
   padding = 'md',
+  ...props
 }: CardProps) {
   const paddingStyles = {
     sm: 'p-4',
@@ -21,7 +21,7 @@ export default function Card({
   };
 
   return (
-    <CardV4 className={`${paddingStyles[padding]} ${className}`}>
+    <CardV4 className={`${paddingStyles[padding]} ${className}`} {...props}>
       {children}
     </CardV4>
   );

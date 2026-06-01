@@ -1,8 +1,8 @@
 'use client';
 
-import SelectV4, { SelectOption } from '../ui-v4/Select';
+import SelectV4, { type SelectOption } from '../ui-v4/Select';
 
-interface SelectProps {
+export interface SelectProps {
   value: string;
   onChange: (value: string) => void;
   options: SelectOption[];
@@ -12,11 +12,13 @@ interface SelectProps {
   variant?: 'default' | 'filled' | 'minimal';
 }
 
+export type { SelectOption };
+
 export default function Select({
   value,
   onChange,
   options,
-  placeholder = 'انتخاب کنید',
+  placeholder = 'Select an option',
   className = '',
   label,
   variant = 'default',

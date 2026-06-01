@@ -1,6 +1,6 @@
 'use client';
 
-import { SelectHTMLAttributes, forwardRef, ReactNode } from 'react';
+import { SelectHTMLAttributes, forwardRef, ReactNode, useId } from 'react';
 
 export interface SelectOption {
   value: string;
@@ -24,7 +24,7 @@ export interface SelectV4Props extends Omit<
 
 const chevronIcon = (
   <svg
-    className="w-4 h-4"
+    className="h-4 w-4"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -51,84 +51,60 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
       variant = 'default',
       className = '',
       disabled,
+      id,
       ...props
     },
     ref
   ) => {
-    const baseSelectStyles = `
-      w-full h-11 px-4 pe-10
-      text-rose-900 text-sm text-right
-      appearance-none
-      cursor-pointer
-      transition-all duration-200 ease-out
-      focus:outline-none
-      disabled:opacity-50 disabled:cursor-not-allowed
-      dark:text-slate-100
-    `;
+    const generatedId = useId();
+    const selectId = id ?? props.name ?? generatedId;
 
     const variantStyles = {
-      default: `
-        bg-white
-        border border-rose-200
-        rounded-2xl
-        focus:border-rose-400 focus:ring-4 focus:ring-rose-100/80
-        hover:border-rose-300
-        disabled:bg-rose-50
-        dark:bg-slate-900 dark:border-slate-700 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:border-slate-600 dark:disabled:bg-slate-800
-      `,
-      filled: `
-        bg-rose-50/80
-        border border-rose-100
-        rounded-2xl
-        focus:bg-white focus:border-rose-300 focus:ring-4 focus:ring-rose-100/70
-        hover:bg-rose-50
-        disabled:bg-rose-100
-        dark:bg-slate-900/70 dark:border-slate-700 dark:focus:bg-slate-900 dark:focus:border-slate-500 dark:focus:ring-slate-700/60 dark:hover:bg-slate-800/80 dark:disabled:bg-slate-800
-      `,
-      minimal: `
-        bg-transparent
-        border-b border-rose-200
-        rounded-none
-        focus:border-rose-400
-        hover:border-rose-300
-        disabled:bg-transparent
-        dark:border-slate-700 dark:focus:border-slate-500 dark:hover:border-slate-600
-      `,
+      default:
+        'bg-card border border-input rounded-lg hover:border-muted-foreground/40 focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:bg-muted',
+      filled:
+        'bg-muted border border-transparent rounded-lg hover:border-border focus:bg-card focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:bg-muted',
+      minimal:
+        'bg-transparent border-b border-input rounded-none hover:border-muted-foreground/40 focus:border-ring disabled:bg-transparent',
     };
-
-    const errorStyles = error
-      ? 'border-red-300 focus:border-red-400 focus:ring-red-100/70 dark:border-rose-600 dark:focus:border-rose-500 dark:focus:ring-rose-900/60'
-      : '';
-
-    const iconPaddingStyles = icon ? 'ps-11' : '';
 
     return (
       <div className={fullWidth ? 'w-full' : 'w-auto'}>
         {label && (
-          <label className="block text-sm font-medium text-rose-700 dark:text-slate-300 mb-2 text-right">
+          <label
+            htmlFor={selectId}
+            className="mb-2 block text-start text-sm font-medium text-foreground"
+          >
             {label}
           </label>
         )}
 
-        <div className="relative group">
+        <div className="group relative">
           <select
             ref={ref}
+            id={selectId}
             disabled={disabled}
+            aria-invalid={!!error || undefined}
+            aria-describedby={
+              error
+                ? `${selectId}-error`
+                : helperText
+                  ? `${selectId}-helper`
+                  : undefined
+            }
             className={`
-              ${baseSelectStyles}
+              h-10 w-full appearance-none px-3 pe-10 text-start text-sm text-foreground
+              transition-colors duration-200 ease-out focus:outline-none
+              disabled:cursor-not-allowed disabled:opacity-50
               ${variantStyles[variant]}
-              ${errorStyles}
-              ${iconPaddingStyles}
+              ${error ? 'border-danger focus:border-danger focus:ring-danger/25' : ''}
+              ${icon ? 'ps-10' : ''}
               ${className}
             `}
             {...props}
           >
             {placeholder && (
-              <option
-                value=""
-                disabled
-                className="text-rose-300 dark:text-slate-500"
-              >
+              <option value="" disabled className="text-muted-foreground">
                 {placeholder}
               </option>
             )}
@@ -143,32 +119,31 @@ const SelectV4 = forwardRef<HTMLSelectElement, SelectV4Props>(
             ))}
           </select>
 
-          <div className="absolute top-1/2 -translate-y-1/2 end-3 pointer-events-none text-rose-400 dark:text-slate-500 transition-transform duration-200 group-focus-within:rotate-180">
+          <div className="pointer-events-none absolute top-1/2 end-3 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-foreground">
             {chevronIcon}
           </div>
 
           {icon && (
-            <div className="absolute top-1/2 -translate-y-1/2 start-4 flex items-center justify-center w-5 h-5 text-rose-400 dark:text-slate-500 pointer-events-none transition-colors duration-200 group-focus-within:text-rose-500 dark:group-focus-within:text-slate-200">
+            <div className="pointer-events-none absolute top-1/2 start-3 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors group-focus-within:text-foreground">
               {icon}
             </div>
           )}
         </div>
 
         {error && (
-          <p className="mt-2 text-sm text-red-500 dark:text-rose-300 text-right flex items-center gap-1 justify-end">
-            <span>{error}</span>
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                clipRule="evenodd"
-              />
-            </svg>
+          <p
+            id={`${selectId}-error`}
+            className="mt-2 text-start text-sm text-danger"
+          >
+            {error}
           </p>
         )}
 
         {helperText && !error && (
-          <p className="mt-2 text-sm text-rose-400 dark:text-slate-500 text-right">
+          <p
+            id={`${selectId}-helper`}
+            className="mt-2 text-start text-sm text-muted-foreground"
+          >
             {helperText}
           </p>
         )}

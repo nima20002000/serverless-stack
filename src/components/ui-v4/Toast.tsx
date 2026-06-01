@@ -42,7 +42,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
         ${
           isVisible && !isLeaving
             ? 'translate-x-0 opacity-100'
-            : '-translate-x-full opacity-0'
+            : 'translate-x-full opacity-0 rtl:-translate-x-full'
         }
       `}
     >
@@ -81,9 +81,9 @@ export default function ToastContainer() {
 
   return (
     <div
-      className="fixed z-[9999] flex flex-col gap-3 pointer-events-none right-4 top-4"
+      className="fixed end-4 top-4 z-[9999] flex flex-col gap-3 pointer-events-none"
       aria-live="polite"
-      aria-label="اعلان‌ها"
+      aria-label="Notifications"
     >
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">

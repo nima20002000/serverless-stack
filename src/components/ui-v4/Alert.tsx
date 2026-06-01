@@ -15,7 +15,7 @@ export interface AlertV4Props extends HTMLAttributes<HTMLDivElement> {
 const icons = {
   success: (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -30,7 +30,7 @@ const icons = {
   ),
   error: (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -45,7 +45,7 @@ const icons = {
   ),
   warning: (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ const icons = {
   ),
   info: (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"
@@ -77,7 +77,7 @@ const icons = {
 
 const closeIcon = (
   <svg
-    className="w-4 h-4"
+    className="h-4 w-4"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -108,69 +108,40 @@ const AlertV4 = forwardRef<HTMLDivElement, AlertV4Props>(
   ) => {
     const typeColors = {
       success: {
-        soft: 'bg-emerald-50/80 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-emerald-100',
-        filled:
-          'bg-emerald-500 border-emerald-500 text-white dark:bg-emerald-600 dark:border-emerald-500',
-        outlined:
-          'bg-white border-emerald-200 text-emerald-700 dark:bg-slate-900 dark:border-emerald-700 dark:text-emerald-100',
-        icon:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-emerald-500 dark:text-emerald-300',
+        soft: 'bg-success-muted border-success/25 text-foreground',
+        filled: 'bg-success border-success text-success-foreground',
+        outlined: 'bg-card border-success text-foreground',
+        icon: variant === 'filled' ? 'text-success-foreground' : 'text-success',
         title:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-emerald-800 dark:text-emerald-200',
+          variant === 'filled' ? 'text-success-foreground' : 'text-foreground',
       },
       error: {
-        soft: 'bg-rose-50/80 border-rose-200 text-rose-700 dark:bg-rose-900/30 dark:border-rose-700 dark:text-rose-100',
-        filled:
-          'bg-rose-500 border-rose-500 text-white dark:bg-rose-600 dark:border-rose-500',
-        outlined:
-          'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-rose-700 dark:text-rose-100',
-        icon:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-rose-500 dark:text-rose-300',
+        soft: 'bg-danger-muted border-danger/25 text-foreground',
+        filled: 'bg-danger border-danger text-danger-foreground',
+        outlined: 'bg-card border-danger text-foreground',
+        icon: variant === 'filled' ? 'text-danger-foreground' : 'text-danger',
         title:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-rose-800 dark:text-rose-200',
+          variant === 'filled' ? 'text-danger-foreground' : 'text-foreground',
       },
       warning: {
-        soft: 'bg-amber-50/80 border-amber-200 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700 dark:text-amber-100',
-        filled:
-          'bg-amber-500 border-amber-500 text-white dark:bg-amber-600 dark:border-amber-500',
-        outlined:
-          'bg-white border-amber-200 text-amber-700 dark:bg-slate-900 dark:border-amber-700 dark:text-amber-100',
-        icon:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-amber-500 dark:text-amber-300',
+        soft: 'bg-warning-muted border-warning/35 text-foreground',
+        filled: 'bg-warning border-warning text-warning-foreground',
+        outlined: 'bg-card border-warning text-foreground',
+        icon: variant === 'filled' ? 'text-warning-foreground' : 'text-warning',
         title:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-amber-800 dark:text-amber-200',
+          variant === 'filled' ? 'text-warning-foreground' : 'text-foreground',
       },
       info: {
-        soft: 'bg-rose-50/70 border-rose-200 text-rose-700 dark:bg-slate-900/70 dark:border-slate-700 dark:text-slate-100',
-        filled:
-          'bg-rose-400 border-rose-400 text-white dark:bg-slate-700 dark:border-slate-600',
-        outlined:
-          'bg-white border-rose-200 text-rose-700 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100',
-        icon:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-rose-500 dark:text-slate-300',
+        soft: 'bg-muted border-border text-foreground',
+        filled: 'bg-primary border-primary text-primary-foreground',
+        outlined: 'bg-card border-border text-foreground',
+        icon: variant === 'filled' ? 'text-primary-foreground' : 'text-primary',
         title:
-          variant === 'filled'
-            ? 'text-white'
-            : 'text-rose-800 dark:text-slate-100',
+          variant === 'filled' ? 'text-primary-foreground' : 'text-foreground',
       },
     };
 
     const colors = typeColors[type];
-    const paddingStyles = compact ? 'p-3' : 'p-4';
 
     return (
       <div
@@ -178,38 +149,35 @@ const AlertV4 = forwardRef<HTMLDivElement, AlertV4Props>(
         role="alert"
         className={`
           ${colors[variant]}
-          border rounded-2xl
-          ${paddingStyles}
-          transition-all duration-200
+          rounded-lg border
+          ${compact ? 'p-3' : 'p-4'}
           ${className}
         `}
         {...props}
       >
         <div className="flex items-start gap-3">
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="
-                flex-shrink-0 p-1 -mt-0.5
-                opacity-60 hover:opacity-100
-                transition-opacity duration-200
-                rounded-xl hover:bg-black/5 dark:hover:bg-white/10
-              "
-              aria-label="بستن"
-            >
-              {closeIcon}
-            </button>
+          {showIcon && (
+            <div className={`mt-0.5 flex-shrink-0 ${colors.icon}`}>
+              {icons[type]}
+            </div>
           )}
 
-          <div className="flex-1 text-right">
+          <div className="min-w-0 flex-1 text-start">
             {title && (
-              <p className={`font-semibold ${colors.title} mb-1`}>{title}</p>
+              <p className={`mb-1 font-semibold ${colors.title}`}>{title}</p>
             )}
             <div className="text-sm leading-relaxed">{children}</div>
           </div>
 
-          {showIcon && (
-            <div className={`flex-shrink-0 ${colors.icon}`}>{icons[type]}</div>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Close alert"
+            >
+              {closeIcon}
+            </button>
           )}
         </div>
       </div>

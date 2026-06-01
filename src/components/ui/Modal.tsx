@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import ModalV4 from '../ui-v4/Modal';
 
-interface ModalProps {
+export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;

@@ -15,7 +15,7 @@ export default function GradientColorPicker({
   name,
   value,
   onChange,
-  placeholder = 'انتخاب رنگ...',
+  placeholder = 'Color value...',
 }: GradientColorPickerProps) {
   const [mode, setMode] = useState<'solid' | 'gradient'>(
     value.startsWith('linear-gradient') || value.startsWith('radial-gradient')
@@ -33,37 +33,37 @@ export default function GradientColorPicker({
     () => [
       {
         id: 'mist',
-        label: 'مه نرم',
+        label: 'Mist',
         build: (color: string) =>
           `linear-gradient(135deg, #ffffff 0%, ${color} 70%)`,
       },
       {
         id: 'silk',
-        label: 'ابریشم',
+        label: 'Silk',
         build: (color: string) =>
           `linear-gradient(45deg, #ffffff 0%, ${color} 55%)`,
       },
       {
         id: 'breeze',
-        label: 'نسیم',
+        label: 'Breeze',
         build: (color: string) =>
           `linear-gradient(180deg, #ffffff 0%, ${color} 100%)`,
       },
       {
         id: 'halo',
-        label: 'هاله',
+        label: 'Halo',
         build: (color: string) =>
           `linear-gradient(270deg, #ffffff 0%, ${color} 65%)`,
       },
       {
         id: 'pearl',
-        label: 'مروارید',
+        label: 'Pearl',
         build: (color: string) =>
           `linear-gradient(315deg, #ffffff 0%, ${color} 60%, #ffffff 100%)`,
       },
       {
         id: 'stripe',
-        label: 'راه راه',
+        label: 'Stripe',
         build: (color: string) =>
           `repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.7) 0 6px, rgba(255, 255, 255, 0) 6px 14px), linear-gradient(0deg, ${color}, ${color})`,
       },
@@ -162,7 +162,7 @@ export default function GradientColorPicker({
   return (
     <div className="space-y-3">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 text-right">
+        <label className="block text-start text-sm font-medium text-foreground">
           {label}
         </label>
       )}
@@ -178,7 +178,7 @@ export default function GradientColorPicker({
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          رنگ ساده
+          Solid
         </button>
         <button
           type="button"
@@ -189,7 +189,7 @@ export default function GradientColorPicker({
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          گرادیانت
+          Gradient
         </button>
       </div>
 
@@ -214,8 +214,8 @@ export default function GradientColorPicker({
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <label className="text-sm text-gray-700 w-20 text-right">
-              رنگ پایه:
+            <label className="w-20 text-start text-sm text-foreground">
+              Base:
             </label>
             <input
               type="color"
@@ -262,7 +262,7 @@ export default function GradientColorPicker({
 
       {/* Preview */}
       <div className="mt-3">
-        <div className="text-sm text-gray-700 mb-2 text-right">پیش‌نمایش:</div>
+        <div className="mb-2 text-start text-sm text-foreground">Preview:</div>
         <div
           className="w-full h-16 rounded-lg border-2 border-gray-300"
           style={{ background: currentValue }}

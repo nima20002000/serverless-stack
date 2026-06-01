@@ -8,14 +8,14 @@ export interface StatCardV4Props extends HTMLAttributes<HTMLDivElement> {
   value: string;
   trend?: string;
   icon?: ReactNode;
-  accent?: 'rose' | 'pink' | 'peach' | 'mint';
+  accent?: 'neutral' | 'primary' | 'success' | 'warning';
 }
 
 const accentStyles = {
-  rose: 'text-rose-600 bg-rose-100/80',
-  pink: 'text-pink-600 bg-pink-100/80',
-  peach: 'text-amber-600 bg-amber-100/80',
-  mint: 'text-emerald-600 bg-emerald-100/80',
+  neutral: 'text-foreground bg-muted',
+  primary: 'text-primary bg-primary-muted',
+  success: 'text-success bg-success-muted',
+  warning: 'text-warning bg-warning-muted',
 };
 
 export default function StatCardV4({
@@ -23,7 +23,7 @@ export default function StatCardV4({
   value,
   trend,
   icon,
-  accent = 'rose',
+  accent = 'primary',
   className = '',
   ...props
 }: StatCardV4Props) {
@@ -33,15 +33,16 @@ export default function StatCardV4({
       className={`relative overflow-hidden ${className}`}
       {...props}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,207,232,0.25),_transparent_55%)]" />
-      <CardHeader className="relative flex items-start justify-between">
-        <div className="text-right">
-          <CardTitle className="text-sm text-rose-500">{label}</CardTitle>
-          <p className="text-2xl font-semibold text-rose-900 mt-2">{value}</p>
+      <CardHeader className="relative flex items-start justify-between gap-4">
+        <div className="text-start">
+          <CardTitle className="text-sm text-muted-foreground">
+            {label}
+          </CardTitle>
+          <p className="mt-2 text-2xl font-semibold text-foreground">{value}</p>
         </div>
         {icon && (
           <span
-            className={`w-10 h-10 rounded-2xl flex items-center justify-center ${accentStyles[accent]}`}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg ${accentStyles[accent]}`}
           >
             {icon}
           </span>
@@ -50,7 +51,7 @@ export default function StatCardV4({
       <CardContent className="relative pt-0">
         {trend && (
           <span
-            className={`inline-flex items-center gap-2 text-xs font-medium px-3 py-1 rounded-full ${accentStyles[accent]}`}
+            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${accentStyles[accent]}`}
           >
             {trend}
           </span>

@@ -9,7 +9,7 @@ import { getCategoryTree } from '@/services/category-service';
 import ProductCard from '@/components/products/ProductCard';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import PillV4 from '@/components/ui-v4/Pill';
+import Pill from '@/components/ui/Pill';
 import FeaturesSection from '@/components/home/FeaturesSection';
 import CtaSection from '@/components/home/CtaSection';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
@@ -103,27 +103,27 @@ export default async function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="order-2 md:order-1 text-right">
             <div className="flex flex-wrap gap-2 sm:gap-3 justify-end mb-5 sm:mb-6">
-              <PillV4
-                tone="blush"
+              <Pill
+                tone="primary"
                 size="sm"
                 className="md:h-7 md:px-4 md:text-sm"
               >
                 ارسال سریع
-              </PillV4>
-              <PillV4
-                tone="cream"
+              </Pill>
+              <Pill
+                tone="warning"
                 size="sm"
                 className="md:h-7 md:px-4 md:text-sm"
               >
                 امکان خرید قسطی
-              </PillV4>
-              <PillV4
-                tone="rose"
+              </Pill>
+              <Pill
+                tone="primary"
                 size="sm"
                 className="md:h-7 md:px-4 md:text-sm"
               >
                 کمک به گربه‌های خیابانی
-              </PillV4>
+              </Pill>
             </div>
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-rose-900 mb-5 sm:mb-6 leading-tight">
               به کیتیا خوش آمدید
@@ -173,7 +173,7 @@ export default async function Home() {
         <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
             <div className="text-right">
-              <PillV4 tone="rose">منتخب‌ها</PillV4>
+              <Pill tone="primary">منتخب‌ها</Pill>
               <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-4">
                 کالکشن 2026
               </h2>
@@ -200,7 +200,7 @@ export default async function Home() {
         <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 my-10">
           <Card className="p-10 bg-white/90 border-rose-100 shadow-[0_32px_80px_-55px_rgba(244,63,94,0.6)]">
             <div className="absolute -top-6 left-10">
-              <PillV4 tone="blush">فقط امروز</PillV4>
+              <Pill tone="primary">فقط امروز</Pill>
             </div>
             <div className="text-right mb-10">
               <h2 className="text-3xl md:text-4xl font-bold text-rose-600 mb-3">
@@ -223,7 +223,7 @@ export default async function Home() {
       {topCategories.length > 0 && (
         <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-right mb-10">
-            <PillV4 tone="cream">دسته‌بندی‌ها</PillV4>
+            <Pill tone="warning">دسته‌بندی‌ها</Pill>
             <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-4">
               انتخاب بر اساس حس و حال
             </h2>
@@ -261,9 +261,9 @@ export default async function Home() {
                       </p>
                     )}
                     <div className="flex justify-center">
-                      <PillV4 tone="blush" size="sm">
+                      <Pill tone="primary" size="sm">
                         مشاهده محصولات
-                      </PillV4>
+                      </Pill>
                     </div>
                   </div>
                 </Card>

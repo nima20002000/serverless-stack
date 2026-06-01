@@ -74,7 +74,7 @@ export default function Pagination({
         onClick={() => handlePageChange(safePage - 1)}
         disabled={disabled || safePage === 1}
       >
-        قبلی
+        Previous
       </Button>
 
       {/* Page Numbers */}
@@ -92,9 +92,7 @@ export default function Pagination({
                 1
               </Button>
               {pageNumbers[0] > 2 && (
-                <span className="px-2 text-gray-500 dark:text-slate-500">
-                  ...
-                </span>
+                <span className="px-2 text-muted-foreground">...</span>
               )}
             </>
           )}
@@ -116,9 +114,7 @@ export default function Pagination({
           {pageNumbers[pageNumbers.length - 1] < totalPages && (
             <>
               {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
-                <span className="px-2 text-gray-500 dark:text-slate-500">
-                  ...
-                </span>
+                <span className="px-2 text-muted-foreground">...</span>
               )}
               <Button
                 variant="ghost"
@@ -140,13 +136,13 @@ export default function Pagination({
         onClick={() => handlePageChange(safePage + 1)}
         disabled={disabled || safePage === totalPages}
       >
-        بعدی
+        Next
       </Button>
 
       {/* Page Info */}
       {!showPageNumbers && (
-        <span className="text-sm text-gray-600 dark:text-slate-400 mx-2">
-          صفحه {formatNumber(safePage)} از {formatNumber(totalPages)}
+        <span className="mx-2 text-sm text-muted-foreground">
+          Page {formatNumber(safePage)} of {formatNumber(totalPages)}
         </span>
       )}
     </div>

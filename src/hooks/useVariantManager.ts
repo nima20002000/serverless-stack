@@ -37,7 +37,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
 
   const addOrUpdateVariant = () => {
     if (!variantForm.name.trim()) {
-      alert('نام نوع محصول الزامی است');
+      alert('Variant name is required.');
       return;
     }
 
@@ -91,7 +91,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
   };
 
   const deleteVariant = (variantId: string) => {
-    if (confirm('آیا از حذف این نوع محصول اطمینان دارید؟')) {
+    if (confirm('Delete this product variant?')) {
       const deletedVariant = variants.find((v) => v.id === variantId);
       if (!deletedVariant) return;
 

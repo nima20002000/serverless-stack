@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { fn } from 'storybook/test';
 import Alert from './Alert';
 
+const noop = () => {};
+
 const meta: Meta<typeof Alert> = {
-  title: 'UI/Alert',
+  title: 'Design System/Alert',
   component: Alert,
   parameters: {
     layout: 'padded',
@@ -13,19 +14,16 @@ const meta: Meta<typeof Alert> = {
     type: {
       control: 'select',
       options: ['success', 'error', 'warning', 'info'],
-      description: 'The type of alert to display',
     },
     showIcon: {
       control: 'boolean',
-      description: 'Whether to show the icon',
     },
     title: {
       control: 'text',
-      description: 'Optional title for the alert',
     },
-    onClose: {
-      description: 'Callback when close button is clicked',
-    },
+  },
+  args: {
+    onClose: undefined,
   },
 };
 
@@ -35,62 +33,62 @@ type Story = StoryObj<typeof Alert>;
 export const Info: Story = {
   args: {
     type: 'info',
-    children: 'این یک پیام اطلاعاتی است.',
+    children: 'Inventory sync is running in the background.',
   },
 };
 
 export const Success: Story = {
   args: {
     type: 'success',
-    children: 'عملیات با موفقیت انجام شد.',
+    children: 'The order was updated successfully.',
   },
 };
 
 export const Warning: Story = {
   args: {
     type: 'warning',
-    children: 'لطفاً به این نکته توجه کنید.',
+    children: 'This product has limited stock.',
   },
 };
 
 export const Error: Story = {
   args: {
     type: 'error',
-    children: 'خطایی در سیستم رخ داده است.',
+    children: 'The payment could not be completed.',
   },
 };
 
 export const WithTitle: Story = {
   args: {
     type: 'success',
-    title: 'پرداخت موفق',
-    children: 'سفارش شما با موفقیت ثبت شد و در حال پردازش است.',
+    title: 'Order confirmed',
+    children: 'A confirmation email will be sent to the customer.',
   },
 };
 
 export const Dismissible: Story = {
   args: {
     type: 'info',
-    children: 'این پیام قابل بستن است.',
-    onClose: fn(),
+    children: 'This message can be dismissed.',
+    onClose: noop,
   },
 };
 
 export const WithoutIcon: Story = {
   args: {
     type: 'warning',
-    children: 'این هشدار بدون آیکون نمایش داده می‌شود.',
+    children: 'This warning is shown without an icon.',
     showIcon: false,
   },
 };
 
-export const AllVariants: Story = {
+export const AllTypes: Story = {
   render: () => (
     <div className="space-y-4">
-      <Alert type="info">پیام اطلاعاتی</Alert>
-      <Alert type="success">پیام موفقیت</Alert>
-      <Alert type="warning">پیام هشدار</Alert>
-      <Alert type="error">پیام خطا</Alert>
+      <Alert type="info">Informational message</Alert>
+      <Alert type="success">Success message</Alert>
+      <Alert type="warning">Warning message</Alert>
+      <Alert type="error">Error message</Alert>
     </div>
   ),
 };

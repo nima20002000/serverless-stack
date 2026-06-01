@@ -3,7 +3,7 @@
 import { ReactNode, forwardRef, HTMLAttributes } from 'react';
 
 export interface PillV4Props extends HTMLAttributes<HTMLSpanElement> {
-  tone?: 'rose' | 'blush' | 'peach' | 'mint' | 'cream';
+  tone?: 'neutral' | 'primary' | 'success' | 'warning' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   icon?: ReactNode;
   children: ReactNode;
@@ -11,15 +11,15 @@ export interface PillV4Props extends HTMLAttributes<HTMLSpanElement> {
 
 const PillV4 = forwardRef<HTMLSpanElement, PillV4Props>(
   (
-    { tone = 'rose', size = 'md', icon, children, className = '', ...props },
+    { tone = 'neutral', size = 'md', icon, children, className = '', ...props },
     ref
   ) => {
     const toneStyles = {
-      rose: 'bg-rose-100 text-rose-700 border border-rose-200',
-      blush: 'bg-pink-100 text-pink-700 border border-pink-200',
-      peach: 'bg-amber-100 text-amber-700 border border-amber-200',
-      mint: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-      cream: 'bg-rose-50 text-rose-600 border border-rose-100',
+      neutral: 'bg-muted text-foreground border border-border',
+      primary: 'bg-primary-muted text-foreground border border-primary/25',
+      success: 'bg-success-muted text-foreground border border-success/25',
+      warning: 'bg-warning-muted text-foreground border border-warning/35',
+      danger: 'bg-danger-muted text-foreground border border-danger/25',
     };
 
     const sizeStyles = {
@@ -32,8 +32,7 @@ const PillV4 = forwardRef<HTMLSpanElement, PillV4Props>(
       <span
         ref={ref}
         className={`
-          inline-flex items-center gap-2
-          rounded-full font-medium
+          inline-flex items-center gap-2 rounded-full font-medium
           ${toneStyles[tone]}
           ${sizeStyles[size]}
           ${className}

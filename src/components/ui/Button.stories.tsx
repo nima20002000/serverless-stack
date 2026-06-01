@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { fn } from 'storybook/test';
 import Button from './Button';
 
+const noop = () => {};
+
 const meta: Meta<typeof Button> = {
-  title: 'UI/Button',
+  title: 'Design System/Button',
   component: Button,
   parameters: {
     layout: 'centered',
@@ -12,25 +13,21 @@ const meta: Meta<typeof Button> = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'ghost'],
-      description: 'Button style variant',
+      options: ['primary', 'secondary', 'outline', 'ghost', 'danger', 'soft'],
     },
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
-      description: 'Button size',
     },
     isLoading: {
       control: 'boolean',
-      description: 'Show loading spinner',
     },
     disabled: {
       control: 'boolean',
-      description: 'Disable the button',
     },
   },
   args: {
-    onClick: fn(),
+    onClick: noop,
   },
 };
 
@@ -40,73 +37,47 @@ type Story = StoryObj<typeof Button>;
 export const Primary: Story = {
   args: {
     variant: 'primary',
-    children: 'دکمه اصلی',
+    children: 'Save changes',
   },
 };
 
 export const Secondary: Story = {
   args: {
     variant: 'secondary',
-    children: 'دکمه ثانویه',
+    children: 'Cancel',
   },
 };
 
 export const Danger: Story = {
   args: {
     variant: 'danger',
-    children: 'حذف',
-  },
-};
-
-export const Ghost: Story = {
-  args: {
-    variant: 'ghost',
-    children: 'دکمه شفاف',
-  },
-};
-
-export const Small: Story = {
-  args: {
-    size: 'sm',
-    children: 'کوچک',
-  },
-};
-
-export const Medium: Story = {
-  args: {
-    size: 'md',
-    children: 'متوسط',
-  },
-};
-
-export const Large: Story = {
-  args: {
-    size: 'lg',
-    children: 'بزرگ',
+    children: 'Delete',
   },
 };
 
 export const Loading: Story = {
   args: {
     isLoading: true,
-    children: 'در حال ارسال',
+    children: 'Saving',
   },
 };
 
 export const Disabled: Story = {
   args: {
     disabled: true,
-    children: 'غیرفعال',
+    children: 'Disabled',
   },
 };
 
 export const AllVariants: Story = {
   render: () => (
     <div className="flex flex-wrap gap-4">
-      <Button variant="primary">اصلی</Button>
-      <Button variant="secondary">ثانویه</Button>
-      <Button variant="danger">خطر</Button>
-      <Button variant="ghost">شفاف</Button>
+      <Button variant="primary">Primary</Button>
+      <Button variant="secondary">Secondary</Button>
+      <Button variant="outline">Outline</Button>
+      <Button variant="ghost">Ghost</Button>
+      <Button variant="soft">Soft</Button>
+      <Button variant="danger">Danger</Button>
     </div>
   ),
 };
@@ -114,9 +85,9 @@ export const AllVariants: Story = {
 export const AllSizes: Story = {
   render: () => (
     <div className="flex items-center gap-4">
-      <Button size="sm">کوچک</Button>
-      <Button size="md">متوسط</Button>
-      <Button size="lg">بزرگ</Button>
+      <Button size="sm">Small</Button>
+      <Button size="md">Medium</Button>
+      <Button size="lg">Large</Button>
     </div>
   ),
 };

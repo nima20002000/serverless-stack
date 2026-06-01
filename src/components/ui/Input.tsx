@@ -1,12 +1,15 @@
 'use client';
 
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, ReactNode, forwardRef } from 'react';
 import InputV4 from '../ui-v4/Input';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  icon?: ReactNode;
+  iconPosition?: 'start' | 'end';
+  fullWidth?: boolean;
   variant?: 'default' | 'filled' | 'minimal';
 }
 

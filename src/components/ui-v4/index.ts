@@ -1,5 +1,5 @@
-// Kitia UI v4 - Clean Girlish Minimal Design System
-// Soft rose palette with modern, airy surfaces
+// Compatibility exports for the legacy ui-v4 path.
+// New app code should import from "@/components/ui".
 
 export { default as ButtonV4 } from './Button';
 export type { ButtonV4Props } from './Button';

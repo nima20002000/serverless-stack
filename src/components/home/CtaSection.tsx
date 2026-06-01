@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import PillV4 from '@/components/ui-v4/Pill';
+import Pill from '@/components/ui/Pill';
 
 export default function CtaSection() {
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -60,7 +60,7 @@ export default function CtaSection() {
       >
         <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(244,63,94,0.12),_transparent_45%,_rgba(251,207,232,0.25))]" />
         <div className="relative px-6 py-12">
-          <PillV4 tone="rose">مجموعه کامل</PillV4>
+          <Pill tone="primary">مجموعه کامل</Pill>
           <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-6">
             آماده برای شروع خرید هستید؟
           </h2>
