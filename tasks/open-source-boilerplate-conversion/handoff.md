@@ -433,3 +433,31 @@ Checks run after final review:
 - Public storefront scrub `rg -n "Kitia|کیتیا|kitia\\.ir|cdn\\.kitia|telegram|instagram\\.com/kitia|fa-IR|تومان|[\\u0600-\\u06FF]" src/app src/components` returned no matches.
 
 Current task009 status: commit-reviewed clean. Task010 is next in the sequential commit-based review queue.
+
+## Task010 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task010 only, following the revised commit-based workflow.
+
+Final task010 code commit:
+- `23a627f` - `task010: redesign checkout auth profile flows`
+
+Review loop:
+- Round 1 reviewed commit `c210809`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task010-round1.txt`; it found a valid E2E locator drift issue for the redesigned checkout submit button.
+- The finding was fixed into task010.
+- Round 2 reviewed final commit `23a627f`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task010-round2.txt`.
+- Round 2 result: no valid findings.
+
+Checks run after final amend:
+- `git diff --check 23a627f^ 23a627f` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US npm run test:unit -- checkout user auth` passed: 21 files / 118 tests.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US npm --prefix tests run test:e2e -- --list tests/e2e/journeys/guest-checkout.spec.ts` passed and listed 21 tests.
+- Required checkout/auth/profile/payment scrub returned no matches.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal env passed.
+
+Fixes folded into final task010:
+- Guest checkout E2E payment-button locators now match the redesigned `Pay ...` button while retaining compatibility with legacy labels.
+
+Current task010 status: commit-reviewed clean. Task011 is next in the sequential commit-based review queue.
