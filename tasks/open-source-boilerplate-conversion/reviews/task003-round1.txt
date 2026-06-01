@@ -1,0 +1,17 @@
+Review target: commit d492486 only. Criteria: task003 legacy Iranian payment provider removal. Focus only on this commit diff and task003 acceptance criteria. Verify Digipay, Snappay, Zarinpal, and Zibal code paths, provider configs, routes, tests, docs, and dependencies are removed or made neutral where this commit changes them. Check that remaining checkout/payment flow does not reference removed providers and that provider removal does not leave broken imports/routes/migrations directly introduced by this commit. Do not review later UI redesign or final CI expansion except where this commit directly changes those files.
+
+The commit deletes legacy payment UI/config and test helpers while leaving active imports and E2E callers behind. As a result, the application build and E2E test compilation are broken.
+
+Full review comments:
+
+- [P1] Remove RootLayout usage before deleting InstallmentBanner — /data/dexter/Desktop/supabase-vercel-stack/src/components/layout/InstallmentBanner.tsx:8-8
+  When this component is deleted, `src/app/layout.tsx` in this commit still imports `@/components/layout/InstallmentBanner` and renders `<InstallmentBanner />`, so `next build` will fail with a missing module before the app can start. Remove the import/render or keep a replacement component in the same path.
+
+- [P1] Remove Footer usage before deleting ZarinpalFooterBadge — /data/dexter/Desktop/supabase-vercel-stack/src/components/payment/ZarinpalFooterBadge.tsx:5-5
+  This deleted badge is still imported by `src/components/layout/Footer.tsx` as `@/components/payment/ZarinpalFooterBadge` and rendered in the trust-badge section, so the production build fails with a missing module. The footer needs to drop or replace that reference in the same commit.
+
+- [P1] Keep DIGIPAY_CONFIG until ProductDetail is migrated — /data/dexter/Desktop/supabase-vercel-stack/src/config/constants.ts:29-29
+  Removing `DIGIPAY_CONFIG` breaks `src/components/products/ProductDetail.tsx`, which still imports it and uses `DIGIPAY_CONFIG.SURCHARGE_PERCENT` to render the installment price. This leaves the app with a TypeScript/module export error during build; remove that UI path or replace the calculation before dropping the export.
+
+- [P2] Update E2E specs when replacing payment mocks — /data/dexter/Desktop/supabase-vercel-stack/tests/e2e/helpers/payment.ts:44-44
+  After replacing the helper exports with `mockStripeSuccess`/`mockPayPalSuccess`, the unchanged E2E specs in this commit still import `mockZarinpalSuccess` and call `mockPaymentFailure(page, 'zarinpal')`. The Playwright suite will fail to compile because the export is gone and the gateway type no longer accepts `zarinpal`; migrate those specs to the new active-provider helpers in the same change.

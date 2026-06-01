@@ -1,0 +1,11 @@
+Review target: commit 84a2c13 only. Criteria: task003 legacy Iranian payment provider removal plus prior task003 findings. Focus only on this commit diff and task003 acceptance criteria. Confirm deleted legacy provider references are not left as broken imports/callers, confirm Stripe/PayPal E2E success mocks complete the captured test transaction before redirecting, confirm the middleware rate-limit test remains in sync with middleware at this commit, confirm PayPal E2E mocks match normal PayPal approval subdomains, and confirm deleted legacy callback paths are no longer exempted from rate limiting. Do not review later UI redesign, later English-copy conversion, or final CI expansion except where this commit directly changes those files.
+
+The production removal mostly lines up, but the replacement E2E payment helpers introduce incorrect mock behavior that bypasses real finalization and cannot be reinstalled after clearing mocks on the same page.
+
+Full review comments:
+
+- [P2] Exercise payment finalization in success mocks — /data/dexter/Desktop/supabase-vercel-stack/tests/e2e/helpers/payment.ts:195-199
+  When these Stripe/PayPal E2E mocks are used for a checkout that has a promo code or relies on post-payment account linking, this direct `transactions.update` bypasses the real successful-payment finalization path (`recordPromoUsage`, account linking, etc.) and only reduces stock manually. That lets successful-checkout tests pass while the webhook finalizer or those side effects are broken; route through the actual callback/finalizer instead, with notifications disabled if needed.
+
+- [P2] Reinstall capture route after clearing mocks — /data/dexter/Desktop/supabase-vercel-stack/tests/e2e/helpers/payment.ts:18-20
+  If a test calls `clearPaymentMocks(page)` and then tries another mocked checkout on the same `Page`, `page.unrouteAll()` removes the `/api/transactions/create` route but this WeakSet still makes `captureTransactionCreateResponse` return early. The next mock will not capture the transaction identifiers, so success fails to complete the right transaction or failure redirects with fallback data; clearing should also forget this page or use removable page-scoped route state.

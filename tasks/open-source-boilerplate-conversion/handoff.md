@@ -255,11 +255,13 @@ Final task003 commit:
 - `ca9787d` - `task003: remove legacy Iranian payment providers`
 
 Review loop:
+- Rounds 1-5 reviewed earlier task003 commits and produced valid findings. Each valid finding was fixed into task003, the commit was amended, and the branch was replayed.
 - Round 6 reviewed commit `08a8be1`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task003-round6.txt`.
 - Round 6 produced one valid finding: PayPal webhook signature verification could be skipped by `E2E_TEST=true` alone.
 - The finding was fixed into task003 and the commit was amended.
 - Round 7 reviewed final commit `ca9787d`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task003-round7.txt`.
 - Round 7 result: no introduced blocking issues found.
+- Full task003 review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task003-round1.txt` through `task003-round7.txt`.
 
 Checks run:
 - `git diff --check -- src/app/api/transactions/webhook-paypal/route.ts tests/e2e/helpers/payment.ts tests/e2e/playwright.config.ts` passed.
@@ -269,8 +271,10 @@ Checks run:
 - Nested round7 review also ran `npm run lint`, root/test TypeScript checks, and `npm run build`; those passed in the current branch state during review.
 
 Fixes folded into final task003:
+- Removed active references to deleted legacy provider UI/config/helper exports.
 - Stripe/PayPal E2E success/failure mocks now exercise real webhook routes before redirecting.
 - `clearPaymentMocks(page)` resets the capture-route WeakSet state so route capture can reinstall on the same page.
+- Middleware rate-limit tests stayed aligned with the task003-era middleware response.
 - Deleted legacy callback paths are no longer middleware rate-limit exemptions.
 - PayPal approval mocks match normal PayPal approval subdomains.
 - PayPal E2E webhook signature bypass now requires a private E2E-only secret and cannot be triggered by `E2E_TEST=true` alone.

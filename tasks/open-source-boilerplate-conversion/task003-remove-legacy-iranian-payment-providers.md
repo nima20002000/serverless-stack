@@ -168,6 +168,21 @@ Final task commit: `ca9787d` (`task003: remove legacy Iranian payment providers`
 
 Review outputs:
 
+- `tasks/open-source-boilerplate-conversion/reviews/task003-round1.txt`
+  - Target: commit `d492486`.
+  - Valid findings: deleted legacy provider components/configs/helpers still had active imports/callers.
+- `tasks/open-source-boilerplate-conversion/reviews/task003-round2.txt`
+  - Target: commit `4a1551e`.
+  - Valid finding: Stripe E2E success mock redirected without completing payment finalization.
+- `tasks/open-source-boilerplate-conversion/reviews/task003-round3.txt`
+  - Target: commit `f733e05`.
+  - Valid findings: middleware rate-limit expectation drift and PayPal approval mock host mismatch.
+- `tasks/open-source-boilerplate-conversion/reviews/task003-round4.txt`
+  - Target: commit `2d88248`.
+  - Valid finding: deleted legacy callback paths remained exempt from middleware rate limiting.
+- `tasks/open-source-boilerplate-conversion/reviews/task003-round5.txt`
+  - Target: commit `84a2c13`.
+  - Valid findings: E2E payment helpers bypassed real finalization and could not reinstall capture routing after clearing mocks.
 - `tasks/open-source-boilerplate-conversion/reviews/task003-round6.txt`
   - Target: commit `08a8be1`.
   - Valid finding: PayPal webhook signature verification could be skipped by `E2E_TEST=true` alone.
@@ -186,8 +201,10 @@ Checks run for the final task003 commit/review loop:
 
 Review fixes included in final task003 commit:
 
+- Removed active references to deleted legacy provider UI/config/helper exports.
 - E2E Stripe/PayPal success and failure mocks now post synthetic events to the real webhook routes before browser redirect handling instead of directly marking transactions complete/failed.
 - `clearPaymentMocks(page)` now clears the page from the capture-route WeakSet so capture routing can be reinstalled on the same page after `page.unrouteAll()`.
+- Middleware rate-limit tests stayed aligned with the task003-era middleware response.
 - Deleted legacy callback paths are no longer exempted from middleware rate limiting.
 - PayPal E2E approval matching covers normal PayPal approval subdomains.
 - PayPal E2E webhook signature bypass requires a private E2E-only shared secret and cannot be triggered by `E2E_TEST=true` alone.
