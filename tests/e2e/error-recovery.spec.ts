@@ -6,7 +6,7 @@ import {
   deleteTestOTPsByIdentifier,
   createE2ESupabaseClient,
 } from './utils/database';
-import { mockPaymentFailure, mockZarinpalSuccess } from './helpers/payment';
+import { mockPaymentFailure, mockStripeSuccess } from './helpers/payment';
 
 /**
  * Error Recovery E2E Tests
@@ -69,7 +69,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.locator('#shippingAddress').fill('تهران، آدرس تست');
 
     // Setup payment FAILURE mock
-    await mockPaymentFailure(page, 'zarinpal');
+    await mockPaymentFailure(page, 'stripe');
 
     // Click pay
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
@@ -190,7 +190,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.locator('#shippingAddress').fill('تهران، آدرس تست');
 
     // Setup payment success mock
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     // Try to pay
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();

@@ -8,7 +8,7 @@ import {
   deleteTestOTPsByIdentifier,
   waitForOTP,
 } from '../utils/database';
-import { mockZarinpalSuccess, mockPaymentFailure } from '../helpers/payment';
+import { mockStripeSuccess, mockPaymentFailure } from '../helpers/payment';
 
 /**
  * Guest Checkout Journey E2E Tests
@@ -136,7 +136,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // STEP 7: Setup payment mocks BEFORE clicking pay
     // ============================================================
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     // ============================================================
     // STEP 8: Submit payment
@@ -149,7 +149,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // STEP 9: Wait for payment flow to complete
     // ============================================================
-    // The mock will intercept Zarinpal redirect and return to verify endpoint
+    // The mock will intercept Stripe redirect and return to the payment result page.
     // Then redirect to success page
     await page.waitForURL(/\/payment\/(success|failure)/, { timeout: 30000 });
 
@@ -244,7 +244,7 @@ test.describe('Guest Checkout Journey', () => {
     await page.locator('#shippingAddress').fill('تهران، تست آدرس');
 
     // Setup payment FAILURE mock
-    await mockPaymentFailure(page, 'zarinpal');
+    await mockPaymentFailure(page, 'stripe');
 
     // Click pay
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();

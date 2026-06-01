@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { MinusIcon, PlusIcon, TagIcon } from '@heroicons/react/24/outline';
 import { useCartStore } from '@/store/cart-store';
 import { formatPrice } from '@/lib/utils/format';
-import { DIGIPAY_CONFIG } from '@/config/constants';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';
@@ -324,48 +323,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               </div>
             )}
           </div>
-
-          {/* Installment Purchase Banner */}
-          <Card className="mb-6 bg-gradient-to-br from-rose-50 via-white to-rose-100/70 border-rose-200/80 shadow-[0_24px_50px_-30px_rgba(244,114,182,0.55)] ring-1 ring-rose-200/60">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="bg-white border border-rose-200 rounded-2xl p-2 shadow-[0_10px_20px_-12px_rgba(244,114,182,0.6)]">
-                <svg
-                  className="w-5 h-5 text-rose-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-              </div>
-              <span className="font-bold text-lg text-rose-950">
-                خرید اقساطی با دیجی‌پی
-              </span>
-              <span className="text-xs font-semibold text-rose-700 bg-rose-100/90 px-2 py-1 rounded-full">
-                ویژه پرداخت قسطی
-              </span>
-            </div>
-            <div className="text-right text-rose-900/80 text-sm leading-relaxed">
-              <span>پرداخت فقط </span>
-              <span className="font-bold text-rose-900 text-base">
-                {formatPrice(
-                  Math.round(
-                    (effectivePrice *
-                      quantity *
-                      (1 + DIGIPAY_CONFIG.SURCHARGE_PERCENT / 100)) /
-                      4
-                  )
-                )}
-              </span>
-              <span> الان + مابقی طی </span>
-              <span className="font-bold text-rose-900">۳ قسط ماهانه</span>
-            </div>
-          </Card>
 
           {/* Stock Status */}
           <div className="mb-6">

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import {
   getPayPalOrder,
   getPayPalCurrency,
@@ -29,6 +30,26 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 
 function asString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
+}
+
+function hasValidE2EWebhookBypass(req: NextRequest): boolean {
+  const expectedSecret = process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET;
+  const providedSecret = req.headers.get('x-e2e-paypal-webhook-secret');
+
+  if (
+    process.env.E2E_TEST !== 'true' ||
+    !expectedSecret ||
+    !providedSecret
+  ) {
+    return false;
+  }
+
+  const expected = Buffer.from(expectedSecret);
+  const provided = Buffer.from(providedSecret);
+
+  return (
+    expected.length === provided.length && timingSafeEqual(expected, provided)
+  );
 }
 
 function amountMatchesTransaction(
@@ -248,23 +269,26 @@ async function postHandler(req: NextRequest) {
     );
   }
 
-  let signatureIsValid = false;
+  const bypassSignatureForE2E = hasValidE2EWebhookBypass(req);
+  let signatureIsValid = bypassSignatureForE2E;
 
-  try {
-    signatureIsValid = await verifyPayPalWebhookSignature({
-      event,
-      headers,
-    });
-  } catch (error) {
-    log.error('PayPal webhook signature verification failed', {
-      eventId,
-      eventType,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-    return NextResponse.json(
-      { error: 'PayPal webhook verification failed' },
-      { status: 400 }
-    );
+  if (!bypassSignatureForE2E) {
+    try {
+      signatureIsValid = await verifyPayPalWebhookSignature({
+        event,
+        headers,
+      });
+    } catch (error) {
+      log.error('PayPal webhook signature verification failed', {
+        eventId,
+        eventType,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return NextResponse.json(
+        { error: 'PayPal webhook verification failed' },
+        { status: 400 }
+      );
+    }
   }
 
   if (!signatureIsValid) {

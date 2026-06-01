@@ -1,232 +1,406 @@
-import type { Page } from '@playwright/test';
+import { createHmac } from 'crypto';
+import type { APIResponse, Page } from '@playwright/test';
+import { createE2ESupabaseClient } from '../utils/database';
 
-/**
- * Mock Zarinpal payment gateway - both redirect AND verification API
- *
- * This mocks:
- * 1. User redirect to Zarinpal payment page -> redirects back with Status=OK
- * 2. Server-side verification API call -> returns successful verification response
- */
-export async function mockZarinpalSuccess(page: Page): Promise<void> {
-  // Mock the user-facing redirect to Zarinpal payment page (both sandbox and production)
-  await page.route('**/*zarinpal.com/pg/StartPay/**', async (route) => {
-    const url = new URL(route.request().url());
-    // Authority is in the path: /pg/StartPay/{Authority}
-    const pathParts = url.pathname.split('/');
-    const authority = pathParts[pathParts.length - 1];
+type SupportedGateway = 'stripe' | 'paypal';
 
-    if (!authority) {
-      throw new Error(
-        'No Authority found in Zarinpal redirect URL. ' +
-          `URL: ${route.request().url()}`
-      );
-    }
+const PAYPAL_APPROVAL_URL_PATTERN = /https?:\/\/(?:[^/]+\.)?paypal\.com\/.*/;
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  'bif',
+  'clp',
+  'djf',
+  'gnf',
+  'jpy',
+  'kmf',
+  'krw',
+  'mga',
+  'pyg',
+  'rwf',
+  'ugx',
+  'vnd',
+  'vuv',
+  'xaf',
+  'xof',
+  'xpf',
+]);
 
-    console.log(
-      `[E2E Mock] Intercepted Zarinpal redirect, Authority: ${authority}`
+interface PaymentCapture {
+  transactionId?: string;
+  transactionCode?: string;
+  checkoutSessionId?: string;
+  orderId?: string;
+}
+
+interface CapturedTransaction {
+  id: string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  transactionCode: string;
+  amount: number;
+  gateway_fee: number | null;
+}
+
+const paymentCapture: PaymentCapture = {};
+const captureRoutesInstalled = new WeakSet<Page>();
+
+function getPayPalE2EWebhookBypassSecret(): string {
+  const secret = process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET;
+  if (!secret) {
+    throw new Error(
+      'E2E_PAYPAL_WEBHOOK_BYPASS_SECRET is required for E2E PayPal mocks'
     );
+  }
 
-    const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+  return secret;
+}
+
+function resetPaymentCapture(): void {
+  Object.keys(paymentCapture).forEach((key) => {
+    delete paymentCapture[key as keyof PaymentCapture];
+  });
+}
+
+async function captureTransactionCreateResponse(page: Page): Promise<void> {
+  if (captureRoutesInstalled.has(page)) {
+    return;
+  }
+
+  captureRoutesInstalled.add(page);
+
+  await page.route('**/api/transactions/create', async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+
+    try {
+      const data = JSON.parse(body) as PaymentCapture;
+      paymentCapture.transactionId = data.transactionId;
+      paymentCapture.transactionCode = data.transactionCode;
+      paymentCapture.checkoutSessionId = data.checkoutSessionId;
+      paymentCapture.orderId = data.orderId;
+    } catch {
+      // Preserve the original response even if it is not JSON.
+    }
+
     await route.fulfill({
-      status: 302,
-      headers: {
-        Location: `${baseURL}/api/transactions/verify?Authority=${authority}&Status=OK`,
-      },
+      response,
+      body,
     });
   });
+}
 
-  // Mock the server-side Zarinpal verification API call
-  // This is called by our verify endpoint to confirm payment with Zarinpal
-  await page.route(
-    '**/api.zarinpal.com/pg/v4/payment/verify.json',
-    async (route) => {
-      const request = route.request();
-      const postData = request.postDataJSON();
+async function getCapturedTransaction(): Promise<CapturedTransaction> {
+  const supabase = createE2ESupabaseClient();
 
-      console.log(`[E2E Mock] Intercepted Zarinpal verification API call`, {
-        authority: postData?.authority,
-        amount: postData?.amount,
-      });
+  let query = supabase
+    .from('transactions')
+    .select('id, status, transactionCode, amount, gateway_fee')
+    .limit(1);
 
-      // Return successful verification response
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            code: 100, // Success code
-            ref_id: `E2E-REF-${Date.now()}`, // Mock reference ID
-            card_pan: '6219***1234',
-            card_hash: 'mock-card-hash',
-            fee_type: 'Merchant',
-            fee: 0,
+  query = paymentCapture.transactionId
+    ? query.eq('id', paymentCapture.transactionId)
+    : query.eq('transactionCode', paymentCapture.transactionCode || '');
+
+  const { data: transactions, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to load E2E payment transaction: ${error.message}`);
+  }
+
+  const transaction = transactions?.[0] as CapturedTransaction | undefined;
+
+  if (!transaction) {
+    throw new Error('E2E payment transaction was not captured');
+  }
+
+  return transaction;
+}
+
+function stripeMinorUnits(amount: number): number {
+  const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+  return ZERO_DECIMAL_CURRENCIES.has(currency)
+    ? Math.round(amount)
+    : Math.round(amount * 100);
+}
+
+function paypalAmountValue(amount: number): string {
+  const currency = (process.env.PAYPAL_CURRENCY || 'USD').toLowerCase();
+  return ZERO_DECIMAL_CURRENCIES.has(currency)
+    ? String(Math.round(amount))
+    : amount.toFixed(2);
+}
+
+function createStripeSignature(payload: string): string {
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is required for E2E Stripe mocks');
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = createHmac('sha256', webhookSecret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
+
+  return `t=${timestamp},v1=${signature}`;
+}
+
+async function assertWebhookHandled(
+  response: APIResponse,
+  provider: SupportedGateway
+): Promise<void> {
+  const body = await response.json().catch(async () => ({
+    error: await response.text(),
+  }));
+
+  if (!response.ok() || body.handled !== true) {
+    throw new Error(
+      `E2E ${provider} webhook did not complete transaction: ${JSON.stringify(
+        body
+      )}`
+    );
+  }
+}
+
+async function completeCapturedPayment(
+  page: Page,
+  provider: SupportedGateway
+): Promise<void> {
+  const transaction = await getCapturedTransaction();
+  if (transaction.status === 'COMPLETED') {
+    return;
+  }
+
+  const amount = Number(transaction.amount) + Number(transaction.gateway_fee || 0);
+
+  if (provider === 'stripe') {
+    const sessionId = paymentCapture.checkoutSessionId || 'cs_test_e2e';
+    const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+    const event = {
+      id: `evt_e2e_${Date.now()}`,
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: sessionId,
+          object: 'checkout.session',
+          client_reference_id: transaction.id,
+          metadata: {
+            transactionId: transaction.id,
+            transactionCode: transaction.transactionCode,
           },
-          errors: [],
-        }),
-      });
-    }
-  );
+          amount_total: stripeMinorUnits(amount),
+          currency,
+          payment_status: 'paid',
+          payment_intent: `pi_e2e_${transaction.id.replace(/-/g, '')}`,
+        },
+      },
+    };
+    const payload = JSON.stringify(event);
+    const response = await page.request.post('/api/transactions/webhook-stripe', {
+      data: payload,
+      headers: {
+        'content-type': 'application/json',
+        'stripe-signature': createStripeSignature(payload),
+        'x-e2e-test': 'true',
+      },
+    });
 
-  // Also mock sandbox API endpoint
-  await page.route(
-    '**/sandbox.zarinpal.com/pg/v4/payment/verify.json',
-    async (route) => {
-      const request = route.request();
-      const postData = request.postDataJSON();
+    await assertWebhookHandled(response, provider);
+    return;
+  }
 
-      console.log(
-        `[E2E Mock] Intercepted Zarinpal SANDBOX verification API call`,
-        {
-          authority: postData?.authority,
-          amount: postData?.amount,
-        }
-      );
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          data: {
-            code: 100,
-            ref_id: `E2E-SANDBOX-REF-${Date.now()}`,
-            card_pan: '6219***1234',
-            card_hash: 'mock-card-hash',
-            fee_type: 'Merchant',
-            fee: 0,
+  const orderId = paymentCapture.orderId || 'ORDER-E2E';
+  const currency = (process.env.PAYPAL_CURRENCY || 'USD').toUpperCase();
+  const captureId = `${orderId}-capture`;
+  const amountValue = paypalAmountValue(amount);
+  const response = await page.request.post('/api/transactions/webhook-paypal', {
+    data: {
+      id: `WH-E2E-${Date.now()}`,
+      event_type: 'CHECKOUT.ORDER.COMPLETED',
+      resource: {
+        id: orderId,
+        purchase_units: [
+          {
+            custom_id: transaction.id,
+            invoice_id: transaction.transactionCode,
+            amount: {
+              currency_code: currency,
+              value: amountValue,
+            },
+            payments: {
+              captures: [
+                {
+                  id: captureId,
+                  status: 'COMPLETED',
+                  amount: {
+                    currency_code: currency,
+                    value: amountValue,
+                  },
+                },
+              ],
+            },
           },
-          errors: [],
-        }),
-      });
-    }
-  );
+        ],
+      },
+    },
+    headers: {
+      'paypal-auth-algo': 'SHA256withRSA',
+      'paypal-cert-url': 'https://api-m.sandbox.paypal.com/certs/e2e',
+      'paypal-transmission-id': `e2e-${Date.now()}`,
+      'paypal-transmission-sig': 'e2e-signature',
+      'paypal-transmission-time': new Date().toISOString(),
+      'x-e2e-test': 'true',
+      'x-e2e-paypal-webhook-secret': getPayPalE2EWebhookBypassSecret(),
+    },
+  });
+
+  await assertWebhookHandled(response, provider);
+}
+
+async function failCapturedPayment(
+  page: Page,
+  provider: SupportedGateway
+): Promise<void> {
+  const transaction = await getCapturedTransaction();
+
+  if (provider === 'stripe') {
+    const sessionId = paymentCapture.checkoutSessionId || 'cs_test_e2e';
+    const event = {
+      id: `evt_e2e_failed_${Date.now()}`,
+      type: 'checkout.session.expired',
+      data: {
+        object: {
+          id: sessionId,
+          object: 'checkout.session',
+          client_reference_id: transaction.id,
+          metadata: {
+            transactionId: transaction.id,
+            transactionCode: transaction.transactionCode,
+          },
+          payment_intent: `pi_e2e_${transaction.id.replace(/-/g, '')}`,
+        },
+      },
+    };
+    const payload = JSON.stringify(event);
+    const response = await page.request.post('/api/transactions/webhook-stripe', {
+      data: payload,
+      headers: {
+        'content-type': 'application/json',
+        'stripe-signature': createStripeSignature(payload),
+        'x-e2e-test': 'true',
+      },
+    });
+
+    await assertWebhookHandled(response, provider);
+    return;
+  }
+
+  const orderId = paymentCapture.orderId || 'ORDER-E2E';
+  const response = await page.request.post('/api/transactions/webhook-paypal', {
+    data: {
+      id: `WH-E2E-FAILED-${Date.now()}`,
+      event_type: 'CHECKOUT.ORDER.VOIDED',
+      resource: {
+        id: orderId,
+      },
+    },
+    headers: {
+      'paypal-auth-algo': 'SHA256withRSA',
+      'paypal-cert-url': 'https://api-m.sandbox.paypal.com/certs/e2e',
+      'paypal-transmission-id': `e2e-failed-${Date.now()}`,
+      'paypal-transmission-sig': 'e2e-signature',
+      'paypal-transmission-time': new Date().toISOString(),
+      'x-e2e-test': 'true',
+      'x-e2e-paypal-webhook-secret': getPayPalE2EWebhookBypassSecret(),
+    },
+  });
+
+  await assertWebhookHandled(response, provider);
 }
 
 /**
- * Mock Digipay payment gateway redirect
+ * Mock Stripe Checkout browser redirects.
  */
-export async function mockDigipaySuccess(page: Page): Promise<void> {
-  await page.route('**/mydigipay.com/**', async (route) => {
-    const url = new URL(route.request().url());
-    const trackId = url.searchParams.get('trackId');
+export async function mockStripeSuccess(page: Page): Promise<void> {
+  await captureTransactionCreateResponse(page);
 
-    if (!trackId) {
-      throw new Error(
-        'No trackId parameter found in Digipay redirect URL. ' +
-          `URL: ${route.request().url()}`
-      );
-    }
-
-    console.log(`Intercepted Digipay redirect, trackId: ${trackId}`);
-
+  await page.route('**/checkout.stripe.com/**', async (route) => {
     const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+    const code = paymentCapture.transactionCode || 'E2E-PENDING';
+    const sessionId = paymentCapture.checkoutSessionId || 'cs_test_e2e';
+
+    await completeCapturedPayment(page, 'stripe');
+
     await route.fulfill({
       status: 302,
       headers: {
-        Location: `${baseURL}/api/transactions/verify-digipay?trackId=${trackId}`,
+        Location: `${baseURL}/payment/success?code=${encodeURIComponent(code)}&provider=stripe&session_id=${encodeURIComponent(sessionId)}`,
       },
     });
   });
 }
 
 /**
- * Mock Zibal payment gateway redirect
+ * Mock PayPal approval browser redirects.
  */
-export async function mockZibalSuccess(page: Page): Promise<void> {
-  await page.route('**/zibal.ir/**', async (route) => {
-    const url = new URL(route.request().url());
-    // Zibal uses trackId in the URL path: /payment/start/{trackId}
-    const pathMatch = url.pathname.match(/\/payment\/start\/(\d+)/);
-    const trackId = pathMatch ? pathMatch[1] : url.searchParams.get('trackId');
+export async function mockPayPalSuccess(page: Page): Promise<void> {
+  await captureTransactionCreateResponse(page);
 
-    if (!trackId) {
-      throw new Error(
-        'No trackId found in Zibal redirect URL. ' +
-          `URL: ${route.request().url()}`
-      );
-    }
-
-    console.log(`Intercepted Zibal redirect, trackId: ${trackId}`);
-
+  await page.route(PAYPAL_APPROVAL_URL_PATTERN, async (route) => {
     const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+    const code = paymentCapture.transactionCode || 'E2E-PENDING';
+    const orderId = paymentCapture.orderId || 'ORDER-E2E';
+
+    await completeCapturedPayment(page, 'paypal');
+
     await route.fulfill({
       status: 302,
       headers: {
-        Location: `${baseURL}/api/transactions/verify-zibal?trackId=${trackId}&success=1`,
+        Location: `${baseURL}/payment/success?code=${encodeURIComponent(code)}&provider=paypal&captureId=${encodeURIComponent(orderId)}`,
       },
     });
   });
 }
 
 /**
- * Mock payment gateway failure
- * Simulates a failed payment for any supported gateway
+ * Mock payment gateway failure for supported active gateways.
  */
 export async function mockPaymentFailure(
   page: Page,
-  gateway: 'zarinpal' | 'digipay' | 'zibal'
+  gateway: SupportedGateway
 ): Promise<void> {
-  const patterns: Record<string, string> = {
-    zarinpal: '**/*zarinpal.com/pg/StartPay/**', // Match both sandbox and production
-    digipay: '**/mydigipay.com/**',
-    zibal: '**/zibal.ir/**',
-  };
+  await captureTransactionCreateResponse(page);
 
-  const pattern = patterns[gateway];
+  const pattern =
+    gateway === 'stripe'
+      ? '**/checkout.stripe.com/**'
+      : PAYPAL_APPROVAL_URL_PATTERN;
 
   await page.route(pattern, async (route) => {
-    const url = new URL(route.request().url());
-    let identifier: string | null = null;
-
-    if (gateway === 'zarinpal') {
-      // Authority is in the path: /pg/StartPay/{Authority}
-      const pathParts = url.pathname.split('/');
-      identifier = pathParts[pathParts.length - 1];
-    } else if (gateway === 'digipay') {
-      identifier = url.searchParams.get('trackId');
-    } else if (gateway === 'zibal') {
-      const pathMatch = url.pathname.match(/\/payment\/start\/(\d+)/);
-      identifier = pathMatch ? pathMatch[1] : url.searchParams.get('trackId');
-    }
-
-    console.log(`Simulating ${gateway} payment failure`);
-
     const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
-    let endpoint: string;
+    const code = paymentCapture.transactionCode || 'E2E-PENDING';
 
-    switch (gateway) {
-      case 'zarinpal':
-        endpoint = `/api/transactions/verify?Authority=${identifier}&Status=NOK`;
-        break;
-      case 'digipay':
-        endpoint = `/api/transactions/verify-digipay?trackId=${identifier}&status=failed`;
-        break;
-      case 'zibal':
-        endpoint = `/api/transactions/verify-zibal?trackId=${identifier}&success=0`;
-        break;
-    }
+    await failCapturedPayment(page, gateway);
 
     await route.fulfill({
       status: 302,
       headers: {
-        Location: `${baseURL}${endpoint}`,
+        Location: `${baseURL}/payment/failure?code=${encodeURIComponent(code)}&provider=${gateway}&error=mock_failed`,
       },
     });
   });
 }
 
 /**
- * Mock all payment gateways for success
- * Useful when the test doesn't care which gateway is used
+ * Mock all active payment gateways for success.
  */
 export async function mockAllPaymentGatewaysSuccess(page: Page): Promise<void> {
-  await mockZarinpalSuccess(page);
-  await mockDigipaySuccess(page);
-  await mockZibalSuccess(page);
+  await mockStripeSuccess(page);
+  await mockPayPalSuccess(page);
 }
 
 /**
- * Clear all payment gateway mocks
+ * Clear all payment gateway mocks.
  */
 export async function clearPaymentMocks(page: Page): Promise<void> {
+  resetPaymentCapture();
+  captureRoutesInstalled.delete(page);
   await page.unrouteAll();
 }

@@ -26,15 +26,3 @@ export const TRANSACTION_STATUS = {
 } as const;
 
 export const PROMO_CODE_DURATION_HOURS = 24;
-
-export const ZARINPAL_CONFIG = {
-  MERCHANT_ID: process.env.ZARINPAL_MERCHANT_ID || '',
-  SANDBOX: process.env.NODE_ENV !== 'production',
-};
-
-export const DIGIPAY_CONFIG = {
-  /** Surcharge percentage for Digipay payments (12% = 0.12) */
-  SURCHARGE_PERCENT: 12,
-  /** Multiplier for calculating surcharge (1.12 for 12% increase) */
-  SURCHARGE_MULTIPLIER: 1.12,
-};

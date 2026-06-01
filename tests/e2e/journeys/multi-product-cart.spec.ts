@@ -8,7 +8,7 @@ import {
   deleteTestOTPsByIdentifier,
   createE2ESupabaseClient,
 } from '../utils/database';
-import { mockZarinpalSuccess } from '../helpers/payment';
+import { mockStripeSuccess } from '../helpers/payment';
 import { seedTestProducts } from '../fixtures/seed';
 import { cleanupE2ETestData } from '../fixtures/cleanup';
 
@@ -264,7 +264,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.locator('#shippingAddress').fill('تهران، خیابان تست، پلاک ۱');
 
     // Setup payment mock
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     // Click pay
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
@@ -424,7 +424,7 @@ test.describe('Cart Stock Management', () => {
     await page.locator('#shippingAddress').fill('تهران، تست');
 
     // Setup payment mock
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     // Pay
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
@@ -646,7 +646,7 @@ test.describe('Cart Persistence', () => {
     await page.locator('#phone').fill(testPhone);
     await page.locator('#shippingAddress').fill('تهران، تست');
 
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
     await payButton.click();

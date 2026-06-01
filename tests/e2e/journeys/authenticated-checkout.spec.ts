@@ -9,7 +9,7 @@ import {
   deleteTestTransactionsByPhone,
 } from '../utils/database';
 import { cleanupE2ETestData } from '../fixtures/cleanup';
-import { mockZarinpalSuccess } from '../helpers/payment';
+import { mockStripeSuccess } from '../helpers/payment';
 
 /**
  * Authenticated User Checkout Journey E2E Tests
@@ -169,7 +169,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     // ============================================================
     // STEP 5: Setup payment mocks and complete payment
     // ============================================================
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
 
     const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
     await expect(payButton).toBeEnabled();
@@ -258,7 +258,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await fillCheckoutFields(page);
 
     // Complete payment
-    await mockZarinpalSuccess(page);
+    await mockStripeSuccess(page);
     await page
       .getByRole('button', { name: /پرداخت/i })
       .first()

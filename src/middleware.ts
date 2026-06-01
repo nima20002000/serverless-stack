@@ -28,18 +28,6 @@ export async function middleware(req: NextRequest) {
     } else if (req.nextUrl.pathname === '/api/auth/register') {
       limiter = strictLimiter; // Strict for register (5 requests per 2 minutes)
       endpoint = 'register'; // Separate bucket for register
-    } else if (req.nextUrl.pathname === '/api/transactions/verify') {
-      // Don't rate limit - this is an external callback from Zarinpal payment gateway
-      // Users cannot trigger this directly; requires valid authority from database
-      shouldRateLimit = false;
-    } else if (req.nextUrl.pathname === '/api/transactions/verify-digipay') {
-      // Don't rate limit - this is an external callback from Digipay payment gateway
-      // Digipay POSTs payment result via browser redirect; requires valid ticket from database
-      shouldRateLimit = false;
-    } else if (req.nextUrl.pathname === '/api/transactions/verify-zibal') {
-      // Don't rate limit - this is an external callback from Zibal payment gateway
-      // Users cannot trigger this directly; requires valid trackId from database
-      shouldRateLimit = false;
     } else if (req.nextUrl.pathname === '/api/transactions/webhook-stripe') {
       // Don't rate limit - this is a signed external callback from Stripe
       shouldRateLimit = false;

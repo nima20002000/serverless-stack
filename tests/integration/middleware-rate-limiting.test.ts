@@ -411,10 +411,11 @@ describe('Middleware Rate Limiting Integration', () => {
       }
     });
 
-    it('never rate limits payment verification callbacks', async () => {
+    it('never rate limits payment provider callbacks', async () => {
       const paymentEndpoints = [
-        '/api/transactions/verify',
-        '/api/transactions/verify-digipay',
+        '/api/transactions/webhook-stripe',
+        '/api/transactions/webhook-paypal',
+        '/api/transactions/paypal/capture',
       ];
 
       for (const endpoint of paymentEndpoints) {

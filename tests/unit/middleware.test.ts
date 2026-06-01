@@ -108,8 +108,8 @@ describe('middleware', () => {
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
 
-    it('skips rate limiting for /api/transactions/verify (Zarinpal callback)', async () => {
-      const req = createRequest('/api/transactions/verify');
+    it('skips rate limiting for Stripe webhooks', async () => {
+      const req = createRequest('/api/transactions/webhook-stripe');
       getTokenMock.mockResolvedValue(null);
 
       const response = await middleware(req);
@@ -118,14 +118,27 @@ describe('middleware', () => {
       expect(response.status).not.toBe(429);
     });
 
-    it('skips rate limiting for /api/transactions/verify-digipay', async () => {
-      const req = createRequest('/api/transactions/verify-digipay');
-      getTokenMock.mockResolvedValue(null);
+    it('rate limits deleted legacy payment callbacks', async () => {
+      const legacyCallbackPaths = [
+        '/api/transactions/verify',
+        '/api/transactions/verify-digipay',
+        '/api/transactions/verify-zibal',
+      ];
 
-      const response = await middleware(req);
+      for (const path of legacyCallbackPaths) {
+        checkRateLimitMock.mockClear();
+        mockRateLimitSuccess();
+        getTokenMock.mockResolvedValue(null);
 
-      expect(checkRateLimitMock).not.toHaveBeenCalled();
-      expect(response.status).not.toBe(429);
+        const req = createRequest(path);
+        await middleware(req);
+
+        expect(checkRateLimitMock).toHaveBeenCalledWith(
+          req,
+          expect.objectContaining({ name: 'apiLimiter' }),
+          'transactions'
+        );
+      }
     });
 
     it('skips rate limiting for /api/auth/session (NextAuth)', async () => {

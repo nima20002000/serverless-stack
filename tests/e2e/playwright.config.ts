@@ -12,6 +12,12 @@ const e2eEnvPath = path.resolve(__dirname, '.env');
 const { parsed: e2eEnv } = dotenv.config({ path: e2eEnvPath, override: true });
 const e2eNextAuthSecret =
   process.env.NEXTAUTH_SECRET || e2eEnv?.NEXTAUTH_SECRET;
+const e2ePayPalWebhookBypassSecret =
+  process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET ||
+  e2eEnv?.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET ||
+  'local-e2e-paypal-webhook-secret';
+process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET =
+  e2ePayPalWebhookBypassSecret;
 
 /**
  * Playwright E2E Test Configuration for Kitia e-commerce platform
@@ -26,6 +32,7 @@ const webServerEnv = {
   NEXT_PUBLIC_E2E_MOCK_PAYMENTS: 'true',
   E2E_TEST: 'true',
   NEXT_PUBLIC_E2E_TEST: 'true',
+  E2E_PAYPAL_WEBHOOK_BYPASS_SECRET: e2ePayPalWebhookBypassSecret,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,

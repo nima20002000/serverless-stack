@@ -4,7 +4,6 @@ import { SessionProvider } from '@/components/providers/SessionProvider';
 import { VersionProvider } from '@/components/providers/VersionProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import InstallmentBanner from '@/components/layout/InstallmentBanner';
 import AdminThemeGate from '@/components/layout/AdminThemeGate';
 import {
   generateOrganizationSchema,
@@ -39,9 +38,6 @@ export default function RootLayout({
         {/* Preconnect to CDN for faster resource loading */}
         <link rel="preconnect" href="https://cdn.kitia.ir" />
         <link rel="dns-prefetch" href="https://cdn.kitia.ir" />
-        {/* Preconnect to Zarinpal for payment gateway */}
-        <link rel="preconnect" href="https://cdn.zarinpal.com" />
-        <link rel="dns-prefetch" href="https://cdn.zarinpal.com" />
         {/* Preload critical font for faster LCP */}
         <link
           rel="preload"
@@ -73,7 +69,6 @@ export default function RootLayout({
           <VersionProvider>
             <AdminThemeGate />
             <ToastContainer />
-            <InstallmentBanner />
             <Header />
             {children}
             <Footer />
