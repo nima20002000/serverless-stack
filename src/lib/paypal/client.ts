@@ -2,6 +2,7 @@ import 'server-only';
 import axios, { AxiosError } from 'axios';
 import { log } from '@/lib/logger';
 import { getPaymentOrderDescription } from '@/lib/payments/provider-labels';
+import { siteLocale } from '@/config/site';
 
 type PayPalEnvironment = 'sandbox' | 'live';
 
@@ -148,7 +149,7 @@ function createHttpClient(baseUrl: string, accessToken?: string) {
 }
 
 export function getPayPalCurrency(): string {
-  return (process.env.PAYPAL_CURRENCY || 'USD').toUpperCase();
+  return (process.env.PAYPAL_CURRENCY || siteLocale.currency).toUpperCase();
 }
 
 export function toPayPalAmountValue(amount: number, currency: string): string {

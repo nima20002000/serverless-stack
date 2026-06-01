@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'قوانین مرجوعی و بازگشت وجه - کیتیا',
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     title: 'قوانین مرجوعی و بازگشت وجه - کیتیا',
     description: 'شرایط مرجوعی کالا، مهلت ۷ روز، بازگشت وجه ظرف ۷ روز کاری',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {

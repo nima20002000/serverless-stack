@@ -5,7 +5,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import { format } from 'date-fns-jalali';
+import { formatDateTime, formatPrice } from '@/lib/utils/format';
 
 interface PromoCode {
   id: string;
@@ -199,10 +199,6 @@ export default function PromoCodesManagementPage() {
     setFormData({ ...formData, code });
   };
 
-  const formatPrice = (price: number) => {
-    return price.toLocaleString('fa-IR') + ' تومان';
-  };
-
   const getStatusInfo = (promo: PromoCode) => {
     const now = new Date();
     const expiresAt = new Date(promo.expiresAt);
@@ -343,7 +339,7 @@ export default function PromoCodesManagementPage() {
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
                     {formData.discountType === 'PERCENT'
                       ? 'درصد تخفیف *'
-                      : 'مبلغ تخفیف (تومان) *'}
+                      : 'مبلغ تخفیف *'}
                   </label>
                   <input
                     type="number"
@@ -402,7 +398,7 @@ export default function PromoCodesManagementPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    حداقل مبلغ سفارش (تومان)
+                    حداقل مبلغ سفارش
                   </label>
                   <input
                     type="number"
@@ -421,7 +417,7 @@ export default function PromoCodesManagementPage() {
                 {formData.discountType === 'PERCENT' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                      سقف تخفیف (تومان)
+                      سقف تخفیف
                     </label>
                     <input
                       type="number"
@@ -555,7 +551,7 @@ export default function PromoCodesManagementPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
-                      {format(new Date(promo.expiresAt), 'yyyy/MM/dd - HH:mm')}
+                      {formatDateTime(promo.expiresAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="text-gray-900 dark:text-slate-100 font-medium">

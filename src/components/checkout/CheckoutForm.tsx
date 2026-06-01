@@ -9,9 +9,9 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import {
   normalizePhoneNumber,
-  isValidIranianPhone,
+  isValidPhoneNumber,
   isValidName,
-} from '@/lib/utils/persian';
+} from '@/lib/utils/text';
 import { useCheckoutStore } from '@/store/checkout-store';
 
 interface CheckoutFormProps {
@@ -152,7 +152,7 @@ export default function CheckoutForm({
     }
 
     const normalizedPhone = normalizePhoneNumber(phone);
-    if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
+    if (!phone.trim() || !isValidPhoneNumber(normalizedPhone)) {
       setFormError(
         'لطفاً یک شماره تلفن معتبر وارد کنید (از اعداد فارسی یا انگلیسی استفاده کنید)'
       );

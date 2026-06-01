@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { createBrowserStorage } from '@/lib/browser-storage';
+import { formatPrice as formatStorefrontPrice } from '@/lib/utils/format';
 
 export interface CartItem {
   productId: string;
@@ -48,7 +49,7 @@ export const useCartStore = create<CartStore>()(
 
           // Validate against stock
           if (newQuantity > product.stock) {
-            throw new Error('موجودی کافی نیست');
+            throw new Error('Not enough stock available');
           }
 
           const newItems = items.map((item) =>
@@ -64,7 +65,7 @@ export const useCartStore = create<CartStore>()(
         } else {
           // Add new item
           if (quantity > product.stock) {
-            throw new Error('موجودی کافی نیست');
+            throw new Error('Not enough stock available');
           }
 
           const newItems = [...items, { ...product, quantity }];
@@ -104,7 +105,7 @@ export const useCartStore = create<CartStore>()(
         );
 
         if (!item) {
-          throw new Error('محصول در سبد خرید یافت نشد');
+          throw new Error('Cart item was not found');
         }
 
         // Validate quantity
@@ -115,7 +116,7 @@ export const useCartStore = create<CartStore>()(
         }
 
         if (quantity > item.stock) {
-          throw new Error('موجودی کافی نیست');
+          throw new Error('Not enough stock available');
         }
 
         const newItems = items.map((i) =>
@@ -159,9 +160,6 @@ export const selectTotal = (state: CartStore) =>
 export const selectItemCount = (state: CartStore) =>
   state.items.reduce((count, item) => count + item.quantity, 0);
 
-/**
- * Format price to Persian/Toman format
- */
 export function formatPrice(price: number): string {
-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومان';
+  return formatStorefrontPrice(price);
 }

@@ -15,6 +15,7 @@ import CtaSection from '@/components/home/CtaSection';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 import { generateCategoryAltText } from '@/lib/seo/alt-text';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
     description:
       'دنیایی از محصولات زیبا و با کیفیت برای شما. خرید آنلاین لیوان‌های سفری و ماگ با ارسال سریع و کمک به حیوانات خیابانی.',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {

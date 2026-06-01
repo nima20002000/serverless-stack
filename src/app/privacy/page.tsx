@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'حریم خصوصی - کیتیا',
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     title: 'حریم خصوصی - کیتیا',
     description: 'سیاست حفظ حریم خصوصی و امنیت اطلاعات کاربران در کیتیا',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {

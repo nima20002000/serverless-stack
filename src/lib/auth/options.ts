@@ -3,6 +3,10 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@/lib/supabase/server';
 import { detectIdentifierType } from '@/services/user-service';
+import {
+  getPhoneLookupCandidates,
+  normalizePhoneNumber,
+} from '@/lib/utils/text';
 
 // Extend the built-in types
 declare module 'next-auth' {
@@ -58,17 +62,21 @@ export const authOptions: NextAuthOptions = {
           throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
         }
 
+        const normalizedIdentifier =
+          identifierType === 'phone'
+            ? normalizePhoneNumber(credentials.identifier)
+            : credentials.identifier;
+
         const supabase = createClient();
 
         // Find user by email or phone
-        const { data: user, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq(
-            identifierType === 'email' ? 'email' : 'phone',
-            credentials.identifier
-          )
-          .single();
+        const userQuery = supabase.from('users').select('*').limit(1);
+        const { data: user, error } =
+          identifierType === 'email'
+            ? await userQuery.eq('email', normalizedIdentifier).maybeSingle()
+            : await userQuery
+                .in('phone', getPhoneLookupCandidates(credentials.identifier))
+                .maybeSingle();
 
         if (error || !user) {
           throw new Error('کاربری با این مشخصات یافت نشد');

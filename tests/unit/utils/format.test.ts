@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { formatPrice, calculateDiscountedPrice } from '@/lib/utils/format';
 
 describe('format utils', () => {
-  it('formats price with toman suffix', () => {
+  it('formats price with the configured currency', () => {
     const result = formatPrice(1234);
-    // Production code uses 'تومن' (toman - informal Persian)
-    expect(result.endsWith(' تومن')).toBe(true);
-    expect(result).toContain('۱');
+    expect(result).toBe('$1,234.00');
   });
 
   it('calculates discounted price', () => {

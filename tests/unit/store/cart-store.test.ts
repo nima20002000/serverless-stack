@@ -46,7 +46,7 @@ describe('cart-store', () => {
         },
         2
       )
-    ).toThrow('موجودی کافی نیست');
+    ).toThrow('Not enough stock available');
   });
 
   it('removes unavailable items by product ids', () => {
@@ -112,7 +112,7 @@ describe('cart-store', () => {
     });
 
     expect(() => useCartStore.getState().updateQuantity('p1', 2)).toThrow(
-      'موجودی کافی نیست'
+      'Not enough stock available'
     );
   });
 

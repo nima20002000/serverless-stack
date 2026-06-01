@@ -1,33 +1,23 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('E2E Infrastructure Smoke Tests', () => {
-  test('should load homepage with RTL Persian layout', async ({
-    page,
-    browserName,
-  }) => {
+  test('should load homepage with neutral default layout', async ({ page }) => {
     await page.goto('/');
 
     // Verify page loaded with correct title
-    await expect(page).toHaveTitle(/کیتیا|Kitia/);
+    await expect(page).toHaveTitle(/Supabase Vercel Stack|Kitia|کیتیا/);
 
-    // Verify RTL direction is set on html element
+    // Verify neutral default direction and language are set on html element
     const html = page.locator('html');
-    await expect(html).toHaveAttribute('dir', 'rtl');
-    await expect(html).toHaveAttribute('lang', 'fa');
-
-    // Verify Persian font is loaded (B Yekan is used as primary font)
-    const bodyFontFamily = await page.locator('body').evaluate((el) => {
-      return window.getComputedStyle(el).fontFamily;
-    });
-    // The font family should include a Persian font (B Yekan with space or Vazirmatn)
-    expect(bodyFontFamily.toLowerCase()).toMatch(/b\s*yekan|vazir|iran/);
+    await expect(html).toHaveAttribute('dir', 'ltr');
+    await expect(html).toHaveAttribute('lang', 'en');
 
     // Verify header is visible with logo
     const header = page.locator('header');
     await expect(header).toBeVisible();
 
-    // Verify Persian logo text "کیتیا" is visible in header
-    const logo = page.locator('header h1:has-text("کیتیا")').first();
+    // Verify the header brand is visible
+    const logo = page.locator('header h1').first();
     await expect(logo).toBeVisible();
   });
 

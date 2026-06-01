@@ -244,12 +244,14 @@ describe('user-service', () => {
 
     const fetchQuery: unknown = Object.assign(fetchPromise, {
       select: vi.fn(() => fetchQuery),
+      in: vi.fn(() => fetchQuery),
       eq: vi.fn(() => fetchQuery),
       is: vi.fn(() => fetchQuery),
     });
 
     const updateQuery: unknown = Object.assign(updatePromise, {
       update: vi.fn(() => updateQuery),
+      in: vi.fn(() => updateQuery),
       eq: vi.fn(() => updateQuery),
       is: vi.fn(() => updateQuery),
     });
@@ -265,6 +267,14 @@ describe('user-service', () => {
     );
 
     expect(result).toBe(2);
+    expect(fetchQuery.in).toHaveBeenCalledWith('phone', [
+      '+989120000000',
+      '09120000000',
+    ]);
+    expect(updateQuery.in).toHaveBeenCalledWith('phone', [
+      '+989120000000',
+      '09120000000',
+    ]);
     expect(updateQuery.update).toHaveBeenCalledWith({ userId: 'user-1' });
   });
 });

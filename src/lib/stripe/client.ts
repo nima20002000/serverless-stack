@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { log } from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/utils/url';
 import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
+import { siteLocale } from '@/config/site';
 
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'bif',
@@ -59,7 +60,7 @@ function getNormalizedBaseUrl(): string {
 }
 
 export function getStripeCurrency(): string {
-  return (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+  return (process.env.STRIPE_CURRENCY || siteLocale.currency).toLowerCase();
 }
 
 export function toStripeMinorUnits(amount: number, currency: string): number {

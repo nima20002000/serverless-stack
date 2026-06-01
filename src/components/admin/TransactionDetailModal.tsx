@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
-import { formatPrice } from '@/lib/utils/format';
-import { format } from 'date-fns-jalali';
+import { formatDateTime, formatNumber, formatPrice } from '@/lib/utils/format';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -281,10 +280,7 @@ export default function TransactionDetailModal({
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
                   {transaction.createdAt ? (
-                    format(
-                      new Date(transaction.createdAt),
-                      'yyyy/MM/dd - HH:mm'
-                    )
+                    formatDateTime(transaction.createdAt)
                   ) : (
                     <span className="text-gray-400 dark:text-slate-500">
                       نامشخص
@@ -387,7 +383,7 @@ export default function TransactionDetailModal({
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5" />
-            محصولات ({totalItems.toLocaleString('fa-IR')} عدد)
+            محصولات ({formatNumber(totalItems)} عدد)
           </h3>
           <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden">
             <table className="w-full">
@@ -430,7 +426,7 @@ export default function TransactionDetailModal({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-medium">
-                        {item.quantity.toLocaleString('fa-IR')}
+                        {formatNumber(item.quantity)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -482,10 +478,7 @@ export default function TransactionDetailModal({
                   </div>
                   <div className="text-sm">
                     {transaction.invoice.generatedAt ? (
-                      format(
-                        new Date(transaction.invoice.generatedAt),
-                        'yyyy/MM/dd - HH:mm'
-                      )
+                      formatDateTime(transaction.invoice.generatedAt)
                     ) : (
                       <span className="text-gray-400 dark:text-slate-500">
                         نامشخص

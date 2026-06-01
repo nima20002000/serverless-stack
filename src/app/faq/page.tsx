@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import FAQList from '@/components/faq/FAQList';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'سوالات متداول - کیتیا',
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
     description:
       'پاسخ به سوالات رایج درباره خرید، ارسال، پرداخت و مرجوعی در کیتیا',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {

@@ -4,6 +4,7 @@ import ProductsHero from '@/components/products/ProductsHero';
 import { getActiveProducts } from '@/services/product-service';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +75,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      locale: 'fa_IR',
+      locale: siteLocale.ogLocale,
       siteName: 'کیتیا',
       images: [
         {

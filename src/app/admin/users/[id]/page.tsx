@@ -7,8 +7,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
-import { formatPrice } from '@/lib/utils/format';
-import { format } from 'date-fns-jalali';
+import { formatDateTime, formatNumber, formatPrice } from '@/lib/utils/format';
 
 interface UserDetailPageProps {
   params: Promise<{ id: string }>;
@@ -251,7 +250,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                   تاریخ عضویت:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
-                  {format(new Date(user.createdAt), 'yyyy/MM/dd - HH:mm')}
+                  {formatDateTime(user.createdAt)}
                 </p>
               </div>
               <div>
@@ -259,7 +258,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                   تعداد تراکنش‌ها:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
-                  {user._count.transactions.toLocaleString('fa-IR')}
+                  {formatNumber(user._count.transactions)}
                 </p>
               </div>
               <div>
@@ -267,7 +266,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                   تعداد کدهای تخفیف:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
-                  {user._count.promoCodes.toLocaleString('fa-IR')}
+                  {formatNumber(user._count.promoCodes)}
                 </p>
               </div>
             </div>
@@ -319,8 +318,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         <Card>
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              تراکنش‌های کاربر (
-              {user.transactions.length.toLocaleString('fa-IR')})
+              تراکنش‌های کاربر ({formatNumber(user.transactions.length)})
             </h2>
             {user.transactions.length > 0 ? (
               <div className="overflow-x-auto">
@@ -351,10 +349,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                           {getStatusBadge(transaction.status)}
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
-                          {format(
-                            new Date(transaction.createdAt),
-                            'yyyy/MM/dd - HH:mm'
-                          )}
+                          {formatDateTime(transaction.createdAt)}
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
                           {formatPrice(Number(transaction.amount))}
@@ -381,7 +376,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         <Card>
           <div className="p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              کدهای تخفیف ({user.promoCodes.length.toLocaleString('fa-IR')})
+              کدهای تخفیف ({formatNumber(user.promoCodes.length)})
             </h2>
             {user.promoCodes.length > 0 ? (
               <div className="overflow-x-auto">
@@ -423,10 +418,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
-                          {format(
-                            new Date(promo.expiresAt),
-                            'yyyy/MM/dd - HH:mm'
-                          )}
+                          {formatDateTime(promo.expiresAt)}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-bold">

@@ -6,8 +6,7 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import TransactionDetailModal from '@/components/admin/TransactionDetailModal';
-import { formatPrice } from '@/lib/utils/format';
-import { format } from 'date-fns-jalali';
+import { formatDateTime, formatNumber, formatPrice } from '@/lib/utils/format';
 
 interface Transaction {
   id: string;
@@ -307,12 +306,12 @@ export default function TransactionsManagementPage() {
             <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  نمایش {data.data.length.toLocaleString('fa-IR')} تراکنش از{' '}
-                  {data.total.toLocaleString('fa-IR')} تراکنش
+                  نمایش {formatNumber(data.data.length)} تراکنش از{' '}
+                  {formatNumber(data.total)} تراکنش
                 </div>
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
-                  {data.totalPages.toLocaleString('fa-IR')}
+                  صفحه {formatNumber(data.page)} از{' '}
+                  {formatNumber(data.totalPages)}
                 </div>
               </div>
             </div>
@@ -353,8 +352,7 @@ export default function TransactionsManagementPage() {
                     >
                       <td className="px-4 py-3 text-right hidden lg:table-cell">
                         <div className="text-sm text-gray-600 dark:text-slate-400">
-                          {transaction.items.length.toLocaleString('fa-IR')}{' '}
-                          محصول
+                          {formatNumber(transaction.items.length)} محصول
                           {transaction.items.length > 0 && (
                             <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
                               {transaction.items.slice(0, 2).map((item) => (
@@ -366,15 +364,12 @@ export default function TransactionsManagementPage() {
                                       ({item.variant.name})
                                     </span>
                                   )}{' '}
-                                  (×{item.quantity.toLocaleString('fa-IR')})
+                                  (×{formatNumber(item.quantity)})
                                 </div>
                               ))}
                               {transaction.items.length > 2 && (
                                 <div>
-                                  و{' '}
-                                  {(
-                                    transaction.items.length - 2
-                                  ).toLocaleString('fa-IR')}{' '}
+                                  و {formatNumber(transaction.items.length - 2)}{' '}
                                   مورد دیگر...
                                 </div>
                               )}
@@ -389,10 +384,7 @@ export default function TransactionsManagementPage() {
                         {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">
-                        {format(
-                          new Date(transaction.createdAt),
-                          'yyyy/MM/dd - HH:mm'
-                        )}
+                        {formatDateTime(transaction.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-right font-medium">
                         {formatPrice(Number(transaction.amount))}
@@ -473,8 +465,8 @@ export default function TransactionsManagementPage() {
                 قبلی
               </Button>
               <span className="text-sm text-gray-600 dark:text-slate-400">
-                صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
-                {data.totalPages.toLocaleString('fa-IR')}
+                صفحه {formatNumber(currentPage)} از{' '}
+                {formatNumber(data.totalPages)}
               </span>
               <Button
                 variant="secondary"

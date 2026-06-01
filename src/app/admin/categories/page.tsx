@@ -10,6 +10,7 @@ import BulkActionsToolbar, {
   BulkAction,
 } from '@/components/admin/BulkActionsToolbar';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
+import { formatNumber } from '@/lib/utils/format';
 
 interface Category {
   id: string;
@@ -583,7 +584,7 @@ export default function CategoriesManagementPage() {
                     </td>
                     <td className="px-4 py-3 text-right hidden md:table-cell">
                       <span className="text-gray-900 dark:text-slate-100">
-                        {category._count.products.toLocaleString('fa-IR')}
+                        {formatNumber(category._count.products)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
@@ -644,7 +645,7 @@ export default function CategoriesManagementPage() {
                       </td>
                       <td className="px-4 py-3 text-right hidden md:table-cell">
                         <span className="text-gray-900 dark:text-slate-100">
-                          {child._count.products.toLocaleString('fa-IR')}
+                          {formatNumber(child._count.products)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">

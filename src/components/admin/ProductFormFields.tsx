@@ -93,7 +93,7 @@ export default function ProductFormFields({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
-          label="قیمت (تومان)"
+          label="قیمت"
           name="price"
           type="number"
           value={formData.price}

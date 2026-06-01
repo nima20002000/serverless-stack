@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { formatNumber } from '@/lib/utils/format';
 
 export interface BulkAction<T = unknown> {
   label: string;
@@ -53,7 +54,7 @@ export default function BulkActionsToolbar<T = unknown>({
         {/* Selection Count */}
         <div className="flex items-center gap-2">
           <span className="font-semibold text-lg">
-            {selectedCount.toLocaleString('fa-IR')}
+            {formatNumber(selectedCount)}
           </span>
           <span className="text-sm">مورد انتخاب‌شده</span>
         </div>

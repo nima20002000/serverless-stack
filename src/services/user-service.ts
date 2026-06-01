@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import { randomUUID } from 'crypto';
 import { createFirstTimePromoCode } from './promo-service';
 import { log } from '@/lib/logger';
+import {
+  getPhoneLookupCandidates,
+  normalizePhoneNumber,
+} from '@/lib/utils/text';
 
 // Import utilities from modular structure
 import {
@@ -89,8 +93,9 @@ export async function createUser(data: {
   name: string;
 }): Promise<UserWithoutPassword> {
   const { email, phone, password, name } = data;
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
 
-  log.info('Creating user', { email, phone, name });
+  log.info('Creating user', { email, phone: normalizedPhone, name });
 
   try {
     // Validate at least one identifier
@@ -117,9 +122,9 @@ export async function createUser(data: {
     }
 
     // Check if user already exists
-    const exists = await checkUserExists({ email, phone });
+    const exists = await checkUserExists({ email, phone: normalizedPhone });
     if (exists) {
-      log.warn('User already exists', { email, phone });
+      log.warn('User already exists', { email, phone: normalizedPhone });
       throw new Error(
         'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
       );
@@ -148,7 +153,7 @@ export async function createUser(data: {
             id: randomUUID(),
             uid,
             email: email || null,
-            phone: phone || null,
+            phone: normalizedPhone || null,
             password: hashedPassword,
             name,
             role: 'USER',
@@ -169,13 +174,13 @@ export async function createUser(data: {
             log.warn('UID conflict detected, retrying', {
               retries,
               email,
-              phone,
+              phone: normalizedPhone,
             });
 
             if (retries >= maxRetries) {
               log.error('Max retries reached for UID generation', {
                 email,
-                phone,
+                phone: normalizedPhone,
               });
               throw new Error(
                 'خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید'
@@ -217,13 +222,16 @@ export async function createUser(data: {
     });
 
     // Link any orphaned guest transactions with this phone number
-    if (phone) {
+    if (normalizedPhone) {
       try {
-        const linkedCount = await linkOrphanedTransactions(user.id, phone);
+        const linkedCount = await linkOrphanedTransactions(
+          user.id,
+          phone ?? normalizedPhone
+        );
         if (linkedCount > 0) {
           log.info('Linked orphaned transactions to new user', {
             userId: user.id,
-            phone,
+            phone: normalizedPhone,
             count: linkedCount,
           });
         }
@@ -288,7 +296,12 @@ export async function getUserByEmail(email: string): Promise<UserInfo | null> {
  * Get user by phone
  */
 export async function getUserByPhone(phone: string): Promise<UserInfo | null> {
-  return queryUser({ phone });
+  for (const lookupPhone of getPhoneLookupCandidates(phone)) {
+    const user = await queryUser({ phone: lookupPhone });
+    if (user) return user;
+  }
+
+  return null;
 }
 
 /**
@@ -363,11 +376,18 @@ export async function updateUserProfile(
   log.info('Updating user profile', { userId, fields: Object.keys(data) });
 
   try {
+    const normalizedPhone =
+      data.phone === undefined
+        ? undefined
+        : data.phone
+          ? normalizePhoneNumber(data.phone)
+          : '';
+
     // Validate email uniqueness
     await validateEmailUniqueness(data.email, userId);
 
     // Validate phone uniqueness
-    await validatePhoneUniqueness(data.phone, userId);
+    await validatePhoneUniqueness(normalizedPhone, userId);
 
     const supabase = createClient();
 
@@ -375,7 +395,7 @@ export async function updateUserProfile(
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email || null;
-    if (data.phone !== undefined) updateData.phone = data.phone || null;
+    if (data.phone !== undefined) updateData.phone = normalizedPhone || null;
     if (data.shippingAddress !== undefined)
       updateData.shippingAddress = data.shippingAddress;
     if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
@@ -506,7 +526,13 @@ export async function linkOrphanedTransactions(
   userId: string,
   phone: string
 ): Promise<number> {
-  log.info('Linking orphaned guest transactions to user', { userId, phone });
+  const normalizedPhone = normalizePhoneNumber(phone);
+  const phoneLookupCandidates = getPhoneLookupCandidates(phone);
+
+  log.info('Linking orphaned guest transactions to user', {
+    userId,
+    phone: normalizedPhone,
+  });
 
   try {
     const supabase = createClient();
@@ -515,21 +541,24 @@ export async function linkOrphanedTransactions(
     const { data: orphanedTransactions, error: fetchError } = await supabase
       .from('transactions')
       .select('id, transactionCode')
-      .eq('phone', phone)
+      .in('phone', phoneLookupCandidates)
       .is('userId', null)
       .eq('isGuest', true);
 
     if (fetchError) {
       log.error('Failed to fetch orphaned transactions', {
         userId,
-        phone,
+        phone: normalizedPhone,
         error: fetchError,
       });
       return 0;
     }
 
     if (!orphanedTransactions || orphanedTransactions.length === 0) {
-      log.info('No orphaned transactions found for user', { userId, phone });
+      log.info('No orphaned transactions found for user', {
+        userId,
+        phone: normalizedPhone,
+      });
       return 0;
     }
 
@@ -538,14 +567,14 @@ export async function linkOrphanedTransactions(
     const { error: updateError } = await supabase
       .from('transactions')
       .update({ userId })
-      .eq('phone', phone)
+      .in('phone', phoneLookupCandidates)
       .is('userId', null)
       .eq('isGuest', true);
 
     if (updateError) {
       log.error('Failed to update orphaned transactions', {
         userId,
-        phone,
+        phone: normalizedPhone,
         error: updateError,
       });
       return 0;

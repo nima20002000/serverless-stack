@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
-import { format } from 'date-fns-jalali';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -13,6 +12,7 @@ import PasswordManagementCard from '@/components/profile/PasswordManagementCard'
 import TransactionHistory from '@/components/profile/TransactionHistory';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
+import { formatDate } from '@/lib/utils/format';
 
 interface UserProfile {
   id: string;
@@ -296,7 +296,7 @@ export default function ProfilePage() {
               <div>
                 <span className="text-rose-600">عضو از:</span>{' '}
                 <span className="font-medium text-rose-900">
-                  {format(new Date(userProfile.createdAt), 'yyyy/MM/dd')}
+                  {formatDate(userProfile.createdAt)}
                 </span>
               </div>
             </div>

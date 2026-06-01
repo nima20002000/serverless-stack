@@ -26,13 +26,13 @@ describe('user-service validation', () => {
     expect(validateEmail('user@example.com')).toBe(true);
     expect(validateEmail('not-an-email')).toBe(false);
 
-    expect(validatePhone('09123456789')).toBe(true);
-    expect(validatePhone('9123456789')).toBe(false);
+    expect(validatePhone('+12125551234')).toBe(true);
+    expect(validatePhone('12345')).toBe(false);
   });
 
   it('detects identifier types', () => {
     expect(detectIdentifierType('user@example.com')).toBe('email');
-    expect(detectIdentifierType('09123456789')).toBe('phone');
+    expect(detectIdentifierType('+12125551234')).toBe('phone');
     expect(detectIdentifierType('invalid')).toBe('invalid');
   });
 
@@ -49,11 +49,11 @@ describe('user-service validation', () => {
 
   it('rejects invalid or duplicate phone', async () => {
     await expect(
-      validatePhoneUniqueness('90123456789')
+      validatePhoneUniqueness('12345')
     ).rejects.toThrow('فرمت شماره تلفن نامعتبر است');
 
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(true);
-    await expect(validatePhoneUniqueness('09123456789')).rejects.toThrow(
+    await expect(validatePhoneUniqueness('+12125551234')).rejects.toThrow(
       'این شماره تلفن قبلاً استفاده شده است'
     );
   });

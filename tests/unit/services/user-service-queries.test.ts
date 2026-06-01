@@ -122,7 +122,7 @@ describe('user-service queries', () => {
       head: true,
     });
     expect(query.or).toHaveBeenCalledWith(
-      `email.eq.a@b.com,phone.eq.${baseUser.phone}`
+      `email.eq.a@b.com,phone.eq.+989123456789,phone.eq.${baseUser.phone}`
     );
     expect(query.neq).toHaveBeenCalledWith('id', baseUser.id);
     expect(exists).toBe(true);

@@ -1,4 +1,5 @@
 import { log } from '@/lib/logger';
+import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
 import { checkUserExists } from './queries';
 
 /**
@@ -9,13 +10,8 @@ export function validateEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
-/**
- * Validate Iranian phone number
- * Format: 09xxxxxxxxx (11 digits starting with 09)
- */
 export function validatePhone(phone: string): boolean {
-  const phoneRegex = /^09\d{9}$/;
-  return phoneRegex.test(phone);
+  return isValidPhoneNumber(phone);
 }
 
 /**
@@ -65,17 +61,20 @@ export async function validatePhoneUniqueness(
 ): Promise<void> {
   if (phone === undefined) return;
 
-  // Validate format
+  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
+
   if (phone && !validatePhone(phone)) {
     log.warn('Invalid phone format', { phone });
     throw new Error('فرمت شماره تلفن نامعتبر است');
   }
 
-  // Check uniqueness
-  if (phone) {
-    const exists = await checkUserExists({ phone }, excludeUserId);
+  if (normalizedPhone) {
+    const exists = await checkUserExists(
+      { phone: normalizedPhone },
+      excludeUserId
+    );
     if (exists) {
-      log.warn('Phone already in use', { phone });
+      log.warn('Phone already in use', { phone: normalizedPhone });
       throw new Error('این شماره تلفن قبلاً استفاده شده است');
     }
   }

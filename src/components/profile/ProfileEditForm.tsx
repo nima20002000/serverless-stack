@@ -5,9 +5,9 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import {
   normalizePhoneNumber,
-  isValidIranianPhone,
+  isValidPhoneNumber,
   isValidName,
-} from '@/lib/utils/persian';
+} from '@/lib/utils/text';
 
 interface ProfileEditFormProps {
   initialData: {
@@ -52,7 +52,7 @@ export default function ProfileEditForm({
     // Validate phone if provided
     if (formData.phone.trim()) {
       const normalizedPhone = normalizePhoneNumber(formData.phone);
-      if (!isValidIranianPhone(normalizedPhone)) {
+      if (!isValidPhoneNumber(normalizedPhone)) {
         onValidationError(
           'شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)'
         );

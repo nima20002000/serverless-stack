@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import CartPageClient from '@/components/cart/CartPageClient';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'سبد خرید - کیتیا',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     title: 'سبد خرید - کیتیا',
     description: 'مشاهده و مدیریت سبد خرید شما در فروشگاه کیتیا',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
   },
   twitter: {

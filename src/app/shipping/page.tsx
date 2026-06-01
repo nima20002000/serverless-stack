@@ -7,17 +7,18 @@ import {
 } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'اطلاعات ارسال - کیتیا',
   description:
-    'راهنمای ارسال و تحویل سفارشات کیتیا. ارسال با تیپاکس، زمان تحویل ۱-۳ روز کاری، هزینه ارسال ۲۰۰ هزار تومان. پیگیری آنلاین سفارشات.',
+    'راهنمای ارسال و تحویل سفارشات کیتیا. ارسال با تیپاکس، زمان تحویل ۱-۳ روز کاری، هزینه ارسال بر اساس تنظیمات فروشگاه. پیگیری آنلاین سفارشات.',
   openGraph: {
     title: 'اطلاعات ارسال - کیتیا',
     description:
       'ارسال سریع با تیپاکس، تحویل ۱-۳ روز کاری، امکان پیگیری آنلاین',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {
@@ -135,7 +136,7 @@ export default function ShippingPage() {
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 text-center">
                 <p className="text-sm text-gray-600 mb-3">هزینه ارسال تقریبی</p>
                 <p className="text-4xl font-bold text-purple-600 mb-2">
-                  ۲۰۰,۰۰۰ تومان
+                  بر اساس تنظیمات فروشگاه
                 </p>
                 <p className="text-sm text-gray-600">
                   ± ۲۰٪ بسته به مقصد و وزن

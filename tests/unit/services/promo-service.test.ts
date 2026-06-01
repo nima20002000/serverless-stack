@@ -78,7 +78,7 @@ describe('promo-service', () => {
     createClientMock.mockReturnValue(supabase as any);
 
     await expect(promoService.usePromoCode('WELCOME-ABCD')).rejects.toThrow(
-      'این کد تخفیف قبلاً استفاده شده است'
+      'Promo code has already been used'
     );
   });
 
@@ -156,7 +156,7 @@ describe('promo-service', () => {
     const result = await promoService.validatePromoCode('OFF', 20000);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('کد تخفیف غیرفعال است');
+    expect(result.error).toBe('Promo code is inactive');
   });
 
   it('rejects promo code when usage limit reached', async () => {
@@ -178,7 +178,7 @@ describe('promo-service', () => {
     const result = await promoService.validatePromoCode('LIMIT1', 30000);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('سقف استفاده از این کد تخفیف تکمیل شده است');
+    expect(result.error).toBe('This promo code has reached its usage limit');
   });
 
   it('rejects user-specific promo code for another user', async () => {
@@ -203,7 +203,7 @@ describe('promo-service', () => {
     );
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('این کد تخفیف برای شما قابل استفاده نیست');
+    expect(result.error).toBe('This promo code is not available for this user');
   });
 
   it('rejects promo code when order total below minimum', async () => {
@@ -224,8 +224,8 @@ describe('promo-service', () => {
     const result = await promoService.validatePromoCode('MIN100', 50000);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('حداقل مبلغ سفارش');
-    expect(result.error).toContain('تومان');
+    expect(result.error).toContain('Minimum order amount');
+    expect(result.error).toContain('$100,000.00');
   });
 
   it('rejects promo code when user already used it', async () => {
@@ -256,7 +256,7 @@ describe('promo-service', () => {
     );
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('شما قبلاً از این کد تخفیف استفاده کرده‌اید');
+    expect(result.error).toBe('This promo code has already been used');
   });
 
   it('calculates fixed discount capped at subtotal', () => {
@@ -366,7 +366,7 @@ describe('promo-service', () => {
         discountValue: 10,
         expiresAt: new Date(Date.now() + 1000).toISOString(),
       })
-    ).rejects.toThrow('این کد تخفیف قبلاً وجود دارد');
+    ).rejects.toThrow('Promo code already exists');
   });
 
   it('creates promo code with normalized code', async () => {

@@ -162,6 +162,10 @@ describe('auth-service', () => {
       name: 'Phone User',
       role: 'USER',
     });
+    expect(query.in).toHaveBeenCalledWith('phone', [
+      '+989120000000',
+      '09120000000',
+    ]);
     expect(linkSpy).toHaveBeenCalledWith('user-2', '09120000000');
   });
 

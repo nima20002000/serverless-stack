@@ -6,6 +6,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'تماس با ما - کیتیا',
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
     description:
       'با تیم پشتیبانی کیتیا در ارتباط باشید. تلفن و واتساپ: ۰۹۹۱۲۲۱۸۴۶۳',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {

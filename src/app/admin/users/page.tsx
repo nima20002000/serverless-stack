@@ -9,6 +9,7 @@ import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import BulkActionsToolbar, {
   BulkAction,
 } from '@/components/admin/BulkActionsToolbar';
+import { formatNumber } from '@/lib/utils/format';
 
 interface User {
   id: string;
@@ -364,12 +365,12 @@ export default function UsersManagementPage() {
             <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  نمایش {data.data.length.toLocaleString('fa-IR')} کاربر از{' '}
-                  {data.total.toLocaleString('fa-IR')} کاربر
+                  نمایش {formatNumber(data.data.length)} کاربر از{' '}
+                  {formatNumber(data.total)} کاربر
                 </div>
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
-                  {data.totalPages.toLocaleString('fa-IR')}
+                  صفحه {formatNumber(data.page)} از{' '}
+                  {formatNumber(data.totalPages)}
                 </div>
               </div>
             </div>
@@ -457,8 +458,7 @@ export default function UsersManagementPage() {
                           href={`/admin/users/${user.id}`}
                           className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline text-sm"
                         >
-                          {user._count.transactions.toLocaleString('fa-IR')}{' '}
-                          تراکنش
+                          {formatNumber(user._count.transactions)} تراکنش
                         </Link>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -504,8 +504,8 @@ export default function UsersManagementPage() {
                 قبلی
               </Button>
               <span className="text-sm text-gray-600 dark:text-slate-400">
-                صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
-                {data.totalPages.toLocaleString('fa-IR')}
+                صفحه {formatNumber(currentPage)} از{' '}
+                {formatNumber(data.totalPages)}
               </span>
               <Button
                 variant="secondary"

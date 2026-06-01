@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'علاقه‌مندی‌ها - کیتیا',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
     title: 'علاقه‌مندی‌ها - کیتیا',
     description: 'لیست محصولات مورد علاقه شما در فروشگاه کیتیا',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
   },
   twitter: {

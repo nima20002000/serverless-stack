@@ -2,6 +2,8 @@ import 'server-only';
 import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import { log } from '@/lib/logger';
+import { siteConfig } from '@/config/site';
+import { formatDateTime, formatPrice } from '@/lib/utils/format';
 
 export interface SendEmailResult {
   success: boolean;
@@ -9,7 +11,7 @@ export interface SendEmailResult {
   error?: string;
 }
 
-// Transaction data for email notifications (generic type, works with both Prisma and Supabase)
+// Transaction data for email notifications.
 export type TransactionEmailData = {
   id: string;
   transactionCode: string;
@@ -43,22 +45,75 @@ export type TransactionEmailData = {
   } | null;
 };
 
-// Resend client instance (API)
+const siteName = siteConfig.displayName || siteConfig.name;
+const direction = siteConfig.direction;
+const language = siteConfig.language;
+
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-/**
- * Send email using Resend REST API (production) or nodemailer (development)
- * Uses Resend REST API instead of SMTP to bypass DNS/network issues in some environments
- */
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function paymentMethodLabel(
+  paymentMethod: TransactionEmailData['paymentMethod']
+) {
+  return paymentMethod === 'PAYPAL' ? 'PayPal' : 'Stripe';
+}
+
+function layoutEmail(title: string, body: string): string {
+  return `
+<!DOCTYPE html>
+<html dir="${direction}" lang="${language}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; padding: 0; background: #f8fafc; color: #111827; font-family: Arial, Helvetica, sans-serif; }
+    .container { max-width: 720px; margin: 32px auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .header { padding: 24px 28px; background: #111827; color: #ffffff; }
+    .header h1 { margin: 0; font-size: 22px; line-height: 1.3; }
+    .content { padding: 28px; }
+    .panel { margin: 20px 0; padding: 16px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+    .code { display: inline-block; margin: 18px 0; padding: 16px 22px; border-radius: 8px; background: #eef2ff; color: #1d4ed8; font-size: 30px; font-weight: 700; letter-spacing: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: start; vertical-align: top; }
+    th { background: #f3f4f6; color: #374151; font-weight: 700; }
+    .total { margin-top: 20px; padding: 16px; border-radius: 8px; background: #ecfdf5; color: #047857; font-size: 18px; font-weight: 700; }
+    .footer { padding: 18px 28px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px; }
+    p { line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>${escapeHtml(title)}</h1></div>
+    <div class="content">${body}</div>
+    <div class="footer">
+      <p>${escapeHtml(siteName)}</p>
+      <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 async function sendEmail(options: {
   to: string;
   subject: string;
   html: string;
   text: string;
 }): Promise<SendEmailResult> {
-  const from = process.env.EMAIL_FROM || '"کیتیا" <noreply@kitia.ir>';
+  const from =
+    process.env.EMAIL_FROM ||
+    `${siteName} <${process.env.EMAIL_FROM_ADDRESS || 'noreply@example.com'}>`;
 
   const useResendSmtp =
     process.env.RESEND_SMTP === 'true' ||
@@ -66,14 +121,10 @@ async function sendEmail(options: {
     !!process.env.RESEND_SMTP_USER ||
     !!process.env.RESEND_SMTP_PASS;
 
-  // SMTP (Resend or custom)
   try {
     let transporter: nodemailer.Transporter;
 
     if (useResendSmtp) {
-      const smtpHost = process.env.RESEND_SMTP_HOST || 'smtp.resend.com';
-      const smtpPort = parseInt(process.env.RESEND_SMTP_PORT || '587');
-      const smtpUser = process.env.RESEND_SMTP_USER || 'resend';
       const smtpPass =
         process.env.RESEND_SMTP_PASS || process.env.RESEND_API_KEY;
 
@@ -82,11 +133,11 @@ async function sendEmail(options: {
       }
 
       transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
+        host: process.env.RESEND_SMTP_HOST || 'smtp.resend.com',
+        port: parseInt(process.env.RESEND_SMTP_PORT || '587'),
         secure: process.env.RESEND_SMTP_SECURE === 'true',
         auth: {
-          user: smtpUser,
+          user: process.env.RESEND_SMTP_USER || 'resend',
           pass: smtpPass,
         },
       });
@@ -121,12 +172,8 @@ async function sendEmail(options: {
 
       return { success: true, messageId: data?.id };
     } else {
-      // Fallback: Create Ethereal test account on the fly
       const testAccount = await nodemailer.createTestAccount();
-      log.info('Created Ethereal test account', {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      });
+      log.info('Created Ethereal test account', { user: testAccount.user });
 
       transporter = nodemailer.createTransport({
         host: 'smtp.ethereal.email',
@@ -147,7 +194,6 @@ async function sendEmail(options: {
       html: options.html,
     });
 
-    // Log preview URL for Ethereal
     if (
       !process.env.EMAIL_SMTP_HOST &&
       !useResendSmtp &&
@@ -156,7 +202,7 @@ async function sendEmail(options: {
     ) {
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
-        log.info('📧 Email sent (Ethereal)', {
+        log.info('Email sent to Ethereal test inbox', {
           to: options.to,
           subject: options.subject,
           previewUrl,
@@ -168,121 +214,99 @@ async function sendEmail(options: {
     return { success: true, messageId: info.messageId };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+    log.error('Failed to send email', { error: errorMessage });
     return { success: false, error: errorMessage };
   }
 }
 
-/**
- * Send OTP email
- * Development: Uses Ethereal (test inbox)
- * Production: Uses Resend REST API
- */
 export async function sendOTPEmail(
   email: string,
   otp: string
 ): Promise<SendEmailResult> {
-  const emailHTML = `
-<!DOCTYPE html>
-<html dir="rtl" lang="fa">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Tahoma, Arial, sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .code {
-      font-size: 32px;
-      font-weight: bold;
-      letter-spacing: 8px;
-      color: #2563eb;
-      text-align: center;
-      margin: 30px 0;
-      padding: 20px;
-      background: #eff6ff;
-      border-radius: 8px;
-    }
-    .footer {
-      color: #666;
-      font-size: 12px;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-    }
-    p {
-      line-height: 1.6;
-      color: #374151;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2 style="color: #1f2937; margin: 0;">کد تایید کیتیا</h2>
-    </div>
-    <p>سلام،</p>
-    <p>کد تایید شما برای ورود به کیتیا:</p>
-    <div class="code">${otp}</div>
-    <p>این کد تا <strong>5 دقیقه</strong> دیگر معتبر است.</p>
-    <p>اگر این درخواست را شما ارسال نکرده‌اید، لطفاً این ایمیل را نادیده بگیرید.</p>
-    <div class="footer">
-      <p>کیتیا - فروشگاه اینترنتی</p>
-      <p>این یک ایمیل خودکار است، لطفاً به آن پاسخ ندهید.</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
+  const safeOtp = escapeHtml(otp);
+  const title = `Your ${siteName} sign-in code`;
+  const html = layoutEmail(
+    title,
+    `
+      <p>Use this verification code to finish signing in to ${escapeHtml(siteName)}.</p>
+      <div class="code">${safeOtp}</div>
+      <p>This code expires in 5 minutes. If you did not request it, you can safely ignore this email.</p>
+    `
+  );
+  const text = `${title}
 
-  const emailText = `
-کد تایید کیتیا
+Code: ${otp}
 
-کد تایید شما: ${otp}
-
-این کد تا 5 دقیقه دیگر معتبر است.
-
-اگر این درخواست را شما ارسال نکرده‌اید، لطفاً این ایمیل را نادیده بگیرید.
-
-کیتیا - فروشگاه اینترنتی
-  `;
+This code expires in 5 minutes. If you did not request it, you can safely ignore this email.`;
 
   log.info('Sending OTP email', { email });
 
   const result = await sendEmail({
     to: email,
-    subject: 'کد تایید کیتیا',
-    html: emailHTML,
-    text: emailText,
+    subject: title,
+    html,
+    text,
   });
 
   if (result.success) {
-    log.info('📧 OTP email sent', { email, messageId: result.messageId });
+    log.info('OTP email sent', { email, messageId: result.messageId });
   }
 
   return result;
 }
 
-/**
- * Send order confirmation email to buyer
- * Sends order confirmation with transaction code and items purchased
- */
+function buildItemsRows(transaction: TransactionEmailData) {
+  const rows = transaction.items
+    .map((item, index) => {
+      const variant = item.variant?.name
+        ? `<br><small>${escapeHtml(item.variant.name)}</small>`
+        : '';
+      const unitPrice = formatPrice(Number(item.price));
+      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.product.name)}${variant}</td>
+          <td>${item.quantity}</td>
+          <td>${escapeHtml(unitPrice)}</td>
+          <td>${escapeHtml(lineTotal)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Unit price</th>
+          <th>Line total</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function buildItemsText(transaction: TransactionEmailData): string {
+  return transaction.items
+    .map((item, index) => {
+      const variant = item.variant?.name ? ` (${item.variant.name})` : '';
+      const unitPrice = formatPrice(Number(item.price));
+      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+
+      return `${index + 1}. ${item.product.name}${variant}
+   Quantity: ${item.quantity}
+   Unit price: ${unitPrice}
+   Line total: ${lineTotal}`;
+    })
+    .join('\n\n');
+}
+
 export async function sendBuyerOrderConfirmation(
   transaction: TransactionEmailData
 ): Promise<SendEmailResult> {
@@ -304,310 +328,80 @@ export async function sendBuyerOrderConfirmation(
     };
   }
 
-  // Format order date
-  const orderDate = new Date(transaction.createdAt).toLocaleString('fa-IR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-
-  // Calculate total items quantity
+  const buyerName =
+    transaction.user?.name || transaction.fullName || 'Customer';
+  const buyerPhone =
+    transaction.user?.phone || transaction.phone || 'Not provided';
+  const orderDate = formatDateTime(transaction.createdAt);
   const totalItems = transaction.items.reduce(
     (sum, item) => sum + item.quantity,
     0
   );
+  const total = formatPrice(Number(transaction.amount));
+  const subject = `Order ${transaction.transactionCode} confirmed - ${siteName}`;
 
-  // Build items HTML table
-  const itemsHTML = transaction.items
-    .map((item, index) => {
-      const variantInfo = item.variant
-        ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
-        : '';
-
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
-        'fa-IR'
-      );
-
-      return `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; text-align: center;">${index + 1}</td>
-          <td style="padding: 12px;">
-            ${item.product.name}
-            ${variantInfo}
-          </td>
-          <td style="padding: 12px; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px; text-align: center; direction: rtl;">${price} تومان</td>
-          <td style="padding: 12px; text-align: center; direction: rtl;">${totalPrice} تومان</td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  // Build items plain text
-  const itemsText = transaction.items
-    .map((item, index) => {
-      const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
-        'fa-IR'
-      );
-
-      return `${index + 1}. ${item.product.name}${variantInfo}
-   تعداد: ${item.quantity}
-   قیمت واحد: ${price} تومان
-   قیمت کل: ${totalPrice} تومان`;
-    })
-    .join('\n\n');
-
-  // Buyer information
-  const buyerName = transaction.user?.name || transaction.fullName;
-  const buyerPhone = transaction.user?.phone || transaction.phone;
-
-  // Payment method label
-  const paymentMethodLabel =
-    transaction.paymentMethod === 'PAYPAL' ? 'پی‌پال' : 'استرایپ';
-
-  const emailHTML = `
-<!DOCTYPE html>
-<html dir="rtl" lang="fa">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Tahoma, Arial, sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-    .header h2 {
-      margin: 0;
-      font-size: 24px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e5e7eb;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .highlight {
-      background: #dbeafe;
-      padding: 15px;
-      border-radius: 8px;
-      border-right: 4px solid #2563eb;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th {
-      background: #f3f4f6;
-      padding: 12px;
-      text-align: center;
-      font-weight: bold;
-      color: #1f2937;
-    }
-    .footer {
-      color: #666;
-      font-size: 12px;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-    }
-    .total {
-      font-size: 20px;
-      font-weight: bold;
-      color: #2563eb;
-      text-align: center;
-      padding: 15px;
-      background: #eff6ff;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-    .thank-you {
-      background: #f0fdf4;
-      border-right: 4px solid #10b981;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 20px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>✅ سفارش شما با موفقیت ثبت شد!</h2>
-      <p style="margin: 10px 0 0 0; font-size: 14px;">کد پیگیری: ${transaction.transactionCode}</p>
-    </div>
-
-    <div class="thank-you">
-      <strong>${buyerName} عزیز،</strong><br/>
-      از خرید شما در کیتیا متشکریم! سفارش شما با موفقیت ثبت شد و به زودی برای ارسال آماده می‌شود.
-    </div>
-
-    <div class="highlight">
-      <strong>📦 تعداد کل اقلام:</strong> ${totalItems} عدد<br/>
-      <strong>💰 مبلغ پرداختی:</strong> ${Number(transaction.amount).toLocaleString('fa-IR')} تومان<br/>
-      <strong>💳 روش پرداخت:</strong> ${paymentMethodLabel}<br/>
-      <strong>📅 تاریخ ثبت سفارش:</strong> ${orderDate}
-    </div>
-
-    <div class="section">
-      <div class="section-title">📍 اطلاعات ارسال</div>
-      <div class="info-grid">
-        <div class="info-label">نام و نام خانوادگی:</div>
-        <div class="info-value">${buyerName}</div>
-
-        <div class="info-label">شماره تماس:</div>
-        <div class="info-value" style="direction: ltr; text-align: right;">${buyerPhone}</div>
-
-        <div class="info-label">آدرس:</div>
-        <div class="info-value">${transaction.shippingAddress}</div>
-
+  const html = layoutEmail(
+    'Order confirmed',
+    `
+      <p>Hi ${escapeHtml(buyerName)},</p>
+      <p>Thanks for your order from ${escapeHtml(siteName)}. We received your payment and will process the order shortly.</p>
+      <div class="panel">
+        <strong>Order code:</strong> ${escapeHtml(transaction.transactionCode)}<br>
+        <strong>Order date:</strong> ${escapeHtml(orderDate)}<br>
+        <strong>Items:</strong> ${totalItems}<br>
+        <strong>Payment method:</strong> ${paymentMethodLabel(transaction.paymentMethod)}<br>
+        <strong>Total:</strong> ${escapeHtml(total)}
+      </div>
+      <h2>Shipping</h2>
+      <p>
+        <strong>Name:</strong> ${escapeHtml(buyerName)}<br>
+        <strong>Phone:</strong> ${escapeHtml(buyerPhone)}<br>
+        <strong>Address:</strong> ${escapeHtml(transaction.shippingAddress || 'Not provided')}<br>
         ${
           transaction.postalCode
-            ? `
-        <div class="info-label">کد پستی:</div>
-        <div class="info-value" style="direction: ltr; text-align: right;">${transaction.postalCode}</div>
-        `
+            ? `<strong>Postal code:</strong> ${escapeHtml(transaction.postalCode)}`
             : ''
         }
-      </div>
-    </div>
+      </p>
+      <h2>Order items</h2>
+      ${buildItemsRows(transaction)}
+      <div class="total">Total: ${escapeHtml(total)}</div>
+    `
+  );
 
-    <div class="section">
-      <div class="section-title">🛒 جزئیات سفارش</div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 50px;">ردیف</th>
-            <th>محصول</th>
-            <th style="width: 80px;">تعداد</th>
-            <th style="width: 120px;">قیمت واحد</th>
-            <th style="width: 120px;">قیمت کل</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHTML}
-        </tbody>
-      </table>
+  const text = `Order confirmed
 
-      <div class="total">
-        جمع کل: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-      </div>
-    </div>
+Hi ${buyerName},
 
-    <div class="section" style="background: #fef3c7; padding: 15px; border-radius: 8px; border-right: 4px solid #f59e0b;">
-      <strong>📞 پشتیبانی:</strong><br/>
-      در صورت داشتن هرگونه سوال یا نیاز به کمک، با شماره تماس ثبت شده با ما در ارتباط باشید.
-    </div>
+Thanks for your order from ${siteName}. We received your payment and will process the order shortly.
 
-    <div class="footer">
-      <p>با تشکر از اعتماد شما به کیتیا</p>
-      <p>کیتیا - فروشگاه اینترنتی</p>
-      <p>این یک ایمیل خودکار است، لطفاً به آن پاسخ ندهید.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
+Order code: ${transaction.transactionCode}
+Order date: ${orderDate}
+Items: ${totalItems}
+Payment method: ${paymentMethodLabel(transaction.paymentMethod)}
+Total: ${total}
 
-  const emailText = `
-✅ سفارش شما با موفقیت ثبت شد!
+Shipping
+Name: ${buyerName}
+Phone: ${buyerPhone}
+Address: ${transaction.shippingAddress || 'Not provided'}
+${transaction.postalCode ? `Postal code: ${transaction.postalCode}` : ''}
 
-کد پیگیری: ${transaction.transactionCode}
+Order items
 
-${buyerName} عزیز،
-از خرید شما در کیتیا متشکریم! سفارش شما با موفقیت ثبت شد و به زودی برای ارسال آماده می‌شود.
+${buildItemsText(transaction)}
 
-────────────────────────────────
-📦 اطلاعات سفارش
-────────────────────────────────
-تعداد کل اقلام: ${totalItems} عدد
-مبلغ پرداختی: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-روش پرداخت: ${paymentMethodLabel}
-تاریخ ثبت: ${orderDate}
-
-────────────────────────────────
-📍 اطلاعات ارسال
-────────────────────────────────
-نام: ${buyerName}
-تلفن: ${buyerPhone}
-آدرس: ${transaction.shippingAddress}
-${transaction.postalCode ? `کد پستی: ${transaction.postalCode}` : ''}
-
-────────────────────────────────
-🛒 جزئیات سفارش
-────────────────────────────────
-
-${itemsText}
-
-────────────────────────────────
-💰 جمع کل: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-────────────────────────────────
-
-📞 پشتیبانی:
-در صورت داشتن هرگونه سوال یا نیاز به کمک، با شماره تماس ثبت شده با ما در ارتباط باشید.
-
-با تشکر از اعتماد شما به کیتیا
-کیتیا - فروشگاه اینترنتی
-    `;
-
-  log.info('Sending buyer order confirmation email', {
-    transactionCode: transaction.transactionCode,
-    to: buyerEmail,
-  });
+Total: ${total}`;
 
   const result = await sendEmail({
     to: buyerEmail,
-    subject: `✅ تایید سفارش ${transaction.transactionCode} - کیتیا`,
-    html: emailHTML,
-    text: emailText,
+    subject,
+    html,
+    text,
   });
 
   if (result.success) {
-    log.info('📧 Buyer order confirmation sent', {
+    log.info('Buyer order confirmation sent', {
       transactionCode: transaction.transactionCode,
       buyerEmail,
       messageId: result.messageId,
@@ -617,10 +411,6 @@ ${itemsText}
   return result;
 }
 
-/**
- * Send order confirmation email to admin
- * Sends comprehensive order details including buyer info and purchased items with variants
- */
 export async function sendAdminOrderConfirmation(
   transaction: TransactionEmailData,
   refId?: number
@@ -640,291 +430,90 @@ export async function sendAdminOrderConfirmation(
     };
   }
 
-  // Format order date
-  const orderDate =
-    new Date(transaction.createdAt).toLocaleString('fa-IR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }) + ' UTC';
-
-  // Calculate total items quantity
+  const buyerName =
+    transaction.user?.name || transaction.fullName || 'Customer';
+  const buyerPhone =
+    transaction.user?.phone || transaction.phone || 'Not provided';
+  const buyerEmail =
+    transaction.user?.email || transaction.email || 'Not provided';
+  const accountType = transaction.isGuest
+    ? 'Guest checkout'
+    : 'Registered user';
+  const orderDate = formatDateTime(transaction.createdAt);
   const totalItems = transaction.items.reduce(
     (sum, item) => sum + item.quantity,
     0
   );
+  const total = formatPrice(Number(transaction.amount));
+  const subject = `New order ${transaction.transactionCode} - ${buyerName}`;
 
-  // Build items HTML table
-  const itemsHTML = transaction.items
-    .map((item, index) => {
-      const variantInfo = item.variant
-        ? `<br/><small style="color: #6b7280;">نوع: ${item.variant.name}</small>`
-        : '';
-
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
-        'fa-IR'
-      );
-
-      return `
-        <tr style="border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 12px; text-align: center;">${index + 1}</td>
-          <td style="padding: 12px;">
-            ${item.product.name}
-            ${variantInfo}
-          </td>
-          <td style="padding: 12px; text-align: center;">${item.quantity}</td>
-          <td style="padding: 12px; text-align: center; direction: rtl;">${price} تومان</td>
-          <td style="padding: 12px; text-align: center; direction: rtl;">${totalPrice} تومان</td>
-        </tr>
-      `;
-    })
-    .join('');
-
-  // Build items plain text
-  const itemsText = transaction.items
-    .map((item, index) => {
-      const variantInfo = item.variant ? ` (نوع: ${item.variant.name})` : '';
-      const price = Number(item.price).toLocaleString('fa-IR');
-      const totalPrice = (Number(item.price) * item.quantity).toLocaleString(
-        'fa-IR'
-      );
-
-      return `${index + 1}. ${item.product.name}${variantInfo}
-   تعداد: ${item.quantity}
-   قیمت واحد: ${price} تومان
-   قیمت کل: ${totalPrice} تومان`;
-    })
-    .join('\n\n');
-
-  // Buyer information
-  const buyerName = transaction.user?.name || transaction.fullName;
-  const buyerPhone = transaction.user?.phone || transaction.phone;
-  const buyerEmail = transaction.user?.email || transaction.email || 'ندارد';
-  const accountType = transaction.isGuest
-    ? 'مهمان (بدون ثبت‌نام)'
-    : 'کاربر ثبت‌نام شده';
-
-  // Payment method label
-  const paymentMethodLabel =
-    transaction.paymentMethod === 'PAYPAL' ? 'پی‌پال' : 'استرایپ';
-
-  const emailHTML = `
-<!DOCTYPE html>
-<html dir="rtl" lang="fa">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: Tahoma, Arial, sans-serif;
-      background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-    .header h2 {
-      margin: 0;
-      font-size: 24px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e5e7eb;
-    }
-    .info-grid {
-      display: grid;
-      grid-template-columns: 200px 1fr;
-      gap: 12px;
-      margin-bottom: 15px;
-    }
-    .info-label {
-      font-weight: bold;
-      color: #374151;
-    }
-    .info-value {
-      color: #6b7280;
-    }
-    .highlight {
-      background: #fef3c7;
-      padding: 15px;
-      border-radius: 8px;
-      border-right: 4px solid #f59e0b;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th {
-      background: #f3f4f6;
-      padding: 12px;
-      text-align: center;
-      font-weight: bold;
-      color: #1f2937;
-    }
-    .footer {
-      color: #666;
-      font-size: 12px;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-    }
-    .total {
-      font-size: 20px;
-      font-weight: bold;
-      color: #10b981;
-      text-align: center;
-      padding: 15px;
-      background: #ecfdf5;
-      border-radius: 8px;
-      margin-top: 20px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>🎉 سفارش جدید ثبت شد!</h2>
-      <p style="margin: 10px 0 0 0; font-size: 14px;">کد سفارش: ${transaction.transactionCode}</p>
-    </div>
-
-    <div class="highlight">
-      <strong>📦 تعداد کل اقلام:</strong> ${totalItems} عدد<br/>
-      <strong>💰 مبلغ کل:</strong> ${Number(transaction.amount).toLocaleString('fa-IR')} تومان<br/>
-      <strong>💳 روش پرداخت:</strong> ${paymentMethodLabel}<br/>
-      ${refId ? `<strong>🔢 شناسه پرداخت:</strong> ${refId}<br/>` : ''}
-      <strong>📅 تاریخ ثبت سفارش:</strong> ${orderDate}
-    </div>
-
-    <div class="section">
-      <div class="section-title">👤 اطلاعات خریدار</div>
-      <div class="info-grid">
-        <div class="info-label">نام و نام خانوادگی:</div>
-        <div class="info-value">${buyerName}</div>
-
-        <div class="info-label">شماره تماس:</div>
-        <div class="info-value" style="direction: ltr; text-align: right;">${buyerPhone}</div>
-
-        <div class="info-label">ایمیل:</div>
-        <div class="info-value">${buyerEmail}</div>
-
-        <div class="info-label">نوع حساب:</div>
-        <div class="info-value">${accountType}</div>
+  const html = layoutEmail(
+    'New order received',
+    `
+      <div class="panel">
+        <strong>Order code:</strong> ${escapeHtml(transaction.transactionCode)}<br>
+        <strong>Order date:</strong> ${escapeHtml(orderDate)}<br>
+        <strong>Items:</strong> ${totalItems}<br>
+        <strong>Payment method:</strong> ${paymentMethodLabel(transaction.paymentMethod)}<br>
+        ${refId ? `<strong>Payment reference:</strong> ${refId}<br>` : ''}
+        <strong>Total:</strong> ${escapeHtml(total)}
       </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📍 اطلاعات ارسال</div>
-      <div class="info-grid">
-        <div class="info-label">آدرس:</div>
-        <div class="info-value">${transaction.shippingAddress}</div>
-
+      <h2>Customer</h2>
+      <p>
+        <strong>Name:</strong> ${escapeHtml(buyerName)}<br>
+        <strong>Phone:</strong> ${escapeHtml(buyerPhone)}<br>
+        <strong>Email:</strong> ${escapeHtml(buyerEmail)}<br>
+        <strong>Account type:</strong> ${accountType}
+      </p>
+      <h2>Shipping</h2>
+      <p>
+        <strong>Address:</strong> ${escapeHtml(transaction.shippingAddress || 'Not provided')}<br>
         ${
           transaction.postalCode
-            ? `
-        <div class="info-label">کد پستی:</div>
-        <div class="info-value" style="direction: ltr; text-align: right;">${transaction.postalCode}</div>
-        `
+            ? `<strong>Postal code:</strong> ${escapeHtml(transaction.postalCode)}`
             : ''
         }
-      </div>
-    </div>
+      </p>
+      <h2>Order items</h2>
+      ${buildItemsRows(transaction)}
+      <div class="total">Total: ${escapeHtml(total)}</div>
+    `
+  );
 
-    <div class="section">
-      <div class="section-title">🛒 جزئیات سفارش</div>
-      <table>
-        <thead>
-          <tr>
-            <th style="width: 50px;">ردیف</th>
-            <th>محصول</th>
-            <th style="width: 80px;">تعداد</th>
-            <th style="width: 120px;">قیمت واحد</th>
-            <th style="width: 120px;">قیمت کل</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHTML}
-        </tbody>
-      </table>
+  const text = `New order received
 
-      <div class="total">
-        جمع کل: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-      </div>
-    </div>
+Order code: ${transaction.transactionCode}
+Order date: ${orderDate}
+Items: ${totalItems}
+Payment method: ${paymentMethodLabel(transaction.paymentMethod)}
+${refId ? `Payment reference: ${refId}` : ''}
+Total: ${total}
 
-    <div class="footer">
-      <p>کیتیا - سیستم مدیریت فروشگاه</p>
-      <p>این یک ایمیل خودکار است، لطفاً به آن پاسخ ندهید.</p>
-    </div>
-  </div>
-</body>
-</html>
-    `;
+Customer
+Name: ${buyerName}
+Phone: ${buyerPhone}
+Email: ${buyerEmail}
+Account type: ${accountType}
 
-  const emailText = `
-🎉 سفارش جدید ثبت شد!
+Shipping
+Address: ${transaction.shippingAddress || 'Not provided'}
+${transaction.postalCode ? `Postal code: ${transaction.postalCode}` : ''}
 
-کد سفارش: ${transaction.transactionCode}
-تاریخ: ${orderDate}
-مبلغ: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-روش پرداخت: ${paymentMethodLabel}
-${refId ? `شناسه پرداخت: ${refId}` : ''}
+Order items
 
-👤 خریدار: ${buyerName} | تلفن: ${buyerPhone} | ایمیل: ${buyerEmail} | حساب: ${accountType}
+${buildItemsText(transaction)}
 
-📍 آدرس: ${transaction.shippingAddress}${transaction.postalCode ? ` | کد پستی: ${transaction.postalCode}` : ''}
-
-🛒 محصولات (${totalItems} قلم):
-
-${itemsText}
-
-────────────────────────────────
-💰 جمع کل: ${Number(transaction.amount).toLocaleString('fa-IR')} تومان
-────────────────────────────────
-
-کیتیا - سیستم مدیریت فروشگاه
-    `;
-
-  log.info('Sending admin order confirmation email', {
-    transactionCode: transaction.transactionCode,
-    to: adminEmail,
-  });
+Total: ${total}`;
 
   const result = await sendEmail({
     to: adminEmail,
-    subject: `🛍️ سفارش جدید: ${transaction.transactionCode} - ${buyerName}`,
-    html: emailHTML,
-    text: emailText,
+    subject,
+    html,
+    text,
   });
 
   if (result.success) {
-    log.info('📧 Admin order confirmation sent', {
+    log.info('Admin order confirmation sent', {
       transactionCode: transaction.transactionCode,
       adminEmail,
       messageId: result.messageId,

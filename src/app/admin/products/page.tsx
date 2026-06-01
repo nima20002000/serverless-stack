@@ -11,7 +11,7 @@ import BulkActionsToolbar, {
 } from '@/components/admin/BulkActionsToolbar';
 import ProductTableSkeleton from '@/components/admin/ProductTableSkeleton';
 import Pagination from '@/components/ui/Pagination';
-import { formatPrice } from '@/lib/utils/format';
+import { formatNumber, formatPrice } from '@/lib/utils/format';
 import {
   DndContext,
   closestCenter,
@@ -664,12 +664,12 @@ export default function AdminProductsPage() {
               <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-                    نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
-                    {data.total.toLocaleString('fa-IR')} محصول
+                    نمایش {formatNumber(data.data.length)} محصول از{' '}
+                    {formatNumber(data.total)} محصول
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-                    صفحه {data.page.toLocaleString('fa-IR')} از{' '}
-                    {data.totalPages.toLocaleString('fa-IR')}
+                    صفحه {formatNumber(data.page)} از{' '}
+                    {formatNumber(data.totalPages)}
                   </div>
                 </div>
               </div>

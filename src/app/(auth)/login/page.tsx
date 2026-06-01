@@ -9,7 +9,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import RateLimitError from '@/components/ui/RateLimitError';
-import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+import { normalizePhoneNumber, isValidPhoneNumber } from '@/lib/utils/text';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,11 +29,11 @@ export default function LoginPage() {
     value: string
   ): 'email' | 'phone' | 'invalid' => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Normalize phone number first to handle Persian digits
+    // Normalize phone number first to handle localized digits
     const normalizedPhone = normalizePhoneNumber(value);
 
     if (emailRegex.test(value)) return 'email';
-    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+    if (isValidPhoneNumber(normalizedPhone)) return 'phone';
     return 'invalid';
   };
 

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getPhoneLookupCandidates } from '@/lib/utils/text';
 
 /**
  * User information type (without password)
@@ -77,7 +78,9 @@ export async function checkUserExists(
   }
 
   if (identifier.phone) {
-    conditions.push(`phone.eq.${identifier.phone}`);
+    for (const phone of getPhoneLookupCandidates(identifier.phone)) {
+      conditions.push(`phone.eq.${phone}`);
+    }
   }
 
   if (conditions.length === 0) {

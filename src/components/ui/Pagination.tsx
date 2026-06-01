@@ -1,6 +1,7 @@
 'use client';
 
 import Button from './Button';
+import { formatNumber } from '@/lib/utils/format';
 
 interface PaginationProps {
   currentPage: number;
@@ -107,7 +108,7 @@ export default function Pagination({
               onClick={() => handlePageChange(pageNum)}
               disabled={disabled}
             >
-              {pageNum.toLocaleString('fa-IR')}
+              {formatNumber(pageNum)}
             </Button>
           ))}
 
@@ -125,7 +126,7 @@ export default function Pagination({
                 onClick={() => handlePageChange(totalPages)}
                 disabled={disabled}
               >
-                {totalPages.toLocaleString('fa-IR')}
+                {formatNumber(totalPages)}
               </Button>
             </>
           )}
@@ -145,8 +146,7 @@ export default function Pagination({
       {/* Page Info */}
       {!showPageNumbers && (
         <span className="text-sm text-gray-600 dark:text-slate-400 mx-2">
-          صفحه {safePage.toLocaleString('fa-IR')} از{' '}
-          {totalPages.toLocaleString('fa-IR')}
+          صفحه {formatNumber(safePage)} از {formatNumber(totalPages)}
         </span>
       )}
     </div>

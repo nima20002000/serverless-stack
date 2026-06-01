@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { format } from 'date-fns-jalali';
+import { formatDateTime, formatPrice } from '@/lib/utils/format';
 
 interface Transaction {
   id: string;
@@ -111,10 +111,7 @@ export default function TransactionHistory({
                   کد تراکنش: {transaction.transactionCode}
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {format(
-                    new Date(transaction.createdAt),
-                    'yyyy/MM/dd - HH:mm'
-                  )}
+                  {formatDateTime(transaction.createdAt)}
                 </div>
                 <div className="mt-2">
                   {getPaymentMethodBadge(transaction.paymentMethod)}
@@ -160,7 +157,7 @@ export default function TransactionHistory({
                       )}
                     </div>
                     <span className="font-medium">
-                      {Number(item.price).toLocaleString('fa-IR')} تومان
+                      {formatPrice(Number(item.price))}
                     </span>
                   </div>
                 ))}
@@ -170,7 +167,7 @@ export default function TransactionHistory({
             <div className="border-t border-gray-100 pt-3 mt-3 flex justify-between items-center">
               <span className="text-gray-700 font-medium">مبلغ کل:</span>
               <span className="text-lg font-bold text-gray-900">
-                {Number(transaction.amount).toLocaleString('fa-IR')} تومان
+                {formatPrice(Number(transaction.amount))}
               </span>
             </div>
 

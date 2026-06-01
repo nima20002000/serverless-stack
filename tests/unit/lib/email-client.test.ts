@@ -55,7 +55,7 @@ describe('email client', () => {
     expect(resendSendMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'user@example.com',
-        subject: 'کد تایید کیتیا',
+        subject: 'Your Supabase Vercel Stack sign-in code',
       })
     );
   });
@@ -73,7 +73,7 @@ describe('email client', () => {
       amount: 1000,
       paymentMethod: 'STRIPE',
       fullName: 'Buyer',
-      phone: '09123456789',
+      phone: '+12025556789',
       email: 'buyer@example.com',
       shippingAddress: 'Addr',
       postalCode: '12345',
@@ -92,7 +92,7 @@ describe('email client', () => {
     expect(resendSendMock).toHaveBeenCalledWith(
       expect.objectContaining({
         to: 'buyer@example.com',
-        subject: '✅ تایید سفارش KT-ABC123 - کیتیا',
+        subject: 'Order KT-ABC123 confirmed - Supabase Vercel Stack',
       })
     );
   });

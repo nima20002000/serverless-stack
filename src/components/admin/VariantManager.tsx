@@ -3,6 +3,7 @@ import Input from '@/components/ui/Input';
 import GradientColorPicker from '@/components/ui/GradientColorPicker';
 import MediaManager from '@/components/admin/MediaManager';
 import { useState } from 'react';
+import { formatPrice } from '@/lib/utils/format';
 import type {
   Variant,
   VariantFormData,
@@ -106,10 +107,7 @@ function SortableVariantCard({
             )}
             {variant.size && <p>سایز: {variant.size}</p>}
             {variant.material && <p>جنس: {variant.material}</p>}
-            <p>
-              تغییر قیمت:{' '}
-              {parseInt(variant.priceAdjust).toLocaleString('fa-IR')} تومان
-            </p>
+            <p>تغییر قیمت: {formatPrice(parseInt(variant.priceAdjust))}</p>
             <p>موجودی: {variant.stock}</p>
           </div>
         </div>
@@ -333,7 +331,7 @@ export default function VariantManager({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input
-              label="تغییر قیمت (تومان)"
+              label="تغییر قیمت"
               name="priceAdjust"
               type="number"
               value={variantForm.priceAdjust}

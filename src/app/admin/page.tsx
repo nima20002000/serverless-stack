@@ -5,7 +5,7 @@ import StatsCard from '@/components/admin/StatsCard';
 import NavigationCard from '@/components/admin/NavigationCard';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
-import { formatPrice } from '@/lib/utils/format';
+import { formatDateTime, formatNumber, formatPrice } from '@/lib/utils/format';
 import {
   UsersIcon,
   ShoppingBagIcon,
@@ -15,7 +15,6 @@ import {
   Cog6ToothIcon,
   TicketIcon,
 } from '@heroicons/react/24/outline';
-import { format } from 'date-fns-jalali';
 
 interface DashboardStats {
   users: {
@@ -189,20 +188,20 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
           title="کل کاربران"
-          value={stats.users.total.toLocaleString('fa-IR')}
-          subtitle={`${stats.users.new.toLocaleString('fa-IR')} کاربر جدید این ماه`}
+          value={formatNumber(stats.users.total)}
+          subtitle={`${formatNumber(stats.users.new)} کاربر جدید این ماه`}
           icon={<UsersIcon className="w-6 h-6" />}
         />
         <StatsCard
           title="محصولات"
-          value={stats.products.total.toLocaleString('fa-IR')}
-          subtitle={`${stats.products.active.toLocaleString('fa-IR')} محصول فعال`}
+          value={formatNumber(stats.products.total)}
+          subtitle={`${formatNumber(stats.products.active)} محصول فعال`}
           icon={<ShoppingBagIcon className="w-6 h-6" />}
         />
         <StatsCard
           title="کل تراکنش‌ها"
-          value={stats.transactions.total.toLocaleString('fa-IR')}
-          subtitle={`${stats.transactions.completed.toLocaleString('fa-IR')} موفق، ${stats.transactions.failed.toLocaleString('fa-IR')} ناموفق`}
+          value={formatNumber(stats.transactions.total)}
+          subtitle={`${formatNumber(stats.transactions.completed)} موفق، ${formatNumber(stats.transactions.failed)} ناموفق`}
           icon={<CreditCardIcon className="w-6 h-6" />}
         />
         <StatsCard
@@ -217,15 +216,15 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
           title="تراکنش‌های در انتظار"
-          value={stats.transactions.pending.toLocaleString('fa-IR')}
+          value={formatNumber(stats.transactions.pending)}
         />
         <StatsCard
           title="تراکنش‌های موفق"
-          value={stats.transactions.completed.toLocaleString('fa-IR')}
+          value={formatNumber(stats.transactions.completed)}
         />
         <StatsCard
           title="تراکنش‌های ناموفق"
-          value={stats.transactions.failed.toLocaleString('fa-IR')}
+          value={formatNumber(stats.transactions.failed)}
         />
       </div>
 
@@ -271,10 +270,7 @@ export default function AdminDashboard() {
                         {getStatusBadge(transaction.status)}
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
-                        {format(
-                          new Date(transaction.createdAt),
-                          'yyyy/MM/dd - HH:mm'
-                        )}
+                        {formatDateTime(transaction.createdAt)}
                       </td>
                       <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-medium whitespace-nowrap">
                         {formatPrice(Number(transaction.amount))}

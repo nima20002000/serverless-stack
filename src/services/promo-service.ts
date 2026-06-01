@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
 import { log } from '@/lib/logger';
+import { formatPrice } from '@/lib/utils/format';
 import { randomUUID } from 'crypto';
 
 type PromoCode = Tables<'promo_codes'>;
@@ -82,21 +83,21 @@ export async function validatePromoCode(
 
     if (error) {
       log.error('Error fetching promo code', { error, code });
-      return { valid: false, error: 'خطا در بررسی کد تخفیف' };
+      return { valid: false, error: 'Unable to validate promo code' };
     }
 
     if (!promoCode) {
-      return { valid: false, error: 'کد تخفیف یافت نشد' };
+      return { valid: false, error: 'Promo code not found' };
     }
 
     // Check if active
     if (promoCode.isActive === false) {
-      return { valid: false, error: 'کد تخفیف غیرفعال است' };
+      return { valid: false, error: 'Promo code is inactive' };
     }
 
     // Check if expired
     if (new Date(promoCode.expiresAt) < new Date()) {
-      return { valid: false, error: 'کد تخفیف منقضی شده است' };
+      return { valid: false, error: 'Promo code has expired' };
     }
 
     // Check usage limit
@@ -106,13 +107,16 @@ export async function validatePromoCode(
     ) {
       return {
         valid: false,
-        error: 'سقف استفاده از این کد تخفیف تکمیل شده است',
+        error: 'This promo code has reached its usage limit',
       };
     }
 
     // Check if user-specific code
     if (promoCode.userId && promoCode.userId !== userId) {
-      return { valid: false, error: 'این کد تخفیف برای شما قابل استفاده نیست' };
+      return {
+        valid: false,
+        error: 'This promo code is not available for this user',
+      };
     }
 
     // Check minimum order amount
@@ -120,10 +124,10 @@ export async function validatePromoCode(
       promoCode.minOrderAmount !== null &&
       orderTotal < promoCode.minOrderAmount
     ) {
-      const formattedMin = promoCode.minOrderAmount.toLocaleString('fa-IR');
+      const formattedMin = formatPrice(promoCode.minOrderAmount);
       return {
         valid: false,
-        error: `حداقل مبلغ سفارش برای استفاده از این کد ${formattedMin} تومان است`,
+        error: `Minimum order amount for this promo code is ${formattedMin}.`,
       };
     }
 
@@ -140,7 +144,7 @@ export async function validatePromoCode(
       if (existingUsage) {
         return {
           valid: false,
-          error: 'شما قبلاً از این کد تخفیف استفاده کرده‌اید',
+          error: 'This promo code has already been used',
         };
       }
     }
@@ -162,7 +166,7 @@ export async function validatePromoCode(
     };
   } catch (error) {
     log.error('Error in validatePromoCode', { code, error });
-    return { valid: false, error: 'خطا در بررسی کد تخفیف' };
+    return { valid: false, error: 'Unable to validate promo code' };
   }
 }
 
@@ -310,7 +314,7 @@ export async function getAllPromoCodes(options?: {
 
     if (error) {
       log.error('Error fetching promo codes', { error });
-      throw new Error('خطا در دریافت کدهای تخفیف');
+      throw new Error('Unable to load promo codes');
     }
 
     const total = count || 0;
@@ -372,7 +376,7 @@ export async function createPromoCode(
       .maybeSingle();
 
     if (existing) {
-      throw new Error('این کد تخفیف قبلاً وجود دارد');
+      throw new Error('Promo code already exists');
     }
 
     const { data, error } = await supabase
@@ -397,7 +401,7 @@ export async function createPromoCode(
 
     if (error) {
       log.error('Error creating promo code', { error, input });
-      throw new Error('خطا در ایجاد کد تخفیف');
+      throw new Error('Unable to create promo code');
     }
 
     log.info('Promo code created', { code, id: data.id });
@@ -432,7 +436,7 @@ export async function updatePromoCode(
         .maybeSingle();
 
       if (existing) {
-        throw new Error('این کد تخفیف قبلاً وجود دارد');
+        throw new Error('Promo code already exists');
       }
       updateData.code = code;
     }
@@ -471,7 +475,7 @@ export async function updatePromoCode(
 
     if (error) {
       log.error('Error updating promo code', { error, id, input });
-      throw new Error('خطا در بروزرسانی کد تخفیف');
+      throw new Error('Unable to update promo code');
     }
 
     log.info('Promo code updated', { id });
@@ -493,7 +497,7 @@ export async function deletePromoCode(id: string): Promise<void> {
 
     if (error) {
       log.error('Error deleting promo code', { error, id });
-      throw new Error('خطا در حذف کد تخفیف');
+      throw new Error('Unable to delete promo code');
     }
 
     log.info('Promo code deleted', { id });
@@ -522,7 +526,7 @@ export async function togglePromoCodeStatus(
 
     if (error) {
       log.error('Error toggling promo code status', { error, id });
-      throw new Error('خطا در تغییر وضعیت کد تخفیف');
+      throw new Error('Unable to update promo code status');
     }
 
     log.info('Promo code status toggled', { id, isActive });
@@ -573,14 +577,14 @@ export async function createFirstTimePromoCode(
         maxUsageCount: 1,
         currentUsageCount: 0,
         isActive: true,
-        description: 'کد تخفیف خوش‌آمدگویی',
+        description: 'Welcome promo code',
       })
       .select()
       .single();
 
     if (error) {
       log.error('Error creating promo code', { error, userId });
-      throw new Error('خطا در ایجاد کد تخفیف');
+      throw new Error('Unable to create promo code');
     }
 
     log.info('Promo code created', { code: maskPromoCode(code), userId });
@@ -615,7 +619,7 @@ export async function getActivePromoCode(
 
     if (error) {
       log.error('Error fetching active promo code', { error, userId });
-      throw new Error('خطا در دریافت کد تخفیف');
+      throw new Error('Unable to load promo code');
     }
 
     return data;
@@ -640,12 +644,12 @@ export async function usePromoCode(code: string): Promise<PromoCode> {
 
     if (fetchError || !promoCode) {
       log.warn('Promo code not found', { code: maskPromoCode(code) });
-      throw new Error('کد تخفیف یافت نشد');
+      throw new Error('Promo code not found');
     }
 
     if (promoCode.isUsed) {
       log.warn('Promo code already used', { code: maskPromoCode(code) });
-      throw new Error('این کد تخفیف قبلاً استفاده شده است');
+      throw new Error('Promo code has already been used');
     }
 
     if (new Date(promoCode.expiresAt) < new Date()) {
@@ -653,7 +657,7 @@ export async function usePromoCode(code: string): Promise<PromoCode> {
         code: maskPromoCode(code),
         expiresAt: promoCode.expiresAt,
       });
-      throw new Error('کد تخفیف منقضی شده است');
+      throw new Error('Promo code has expired');
     }
 
     const { data: updatedPromoCode, error: updateError } = await supabase
@@ -668,7 +672,7 @@ export async function usePromoCode(code: string): Promise<PromoCode> {
         error: updateError,
         code: maskPromoCode(code),
       });
-      throw new Error('خطا در استفاده از کد تخفیف');
+      throw new Error('Unable to apply promo code');
     }
 
     log.info('Promo code used', { code: maskPromoCode(code) });

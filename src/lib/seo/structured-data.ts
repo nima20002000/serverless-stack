@@ -1,3 +1,6 @@
+import { siteConfig, siteLocale } from '@/config/site';
+import { getBaseUrl } from './config';
+
 interface BreadcrumbItem {
   name: string;
   url: string;
@@ -28,13 +31,13 @@ interface SchemaVariant {
   media?: Array<{ url: string; type?: string }>;
 }
 
-// Get base URL from environment or default
-const getBaseUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
+function toAbsoluteUrl(url: string, baseUrl: string): string {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
   }
-  return process.env.NEXT_PUBLIC_APP_URL || 'https://kitia.ir';
-};
+
+  return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+}
 
 /**
  * Generate Product JSON-LD structured data
@@ -97,7 +100,10 @@ export function generateProductSchema(
     stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
 
   // Schema.org requires at least one image - use logo as absolute last resort
-  const schemaImages = images.length > 0 ? images : [`${baseUrl}/logo.png`];
+  const schemaImages =
+    images.length > 0
+      ? images.map((image) => toAbsoluteUrl(image, baseUrl))
+      : [`${baseUrl}/images/og-default.svg`];
 
   const schema = {
     '@context': 'https://schema.org',
@@ -105,18 +111,17 @@ export function generateProductSchema(
     name: selectedVariant
       ? `${product.name} - ${selectedVariant.name}`
       : product.name,
-    description:
-      product.description || `${product.name} - خرید آنلاین از کیتیا`,
+    description: product.description || `${product.name} - ${siteConfig.name}`,
     image: schemaImages,
     ...(product.sku && { sku: product.sku }),
     brand: {
       '@type': 'Brand',
-      name: 'کیتیا',
+      name: siteConfig.name,
     },
     offers: {
       '@type': 'Offer',
       price: finalPrice.toString(),
-      priceCurrency: 'IRR',
+      priceCurrency: siteLocale.currency,
       availability,
       url: `${baseUrl}/products/${product.slug || product.id}`,
       ...(product.discount &&
@@ -141,21 +146,18 @@ export function generateOrganizationSchema(): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'کیتیا',
+    name: siteConfig.name,
     url: baseUrl,
-    logo: `${baseUrl}/logo.png`,
-    description: 'فروشگاه آنلاین محصولات با کیفیت',
+    logo: `${baseUrl}/logo.svg`,
+    description: siteConfig.description,
     contactPoint: {
       '@type': 'ContactPoint',
-      contactType: 'پشتیبانی مشتریان',
-      availableLanguage: 'Persian',
-      telephone: '+98-21-1234-5678', // Replace with actual phone
+      contactType: 'customer support',
+      availableLanguage: siteConfig.language,
     },
     address: {
       '@type': 'PostalAddress',
-      addressCountry: 'IR',
-      addressLocality: 'تهران',
-      addressRegion: 'تهران',
+      addressCountry: process.env.NEXT_PUBLIC_SITE_COUNTRY || 'US',
     },
   };
 }
@@ -191,7 +193,7 @@ export function generateProductBreadcrumbs(
 ): BreadcrumbItem[] {
   const items: BreadcrumbItem[] = [
     {
-      name: 'خانه',
+      name: 'Home',
       url: '/',
     },
   ];
@@ -231,7 +233,7 @@ export function generateWebSiteSchema(): object {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'کیتیا',
+    name: siteConfig.name,
     url: baseUrl,
     potentialAction: {
       '@type': 'SearchAction',

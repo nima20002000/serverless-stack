@@ -4,6 +4,10 @@ import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
 import {
+  getPhoneLookupCandidates,
+  normalizePhoneNumber,
+} from '@/lib/utils/text';
+import {
   detectIdentifierType,
   generateNextUID,
   linkOrphanedTransactions,
@@ -42,11 +46,13 @@ export async function authenticateUser(
     const supabase = createClient();
 
     // Find user by email or phone
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq(identifierType === 'email' ? 'email' : 'phone', identifier)
-      .single();
+    const userQuery = supabase.from('users').select('*').limit(1);
+    const { data: user, error } =
+      identifierType === 'email'
+        ? await userQuery.eq('email', identifier).maybeSingle()
+        : await userQuery
+            .in('phone', getPhoneLookupCandidates(identifier))
+            .maybeSingle();
 
     if (error || !user) {
       log.warn('Login attempt with non-existent identifier', {
@@ -111,21 +117,26 @@ export async function authenticateUserByPhone(
   }
 
   try {
+    const normalizedPhone = normalizePhoneNumber(phone);
+    const phoneLookupCandidates = getPhoneLookupCandidates(phone);
     const supabase = createClient();
 
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('phone', phone)
-      .single();
+      .in('phone', phoneLookupCandidates)
+      .limit(1)
+      .maybeSingle();
 
     if (error || !user) {
-      log.warn('Login attempt with non-existent phone', { phone });
+      log.warn('Login attempt with non-existent phone', {
+        phone: normalizedPhone,
+      });
       throw new Error('کاربری با این شماره تلفن یافت نشد');
     }
 
     log.info('User authenticated successfully via phone', {
-      phone,
+      phone: normalizedPhone,
       userId: user.id,
     });
 
@@ -135,14 +146,14 @@ export async function authenticateUserByPhone(
       if (linkedCount > 0) {
         log.info('Linked orphaned transactions during phone login', {
           userId: user.id,
-          phone,
+          phone: normalizedPhone,
           count: linkedCount,
         });
       }
     } catch (error) {
       log.error('Failed to link orphaned transactions during phone login', {
         userId: user.id,
-        phone,
+        phone: normalizedPhone,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       // Don't fail authentication if linking fails

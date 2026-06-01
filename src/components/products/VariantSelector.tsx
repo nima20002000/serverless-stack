@@ -2,6 +2,7 @@
 
 import { useState, useMemo, memo, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
+import { formatNumber, formatPrice } from '@/lib/utils/format';
 
 interface Variant {
   id: string;
@@ -66,7 +67,7 @@ function VariantSelector({
 
   const getVariantPrice = (variant: Variant) => {
     const price = basePrice + Number(variant.priceAdjust);
-    return price.toLocaleString('fa-IR');
+    return formatPrice(price);
   };
 
   const isOutOfStock = (variant: Variant) => variant.stock === 0;
@@ -150,7 +151,7 @@ function VariantSelector({
             {variant.priceAdjust !== 0 && (
               <div className="text-sm font-medium text-rose-600">
                 {variant.priceAdjust > 0 ? '+' : ''}
-                {Number(variant.priceAdjust).toLocaleString('fa-IR')} تومان
+                {formatPrice(Number(variant.priceAdjust))}
               </div>
             )}
             <div
@@ -251,10 +252,10 @@ function VariantSelector({
             </div>
             <div className="text-left">
               <p className="text-lg font-bold text-rose-700">
-                {getVariantPrice(selectedVariant)} تومان
+                {getVariantPrice(selectedVariant)}
               </p>
               <p className="text-xs text-slate-600 mt-1">
-                موجودی: {selectedVariant.stock} عدد
+                موجودی: {formatNumber(selectedVariant.stock)} عدد
               </p>
             </div>
           </div>

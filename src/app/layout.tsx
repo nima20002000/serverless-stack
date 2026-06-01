@@ -10,11 +10,12 @@ import {
   generateWebSiteSchema,
   renderJsonLd,
 } from '@/lib/seo/structured-data';
-import { ToastContainer } from '@/components/ui-v4';
+import ToastContainer from '@/components/ui-v4/Toast';
+import { siteConfig } from '@/config/site';
 
 export const metadata: Metadata = {
-  title: 'Kitia - فروشگاه آنلاین',
-  description: 'پلتفرم خرید آنلاین کیتیا',
+  title: siteConfig.name,
+  description: siteConfig.description,
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
@@ -33,26 +34,8 @@ export default function RootLayout({
   const webSiteSchema = generateWebSiteSchema();
 
   return (
-    <html lang="fa" dir="rtl">
+    <html lang={siteConfig.language} dir={siteConfig.direction}>
       <head>
-        {/* Preconnect to CDN for faster resource loading */}
-        <link rel="preconnect" href="https://cdn.kitia.ir" />
-        <link rel="dns-prefetch" href="https://cdn.kitia.ir" />
-        {/* Preload critical font for faster LCP */}
-        <link
-          rel="preload"
-          href="/fonts/BYekan.ttf"
-          as="font"
-          type="font/ttf"
-          crossOrigin="anonymous"
-        />
-        {/* Preload hero image for LCP optimization */}
-        <link
-          rel="preload"
-          href="https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg"
-          as="image"
-          fetchPriority="high"
-        />
         {/* Organization JSON-LD structured data */}
         <script
           type="application/ld+json"

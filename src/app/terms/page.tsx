@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
+import { siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
   title: 'قوانین و مقررات - کیتیا',
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     title: 'قوانین و مقررات - کیتیا',
     description: 'شرایط استفاده از خدمات فروشگاه کیتیا و قوانین خرید',
     type: 'website',
-    locale: 'fa_IR',
+    locale: siteLocale.ogLocale,
     siteName: 'کیتیا',
     images: [
       {
@@ -87,7 +88,9 @@ export default function TermsPage() {
             </h2>
             <div className="text-gray-700 text-right leading-relaxed space-y-3">
               <ul className="list-disc list-inside space-y-2 pr-4">
-                <li>تمامی قیمت‌ها به تومان است و شامل مالیات می‌شود</li>
+                <li>
+                  قیمت‌ها بر اساس ارز تنظیم‌شده فروشگاه نمایش داده می‌شوند
+                </li>
                 <li>پرداخت از طریق درگاه امن زرین‌پال انجام می‌شود</li>
                 <li>سفارش پس از پرداخت موفق قطعی می‌شود</li>
                 <li>ما حق تغییر قیمت‌ها را بدون اطلاع قبلی محفوظ می‌داریم</li>
