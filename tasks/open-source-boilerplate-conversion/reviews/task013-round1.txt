@@ -1,0 +1,2178 @@
+OpenAI Codex v0.135.0
+--------
+workdir: /data/dexter/Desktop/supabase-vercel-stack
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: high
+reasoning summaries: none
+session id: 019e84a4-ed2a-76e2-a528-eed14f2b81e9
+--------
+user
+commit 4222cc4: task013 Tests CI And Release Readiness
+exec
+/bin/bash -lc 'cat /home/dexter/.agents/skills/supabase/SKILL.md && git status --short && git rev-parse --show-toplevel' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+---
+name: supabase
+description: "Use when doing ANY task involving Supabase. Triggers: Supabase products (Database, Auth, Edge Functions, Realtime, Storage, Vectors, Cron, Queues); client libraries and SSR integrations (supabase-js, @supabase/ssr) in Next.js, React, SvelteKit, Astro, Remix; auth issues (login, logout, sessions, JWT, cookies, getSession, getUser, getClaims, RLS); Supabase CLI or MCP server; schema changes, migrations, security audits, Postgres extensions (pg_graphql, pg_cron, pg_vector)."
+metadata:
+  author: supabase
+  version: "0.1.2"
+---
+
+# Supabase
+
+## Core Principles
+
+**1. Supabase changes frequently — verify against changelog and current docs before implementing.**
+Do not rely on training data for Supabase features. Function signatures, config.toml settings, and API conventions change between versions.
+
+First, fetch `https://supabase.com/changelog.md` (a lightweight summary index — not a heavy pull), scan for `breaking-change` tags relevant to your task, and follow the linked page for any that apply. Then look up the relevant topic using the documentation access methods below.
+
+**2. Verify your work.**
+After implementing any fix, run a test query to confirm the change works. A fix without verification is incomplete.
+
+**3. Recover from errors, don't loop.**
+If an approach fails after 2-3 attempts, stop and reconsider. Try a different method, check documentation, inspect the error more carefully, and review relevant logs when available. Supabase issues are not always solved by retrying the same command, and the answer is not always in the logs, but logs are often worth checking before proceeding.
+
+**4. Exposing tables to the Data API:** Depending on the user's [Data API settings](https://supabase.com/dashboard/project/<ref>/integrations/data_api/settings), newly created tables may not be automatically exposed via the Data (REST) API. If this is the case, `anon` and `authenticated` roles will need to be explicitly granted access.
+
+> Note that this is separate from RLS, which controls which _rows_ are visible once a table is accessible, not whether the table is accessible at all.
+
+When a user reports a SQL-created table is unexpectedly inaccessible, check their Data API settings and whether the roles have been granted access via explicit `GRANT` SQL. When granting public (`anon`/`authenticated`) access, always enable RLS too. See [Exposing a Table to the Data API](https://supabase.com/docs/guides/api/securing-your-api.md) for the full setup workflow.
+
+**5. RLS in exposed schemas.**
+Enable RLS on every table in any exposed schema, which includes `public` by default. This is critical in Supabase because tables in exposed schemas can be reachable through the Data API when the `anon`/`authenticated` roles have access (see [Exposing a Table to the Data API](https://supabase.com/docs/guides/api/securing-your-api.md)). For private schemas, prefer RLS as defense in depth. After enabling RLS, create policies that match the actual access model rather than defaulting every table to the same `auth.uid()` pattern.
+
+**6. Security checklist.**
+When working on any Supabase task that touches auth, RLS, views, storage, or user data, run through this checklist. These are Supabase-specific security traps that silently create vulnerabilities:
+
+- **Auth and session security**
+  - **Never use `user_metadata` claims in JWT-based authorization decisions.** In Supabase, `raw_user_meta_data` is user-editable and can appear in `auth.jwt()`, so it is unsafe for RLS policies or any other authorization logic. Store authorization data in `raw_app_meta_data` / `app_metadata` instead.
+  - **Deleting a user does not invalidate existing access tokens.** Sign out or revoke sessions first, keep JWT expiry short for sensitive apps, and for strict guarantees validate `session_id` against `auth.sessions` on sensitive operations.
+  - **If you use `app_metadata` or `auth.jwt()` for authorization, remember JWT claims are not always fresh until the user's token is refreshed.**
+
+- **API key and client exposure**
+  - **Never expose the `service_role` or secret key in public clients.** Prefer publishable keys for frontend code. Legacy `anon` keys are only for compatibility. In Next.js, any `NEXT_PUBLIC_` env var is sent to the browser.
+
+- **RLS, views, and privileged database code**
+  - **Views bypass RLS by default.** In Postgres 15 and above, use `CREATE VIEW ... WITH (security_invoker = true)`. In older versions of Postgres, protect your views by revoking access from the `anon` and `authenticated` roles, or by putting them in an unexposed schema.
+  - **UPDATE requires a SELECT policy.** In Postgres RLS, an UPDATE needs to first SELECT the row. Without a SELECT policy, updates silently return 0 rows — no error, just no change.
+  - **Do not put `security definer` functions in an exposed schema.** Keep them in a private or otherwise unexposed schema.
+
+- **Storage access control**
+  - **Storage upsert requires INSERT + SELECT + UPDATE.** Granting only INSERT allows new uploads but file replacement (upsert) silently fails. You need all three.
+
+For any security concern not covered above, fetch the Supabase product security index: `https://supabase.com/docs/guides/security/product-security.md`
+
+## Supabase CLI
+
+Always discover commands via `--help` — never guess. The CLI structure changes between versions.
+
+```bash
+supabase --help                    # All top-level commands
+supabase <group> --help            # Subcommands (e.g., supabase db --help)
+supabase <group> <command> --help  # Flags for a specific command
+```
+
+**Supabase CLI Known gotchas:**
+
+- `supabase db query` requires **CLI v2.79.0+** → use MCP `execute_sql` or `psql` as fallback
+- `supabase db advisors` requires **CLI v2.81.3+** → use MCP `get_advisors` as fallback
+- When you need a new migration SQL file, **always** create it with `supabase migration new <name>` first. Never invent a migration filename or rely on memory for the expected format.
+
+**Version check and upgrade:** Run `supabase --version` to check. For CLI changelogs and version-specific features, consult the [CLI documentation](https://supabase.com/docs/reference/cli/introduction) or [GitHub releases](https://github.com/supabase/cli/releases).
+
+## Supabase MCP Server
+
+For setup instructions, server URL, and configuration, see the [MCP setup guide](https://supabase.com/docs/guides/getting-started/mcp).
+
+**Troubleshooting connection issues** — follow these steps in order:
+
+1. **Check if the server is reachable:**
+   `curl -so /dev/null -w "%{http_code}" https://mcp.supabase.com/mcp`
+   A `401` is expected (no token) and means the server is up. Timeout or "connection refused" means it may be down.
+
+2. **Check `.mcp.json` configuration:**
+   Verify the project root has a valid `.mcp.json` with the correct server URL. If missing, create one pointing to `https://mcp.supabase.com/mcp`.
+
+3. **Authenticate the MCP server:**
+   If the server is reachable and `.mcp.json` is correct but tools aren't visible, the user needs to authenticate. The Supabase MCP server uses OAuth 2.1 — tell the user to trigger the auth flow in their agent, complete it in the browser, and reload the session.
+
+## Supabase Documentation
+
+Before implementing any Supabase feature, find the relevant documentation. Use these methods in priority order:
+
+1. **MCP `search_docs` tool** (preferred — returns relevant snippets directly)
+2. **Fetch docs pages as markdown** — any docs page can be fetched by appending `.md` to the URL path.
+3. **Web search** for Supabase-specific topics when you don't know which page to look at.
+
+## Making and Committing Schema Changes
+
+**To make schema changes, use `execute_sql` (MCP) or `supabase db query` (CLI).** These run SQL directly on the database without creating migration history entries, so you can iterate freely and generate a clean migration when ready.
+
+Do NOT use `apply_migration` to change a local database schema — it writes a migration history entry on every call, which means you can't iterate, and `supabase db diff` / `supabase db pull` will produce empty or conflicting diffs. If you use it, you'll be stuck with whatever SQL you passed on the first try.
+
+**When ready to commit** your changes to a migration file:
+
+1. **Run advisors** → `supabase db advisors` (CLI v2.81.3+) or MCP `get_advisors`. Fix any issues.
+2. **Review the Security Checklist above** if your changes involve views, functions, triggers, or storage.
+3. **Generate the migration** → `supabase db pull <descriptive-name> --local --yes`
+4. **Verify** → `supabase migration list --local`
+
+## Reference Guides
+
+- **Skill Feedback** → [references/skill-feedback.md](references/skill-feedback.md)
+  **MUST read when** the user reports that this skill gave incorrect guidance or is missing information.
+/data/dexter/Desktop/supabase-vercel-stack
+
+  → Inspect commit diff and touched files
+  • Trace changed behavior against existing code/tests
+  • Return prioritized JSON findings
+exec
+/bin/bash -lc "git show --stat --oneline --decorate --find-renames 4222cc4 && git show --name-only --format='' 4222cc4" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+4222cc4 task013: update CI tests and release workflow
+ .eslintrc.json                         |    1 -
+ .github/workflows/deploy.yml           |   15 +-
+ .gitignore                             |    6 +-
+ eslint.config.mjs                      |  103 ++++
+ package-lock.json                      |   54 +-
+ package.json                           |   21 +-
+ tests/IMPLEMENTATION_GUIDE.md          |  288 ++-------
+ tests/README.md                        |  124 +---
+ tests/SUMMARY.md                       |  415 +------------
+ tests/package-lock.json                |  225 ++++---
+ tests/package.json                     |   12 +-
+ tests/tasks/E2E-QUICK-START.md         |  263 ---------
+ tests/tasks/README-E2E.md              |  257 --------
+ tests/tasks/e2e-0-master.md            |  611 -------------------
+ tests/tasks/e2e-1.md                   |  976 ------------------------------
+ tests/tasks/e2e-2.md                   |  760 ------------------------
+ tests/tasks/e2e-3.md                   |  856 ---------------------------
+ tests/tasks/e2e-4.md                   | 1015 --------------------------------
+ tests/tasks/task000.md                 |  828 --------------------------
+ tests/tasks/task001.md                 |  171 ------
+ tests/unit/lib/request-utils.test.ts   |    4 +-
+ tests/unit/lib/with-rate-limit.test.ts |    2 +-
+ 22 files changed, 365 insertions(+), 6642 deletions(-)
+.eslintrc.json
+.github/workflows/deploy.yml
+.gitignore
+eslint.config.mjs
+package-lock.json
+package.json
+tests/IMPLEMENTATION_GUIDE.md
+tests/README.md
+tests/SUMMARY.md
+tests/package-lock.json
+tests/package.json
+tests/tasks/E2E-QUICK-START.md
+tests/tasks/README-E2E.md
+tests/tasks/e2e-0-master.md
+tests/tasks/e2e-1.md
+tests/tasks/e2e-2.md
+tests/tasks/e2e-3.md
+tests/tasks/e2e-4.md
+tests/tasks/task000.md
+tests/tasks/task001.md
+tests/unit/lib/request-utils.test.ts
+tests/unit/lib/with-rate-limit.test.ts
+
+exec
+/bin/bash -lc 'git show --find-renames --find-copies -- src package.json tests/package.json .github/workflows/deploy.yml eslint.config.mjs .gitignore tests/unit/lib/request-utils.test.ts tests/unit/lib/with-rate-limit.test.ts 4222cc4' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+exec
+/bin/bash -lc 'git show --find-renames --find-copies 4222cc4 -- package.json tests/package.json .github/workflows/deploy.yml eslint.config.mjs .gitignore tests/unit/lib/request-utils.test.ts tests/unit/lib/with-rate-limit.test.ts' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+commit 4222cc47e75f5502e2a7927be66ef7cc98f38676
+Author: nima20002000 <nima20002000@users.noreply.github.com>
+Date:   Mon Jun 1 14:51:01 2026 +0330
+
+    task013: update CI tests and release workflow
+
+diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+index aa2bd6d..5022d31 100644
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -7,7 +7,7 @@ on:
+ 
+ jobs:
+   checks:
+-    name: Verify and test
++    name: Install, lint, build, and test
+     runs-on: ubuntu-latest
+     env:
+       CI: true
+@@ -59,8 +59,17 @@ jobs:
+       - name: Verify repository config
+         run: npm run verify
+ 
++      - name: Lint
++        run: npm run lint
++
+       - name: Unit tests
+-        run: npm --prefix tests run test:unit
++        run: npm run test:ci
+ 
+       - name: Production build
+-        run: node scripts/generate-build-version.js && npx next build --webpack
++        run: npm run build
++
++      - name: Storybook build
++        run: npm run build-storybook
++
++      - name: Production dependency audit
++        run: npm audit --omit=dev
+diff --git a/.gitignore b/.gitignore
+index ac0cd7c..268f7ee 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -45,8 +45,10 @@ CLAUDE.md
+ # tasks folder (project notes and planning)
+ /tasks
+ 
+-# database dumps and local schema artifacts
+-/database
++# local database dumps and generated schema artifacts
++*.dump
++*.sql.gz
++*.schema.local.sql
+ 
+ # mcp config
+ .mcp.json
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+new file mode 100644
+index 0000000..e1af282
+--- /dev/null
++++ b/eslint.config.mjs
+@@ -0,0 +1,103 @@
++import js from '@eslint/js';
++import nextPlugin from '@next/eslint-plugin-next';
++import tsParser from '@typescript-eslint/parser';
++import tsPlugin from '@typescript-eslint/eslint-plugin';
++import prettierPlugin from 'eslint-plugin-prettier';
++import reactHooksPlugin from 'eslint-plugin-react-hooks';
++import globals from 'globals';
++import { fileURLToPath } from 'node:url';
++import path from 'node:path';
++
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
++
++export default [
++  {
++    linterOptions: {
++      reportUnusedDisableDirectives: 'off',
++    },
++  },
++  {
++    ignores: [
++      '.next/**',
++      '.storybook/**',
++      'config/**',
++      'coverage/**',
++      'docs/**',
++      'node_modules/**',
++      'public/**',
++      'scripts/**',
++      'storybook-static/**',
++      'supabase/**',
++      'tests/**',
++      'vps/**',
++      '**/*.stories.ts',
++      '**/*.stories.tsx',
++      '*.config.js',
++      '*.config.mjs',
++      'next-env.d.ts',
++    ],
++  },
++  {
++    files: ['src/**/*.{ts,tsx}', 'middleware.ts'],
++    languageOptions: {
++      parser: tsParser,
++      parserOptions: {
++        project: './tsconfig.json',
++        tsconfigRootDir: __dirname,
++      },
++      globals: {
++        ...globals.browser,
++        ...globals.node,
++        ...globals.es2021,
++      },
++    },
++    plugins: {
++      '@next/next': nextPlugin,
++      '@typescript-eslint': tsPlugin,
++      prettier: prettierPlugin,
++      'react-hooks': reactHooksPlugin,
++    },
++    rules: {
++      ...js.configs.recommended.rules,
++      ...tsPlugin.configs.recommended.rules,
++      ...nextPlugin.configs.recommended.rules,
++      ...nextPlugin.configs['core-web-vitals'].rules,
++      'react-hooks/exhaustive-deps': 'warn',
++      'react-hooks/rules-of-hooks': 'error',
++      'no-unused-vars': 'off',
++      'no-undef': 'off',
++      '@typescript-eslint/no-explicit-any': 'error',
++      '@typescript-eslint/no-unused-vars': [
++        'error',
++        {
++          argsIgnorePattern: '^_',
++          varsIgnorePattern: '^_',
++        },
++      ],
++      '@typescript-eslint/switch-exhaustiveness-check': 'error',
++      '@typescript-eslint/consistent-return': 'warn',
++      '@typescript-eslint/no-non-null-assertion': 'error',
++      '@typescript-eslint/ban-ts-comment': 'error',
++      '@typescript-eslint/explicit-function-return-type': 'off',
++      '@typescript-eslint/explicit-module-boundary-types': 'off',
++      '@typescript-eslint/no-unsafe-assignment': 'off',
++      '@typescript-eslint/no-unsafe-member-access': 'off',
++      '@typescript-eslint/no-unsafe-call': 'off',
++      semi: ['error', 'always'],
++      quotes: [
++        'error',
++        'single',
++        {
++          avoidEscape: true,
++        },
++      ],
++      'no-console': [
++        'warn',
++        {
++          allow: ['warn', 'error'],
++        },
++      ],
++    },
++  },
++];
+diff --git a/package.json b/package.json
+index 151165f..5c14f55 100644
+--- a/package.json
++++ b/package.json
+@@ -1,11 +1,12 @@
+ {
+-  "name": "kitia",
++  "name": "supabase-vercel-stack",
+   "version": "0.1.0",
+-  "private": true,
++  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
++  "license": "MIT",
+   "scripts": {
+     "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+     "dev:plain": "rm -rf .next && next dev",
+-    "build": "next build",
++    "build": "next build --webpack",
+     "start": "next start",
+     "lint": "eslint .",
+     "lint:fix": "eslint --fix .",
+@@ -14,6 +15,8 @@
+     "verify:routes": "bash scripts/verify-api-routes.sh",
+     "verify:config": "bash scripts/verify-config-files.sh",
+     "verify": "npm run verify:config && npm run verify:routes",
++    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
++    "test:ci": "npm run test:unit",
+     "prebuild": "npm run verify && node scripts/generate-build-version.js",
+     "predev": "npm run verify:config",
+     "test": "npm --prefix tests run test --",
+@@ -24,9 +27,6 @@
+     "unit": "npm --prefix tests run test:unit --",
+     "integration": "npm --prefix tests run test:integration --",
+     "e2e": "npm --prefix tests run test:e2e --",
+-    "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
+-    "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
+-    "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh",
+     "prepare": "husky",
+     "storybook": "storybook dev -p 6006",
+     "build-storybook": "storybook build"
+@@ -44,15 +44,15 @@
+     "@supabase/supabase-js": "^2.88.0",
+     "@upstash/ratelimit": "^2.0.7",
+     "@upstash/redis": "^1.35.7",
++    "axios": "^1.16.1",
+     "bcryptjs": "^2.4.3",
+     "date-fns": "^3.6.0",
+     "dotenv": "^17.2.3",
+     "form-data": "^4.0.5",
+-    "kavenegar": "^1.1.4",
+     "libphonenumber-js": "^1.12.30",
+     "next": "^16.2.6",
+     "next-auth": "^4.24.0",
+-    "nodemailer": "^8.0.8",
++    "nodemailer": "^8.0.10",
+     "pdfkit": "^0.15.0",
+     "pino": "^10.1.0",
+     "postgres": "^3.4.7",
+@@ -62,11 +62,12 @@
+     "server-only": "^0.0.1",
+     "stripe": "^20.3.1",
+     "uuid": "^14.0.0",
+-    "zarinpal-node-sdk": "^2.2.0",
+     "zustand": "^4.5.0"
+   },
+   "devDependencies": {
++    "@eslint/js": "^9.39.4",
+     "@chromatic-com/storybook": "^4.1.3",
++    "@next/eslint-plugin-next": "^16.2.6",
+     "@storybook/addon-a11y": "^10.1.11",
+     "@storybook/addon-docs": "^10.1.11",
+     "@storybook/addon-onboarding": "^10.1.11",
+@@ -89,7 +90,9 @@
+     "eslint-config-next": "^16.2.6",
+     "eslint-config-prettier": "^10.1.8",
+     "eslint-plugin-prettier": "^5.5.4",
++    "eslint-plugin-react-hooks": "^7.0.1",
+     "eslint-plugin-storybook": "^10.1.11",
++    "globals": "^16.5.0",
+     "husky": "^9.1.7",
+     "lint-staged": "^16.2.7",
+     "pino-pretty": "^13.1.2",
+diff --git a/tests/package.json b/tests/package.json
+index 19eb884..3ff826c 100644
+--- a/tests/package.json
++++ b/tests/package.json
+@@ -1,7 +1,7 @@
+ {
+-  "name": "kitia-tests",
++  "name": "supabase-vercel-stack-tests",
+   "version": "1.0.0",
+-  "description": "Test suite for Kitia e-commerce platform",
++  "description": "Test suite for the Supabase Vercel Stack commerce boilerplate",
+   "private": true,
+   "type": "module",
+   "scripts": {
+@@ -36,15 +36,15 @@
+   "devDependencies": {
+     "@playwright/test": "^1.57.0",
+     "@types/node": "^20.12.0",
+-    "@vitest/coverage-v8": "^4.1.7",
+-    "@vitest/ui": "^4.1.7",
++    "@vitest/coverage-v8": "4.0.16",
++    "@vitest/ui": "4.0.16",
+     "dotenv": "^16.4.5",
+     "jsdom": "^24.1.3",
+     "msw": "^2.6.8",
+     "typescript": "^5.4.0",
+     "undici": "^6.25.0",
+-    "vite": "^7.3.3",
+-    "vitest": "^4.1.7"
++    "vite": "7.3.0",
++    "vitest": "4.0.16"
+   },
+   "engines": {
+     "node": ">=20.0.0"
+diff --git a/tests/unit/lib/request-utils.test.ts b/tests/unit/lib/request-utils.test.ts
+index a6dec6d..21d1b4f 100644
+--- a/tests/unit/lib/request-utils.test.ts
++++ b/tests/unit/lib/request-utils.test.ts
+@@ -100,12 +100,12 @@ describe('request-utils', () => {
+       expect(result).toBe('203.0.113.100');
+     });
+ 
+-    it('returns req.ip as fallback when no headers are set', () => {
++    it('returns null when no supported IP headers are set', () => {
+       const req = createMockRequest({}, '192.0.2.50');
+ 
+       const result = getClientIp(req);
+ 
+-      expect(result).toBe('192.0.2.50');
++      expect(result).toBeNull();
+     });
+ 
+     // Edge Cases
+diff --git a/tests/unit/lib/with-rate-limit.test.ts b/tests/unit/lib/with-rate-limit.test.ts
+index 6cbbdeb..51ec1a1 100644
+--- a/tests/unit/lib/with-rate-limit.test.ts
++++ b/tests/unit/lib/with-rate-limit.test.ts
+@@ -39,7 +39,7 @@ describe('withRateLimit', () => {
+     const body = await response.json();
+ 
+     expect(response.status).toBe(429);
+-    expect(body.error).toContain('تعداد درخواست');
++    expect(body.error).toBe('Too many requests. Please wait before trying again.');
+     expect(body.retryAfter).toBe(reset);
+     expect(handler).not.toHaveBeenCalled();
+     expect(response.headers.get('X-RateLimit-Limit')).toBe('10');
+
+exec
+/bin/bash -lc "grep -R \"nodemailer\\|from 'nodemailer'\\|require('nodemailer\" -n --exclude-dir=node_modules --exclude-dir=.git src . | head -100" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+src/lib/email/client.ts:3:import nodemailer from 'nodemailer';
+src/lib/email/client.ts:125:    let transporter: nodemailer.Transporter;
+src/lib/email/client.ts:135:      transporter = nodemailer.createTransport({
+src/lib/email/client.ts:145:      transporter = nodemailer.createTransport({
+src/lib/email/client.ts:175:      const testAccount = await nodemailer.createTestAccount();
+src/lib/email/client.ts:178:      transporter = nodemailer.createTransport({
+src/lib/email/client.ts:203:      const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round4.txt:10012:56-    "nodemailer": "^8.0.8",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:226: import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:256:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:330:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:342:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:362:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:374:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:391:       const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:398:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:410:       const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:421:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:9808:src/lib/email/client.ts(3,24): error TS2307: Cannot find module 'nodemailer' or its corresponding type declarations.
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:2922:const nodemailerSendMock = vi.fn();
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:2923:const createTransportMock = vi.fn(() => ({ sendMail: nodemailerSendMock }));
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:2934:vi.mock('nodemailer', () => ({
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3054:    nodemailerSendMock.mockResolvedValue({ messageId: 'smtp-1' });
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3100:import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3222:    let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3232:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3242:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3272:      const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3275:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt:3300:      const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task005-round3.txt:7951:import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task010-round1.txt:7870:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task010-round1.txt:7893:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task008-round2.txt:4579:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task008-round2.txt:4602:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:405: import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:435:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:509:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:521:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:538:       const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:545:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:557:       const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:568:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:2459:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:2482:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6297:import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6419:    let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6429:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6439:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6469:      const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6472:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:6497:      const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:12514:3529:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:12592:3708:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15128:171-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15215: * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15234:    let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15247:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15257:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15288:      const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:15294:      transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2499:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2522:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2585: import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2641:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2715:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2728:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2741:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2772:       const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2779:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2805:       const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2820:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:10010:    "nodemailer": "^8.0.8",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:10032:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2475: import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2505:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2579:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2591:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2608:       const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2615:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2627:       const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt:2638:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task001-round5.txt:8761:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task001-round5.txt:8784:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task007-round4.txt:7259:    "nodemailer": "^8.0.10",
+./tasks/open-source-boilerplate-conversion/reviews/task007-round4.txt:7282:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:577: import nodemailer from 'nodemailer';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:633:- * Send email using Resend REST API (production) or nodemailer (development)
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:707:     let transporter: nodemailer.Transporter;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:720:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:733:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:764:       const testAccount = await nodemailer.createTestAccount();
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:771:       transporter = nodemailer.createTransport({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:797:       const previewUrl = nodemailer.getTestMessageUrl(info);
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:812:-    log.error('Failed to send email via nodemailer', { error: errorMessage });
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:5658:    "nodemailer": "^8.0.8",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:5680:    "@types/nodemailer": "^7.0.4",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:8862:src/lib/email/client.ts(3,24): error TS2307: Cannot find module 'nodemailer' or its corresponding type declarations.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:11639:         "nodemailer": "^8.0.8",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:11661:         "@types/nodemailer": "^7.0.4",
+
+exec
+/bin/bash -lc 'git show 4222cc4''^:.eslintrc.json && printf '"'\\n--- current package scripts ---\\n' && cat package.json" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+    "plugin:storybook/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "ignorePatterns": [
+    "next.config.js",
+    "ecosystem.config.js",
+    "tests/**/*",
+    "config/**/*",
+    "scripts/**/*",
+    "docs/kavenegar-examples-node-master (2)/**/*",
+    "**/*.stories.tsx",
+    "**/*.stories.ts",
+    ".storybook/**/*",
+    "vitest.config.ts",
+    "storybook-static/**/*"
+  ],
+  "plugins": ["@typescript-eslint", "prettier"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
+    "@typescript-eslint/consistent-return": "warn",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/ban-ts-comment": "error",
+    "prettier/prettier": "error",
+    "semi": ["error", "always"],
+    "quotes": [
+      "error",
+      "single",
+      {
+        "avoidEscape": true
+      }
+    ],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off"
+  }
+}
+
+--- current package scripts ---
+{
+  "name": "supabase-vercel-stack",
+  "version": "0.1.0",
+  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+    "dev:plain": "rm -rf .next && next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "verify:routes": "bash scripts/verify-api-routes.sh",
+    "verify:config": "bash scripts/verify-config-files.sh",
+    "verify": "npm run verify:config && npm run verify:routes",
+    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
+    "test:ci": "npm run test:unit",
+    "prebuild": "npm run verify && node scripts/generate-build-version.js",
+    "predev": "npm run verify:config",
+    "test": "npm --prefix tests run test --",
+    "test:all": "npm --prefix tests run test:all --",
+    "test:unit": "npm --prefix tests run test:unit --",
+    "test:integration": "npm --prefix tests run test:integration --",
+    "test:e2e": "npm --prefix tests run test:e2e --",
+    "unit": "npm --prefix tests run test:unit --",
+    "integration": "npm --prefix tests run test:integration --",
+    "e2e": "npm --prefix tests run test:e2e --",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.943.0",
+    "@aws-sdk/lib-storage": "^3.943.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.1.0",
+    "@smithy/node-http-handler": "^4.4.5",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.7",
+    "axios": "^1.16.1",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
+    "form-data": "^4.0.5",
+    "libphonenumber-js": "^1.12.30",
+    "next": "^16.2.6",
+    "next-auth": "^4.24.0",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.15.0",
+    "pino": "^10.1.0",
+    "postgres": "^3.4.7",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "resend": "^6.6.0",
+    "server-only": "^0.0.1",
+    "stripe": "^20.3.1",
+    "uuid": "^14.0.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@chromatic-com/storybook": "^4.1.3",
+    "@next/eslint-plugin-next": "^16.2.6",
+    "@storybook/addon-a11y": "^10.1.11",
+    "@storybook/addon-docs": "^10.1.11",
+    "@storybook/addon-onboarding": "^10.1.11",
+    "@storybook/addon-vitest": "^10.1.11",
+    "@storybook/nextjs-vite": "^10.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.0",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.13.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitest/browser-playwright": "^4.0.16",
+    "@vitest/coverage-v8": "^4.0.16",
+    "autoprefixer": "^10.4.0",
+    "critters": "^0.0.23",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-storybook": "^10.1.11",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "pino-pretty": "^13.1.2",
+    "playwright": "^1.57.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.7.4",
+    "storybook": "^10.1.11",
+    "supabase": "^2.67.2",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "uuid": "$uuid",
+    "glob": "10.5.0"
+  }
+}
+
+exec
+/bin/bash -lc "grep -R \"kavenegar\\|zarinpal-node-sdk\\|axios\" -n --exclude-dir=node_modules --exclude-dir=.git ." in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 108ms:
+ana"},"video/vp9":{"source":"iana"},"video/webm":{"source":"apache","compressible":false,"extensions":["webm"]},"video/x-f4v":{"source":"apache","extensions":["f4v"]},"video/x-fli":{"source":"apache","extensions":["fli"]},"video/x-flv":{"source":"apache","compressible":false,"extensions":["flv"]},"video/x-m4v":{"source":"apache","extensions":["m4v"]},"video/x-matroska":{"source":"apache","compressible":false,"extensions":["mkv","mk3d","mks"]},"video/x-mng":{"source":"apache","extensions":["mng"]},"video/x-ms-asf":{"source":"apache","extensions":["asf","asx"]},"video/x-ms-vob":{"source":"apache","extensions":["vob"]},"video/x-ms-wm":{"source":"apache","extensions":["wm"]},"video/x-ms-wmv":{"source":"apache","compressible":false,"extensions":["wmv"]},"video/x-ms-wmx":{"source":"apache","extensions":["wmx"]},"video/x-ms-wvx":{"source":"apache","extensions":["wvx"]},"video/x-msvideo":{"source":"apache","extensions":["avi"]},"video/x-sgi-movie":{"source":"apache","extensions":["movie"]},"video/x-smv":{"source":"apache","extensions":["smv"]},"x-conference/x-cooltalk":{"source":"apache","extensions":["ice"]},"x-shader/x-fragment":{"compressible":true},"x-shader/x-vertex":{"compressible":true}}')},92535:a=>{"use strict";a.exports=(a,b=process.argv)=>{let c=a.startsWith("-")?"":1===a.length?"-":"--",d=b.indexOf(c+a),e=b.indexOf("--");return -1!==d&&(-1===e||d<e)}},93467:a=>{"use strict";a.exports="u">typeof Reflect&&Reflect.getPrototypeOf||null},93746:(a,b,c)=>{"use strict";var d=c(22746);a.exports=Function.prototype.bind||d},94159:a=>{a.exports=function(a,b){var c=!Array.isArray(a),d={index:0,keyedList:c||b?Object.keys(a):null,jobs:{},results:c?{}:[],size:c?Object.keys(a).length:a.length};return b&&d.keyedList.sort(c?b:function(c,d){return b(a[c],a[d])}),d}},94314:(a,b,c)=>{var d=c(17202);a.exports=function(a){var b=!1;return d(function(){b=!0}),function(c,e){b?a(c,e):d(function(){a(c,e)})}}},95422:function(a,b,c){"use strict";var d=this&&this.__awaiter||function(a,b,c,d){return new(c||(c=Promise))(function(e,f){function g(a){try{i(d.next(a))}catch(a){f(a)}}function h(a){try{i(d.throw(a))}catch(a){f(a)}}function i(a){var b;a.done?e(a.value):((b=a.value)instanceof c?b:new c(function(a){a(b)})).then(g,h)}i((d=d.apply(a,b||[])).next())})},e=this&&this.__importDefault||function(a){return a&&a.__esModule?a:{default:a}};Object.defineProperty(b,"__esModule",{value:!0});let f=e(c(91645)),g=e(c(34631)),h=e(c(1932)),i=e(c(12412)),j=e(c(46140)),k=c(85989),l=e(c(72177)),m=j.default("https-proxy-agent:agent");class n extends k.Agent{constructor(a){let b;if(!(b="string"==typeof a?h.default.parse(a):a))throw Error("an HTTP(S) proxy server `host` and `port` must be specified!");m("creating new HttpsProxyAgent instance: %o",b),super(b);const c=Object.assign({},b);this.secureProxy=b.secureProxy||function(a){return"string"==typeof a&&/^https:?$/i.test(a)}(c.protocol),c.host=c.hostname||c.host,"string"==typeof c.port&&(c.port=parseInt(c.port,10)),!c.port&&c.host&&(c.port=this.secureProxy?443:80),!this.secureProxy||"ALPNProtocols"in c||(c.ALPNProtocols=["http 1.1"]),c.host&&c.path&&(delete c.path,delete c.pathname),this.proxy=c}callback(a,b){return d(this,void 0,void 0,function*(){var c,d;let e,{proxy:h,secureProxy:j}=this;j?(m("Creating `tls.Socket`: %o",h),e=g.default.connect(h)):(m("Creating `net.Socket`: %o",h),e=f.default.connect(h));let k=Object.assign({},h.headers),n=`${b.host}:${b.port}`,p=`CONNECT ${n} HTTP/1.1\r
+./src/lib/paypal/client.ts:2:import axios, { AxiosError } from 'axios';
+./src/lib/paypal/client.ts:144:  return axios.create({
+./src/lib/paypal/client.ts:215:    const axiosError = error as AxiosError<{ error_description?: string }>;
+./src/lib/paypal/client.ts:217:      axiosError.response?.data?.error_description ||
+./src/lib/paypal/client.ts:291:    const axiosError = error as AxiosError<{ message?: string }>;
+./src/lib/paypal/client.ts:293:      axiosError.response?.data?.message ||
+./src/lib/paypal/client.ts:320:    const axiosError = error as AxiosError<{ message?: string }>;
+./src/lib/paypal/client.ts:322:      axiosError.response?.data?.message ||
+./src/lib/paypal/client.ts:341:    const axiosError = error as AxiosError<{ message?: string }>;
+./src/lib/paypal/client.ts:343:      axiosError.response?.data?.message ||
+./src/lib/paypal/client.ts:384:    const axiosError = error as AxiosError<{ message?: string }>;
+./src/lib/paypal/client.ts:386:      axiosError.response?.data?.message ||
+
+exec
+/bin/bash -lc "sed -n '1,180p' .github/workflows/deploy.yml && echo '--- package lock root grep' && grep -n '\"kavenegar\"\\|\"zarinpal-node-sdk\"\\|\"axios\"\\|\"private\"' package-lock.json | head -50 && echo '--- tests scripts' && cat tests/package.json" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: Install, lint, build, and test
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-nextauth-secret-change-me
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+      SUPABASE_SECRET_KEY: ci-secret-key
+      NEXT_PUBLIC_DEFAULT_LOCALE: en-US
+      NEXT_PUBLIC_DEFAULT_CURRENCY: USD
+      NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY: US
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_placeholder
+      PAYPAL_CLIENT_ID: paypal-client-id-placeholder
+      PAYPAL_CLIENT_SECRET: paypal-client-secret-placeholder
+      PAYPAL_WEBHOOK_ID: paypal-webhook-id-placeholder
+      PAYPAL_ENV: sandbox
+      PAYMENT_SITE_NAME: Supabase Vercel Stack
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-upstash-token-placeholder
+      R2_ACCOUNT_ID: ci-r2-account-placeholder
+      R2_ACCESS_KEY_ID: ci-r2-access-key-placeholder
+      R2_SECRET_ACCESS_KEY: ci-r2-secret-placeholder
+      R2_BUCKET_NAME: ci-media-bucket
+      R2_PUBLIC_URL: https://media.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm --prefix tests ci
+
+      - name: Verify repository config
+        run: npm run verify
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Storybook build
+        run: npm run build-storybook
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev
+--- package lock root grep
+24:        "axios": "^1.16.1",
+--- tests scripts
+{
+  "name": "supabase-vercel-stack-tests",
+  "version": "1.0.0",
+  "description": "Test suite for the Supabase Vercel Stack commerce boilerplate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:integration",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e:chromium",
+    "test:unit": "vitest run --config vitest.config.unit.ts",
+    "test:unit:watch": "vitest watch --config vitest.config.unit.ts",
+    "test:unit:parallel": "vitest run --config vitest.config.unit.ts --reporter=verbose",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:integration:watch": "vitest watch --config vitest.config.integration.ts",
+    "test:integration:fast": "node scripts/run-integration-fast.js",
+    "test:ui": "vitest --ui --config vitest.config.unit.ts",
+    "test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
+    "test:coverage:all": "vitest run --coverage",
+    "test:contract": "vitest run --config vitest.config.contract.ts",
+    "mock:record": "node scripts/record-contracts.js",
+    "mock:validate": "node scripts/validate-contracts.js",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:headed": "playwright test --config=e2e/playwright.config.ts --headed",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
+    "test:e2e:chromium": "playwright test --config=e2e/playwright.config.ts --project=chromium",
+    "test:e2e:firefox": "playwright test --config=e2e/playwright.config.ts --project=firefox",
+    "test:e2e:mobile": "playwright test --config=e2e/playwright.config.ts --project=mobile",
+    "test:e2e:report": "playwright show-report e2e/playwright-report"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/redis": "^1.35.7",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^20.12.0",
+    "@vitest/coverage-v8": "4.0.16",
+    "@vitest/ui": "4.0.16",
+    "dotenv": "^16.4.5",
+    "jsdom": "^24.1.3",
+    "msw": "^2.6.8",
+    "typescript": "^5.4.0",
+    "undici": "^6.25.0",
+    "vite": "7.3.0",
+    "vitest": "4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+
+exec
+/bin/bash -lc "sed -n '1,220p' src/lib/request-utils.ts; echo '--- with rate limit'; sed -n '1,220p' src/lib/with-rate-limit.ts; echo '--- tests helpers maybe'; sed -n '1,150p' tests/unit/lib/request-utils.test.ts; sed -n '1,100p' tests/unit/lib/with-rate-limit.test.ts" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+/**
+ * Request utility functions for extracting client information
+ * Used for activity logging and analytics
+ */
+
+import { NextRequest } from 'next/server';
+import { log } from '@/lib/logger';
+
+/**
+ * Extract client IP address from request headers
+ * Checks multiple headers in order of preference:
+ * 1. cf-connecting-ip (Cloudflare's verified client IP - most reliable when using Cloudflare)
+ * 2. x-forwarded-for (proxy/load balancer)
+ * 3. x-real-ip (nginx)
+ * 4. request adapter ip property, when present
+ *
+ * @param req Next.js request object
+ * @returns IP address string or null if unavailable
+ */
+export function getClientIp(req: NextRequest): string | null {
+  try {
+    // Cloudflare's verified client IP (most reliable when using Cloudflare CDN)
+    const cfConnectingIp = req.headers.get('cf-connecting-ip');
+    if (cfConnectingIp && cfConnectingIp !== '') {
+      return cfConnectingIp;
+    }
+
+    // Try x-forwarded-for (common with proxies/CDN)
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    if (forwardedFor) {
+      // May contain multiple IPs (client, proxy1, proxy2, ...)
+      // First IP is the original client
+      const ips = forwardedFor.split(',').map((ip) => ip.trim());
+      if (ips[0] && ips[0] !== '') {
+        return ips[0];
+      }
+    }
+
+    // Try x-real-ip (nginx)
+    const realIp = req.headers.get('x-real-ip');
+    if (realIp && realIp !== '') {
+      return realIp;
+    }
+
+    // Fallback: try adapter-specific request context when present.
+    const ip = (req as NextRequest & { ip?: string }).ip;
+    if (ip && ip !== '') {
+      return ip;
+    }
+
+    // No IP found
+    return null;
+  } catch (error) {
+    log.warn('Failed to extract client IP', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return null;
+  }
+}
+
+/**
+ * Extract user agent from request headers
+ *
+ * @param req Next.js request object
+ * @returns User agent string or null if unavailable
+ */
+export function getUserAgent(req: NextRequest): string | null {
+  try {
+    const userAgent = req.headers.get('user-agent');
+    if (userAgent && userAgent !== '') {
+      // Truncate to 2000 chars to prevent extremely long user-agents
+      return userAgent.substring(0, 2000);
+    }
+    return null;
+  } catch (error) {
+    log.warn('Failed to extract user agent', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return null;
+  }
+}
+
+/**
+ * Extract both IP and user agent in a single call
+ * Convenience function for activity logging
+ * IP is sanitized to filter out private/local addresses
+ *
+ * @param req Next.js request object
+ * @returns Object with ipAddress and userAgent (both nullable)
+ */
+export function getClientInfo(req: NextRequest): {
+  ipAddress: string | null;
+  userAgent: string | null;
+} {
+  return {
+    ipAddress: sanitizeIp(getClientIp(req)),
+    userAgent: getUserAgent(req),
+  };
+}
+
+/**
+ * Validate IPv4 address format
+ * @param ip IP address string
+ * @returns true if valid IPv4
+ */
+export function isValidIPv4(ip: string): boolean {
+  const ipv4Regex =
+    /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+  return ipv4Regex.test(ip);
+}
+
+/**
+ * Validate IPv6 address format (basic check)
+ * @param ip IP address string
+ * @returns true if looks like IPv6
+ */
+export function isValidIPv6(ip: string): boolean {
+  // Very basic IPv6 check (contains colons and hex chars)
+  return /^[0-9a-fA-F:]+$/.test(ip) && ip.includes(':');
+}
+
+/**
+ * Sanitize IP address for storage
+ * Ensures IP is valid and not a local/private address (for security)
+ *
+ * @param ip IP address string
+ * @returns Sanitized IP or null if invalid/private
+ */
+export function sanitizeIp(ip: string | null): string | null {
+  if (!ip || ip === '') {
+    return null;
+  }
+
+  let trimmed = ip.trim();
+
+  // Handle whitespace-only input
+  if (trimmed === '') {
+    return null;
+  }
+
+  // Handle IPv6-mapped IPv4 addresses (::ffff:192.168.1.1)
+  if (trimmed.toLowerCase().startsWith('::ffff:')) {
+    trimmed = trimmed.substring(7); // Extract the IPv4 part
+  }
+
+  // Skip localhost
+  if (trimmed === '127.0.0.1' || trimmed === '::1' || trimmed === 'localhost') {
+    return null;
+  }
+
+  // Skip private IPv4 ranges (10.x.x.x, 192.168.x.x, 172.16-31.x.x)
+  if (
+    trimmed.startsWith('10.') ||
+    trimmed.startsWith('192.168.') ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(trimmed)
+  ) {
+    return null;
+  }
+
+  // Validate format
+  if (isValidIPv4(trimmed) || isValidIPv6(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
+}
+--- with rate limit
+sed: can't read src/lib/with-rate-limit.ts: No such file or directory
+--- tests helpers maybe
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
+import {
+  getClientIp,
+  getUserAgent,
+  getClientInfo,
+  sanitizeIp,
+  isValidIPv4,
+  isValidIPv6,
+} from '@/lib/request-utils';
+
+// Mock logger
+vi.mock('@/lib/logger', () => ({
+  log: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+import { log } from '@/lib/logger';
+
+/**
+ * Helper to create a mock NextRequest with specific headers
+ */
+function createMockRequest(
+  headers: Record<string, string> = {},
+  ip?: string
+): NextRequest {
+  const headersMap = new Map(Object.entries(headers));
+
+  return {
+    headers: {
+      get: (name: string) => headersMap.get(name) ?? null,
+    },
+    ip,
+  } as unknown as NextRequest;
+}
+
+describe('request-utils', () => {
+  const logMock = vi.mocked(log);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getClientIp', () => {
+    // Happy Path - Cloudflare Priority
+    it('returns cf-connecting-ip when present', () => {
+      const req = createMockRequest({
+        'cf-connecting-ip': '203.0.113.50',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.50');
+    });
+
+    it('prioritizes cf-connecting-ip over all other headers', () => {
+      const req = createMockRequest({
+        'cf-connecting-ip': '203.0.113.1',
+        'x-forwarded-for': '198.51.100.2',
+        'x-real-ip': '192.0.2.3',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.1');
+    });
+
+    // Happy Path - Fallback Headers
+    it('returns first IP from x-forwarded-for when cf-connecting-ip is not present', () => {
+      const req = createMockRequest({
+        'x-forwarded-for': '203.0.113.1, 198.51.100.2, 192.0.2.3',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.1');
+    });
+
+    it('handles x-forwarded-for with multiple IPs and extracts first', () => {
+      const req = createMockRequest({
+        'x-forwarded-for': '198.51.100.1,10.0.0.1,172.16.0.1',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('198.51.100.1');
+    });
+
+    it('returns x-real-ip when cf and forwarded-for are not present', () => {
+      const req = createMockRequest({
+        'x-real-ip': '203.0.113.100',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.100');
+    });
+
+    it('returns null when no supported IP headers are set', () => {
+      const req = createMockRequest({}, '192.0.2.50');
+
+      const result = getClientIp(req);
+
+      expect(result).toBeNull();
+    });
+
+    // Edge Cases
+    it('falls back to next header when cf-connecting-ip is empty string', () => {
+      const req = createMockRequest({
+        'cf-connecting-ip': '',
+        'x-forwarded-for': '203.0.113.5',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.5');
+    });
+
+    it('trims whitespace from x-forwarded-for IPs', () => {
+      const req = createMockRequest({
+        'x-forwarded-for': '  203.0.113.1  ,  198.51.100.2  ',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.1');
+    });
+
+    it('handles single IP in x-forwarded-for without commas', () => {
+      const req = createMockRequest({
+        'x-forwarded-for': '203.0.113.99',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('203.0.113.99');
+    });
+
+    it('handles IPv6 address in cf-connecting-ip', () => {
+      const req = createMockRequest({
+        'cf-connecting-ip': '2001:0db8:85a3::8a2e:0370:7334',
+      });
+
+      const result = getClientIp(req);
+
+      expect(result).toBe('2001:0db8:85a3::8a2e:0370:7334');
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest, NextResponse } from 'next/server';
+import { withRateLimit } from '@/lib/api/with-rate-limit';
+import { checkRateLimit } from '@/lib/rate-limit';
+
+vi.mock('@/lib/rate-limit', () => ({
+  checkRateLimit: vi.fn(),
+  apiLimiter: {},
+}));
+
+describe('withRateLimit', () => {
+  const checkRateLimitMock = vi.mocked(checkRateLimit);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns 429 with retry headers when rate limit exceeded', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2024-01-01T00:00:00Z'));
+
+    const reset = Date.now() + 6500;
+    checkRateLimitMock.mockResolvedValue({
+      success: false,
+      limit: 10,
+      remaining: 0,
+      reset,
+    });
+
+    const handler = vi.fn();
+    const wrapped = withRateLimit(handler);
+    const req = new NextRequest('http://localhost/api/test');
+
+    const response = await wrapped(req);
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(body.error).toBe('Too many requests. Please wait before trying again.');
+    expect(body.retryAfter).toBe(reset);
+    expect(handler).not.toHaveBeenCalled();
+    expect(response.headers.get('X-RateLimit-Limit')).toBe('10');
+    expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
+    expect(response.headers.get('X-RateLimit-Reset')).toBe(reset.toString());
+    expect(response.headers.get('Retry-After')).toBe('7');
+  });
+
+  it('adds rate limit headers to successful responses', async () => {
+    const reset = Date.now() + 10000;
+    checkRateLimitMock.mockResolvedValue({
+      success: true,
+      limit: 20,
+      remaining: 15,
+      reset,
+    });
+
+    const handler = vi
+      .fn()
+      .mockResolvedValue(NextResponse.json({ ok: true }, { status: 200 }));
+    const wrapped = withRateLimit(handler);
+    const req = new NextRequest('http://localhost/api/test');
+
+    const response = await wrapped(req);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(response.headers.get('X-RateLimit-Limit')).toBe('20');
+    expect(response.headers.get('X-RateLimit-Remaining')).toBe('15');
+    expect(response.headers.get('X-RateLimit-Reset')).toBe(reset.toString());
+    await expect(response.json()).resolves.toEqual({ ok: true });
+  });
+});
+
+exec
+/bin/bash -lc 'npm run test:ci -- request-utils' in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 696ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit -- request-utils
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts request-utils
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.1.7 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+ ❯ unit/lib/request-utils.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  unit/lib/request-utils.test.ts [ unit/lib/request-utils.test.ts ]
+Error: Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL
+Please copy .env.example to .env and configure test credentials.
+ ❯ setup.ts:28:11
+     26| for (const envVar of requiredEnvVars) {
+     27|   if (!process.env[envVar]) {
+     28|     throw new Error(
+       |           ^
+     29|       `Missing required environment variable: ${envVar}\n` +
+     30|         'Please copy .env.example to .env and configure test credentia…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  22:55:14
+   Duration  120ms (transform 24ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)
+
+
+exec
+/bin/bash -lc 'NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key npm run test:ci -- request-utils' in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 733ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit -- request-utils
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts request-utils
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.1.7 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+stdout | unit/lib/request-utils.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ❯ unit/lib/request-utils.test.ts (115 tests | 1 failed) 15ms
+       × returns null when no supported IP headers are set 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  unit/lib/request-utils.test.ts > request-utils > getClientIp > returns null when no supported IP headers are set
+AssertionError: expected '192.0.2.50' to be null
+
+- Expected:
+null
+
++ Received:
+"192.0.2.50"
+
+ ❯ unit/lib/request-utils.test.ts:108:22
+    106|       const result = getClientIp(req);
+    107|
+    108|       expect(result).toBeNull();
+       |                      ^
+    109|     });
+    110|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 114 passed (115)
+   Start at  22:55:18
+   Duration  177ms (transform 56ms, setup 36ms, import 41ms, tests 15ms, environment 0ms)
+
+
+exec
+/bin/bash -lc 'NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key npm run lint' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 4093ms:
+exec
+/bin/bash -lc "CI=true DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=ci-nextauth-secret-change-me NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key NEXT_PUBLIC_DEFAULT_LOCALE=en-US NEXT_PUBLIC_DEFAULT_CURRENCY=USD NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US STRIPE_SECRET_KEY=sk_test_placeholder NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_placeholder STRIPE_WEBHOOK_SECRET=whsec_placeholder PAYPAL_CLIENT_ID=paypal-client-id-placeholder PAYPAL_CLIENT_SECRET=paypal-client-secret-placeholder PAYPAL_WEBHOOK_ID=paypal-webhook-id-placeholder PAYPAL_ENV=sandbox PAYMENT_SITE_NAME='Supabase Vercel Stack' UPSTASH_REDIS_REST_URL=https://example.upstash.io UPSTASH_REDIS_REST_TOKEN=ci-upstash-token-placeholder R2_ACCOUNT_ID=ci-r2-account-placeholder R2_ACCESS_KEY_ID=ci-r2-access-key-placeholder R2_SECRET_ACCESS_KEY=ci-r2-secret-placeholder R2_BUCKET_NAME=ci-media-bucket R2_PUBLIC_URL=https://media.example.com npm run build" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 22336ms:
+
+> supabase-vercel-stack@0.1.0 verify
+> npm run verify:config && npm run verify:routes
+
+
+> supabase-vercel-stack@0.1.0 verify:config
+> bash scripts/verify-config-files.sh
+
+🔍 Verifying config files are not symlinks...
+
+✅ All critical config files are regular files (not symlinks)
+
+
+> supabase-vercel-stack@0.1.0 verify:routes
+> bash scripts/verify-api-routes.sh
+
+🔍 Verifying rendering mode exports...
+
+API routes checked: 51
+Server Component pages checked: 1
+
+✅ All routes have rendering mode exports (dynamic or revalidate)!
+
+Build should succeed on Vercel.
+[cache-busting] Generated service worker with version: 0e2e318-1780341934532
+[cache-busting] Generated build version: 0e2e318-1780341934532
+
+> supabase-vercel-stack@0.1.0 build
+> next build --webpack
+
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+Warning: Custom Cache-Control headers detected for the following routes:
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+▲ Next.js 16.2.6 (webpack)
+- Environments: .env
+- Experiments (use with caution):
+  ✓ optimizeCss
+  · serverActions
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (129kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ Compiled successfully in 6.9s
+  Running TypeScript ...
+  Finished TypeScript in 6.9s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/27) ...
+(node:3067935) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3067928) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Generating static pages using 15 workers (6/27) 
+  Generating static pages using 15 workers (13/27) 
+  Generating static pages using 15 workers (20/27) 
+✓ Generating static pages using 15 workers (27/27) in 340ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /admin
+├ ○ /admin/categories
+├ ○ /admin/products
+├ ƒ /admin/products/[id]/edit
+├ ○ /admin/products/new
+├ ○ /admin/promo-codes
+├ ○ /admin/settings
+├ ○ /admin/transactions
+├ ○ /admin/users
+├ ƒ /admin/users/[id]
+├ ƒ /api/admin/categories
+├ ƒ /api/admin/categories/[id]
+├ ƒ /api/admin/categories/bulk
+├ ƒ /api/admin/products
+├ ƒ /api/admin/products/bulk
+├ ƒ /api/admin/products/reorder
+├ ƒ /api/admin/promo-codes
+├ ƒ /api/admin/promo-codes/[id]
+├ ƒ /api/admin/r2-browser
+├ ƒ /api/admin/settings
+├ ƒ /api/admin/stats
+├ ƒ /api/admin/tags
+├ ƒ /api/admin/tags/[id]
+├ ƒ /api/admin/transactions
+├ ƒ /api/admin/transactions/[id]
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/bulk
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/register
+├ ƒ /api/categories
+├ ƒ /api/categories/[slug]
+├ ƒ /api/health
+├ ƒ /api/products
+├ ƒ /api/products/[id]
+├ ƒ /api/products/[id]/media
+├ ƒ /api/products/[id]/media/[mediaId]
+├ ƒ /api/products/[id]/variants
+├ ƒ /api/products/[id]/variants/[variantId]
+├ ƒ /api/products/[id]/variants/reorder
+├ ƒ /api/promo/active
+├ ƒ /api/promo/validate
+├ ƒ /api/search
+├ ƒ /api/tags
+├ ƒ /api/tags/search
+├ ƒ /api/transactions/[id]
+├ ƒ /api/transactions/create
+├ ƒ /api/transactions/paypal/capture
+├ ƒ /api/transactions/status
+├ ƒ /api/transactions/webhook-paypal
+├ ƒ /api/transactions/webhook-stripe
+├ ƒ /api/user/password
+├ ƒ /api/user/profile
+├ ƒ /api/user/transactions
+├ ƒ /api/user/wishlist
+├ ƒ /api/user/wishlist/[id]
+├ ƒ /api/user/wishlist/check
+├ ƒ /api/user/wishlist/count
+├ ƒ /api/user/wishlist/merge
+├ ƒ /api/version
+├ ○ /cart
+├ ○ /checkout
+├ ○ /contact
+├ ○ /faq
+├ ○ /login
+├ ○ /payment/failure
+├ ○ /payment/success
+├ ○ /payment/verify
+├ ○ /privacy
+├ ƒ /products
+├ ƒ /products/[id]
+├ ○ /profile
+├ ○ /profile/wishlist
+├ ○ /refund-policy
+├ ○ /register
+├ ƒ /robots.txt
+├ ○ /shipping
+├ ƒ /sitemap.xml
+├ ○ /terms
+└ ○ /wishlist
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+exec
+/bin/bash -lc "CI=true DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=ci-nextauth-secret-change-me NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key NEXT_PUBLIC_DEFAULT_LOCALE=en-US NEXT_PUBLIC_DEFAULT_CURRENCY=USD NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US STRIPE_SECRET_KEY=sk_test_placeholder NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_placeholder STRIPE_WEBHOOK_SECRET=whsec_placeholder PAYPAL_CLIENT_ID=paypal-client-id-placeholder PAYPAL_CLIENT_SECRET=paypal-client-secret-placeholder PAYPAL_WEBHOOK_ID=paypal-webhook-id-placeholder PAYPAL_ENV=sandbox PAYMENT_SITE_NAME='Supabase Vercel Stack' UPSTASH_REDIS_REST_URL=https://example.upstash.io UPSTASH_REDIS_REST_TOKEN=ci-upstash-token-placeholder R2_ACCOUNT_ID=ci-r2-account-placeholder R2_ACCESS_KEY_ID=ci-r2-access-key-placeholder R2_SECRET_ACCESS_KEY=ci-r2-secret-placeholder R2_BUCKET_NAME=ci-media-bucket R2_PUBLIC_URL=https://media.example.com npm run build-storybook" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 7412ms:
+
+┌  Building storybook v10.4.1
+│
+◇  Cleaning outputDir: storybook-static
+(node:3068192) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+│
+◇  Loading presets
+│
+◇  Building manager..
+│
+●  Building preview..
+│
+▲  No story files found for the specified pattern: src/**/*.mdx
+│  Vite vite v7.3.3 building client environment for production...
+│
+●  Copying static files: public at storybook-static
+│  Vite transforming...
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+│
+▲  Vite src/components/ui/Badge.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Badge.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Badge.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Pill.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Pill.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Pill.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Card.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Card.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Card.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Alert.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Alert.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Alert.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Input.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Input.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Input.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Modal.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Modal.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Modal.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Select.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Select.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Select.tsx"
+│  was ignored.
+│
+▲  Vite src/components/ui/Pagination.tsx (1:0): Error when using
+│  sourcemap for reporting an error: Can't resolve original location of
+│  error.
+│
+▲  Vite src/components/ui/Pagination.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui/Pagination.tsx" was ignored.
+│
+▲  Vite src/components/ui/Skeleton.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Skeleton.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui/Skeleton.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Input.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Input.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Input.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Button.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Button.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Button.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Select.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Select.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Select.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Pill.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Pill.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Pill.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Alert.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Alert.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Alert.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Card.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Card.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Card.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Badge.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Badge.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Badge.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Modal.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Modal.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Modal.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Skeleton.tsx (1:0): Error when using
+│  sourcemap for reporting an error: Can't resolve original location of
+│  error.
+│
+▲  Vite src/components/ui-v4/Skeleton.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Skeleton.tsx" was ignored.
+│  Vite ✓ 474 modules transformed.
+│  Vite rendering chunks...
+│  Vite computing gzip size...
+│  Vite storybook-static/iframe.html
+│  18.79 kB │ gzip:   5.22 kB
+│  Vite storybook-static/assets/iframe-CiU2Iw--.css
+│  63.81 kB │ gzip:  10.72 kB
+│  Vite storybook-static/assets/jsx-runtime-BHj4-8di.js
+│  0.07 kB │ gzip:   0.08 kB
+│  Vite storybook-static/assets/index-Bqd4KQ8N.js
+│  0.09 kB │ gzip:   0.10 kB
+│  Vite storybook-static/assets/style-DLbl0wRg.js
+│  0.14 kB │ gzip:   0.14 kB
+│  Vite storybook-static/assets/formatter-EIJCOSYU-Do1NnD20.js
+│  0.28 kB │ gzip:   0.23 kB
+│  Vite storybook-static/assets/index-BauiskeP.js
+│  0.42 kB │ gzip:   0.27 kB
+│  Vite storybook-static/assets/Pill.stories-Dy15FVPe.js
+│  2.62 kB │ gzip:   1.01 kB
+│  Vite storybook-static/assets/Input.stories-B0377Y6N.js
+│  2.77 kB │ gzip:   0.91 kB
+│  Vite storybook-static/assets/Button.stories-CnrwivfW.js
+│  3.15 kB │ gzip:   0.95 kB
+│  Vite storybook-static/assets/Button-nidMRkSo.js
+│  3.71 kB │ gzip:   1.36 kB
+│  Vite storybook-static/assets/Input-BukPERnM.js
+│  4.03 kB │ gzip:   1.20 kB
+│  Vite storybook-static/assets/Pagination.stories-G141EL1h.js
+│  4.10 kB │ gzip:   1.48 kB
+│  Vite storybook-static/assets/Badge.stories-D4Hy3wnu.js
+│  4.33 kB │ gzip:   1.40 kB
+│  Vite storybook-static/assets/Card.stories-QjAQ5okh.js
+│  5.94 kB │ gzip:   1.70 kB
+│  Vite storybook-static/assets/Select.stories-DBTxUGvM.js
+│  6.91 kB │ gzip:   2.06 kB
+│  Vite storybook-static/assets/Modal.stories-jNqvAAfL.js
+│  8.94 kB │ gzip:   2.72 kB
+│  Vite storybook-static/assets/Alert.stories-CbKz37-3.js
+│  9.15 kB │ gzip:   2.32 kB
+│  Vite storybook-static/assets/Skeleton.stories-DXjygEg0.js
+│  9.45 kB │ gzip:   2.28 kB
+│  Vite storybook-static/assets/matchers-DMFSMG2O-N4FjKbka.js
+│  29.23 kB │ gzip:  10.05 kB
+│  Vite storybook-static/assets/Color-ASIRERSW-DoleJ9jQ.js
+│  29.95 kB │ gzip:  11.37 kB
+│  Vite storybook-static/assets/WithTooltip-65CFNBJE-DruGDrLN.js
+│  33.10 kB │ gzip:  11.65 kB
+│  Vite storybook-static/assets/syntaxhighlighter-W7WJGI2T-DC4pKMQ5.js
+│  78.56 kB │ gzip:  27.53 kB
+│  Vite storybook-static/assets/react-18-D_A0Mqhw.js
+│  206.28 kB │ gzip:  64.59 kB
+│  Vite storybook-static/assets/axe-BP4okE4t.js
+│  578.56 kB │ gzip: 159.33 kB
+│  Vite storybook-static/assets/DocsRenderer-GHJI37HO-BWMhnN-E.js
+│  817.66 kB │ gzip: 262.02 kB
+│  Vite storybook-static/assets/iframe-BPvbVSnp.js
+│  1,274.74 kB │ gzip: 361.34 kB
+│
+▲  Vite
+│  (!) Some chunks are larger than 500 kB after minification. Consider:
+│  - Using dynamic import() to code-split the application
+│  - Use build.rollupOptions.output.manualChunks to improve chunking:
+│  ]8;;https://rollupjs.org/configuration-options/#output-manualchunkshttps://rollupjs.org/configuration-options/#output-manualchunks]8;;
+│  - Adjust chunk size limit for this warning via
+│  build.chunkSizeWarningLimit.
+│  Vite ✓ built in 5.14s
+│
+◇  Output directory:
+│  /data/dexter/Desktop/supabase-vercel-stack/storybook-static
+│
+└  Storybook build completed successfully
+
+
+exec
+/bin/bash -lc 'git status --short' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+exec
+/bin/bash -lc 'npm audit --omit=dev' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 976ms:
+found 0 vulnerabilities
+
+exec
+/bin/bash -lc "ls -l tests/node_modules/.bin/vitest 2>/dev/null || true; node -p \"require('./tests/node_modules/vitest/package.json').version\" 2>/dev/null || true; node -p \"require('./node_modules/vitest/package.json').version\" 2>/dev/null || true; grep -n 'node_modules/vitest\"' -A3 tests/package-lock.json | head -10; grep -n 'node_modules/vitest\"' -A3 package-lock.json | head -10" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+lrwxrwxrwx 1 dexter dexter 20 Jun  1 16:05 tests/node_modules/.bin/vitest -> ../vitest/vitest.mjs
+4.1.7
+4.0.16
+3267:    "node_modules/vitest": {
+3268-      "version": "4.0.16",
+3269-      "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.0.16.tgz",
+3270-      "integrity": "sha512-E4t7DJ9pESL6E3I8nFjPa4xGUd3PmiWDLsDztS2qXSJWfHtbQnwAWylaBvSNY48I3vr8PTqIZlyK8TE3V3CA4Q==",
+14239:    "node_modules/vitest": {
+14240-      "version": "4.0.16",
+14241-      "resolved": "https://registry.npmjs.org/vitest/-/vitest-4.0.16.tgz",
+14242-      "integrity": "sha512-E4t7DJ9pESL6E3I8nFjPa4xGUd3PmiWDLsDztS2qXSJWfHtbQnwAWylaBvSNY48I3vr8PTqIZlyK8TE3V3CA4Q==",
+
+exec
+/bin/bash -lc "find database -maxdepth 2 -type f 2>/dev/null | head -20; git ls-files database | head -20; git ls-files '*.sql' '*.dump' '*.sql.gz' | head -20" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+database/schema-dumps/preview-public-metadata-canonical.txt
+database/schema-dumps/production-public-metadata-canonical.txt
+database/schema-dumps/public-schema-parity-checksums.txt
+database/schema-contract.md
+database/schema-contract.md
+database/schema-dumps/preview-public-metadata-canonical.txt
+database/schema-dumps/production-public-metadata-canonical.txt
+database/schema-dumps/public-schema-parity-checksums.txt
+migrations/add_payment_method_tracking.sql
+migrations/add_promo_code_system.sql
+migrations/add_user_activity_tracking.sql
+migrations/add_user_uid.sql
+migrations/add_variant_to_transaction_item.sql
+migrations/add_wishlist.sql
+migrations/fix_production_defaults.sql
+migrations/optimize_dashboard_stats.sql
+scripts/db/add_missing_indexes.sql
+scripts/db/validate_payment_schema.sql
+supabase/migrations/20260531190011_initial_public_schema.sql
+supabase/seed.sql
+
+exec
+/bin/bash -lc "rg \"kavenegar|zarinpal-node-sdk|Zarinpal|Kavenegar|zarinpal|kavenegar\" src tests scripts docs config . --glob '"'!node_modules/**'"' --glob '"'!.next/**'"' --glob '"'!tasks/**'"'" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 0ms:
+exec
+/bin/bash -lc "nl -ba tests/unit/lib/request-utils.test.ts | sed -n '100,112p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+   100	      expect(result).toBe('203.0.113.100');
+   101	    });
+   102	
+   103	    it('returns null when no supported IP headers are set', () => {
+   104	      const req = createMockRequest({}, '192.0.2.50');
+   105	
+   106	      const result = getClientIp(req);
+   107	
+   108	      expect(result).toBeNull();
+   109	    });
+   110	
+   111	    // Edge Cases
+   112	    it('falls back to next header when cf-connecting-ip is empty string', () => {
+
+exec
+/bin/bash -lc "git ls-files tasks | head -20; git ls-files | wc -l; npm pack --dry-run --json 2>/tmp/packerr | python3 - <<'PY'
+import sys,json
+j=json.load(sys.stdin)
+files=j[0]['files']
+print(len(files))
+for f in files[:50]: print(f['path'], f['size'])
+print('tasks count', sum(1 for f in files if f['path'].startswith('tasks/')))
+print('env files', [f['path'] for f in files if '.env' in f['path']][:20])
+PY" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 980ms:
+exec
+/bin/bash -lc 'cat /tmp/packerr | tail -50' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+
+> supabase-vercel-stack@0.1.0 prepare
+> husky
+
+npm warn gitignore-fallback No .npmignore file found, using .gitignore for file exclusion. Consider creating a .npmignore file to explicitly control published files.
+npm error A complete log of this run can be found in: /home/dexter/.npm/_logs/2026-06-01T19_27_05_942Z-debug-0.log
+
+exec
+/bin/bash -lc 'tail -80 /home/dexter/.npm/_logs/2026-06-01T19_27_05_942Z-debug-0.log' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+0 verbose cli /home/linuxbrew/.linuxbrew/Cellar/node/26.0.0/bin/node /home/linuxbrew/.linuxbrew/bin/npm
+1 info using npm@11.12.1
+2 info using node@v26.0.0
+3 silly config load:file:/home/linuxbrew/.linuxbrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/data/dexter/Desktop/supabase-vercel-stack/.npmrc
+5 silly config load:file:/home/dexter/.npmrc
+6 silly config load:file:/home/linuxbrew/.linuxbrew/etc/npmrc
+7 verbose title npm pack
+8 verbose argv "pack" "--dry-run" "--json"
+9 verbose logfile logs-max:10 dir:/home/dexter/.npm/_logs/2026-06-01T19_27_05_942Z-
+10 verbose logfile /home/dexter/.npm/_logs/2026-06-01T19_27_05_942Z-debug-0.log
+11 silly logfile start cleaning logs, removing 1 files
+12 silly logfile done cleaning log files
+13 silly packumentCache heap:4395630592 maxSize:1098907648 maxEntrySize:549453824
+14 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+15 warn gitignore-fallback No .npmignore file found, using .gitignore for file exclusion. Consider creating a .npmignore file to explicitly control published files.
+16 verbose cwd /data/dexter/Desktop/supabase-vercel-stack
+17 verbose os Linux 6.17.0-35-generic
+18 verbose node v26.0.0
+19 verbose npm  v11.12.1
+20 verbose exit 0
+21 info ok
+22 error A complete log of this run can be found in: /home/dexter/.npm/_logs/2026-06-01T19_27_05_942Z-debug-0.log
+
+exec
+/bin/bash -lc "npm pack --dry-run --json --ignore-scripts > /tmp/pack.json 2>/tmp/packerr2; python3 - <<'PY'
+import json
+j=json.load(open('/tmp/pack.json'))
+files=j[0]['files']
+print('total', len(files), 'unpackedSize', j[0].get('unpackedSize'))
+for prefix in ['tasks/','tests/','src/','database/','.github/']:
+ print(prefix, sum(1 for f in files if f['path'].startswith(prefix)))
+print('tasks examples')
+for f in files:
+ if f['path'].startswith('tasks/'):
+  print(f['path'], f['size'])
+  if sum(1 for x in files[:files.index(f)+1] if x['path'].startswith('tasks/'))>=10: break
+PY; cat /tmp/packerr2 | tail -5" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 892ms:
+total 470 unpackedSize 2679909
+tasks/ 0
+tests/ 153
+src/ 239
+database/ 4
+.github/ 2
+tasks examples
+Traceback (most recent call last):
+  File "<stdin>", line 12, in <module>
+NameError: name 'PY' is not defined
+
+exec
+/bin/bash -lc "python3 - <<'PY'
+import json
+j=json.load(open('/tmp/pack.json'))
+files=[f['path'] for f in j[0]['files']]
+print([p for p in files if '.env' in p][:50])
+print([p for p in files if p.startswith('.github/')])
+print([p for p in files if p.startswith('database/')])
+print([p for p in files if p.startswith('tests/')][:20])
+PY" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+['.env.example', 'tests/.env.example', 'tests/e2e/.env.example']
+['.github/dependabot.yml', '.github/workflows/deploy.yml']
+['database/schema-contract.md', 'database/schema-dumps/preview-public-metadata-canonical.txt', 'database/schema-dumps/production-public-metadata-canonical.txt', 'database/schema-dumps/public-schema-parity-checksums.txt']
+['tests/.env.example', 'tests/docs/GETTING_SUPABASE_KEYS.md', 'tests/e2e/.env.example', 'tests/e2e/cache-busting.spec.ts', 'tests/e2e/error-recovery.spec.ts', 'tests/e2e/fixtures/cleanup.ts', 'tests/e2e/fixtures/products.ts', 'tests/e2e/fixtures/seed.ts', 'tests/e2e/fixtures/users.ts', 'tests/e2e/helpers/payment.ts', 'tests/e2e/journeys/admin-categories-products.spec.ts', 'tests/e2e/journeys/admin-panel.spec.ts', 'tests/e2e/journeys/admin-promo-codes.spec.ts', 'tests/e2e/journeys/admin-settings.spec.ts', 'tests/e2e/journeys/admin-variant-images.spec.ts', 'tests/e2e/journeys/authenticated-checkout.spec.ts', 'tests/e2e/journeys/guest-checkout.spec.ts', 'tests/e2e/journeys/multi-product-cart.spec.ts', 'tests/e2e/journeys/promo-codes.spec.ts', 'tests/e2e/journeys/search.spec.ts']
+
+exec
+/bin/bash -lc 'cat .npmrc 2>/dev/null || true; git show 4222cc4''^:package.json | sed -n '"'1,140p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+legacy-peer-deps=true
+{
+  "name": "kitia",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+    "dev:plain": "rm -rf .next && next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "verify:routes": "bash scripts/verify-api-routes.sh",
+    "verify:config": "bash scripts/verify-config-files.sh",
+    "verify": "npm run verify:config && npm run verify:routes",
+    "prebuild": "npm run verify && node scripts/generate-build-version.js",
+    "predev": "npm run verify:config",
+    "test": "npm --prefix tests run test --",
+    "test:all": "npm --prefix tests run test:all --",
+    "test:unit": "npm --prefix tests run test:unit --",
+    "test:integration": "npm --prefix tests run test:integration --",
+    "test:e2e": "npm --prefix tests run test:e2e --",
+    "unit": "npm --prefix tests run test:unit --",
+    "integration": "npm --prefix tests run test:integration --",
+    "e2e": "npm --prefix tests run test:e2e --",
+    "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
+    "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
+    "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.943.0",
+    "@aws-sdk/lib-storage": "^3.943.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.1.0",
+    "@smithy/node-http-handler": "^4.4.5",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.7",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
+    "form-data": "^4.0.5",
+    "kavenegar": "^1.1.4",
+    "libphonenumber-js": "^1.12.30",
+    "next": "^16.2.6",
+    "next-auth": "^4.24.0",
+    "nodemailer": "^8.0.8",
+    "pdfkit": "^0.15.0",
+    "pino": "^10.1.0",
+    "postgres": "^3.4.7",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "resend": "^6.6.0",
+    "server-only": "^0.0.1",
+    "stripe": "^20.3.1",
+    "uuid": "^14.0.0",
+    "zarinpal-node-sdk": "^2.2.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@chromatic-com/storybook": "^4.1.3",
+    "@storybook/addon-a11y": "^10.1.11",
+    "@storybook/addon-docs": "^10.1.11",
+    "@storybook/addon-onboarding": "^10.1.11",
+    "@storybook/addon-vitest": "^10.1.11",
+    "@storybook/nextjs-vite": "^10.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.0",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.13.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitest/browser-playwright": "^4.0.16",
+    "@vitest/coverage-v8": "^4.0.16",
+    "autoprefixer": "^10.4.0",
+    "critters": "^0.0.23",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-storybook": "^10.1.11",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "pino-pretty": "^13.1.2",
+    "playwright": "^1.57.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.7.4",
+    "storybook": "^10.1.11",
+    "supabase": "^2.67.2",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "uuid": "$uuid",
+    "glob": "10.5.0"
+  }
+}
+
+exec
+/bin/bash -lc 'npm --prefix tests ci --dry-run' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 284ms:
+add istanbul-lib-source-maps 5.0.6
+change @vitest/snapshot 4.1.7 => 4.0.16
+change @vitest/utils 4.1.7 => 4.0.16
+change @vitest/ui 4.1.7 => 4.0.16
+change @vitest/spy 4.1.7 => 4.0.16
+change @vitest/runner 4.1.7 => 4.0.16
+change @vitest/pretty-format 4.1.7 => 4.0.16
+change @vitest/mocker 4.1.7 => 4.0.16
+change @vitest/coverage-v8 4.1.7 => 4.0.16
+change @vitest/expect 4.1.7 => 4.0.16
+change tinyglobby 0.2.16 => 0.2.17
+change tinyexec 1.2.2 => 1.2.4
+change @upstash/redis v1.35.8 => 1.35.8
+change vitest 4.1.7 => 4.0.16
+change vite 7.3.3 => 7.3.0
+change std-env 4.1.0 => 3.10.0
+remove date-fns-jalali 3.6.0-1
+change es-module-lexer 2.1.0 => 1.7.0
+remove convert-source-map 2.0.0
+change ast-v8-to-istanbul 1.0.0 => 0.3.12
+
+added 1 package, removed 2 packages, and changed 17 packages in 254ms
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+exec
+/bin/bash -lc 'npm ci --dry-run' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 1194ms:
+
+> supabase-vercel-stack@0.1.0 prepare
+> husky
+
+change @upstash/redis v1.35.7 => 1.35.7
+change @upstash/ratelimit v2.0.7 => 2.0.7
+change @upstash/core-analytics v0.0.10 => 0.0.10
+add globals 14.0.0
+remove zarinpal-node-sdk 2.2.0
+change nodemailer 8.0.8 => 8.0.10
+remove kavenegar 1.1.4
+change globals 14.0.0 => 16.5.0
+remove date-fns-jalali 3.6.0-1
+
+added 1 package, removed 3 packages, and changed 5 packages in 1s
+
+268 packages are looking for funding
+  run `npm fund` for details
+
+  ✓ Inspect commit diff and touched files
+  ✓ Trace changed behavior against existing code/tests
+  → Return prioritized JSON findings
+codex
+The patch introduces a failing unit test in the CI path: the changed assertion contradicts the current `getClientIp` implementation. Other checked CI additions like lint, build, Storybook build, and production audit ran successfully, but the failing test blocks correctness.
+
+Review comment:
+
+- [P1] Keep request-utils test aligned with req.ip fallback — /data/dexter/Desktop/supabase-vercel-stack/tests/unit/lib/request-utils.test.ts:108-108
+  With this new expectation, `npm run test:ci -- request-utils` fails because the mock still passes `ip: '192.0.2.50'` and `getClientIp` still deliberately falls back to `req.ip` when headers are absent. In CI this makes the unit-test step fail before the release workflow can complete; either remove the mock `ip` for this case or restore the expected fallback value if that behavior is still intended.
+The patch introduces a failing unit test in the CI path: the changed assertion contradicts the current `getClientIp` implementation. Other checked CI additions like lint, build, Storybook build, and production audit ran successfully, but the failing test blocks correctness.
+
+Review comment:
+
+- [P1] Keep request-utils test aligned with req.ip fallback — /data/dexter/Desktop/supabase-vercel-stack/tests/unit/lib/request-utils.test.ts:108-108
+  With this new expectation, `npm run test:ci -- request-utils` fails because the mock still passes `ip: '192.0.2.50'` and `getClientIp` still deliberately falls back to `req.ip` when headers are absent. In CI this makes the unit-test step fail before the release workflow can complete; either remove the mock `ip` for this case or restore the expected fallback value if that behavior is still intended.

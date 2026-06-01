@@ -1,0 +1,3747 @@
+OpenAI Codex v0.135.0
+--------
+workdir: /data/dexter/Desktop/supabase-vercel-stack
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: high
+reasoning summaries: none
+session id: 019e84a8-ee64-7113-bfac-e5fb5c9a5d13
+--------
+user
+commit d3e4930: task013 Tests CI And Release Readiness
+exec
+/bin/bash -lc 'git status --short && git rev-parse --show-toplevel && git show --stat --oneline --decorate --no-renames d3e4930' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+/data/dexter/Desktop/supabase-vercel-stack
+d3e4930 task013: update CI tests and release workflow
+ .eslintrc.json                         |    1 -
+ .github/workflows/deploy.yml           |   15 +-
+ .gitignore                             |    6 +-
+ eslint.config.mjs                      |  103 ++++
+ package-lock.json                      |   54 +-
+ package.json                           |   21 +-
+ tests/IMPLEMENTATION_GUIDE.md          |  288 ++-------
+ tests/README.md                        |  124 +---
+ tests/SUMMARY.md                       |  415 +------------
+ tests/package-lock.json                |  225 ++++---
+ tests/package.json                     |   12 +-
+ tests/tasks/E2E-QUICK-START.md         |  263 ---------
+ tests/tasks/README-E2E.md              |  257 --------
+ tests/tasks/e2e-0-master.md            |  611 -------------------
+ tests/tasks/e2e-1.md                   |  976 ------------------------------
+ tests/tasks/e2e-2.md                   |  760 ------------------------
+ tests/tasks/e2e-3.md                   |  856 ---------------------------
+ tests/tasks/e2e-4.md                   | 1015 --------------------------------
+ tests/tasks/task000.md                 |  828 --------------------------
+ tests/tasks/task001.md                 |  171 ------
+ tests/unit/lib/with-rate-limit.test.ts |    2 +-
+ 21 files changed, 363 insertions(+), 6640 deletions(-)
+
+exec
+/bin/bash -lc 'git diff d3e4930''^ d3e4930 -- .github/workflows/deploy.yml package.json tests/package.json tests/unit/lib/with-rate-limit.test.ts eslint.config.mjs .gitignore .eslintrc.json' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+diff --git a/.eslintrc.json b/.eslintrc.json
+index 8bc2b1a..81b3775 100644
+--- a/.eslintrc.json
++++ b/.eslintrc.json
+@@ -15,7 +15,6 @@
+     "tests/**/*",
+     "config/**/*",
+     "scripts/**/*",
+-    "docs/kavenegar-examples-node-master (2)/**/*",
+     "**/*.stories.tsx",
+     "**/*.stories.ts",
+     ".storybook/**/*",
+diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+index aa2bd6d..5022d31 100644
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -7,7 +7,7 @@ on:
+ 
+ jobs:
+   checks:
+-    name: Verify and test
++    name: Install, lint, build, and test
+     runs-on: ubuntu-latest
+     env:
+       CI: true
+@@ -59,8 +59,17 @@ jobs:
+       - name: Verify repository config
+         run: npm run verify
+ 
++      - name: Lint
++        run: npm run lint
++
+       - name: Unit tests
+-        run: npm --prefix tests run test:unit
++        run: npm run test:ci
+ 
+       - name: Production build
+-        run: node scripts/generate-build-version.js && npx next build --webpack
++        run: npm run build
++
++      - name: Storybook build
++        run: npm run build-storybook
++
++      - name: Production dependency audit
++        run: npm audit --omit=dev
+diff --git a/.gitignore b/.gitignore
+index ac0cd7c..268f7ee 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -45,8 +45,10 @@ CLAUDE.md
+ # tasks folder (project notes and planning)
+ /tasks
+ 
+-# database dumps and local schema artifacts
+-/database
++# local database dumps and generated schema artifacts
++*.dump
++*.sql.gz
++*.schema.local.sql
+ 
+ # mcp config
+ .mcp.json
+diff --git a/eslint.config.mjs b/eslint.config.mjs
+new file mode 100644
+index 0000000..e1af282
+--- /dev/null
++++ b/eslint.config.mjs
+@@ -0,0 +1,103 @@
++import js from '@eslint/js';
++import nextPlugin from '@next/eslint-plugin-next';
++import tsParser from '@typescript-eslint/parser';
++import tsPlugin from '@typescript-eslint/eslint-plugin';
++import prettierPlugin from 'eslint-plugin-prettier';
++import reactHooksPlugin from 'eslint-plugin-react-hooks';
++import globals from 'globals';
++import { fileURLToPath } from 'node:url';
++import path from 'node:path';
++
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
++
++export default [
++  {
++    linterOptions: {
++      reportUnusedDisableDirectives: 'off',
++    },
++  },
++  {
++    ignores: [
++      '.next/**',
++      '.storybook/**',
++      'config/**',
++      'coverage/**',
++      'docs/**',
++      'node_modules/**',
++      'public/**',
++      'scripts/**',
++      'storybook-static/**',
++      'supabase/**',
++      'tests/**',
++      'vps/**',
++      '**/*.stories.ts',
++      '**/*.stories.tsx',
++      '*.config.js',
++      '*.config.mjs',
++      'next-env.d.ts',
++    ],
++  },
++  {
++    files: ['src/**/*.{ts,tsx}', 'middleware.ts'],
++    languageOptions: {
++      parser: tsParser,
++      parserOptions: {
++        project: './tsconfig.json',
++        tsconfigRootDir: __dirname,
++      },
++      globals: {
++        ...globals.browser,
++        ...globals.node,
++        ...globals.es2021,
++      },
++    },
++    plugins: {
++      '@next/next': nextPlugin,
++      '@typescript-eslint': tsPlugin,
++      prettier: prettierPlugin,
++      'react-hooks': reactHooksPlugin,
++    },
++    rules: {
++      ...js.configs.recommended.rules,
++      ...tsPlugin.configs.recommended.rules,
++      ...nextPlugin.configs.recommended.rules,
++      ...nextPlugin.configs['core-web-vitals'].rules,
++      'react-hooks/exhaustive-deps': 'warn',
++      'react-hooks/rules-of-hooks': 'error',
++      'no-unused-vars': 'off',
++      'no-undef': 'off',
++      '@typescript-eslint/no-explicit-any': 'error',
++      '@typescript-eslint/no-unused-vars': [
++        'error',
++        {
++          argsIgnorePattern: '^_',
++          varsIgnorePattern: '^_',
++        },
++      ],
++      '@typescript-eslint/switch-exhaustiveness-check': 'error',
++      '@typescript-eslint/consistent-return': 'warn',
++      '@typescript-eslint/no-non-null-assertion': 'error',
++      '@typescript-eslint/ban-ts-comment': 'error',
++      '@typescript-eslint/explicit-function-return-type': 'off',
++      '@typescript-eslint/explicit-module-boundary-types': 'off',
++      '@typescript-eslint/no-unsafe-assignment': 'off',
++      '@typescript-eslint/no-unsafe-member-access': 'off',
++      '@typescript-eslint/no-unsafe-call': 'off',
++      semi: ['error', 'always'],
++      quotes: [
++        'error',
++        'single',
++        {
++          avoidEscape: true,
++        },
++      ],
++      'no-console': [
++        'warn',
++        {
++          allow: ['warn', 'error'],
++        },
++      ],
++    },
++  },
++];
+diff --git a/package.json b/package.json
+index 151165f..5c14f55 100644
+--- a/package.json
++++ b/package.json
+@@ -1,11 +1,12 @@
+ {
+-  "name": "kitia",
++  "name": "supabase-vercel-stack",
+   "version": "0.1.0",
+-  "private": true,
++  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
++  "license": "MIT",
+   "scripts": {
+     "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+     "dev:plain": "rm -rf .next && next dev",
+-    "build": "next build",
++    "build": "next build --webpack",
+     "start": "next start",
+     "lint": "eslint .",
+     "lint:fix": "eslint --fix .",
+@@ -14,6 +15,8 @@
+     "verify:routes": "bash scripts/verify-api-routes.sh",
+     "verify:config": "bash scripts/verify-config-files.sh",
+     "verify": "npm run verify:config && npm run verify:routes",
++    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
++    "test:ci": "npm run test:unit",
+     "prebuild": "npm run verify && node scripts/generate-build-version.js",
+     "predev": "npm run verify:config",
+     "test": "npm --prefix tests run test --",
+@@ -24,9 +27,6 @@
+     "unit": "npm --prefix tests run test:unit --",
+     "integration": "npm --prefix tests run test:integration --",
+     "e2e": "npm --prefix tests run test:e2e --",
+-    "test:digipay": "npx tsx tmp/test-digipay-connection.ts",
+-    "test:digipay:noproxy": "bash tmp/test-digipay-no-proxy.sh",
+-    "diagnose:vpn": "bash tmp/diagnose-digipay-vpn.sh",
+     "prepare": "husky",
+     "storybook": "storybook dev -p 6006",
+     "build-storybook": "storybook build"
+@@ -44,15 +44,15 @@
+     "@supabase/supabase-js": "^2.88.0",
+     "@upstash/ratelimit": "^2.0.7",
+     "@upstash/redis": "^1.35.7",
++    "axios": "^1.16.1",
+     "bcryptjs": "^2.4.3",
+     "date-fns": "^3.6.0",
+     "dotenv": "^17.2.3",
+     "form-data": "^4.0.5",
+-    "kavenegar": "^1.1.4",
+     "libphonenumber-js": "^1.12.30",
+     "next": "^16.2.6",
+     "next-auth": "^4.24.0",
+-    "nodemailer": "^8.0.8",
++    "nodemailer": "^8.0.10",
+     "pdfkit": "^0.15.0",
+     "pino": "^10.1.0",
+     "postgres": "^3.4.7",
+@@ -62,11 +62,12 @@
+     "server-only": "^0.0.1",
+     "stripe": "^20.3.1",
+     "uuid": "^14.0.0",
+-    "zarinpal-node-sdk": "^2.2.0",
+     "zustand": "^4.5.0"
+   },
+   "devDependencies": {
++    "@eslint/js": "^9.39.4",
+     "@chromatic-com/storybook": "^4.1.3",
++    "@next/eslint-plugin-next": "^16.2.6",
+     "@storybook/addon-a11y": "^10.1.11",
+     "@storybook/addon-docs": "^10.1.11",
+     "@storybook/addon-onboarding": "^10.1.11",
+@@ -89,7 +90,9 @@
+     "eslint-config-next": "^16.2.6",
+     "eslint-config-prettier": "^10.1.8",
+     "eslint-plugin-prettier": "^5.5.4",
++    "eslint-plugin-react-hooks": "^7.0.1",
+     "eslint-plugin-storybook": "^10.1.11",
++    "globals": "^16.5.0",
+     "husky": "^9.1.7",
+     "lint-staged": "^16.2.7",
+     "pino-pretty": "^13.1.2",
+diff --git a/tests/package.json b/tests/package.json
+index 19eb884..3ff826c 100644
+--- a/tests/package.json
++++ b/tests/package.json
+@@ -1,7 +1,7 @@
+ {
+-  "name": "kitia-tests",
++  "name": "supabase-vercel-stack-tests",
+   "version": "1.0.0",
+-  "description": "Test suite for Kitia e-commerce platform",
++  "description": "Test suite for the Supabase Vercel Stack commerce boilerplate",
+   "private": true,
+   "type": "module",
+   "scripts": {
+@@ -36,15 +36,15 @@
+   "devDependencies": {
+     "@playwright/test": "^1.57.0",
+     "@types/node": "^20.12.0",
+-    "@vitest/coverage-v8": "^4.1.7",
+-    "@vitest/ui": "^4.1.7",
++    "@vitest/coverage-v8": "4.0.16",
++    "@vitest/ui": "4.0.16",
+     "dotenv": "^16.4.5",
+     "jsdom": "^24.1.3",
+     "msw": "^2.6.8",
+     "typescript": "^5.4.0",
+     "undici": "^6.25.0",
+-    "vite": "^7.3.3",
+-    "vitest": "^4.1.7"
++    "vite": "7.3.0",
++    "vitest": "4.0.16"
+   },
+   "engines": {
+     "node": ">=20.0.0"
+diff --git a/tests/unit/lib/with-rate-limit.test.ts b/tests/unit/lib/with-rate-limit.test.ts
+index 6cbbdeb..51ec1a1 100644
+--- a/tests/unit/lib/with-rate-limit.test.ts
++++ b/tests/unit/lib/with-rate-limit.test.ts
+@@ -39,7 +39,7 @@ describe('withRateLimit', () => {
+     const body = await response.json();
+ 
+     expect(response.status).toBe(429);
+-    expect(body.error).toContain('تعداد درخواست');
++    expect(body.error).toBe('Too many requests. Please wait before trying again.');
+     expect(body.retryAfter).toBe(reset);
+     expect(handler).not.toHaveBeenCalled();
+     expect(response.headers.get('X-RateLimit-Limit')).toBe('10');
+
+exec
+/bin/bash -lc "grep -R \"from 'kavenegar'\\|require('kavenegar'\\|zarinpal-node-sdk\\|from 'zarinpal\\|axios\" -n --exclude-dir=node_modules --exclude-dir=.git . | head -100" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:4680:  return axios.create({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt:9838:src/lib/paypal/client.ts(2,35): error TS2307: Cannot find module 'axios' or its corresponding type declarations.
+./tasks/open-source-boilerplate-conversion/reviews/task010-round1.txt:7862:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task008-round2.txt:4571:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3076:tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3199:tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3313:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:2451:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:14359:tasks/open-source-boilerplate-conversion/handoff.md:100:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt:14945:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:2491:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:7962:import axios, { AxiosError } from 'axios';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt:10020:    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round2.txt:259:+    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round2.txt:277:-    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task001-round5.txt:8753:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task007-round4.txt:7251:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:5668:    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:8889:src/lib/paypal/client.ts(2,35): error TS2307: Cannot find module 'axios' or its corresponding type declarations.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:11649:         "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt:11950:     "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4693:- Mandatory review loop: ran the nested review successfully; output saved at `/tmp/codex-review.Xz7Mbz.txt`. The review reported no task001 publication-security findings, but it did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because this task was explicitly limited to task001 finalization and concurrent workers own those areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4779:- task001 review loop: nested Codex review completed with output saved at `/tmp/codex-review.Xz7Mbz.txt`. It reported no task001 publication-security findings. It did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because ownership was explicitly limited to task001 finalization and concurrent workers own later-task implementation areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4789:- 2026-05-31 task004 worker: Hardened Stripe/PayPal payment flow in creation, Stripe webhook, PayPal webhook, PayPal capture, provider metadata, docs, and focused tests. Added configurable `PAYMENT_SITE_NAME` labels, centralized provider normalization, Stripe provider-ref mismatch checks, PayPal zero-decimal amount reconciliation, PayPal webhook safe mismatch no-ops, duplicate PayPal capture behavior, and explicit `axios` dependency for the PayPal client. Updated `.env.example`, `docs/PAYMENT_METHOD_DEPLOYMENT.md`, payment routes/libs, `transaction-service`, and focused transaction tests.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4790:- task004 checks: `npm run verify` passed; `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret npm run test:unit -- transactions` passed (7 files / 29 tests); `git diff --check` passed before task/handoff updates. `npm run test:integration -- payment-verification` is blocked without a real-format `sb_secret_...` key and reachable Supabase test DB. DB schema validation skipped because `DATABASE_URL` is unset. `npm run lint` is blocked by missing ESLint 9 flat config. `npm run build` is blocked by existing Next 16/Turbopack config incompatibility. `npx tsc --noEmit` still fails on existing repo-wide Next 16 route context typing and other non-payment type issues; task004 fixed the payment-relevant missing `axios` error.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round12.txt:299:     "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:398:+    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:416:-    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:718:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:798:/bin/bash -lc "grep -R \"kavenegar\\|zarinpal-node-sdk\\|axios\" -n --exclude-dir=node_modules --exclude-dir=.git ." in /data/dexter/Desktop/supabase-vercel-stack
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:801:./src/lib/paypal/client.ts:2:import axios, { AxiosError } from 'axios';
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:802:./src/lib/paypal/client.ts:144:  return axios.create({
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:803:./src/lib/paypal/client.ts:215:    const axiosError = error as AxiosError<{ error_description?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:804:./src/lib/paypal/client.ts:217:      axiosError.response?.data?.error_description ||
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:805:./src/lib/paypal/client.ts:291:    const axiosError = error as AxiosError<{ message?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:806:./src/lib/paypal/client.ts:293:      axiosError.response?.data?.message ||
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:807:./src/lib/paypal/client.ts:320:    const axiosError = error as AxiosError<{ message?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:808:./src/lib/paypal/client.ts:322:      axiosError.response?.data?.message ||
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:809:./src/lib/paypal/client.ts:341:    const axiosError = error as AxiosError<{ message?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:810:./src/lib/paypal/client.ts:343:      axiosError.response?.data?.message ||
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:811:./src/lib/paypal/client.ts:384:    const axiosError = error as AxiosError<{ message?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:812:./src/lib/paypal/client.ts:386:      axiosError.response?.data?.message ||
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:815:/bin/bash -lc "sed -n '1,180p' .github/workflows/deploy.yml && echo '--- package lock root grep' && grep -n '\"kavenegar\"\\|\"zarinpal-node-sdk\"\\|\"axios\"\\|\"private\"' package-lock.json | head -50 && echo '--- tests scripts' && cat tests/package.json" in /data/dexter/Desktop/supabase-vercel-stack
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:893:24:        "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:1877:/bin/bash -lc "rg \"kavenegar|zarinpal-node-sdk|Zarinpal|Kavenegar|zarinpal|kavenegar\" src tests scripts docs config . --glob '"'!node_modules/**'"' --glob '"'!.next/**'"' --glob '"'!tasks/**'"'" in /data/dexter/Desktop/supabase-vercel-stack
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:2054:    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt:2152:remove zarinpal-node-sdk 2.2.0
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:941: import axios, { AxiosError } from 'axios';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:4018:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:5686:import axios, { AxiosError } from 'axios';
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:5828:  return axios.create({
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:5899:    const axiosError = error as AxiosError<{ error_description?: string }>;
+./tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt:5901:      axiosError.response?.data?.error_description ||
+./tasks/open-source-boilerplate-conversion/reviews/task006-round1.txt:834:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round9.txt:18368:    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task005-round1.txt:6937:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task005-round4.txt:7769:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round15.txt:8385:         "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round15.txt:8558:     "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4722:./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3076:tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4723:./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3199:tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4727:./tasks/open-source-boilerplate-conversion/reviews/task006-round2.txt:3313:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4736:./tasks/open-source-boilerplate-conversion/reviews/task001-round2.txt:4797:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4783:./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5486:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4794:./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6140:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4799:./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6531:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4813:./tasks/open-source-boilerplate-conversion/handoff.md:100:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4824:./tasks/open-source-boilerplate-conversion/task006-locale-direction-and-currency-foundation.md:77:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round3.txt:4908:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5126:- Mandatory review loop: ran the nested review successfully; output saved at `/tmp/codex-review.Xz7Mbz.txt`. The review reported no task001 publication-security findings, but it did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because this task was explicitly limited to task001 finalization and concurrent workers own those areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5257:- Remove legacy dependencies such as `zarinpal-node-sdk` and any dependency that only exists for removed providers.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5258:- Keep `axios` only if PayPal still needs it; if PayPal is refactored to `fetch` in a later task, that later task may remove it.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5326:- Added `axios` as an explicit dependency because `src/lib/paypal/client.ts` still imports it after the legacy SDK removal.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5335:- `npm install axios@^1.16.1 --save --legacy-peer-deps --ignore-scripts` passed.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5346:  - Added explicit `axios` dependency for PayPal.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5468:- task001 review loop: nested Codex review completed with output saved at `/tmp/codex-review.Xz7Mbz.txt`. It reported no task001 publication-security findings. It did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because ownership was explicitly limited to task001 finalization and concurrent workers own later-task implementation areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5478:- 2026-05-31 task004 worker: Hardened Stripe/PayPal payment flow in creation, Stripe webhook, PayPal webhook, PayPal capture, provider metadata, docs, and focused tests. Added configurable `PAYMENT_SITE_NAME` labels, centralized provider normalization, Stripe provider-ref mismatch checks, PayPal zero-decimal amount reconciliation, PayPal webhook safe mismatch no-ops, duplicate PayPal capture behavior, and explicit `axios` dependency for the PayPal client. Updated `.env.example`, `docs/PAYMENT_METHOD_DEPLOYMENT.md`, payment routes/libs, `transaction-service`, and focused transaction tests.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5479:- task004 checks: `npm run verify` passed; `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret npm run test:unit -- transactions` passed (7 files / 29 tests); `git diff --check` passed before task/handoff updates. `npm run test:integration -- payment-verification` is blocked without a real-format `sb_secret_...` key and reachable Supabase test DB. DB schema validation skipped because `DATABASE_URL` is unset. `npm run lint` is blocked by missing ESLint 9 flat config. `npm run build` is blocked by existing Next 16/Turbopack config incompatibility. `npx tsc --noEmit` still fails on existing repo-wide Next 16 route context typing and other non-payment type issues; task004 fixed the payment-relevant missing `axios` error.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5486:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5958:- Added `axios` as an explicit runtime dependency for the PayPal client after legacy-provider dependency cleanup removed the transitive copy.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:5993:- `npx tsc --noEmit` - still fails on existing repo-wide Next 16 route context typing, checkout ref nullability, JSX namespace, and `NextRequest.ip` issues; the task004-relevant missing `axios` failure was fixed.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6140:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6427:- Mandatory review loop: ran the nested review successfully; output saved at `/tmp/codex-review.Xz7Mbz.txt`. The review reported no task001 publication-security findings, but it did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because this task was explicitly limited to task001 finalization and concurrent workers own those areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6513:- task001 review loop: nested Codex review completed with output saved at `/tmp/codex-review.Xz7Mbz.txt`. It reported no task001 publication-security findings. It did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because ownership was explicitly limited to task001 finalization and concurrent workers own later-task implementation areas.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6523:- 2026-05-31 task004 worker: Hardened Stripe/PayPal payment flow in creation, Stripe webhook, PayPal webhook, PayPal capture, provider metadata, docs, and focused tests. Added configurable `PAYMENT_SITE_NAME` labels, centralized provider normalization, Stripe provider-ref mismatch checks, PayPal zero-decimal amount reconciliation, PayPal webhook safe mismatch no-ops, duplicate PayPal capture behavior, and explicit `axios` dependency for the PayPal client. Updated `.env.example`, `docs/PAYMENT_METHOD_DEPLOYMENT.md`, payment routes/libs, `transaction-service`, and focused transaction tests.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6524:- task004 checks: `npm run verify` passed; `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret npm run test:unit -- transactions` passed (7 files / 29 tests); `git diff --check` passed before task/handoff updates. `npm run test:integration -- payment-verification` is blocked without a real-format `sb_secret_...` key and reachable Supabase test DB. DB schema validation skipped because `DATABASE_URL` is unset. `npm run lint` is blocked by missing ESLint 9 flat config. `npm run build` is blocked by existing Next 16/Turbopack config incompatibility. `npx tsc --noEmit` still fails on existing repo-wide Next 16 route context typing and other non-payment type issues; task004 fixed the payment-relevant missing `axios` error.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:6531:- 2026-05-31 task006 worker B: Implemented locale/direction/currency foundation. Added central English/LTR/USD defaults in `src/config/site.ts`, made root layout `lang`/`dir` and metadata config-driven, replaced shared price/date/number formatting with `Intl` helpers in `src/lib/utils/format.ts`, renamed Persian-specific text utilities to `src/lib/utils/text.ts`, removed BYekan and `date-fns-jalali`, refreshed package lock while preserving explicit `axios` for PayPal, and updated locale/currency/date/count call sites away from `fa-IR`, Toman strings, and Jalali formatting. Also applied valid review-mode fixes in overlapping files: restored fixed-header spacer, avoided RootLayout importing the full UI barrel, aligned the smoke test with English/LTR defaults, and cleaned legacy service-worker cache prefixes.
+./tasks/open-source-boilerplate-conversion/reviews/task001-round3.txt:7005:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round8.txt:2635:    "zarinpal-node-sdk": "^2.2.0",
+./tasks/open-source-boilerplate-conversion/reviews/task006-round8.txt:6157:- Removed the BYekan font dependency from CSS/Tailwind/public fonts and removed `date-fns-jalali` from `package.json`/`package-lock.json`; kept explicit `axios` dependency present for the PayPal client.
+./tasks/open-source-boilerplate-conversion/reviews/task006-round8.txt:6913:import axios, { AxiosError } from 'axios';
+./tasks/open-source-boilerplate-conversion/reviews/task007-round1.txt:11105:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task008-round3.txt:2397:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/reviews/task011-round1.txt:1526:    "axios": "^1.16.1",
+./tasks/open-source-boilerplate-conversion/task001-publication-security-scrub.md:77:- Mandatory review loop: ran the nested review successfully; output saved at `/tmp/codex-review.Xz7Mbz.txt`. The review reported no task001 publication-security findings, but it did report valid findings in later-task surfaces: missing direct `axios` dependency for PayPal, phone normalization during profile updates, placeholder transactional email copy, and default OG image fallback. Worker A did not edit those later-task files because this task was explicitly limited to task001 finalization and concurrent workers own those areas.
+./tasks/open-source-boilerplate-conversion/task003-remove-legacy-iranian-payment-providers.md:35:- Remove legacy dependencies such as `zarinpal-node-sdk` and any dependency that only exists for removed providers.
+./tasks/open-source-boilerplate-conversion/task003-remove-legacy-iranian-payment-providers.md:36:- Keep `axios` only if PayPal still needs it; if PayPal is refactored to `fetch` in a later task, that later task may remove it.
+./tasks/open-source-boilerplate-conversion/task003-remove-legacy-iranian-payment-providers.md:104:- Added `axios` as an explicit dependency because `src/lib/paypal/client.ts` still imports it after the legacy SDK removal.
+./tasks/open-source-boilerplate-conversion/task003-remove-legacy-iranian-payment-providers.md:113:- `npm install axios@^1.16.1 --save --legacy-peer-deps --ignore-scripts` passed.
+
+exec
+/bin/bash -lc "rg \"kavenegar|zarinpal-node-sdk|Zarinpal|Kavenegar|zarinpal|kavenegar\" src tests scripts docs config . --glob '"'!node_modules/**'"' --glob '"'!.next/**'"' --glob '"'!tasks/**'"' --glob '"'!package-lock.json'"'" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 0ms:
+exec
+/bin/bash -lc 'npm audit --omit=dev --audit-level=low' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 995ms:
+found 0 vulnerabilities
+
+exec
+/bin/bash -lc 'npm run lint' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 4093ms:
+exec
+/bin/bash -lc 'npm run test:ci' in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 1751ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit --
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.1.7 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+ ❯ unit/middleware.test.ts (0 test)
+ ❯ unit/api/categories.test.ts (0 test)
+ ❯ unit/lib/rate-limit.test.ts (0 test)
+ ❯ unit/lib/with-rate-limit.test.ts (0 test)
+ ❯ unit/services/activity-log-service.test.ts (0 test)
+ ❯ unit/services/admin-service.test.ts (0 test)
+ ❯ unit/api/search.test.ts (0 test)
+ ❯ unit/api/tags.test.ts (0 test)
+ ❯ unit/lib/logger.test.ts (0 test)
+ ❯ unit/lib/redis-client.test.ts (0 test)
+ ❯ unit/lib/supabase.test.ts (0 test)
+ ❯ unit/lib/with-cache.test.ts (0 test)
+ ❯ unit/lib/with-logging.test.ts (0 test)
+ ❯ unit/services/auth-service.test.ts (0 test)
+ ❯ unit/services/category-service.test.ts (0 test)
+ ❯ unit/services/promo-service.test.ts (0 test)
+ ❯ unit/services/search-service.test.ts (0 test)
+ ❯ unit/services/product-service.test.ts (0 test)
+ ❯ unit/services/wishlist-service.test.ts (0 test)
+ ❯ unit/store/user-store.test.ts (0 test)
+ ❯ unit/services/transaction-service.test.ts (0 test)
+ ❯ unit/store/toast-store.test.ts (0 test)
+ ❯ unit/services/user-service-password.test.ts (0 test)
+ ❯ unit/services/tag-service.test.ts (0 test)
+ ❯ unit/services/user-service-queries.test.ts (0 test)
+ ❯ unit/services/user-service.test.ts (0 test)
+ ❯ unit/store/cart-store.test.ts (0 test)
+ ❯ unit/store/checkout-store.test.ts (0 test)
+ ❯ unit/services/user-service-validation.test.ts (0 test)
+ ❯ unit/services/settings-service.test.ts (0 test)
+ ❯ unit/store/wishlist-store.test.ts (0 test)
+ ❯ unit/utils/text.test.ts (0 test)
+ ❯ unit/utils/format.test.ts (0 test)
+ ❯ unit/utils/password-validation.test.ts (0 test)
+ ❯ unit/utils/url.test.ts (0 test)
+ ❯ unit/api/admin/transactions.test.ts (0 test)
+ ❯ unit/api/admin/settings.test.ts (0 test)
+ ❯ unit/api/auth/login.test.ts (0 test)
+ ❯ unit/api/admin/transactions-id.test.ts (0 test)
+ ❯ unit/api/admin/users-id.test.ts (0 test)
+ ❯ unit/api/admin/users-bulk.test.ts (0 test)
+ ❯ unit/api/auth/nextauth.test.ts (0 test)
+ ❯ unit/api/auth/register.test.ts (0 test)
+ ❯ unit/api/admin/users.test.ts (0 test)
+ ❯ unit/api/admin/stats.test.ts (0 test)
+ ❯ unit/api/products/variants.test.ts (0 test)
+ ❯ unit/api/products/media.test.ts (0 test)
+ ❯ unit/api/transactions/create-status.test.ts (0 test)
+ ❯ unit/api/promo/active.test.ts (0 test)
+ ❯ unit/api/products/products.test.ts (0 test)
+ ❯ unit/api/transactions/webhook-paypal.test.ts (0 test)
+ ❯ unit/api/promo/validate.test.ts (0 test)
+ ❯ unit/api/transactions/paypal-capture.test.ts (0 test)
+ ❯ unit/api/user/wishlist-id.test.ts (0 test)
+ ❯ unit/api/user/password.test.ts (0 test)
+ ❯ unit/api/transactions/webhook-stripe.test.ts (0 test)
+ ❯ unit/api/user/profile.test.ts (0 test)
+ ❯ unit/api/user/wishlist-check.test.ts (0 test)
+ ❯ unit/api/user/transactions.test.ts (0 test)
+ ❯ unit/api/user/wishlist-count.test.ts (0 test)
+ ❯ unit/api/user/wishlist-merge.test.ts (0 test)
+ ❯ unit/lib/email-client.test.ts (0 test)
+ ❯ unit/lib/storage-r2-adapter.test.ts (0 test)
+ ❯ unit/lib/storage-validators.test.ts (0 test)
+ ❯ unit/api/user/wishlist.test.ts (0 test)
+ ❯ unit/lib/storage.test.ts (0 test)
+ ❯ unit/lib/request-utils.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 67 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  unit/middleware.test.ts [ unit/middleware.test.ts ]
+ FAIL  unit/api/categories.test.ts [ unit/api/categories.test.ts ]
+ FAIL  unit/api/search.test.ts [ unit/api/search.test.ts ]
+ FAIL  unit/api/tags.test.ts [ unit/api/tags.test.ts ]
+ FAIL  unit/lib/email-client.test.ts [ unit/lib/email-client.test.ts ]
+ FAIL  unit/lib/logger.test.ts [ unit/lib/logger.test.ts ]
+ FAIL  unit/lib/rate-limit.test.ts [ unit/lib/rate-limit.test.ts ]
+ FAIL  unit/lib/redis-client.test.ts [ unit/lib/redis-client.test.ts ]
+ FAIL  unit/lib/request-utils.test.ts [ unit/lib/request-utils.test.ts ]
+ FAIL  unit/lib/storage-r2-adapter.test.ts [ unit/lib/storage-r2-adapter.test.ts ]
+ FAIL  unit/lib/storage-validators.test.ts [ unit/lib/storage-validators.test.ts ]
+ FAIL  unit/lib/storage.test.ts [ unit/lib/storage.test.ts ]
+ FAIL  unit/lib/supabase.test.ts [ unit/lib/supabase.test.ts ]
+ FAIL  unit/lib/with-cache.test.ts [ unit/lib/with-cache.test.ts ]
+ FAIL  unit/lib/with-logging.test.ts [ unit/lib/with-logging.test.ts ]
+ FAIL  unit/lib/with-rate-limit.test.ts [ unit/lib/with-rate-limit.test.ts ]
+ FAIL  unit/services/activity-log-service.test.ts [ unit/services/activity-log-service.test.ts ]
+ FAIL  unit/services/admin-service.test.ts [ unit/services/admin-service.test.ts ]
+ FAIL  unit/services/auth-service.test.ts [ unit/services/auth-service.test.ts ]
+ FAIL  unit/services/category-service.test.ts [ unit/services/category-service.test.ts ]
+ FAIL  unit/services/product-service.test.ts [ unit/services/product-service.test.ts ]
+ FAIL  unit/services/promo-service.test.ts [ unit/services/promo-service.test.ts ]
+ FAIL  unit/services/search-service.test.ts [ unit/services/search-service.test.ts ]
+ FAIL  unit/services/settings-service.test.ts [ unit/services/settings-service.test.ts ]
+ FAIL  unit/services/tag-service.test.ts [ unit/services/tag-service.test.ts ]
+ FAIL  unit/services/transaction-service.test.ts [ unit/services/transaction-service.test.ts ]
+ FAIL  unit/services/user-service-password.test.ts [ unit/services/user-service-password.test.ts ]
+ FAIL  unit/services/user-service-queries.test.ts [ unit/services/user-service-queries.test.ts ]
+ FAIL  unit/services/user-service-validation.test.ts [ unit/services/user-service-validation.test.ts ]
+ FAIL  unit/services/user-service.test.ts [ unit/services/user-service.test.ts ]
+ FAIL  unit/services/wishlist-service.test.ts [ unit/services/wishlist-service.test.ts ]
+ FAIL  unit/store/cart-store.test.ts [ unit/store/cart-store.test.ts ]
+ FAIL  unit/store/checkout-store.test.ts [ unit/store/checkout-store.test.ts ]
+ FAIL  unit/store/toast-store.test.ts [ unit/store/toast-store.test.ts ]
+ FAIL  unit/store/user-store.test.ts [ unit/store/user-store.test.ts ]
+ FAIL  unit/store/wishlist-store.test.ts [ unit/store/wishlist-store.test.ts ]
+ FAIL  unit/utils/format.test.ts [ unit/utils/format.test.ts ]
+ FAIL  unit/utils/password-validation.test.ts [ unit/utils/password-validation.test.ts ]
+ FAIL  unit/utils/text.test.ts [ unit/utils/text.test.ts ]
+ FAIL  unit/utils/url.test.ts [ unit/utils/url.test.ts ]
+ FAIL  unit/api/admin/settings.test.ts [ unit/api/admin/settings.test.ts ]
+ FAIL  unit/api/admin/stats.test.ts [ unit/api/admin/stats.test.ts ]
+ FAIL  unit/api/admin/transactions-id.test.ts [ unit/api/admin/transactions-id.test.ts ]
+ FAIL  unit/api/admin/transactions.test.ts [ unit/api/admin/transactions.test.ts ]
+ FAIL  unit/api/admin/users-bulk.test.ts [ unit/api/admin/users-bulk.test.ts ]
+ FAIL  unit/api/admin/users-id.test.ts [ unit/api/admin/users-id.test.ts ]
+ FAIL  unit/api/admin/users.test.ts [ unit/api/admin/users.test.ts ]
+ FAIL  unit/api/auth/login.test.ts [ unit/api/auth/login.test.ts ]
+ FAIL  unit/api/auth/nextauth.test.ts [ unit/api/auth/nextauth.test.ts ]
+ FAIL  unit/api/auth/register.test.ts [ unit/api/auth/register.test.ts ]
+ FAIL  unit/api/products/media.test.ts [ unit/api/products/media.test.ts ]
+ FAIL  unit/api/products/products.test.ts [ unit/api/products/products.test.ts ]
+ FAIL  unit/api/products/variants.test.ts [ unit/api/products/variants.test.ts ]
+ FAIL  unit/api/promo/active.test.ts [ unit/api/promo/active.test.ts ]
+ FAIL  unit/api/promo/validate.test.ts [ unit/api/promo/validate.test.ts ]
+ FAIL  unit/api/transactions/create-status.test.ts [ unit/api/transactions/create-status.test.ts ]
+ FAIL  unit/api/transactions/paypal-capture.test.ts [ unit/api/transactions/paypal-capture.test.ts ]
+ FAIL  unit/api/transactions/webhook-paypal.test.ts [ unit/api/transactions/webhook-paypal.test.ts ]
+ FAIL  unit/api/transactions/webhook-stripe.test.ts [ unit/api/transactions/webhook-stripe.test.ts ]
+ FAIL  unit/api/user/password.test.ts [ unit/api/user/password.test.ts ]
+ FAIL  unit/api/user/profile.test.ts [ unit/api/user/profile.test.ts ]
+ FAIL  unit/api/user/transactions.test.ts [ unit/api/user/transactions.test.ts ]
+ FAIL  unit/api/user/wishlist-check.test.ts [ unit/api/user/wishlist-check.test.ts ]
+ FAIL  unit/api/user/wishlist-count.test.ts [ unit/api/user/wishlist-count.test.ts ]
+ FAIL  unit/api/user/wishlist-id.test.ts [ unit/api/user/wishlist-id.test.ts ]
+ FAIL  unit/api/user/wishlist-merge.test.ts [ unit/api/user/wishlist-merge.test.ts ]
+ FAIL  unit/api/user/wishlist.test.ts [ unit/api/user/wishlist.test.ts ]
+Error: Missing required environment variable: NEXT_PUBLIC_SUPABASE_URL
+Please copy .env.example to .env and configure test credentials.
+ ❯ setup.ts:28:11
+     26| for (const envVar of requiredEnvVars) {
+     27|   if (!process.env[envVar]) {
+     28|     throw new Error(
+       |           ^
+     29|       `Missing required environment variable: ${envVar}\n` +
+     30|         'Please copy .env.example to .env and configure test credentia…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/67]⎯
+
+
+ Test Files  67 failed (67)
+      Tests  no tests
+   Start at  22:59:27
+   Duration  1.17s (transform 711ms, setup 0ms, import 0ms, tests 0ms, environment 14ms)
+
+
+exec
+/bin/bash -lc 'npm run build' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 22699ms:
+
+> supabase-vercel-stack@0.1.0 verify
+> npm run verify:config && npm run verify:routes
+
+
+> supabase-vercel-stack@0.1.0 verify:config
+> bash scripts/verify-config-files.sh
+
+🔍 Verifying config files are not symlinks...
+
+✅ All critical config files are regular files (not symlinks)
+
+
+> supabase-vercel-stack@0.1.0 verify:routes
+> bash scripts/verify-api-routes.sh
+
+🔍 Verifying rendering mode exports...
+
+API routes checked: 51
+Server Component pages checked: 1
+
+✅ All routes have rendering mode exports (dynamic or revalidate)!
+
+Build should succeed on Vercel.
+[cache-busting] Generated service worker with version: dbddfed-1780342198473
+[cache-busting] Generated build version: dbddfed-1780342198473
+
+> supabase-vercel-stack@0.1.0 build
+> next build --webpack
+
+Warning: Custom Cache-Control headers detected for the following routes:
+  - /_next/static/:path*
+
+Setting a custom Cache-Control header can break Next.js development behavior.
+▲ Next.js 16.2.6 (webpack)
+- Environments: .env
+- Experiments (use with caution):
+  ✓ optimizeCss
+  · serverActions
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (129kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ Compiled successfully in 7.0s
+  Running TypeScript ...
+  Finished TypeScript in 7.2s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/27) ...
+(node:3078314) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3078305) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Generating static pages using 15 workers (6/27) 
+  Generating static pages using 15 workers (13/27) 
+  Generating static pages using 15 workers (20/27) 
+✓ Generating static pages using 15 workers (27/27) in 301ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /admin
+├ ○ /admin/categories
+├ ○ /admin/products
+├ ƒ /admin/products/[id]/edit
+├ ○ /admin/products/new
+├ ○ /admin/promo-codes
+├ ○ /admin/settings
+├ ○ /admin/transactions
+├ ○ /admin/users
+├ ƒ /admin/users/[id]
+├ ƒ /api/admin/categories
+├ ƒ /api/admin/categories/[id]
+├ ƒ /api/admin/categories/bulk
+├ ƒ /api/admin/products
+├ ƒ /api/admin/products/bulk
+├ ƒ /api/admin/products/reorder
+├ ƒ /api/admin/promo-codes
+├ ƒ /api/admin/promo-codes/[id]
+├ ƒ /api/admin/r2-browser
+├ ƒ /api/admin/settings
+├ ƒ /api/admin/stats
+├ ƒ /api/admin/tags
+├ ƒ /api/admin/tags/[id]
+├ ƒ /api/admin/transactions
+├ ƒ /api/admin/transactions/[id]
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/users/bulk
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/register
+├ ƒ /api/categories
+├ ƒ /api/categories/[slug]
+├ ƒ /api/health
+├ ƒ /api/products
+├ ƒ /api/products/[id]
+├ ƒ /api/products/[id]/media
+├ ƒ /api/products/[id]/media/[mediaId]
+├ ƒ /api/products/[id]/variants
+├ ƒ /api/products/[id]/variants/[variantId]
+├ ƒ /api/products/[id]/variants/reorder
+├ ƒ /api/promo/active
+├ ƒ /api/promo/validate
+├ ƒ /api/search
+├ ƒ /api/tags
+├ ƒ /api/tags/search
+├ ƒ /api/transactions/[id]
+├ ƒ /api/transactions/create
+├ ƒ /api/transactions/paypal/capture
+├ ƒ /api/transactions/status
+├ ƒ /api/transactions/webhook-paypal
+├ ƒ /api/transactions/webhook-stripe
+├ ƒ /api/user/password
+├ ƒ /api/user/profile
+├ ƒ /api/user/transactions
+├ ƒ /api/user/wishlist
+├ ƒ /api/user/wishlist/[id]
+├ ƒ /api/user/wishlist/check
+├ ƒ /api/user/wishlist/count
+├ ƒ /api/user/wishlist/merge
+├ ƒ /api/version
+├ ○ /cart
+├ ○ /checkout
+├ ○ /contact
+├ ○ /faq
+├ ○ /login
+├ ○ /payment/failure
+├ ○ /payment/success
+├ ○ /payment/verify
+├ ○ /privacy
+├ ƒ /products
+├ ƒ /products/[id]
+├ ○ /profile
+├ ○ /profile/wishlist
+├ ○ /refund-policy
+├ ○ /register
+├ ƒ /robots.txt
+├ ○ /shipping
+├ ƒ /sitemap.xml
+├ ○ /terms
+└ ○ /wishlist
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+exec
+/bin/bash -lc 'npm run build-storybook' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 7623ms:
+
+┌  Building storybook v10.4.1
+│
+◇  Cleaning outputDir: storybook-static
+(node:3078531) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+│
+◇  Loading presets
+│
+◇  Building manager..
+│
+●  Building preview..
+│
+▲  No story files found for the specified pattern: src/**/*.mdx
+│  Vite vite v7.3.3 building client environment for production...
+│  Vite transforming...
+│
+●  Copying static files: public at storybook-static
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+│
+▲  Vite src/components/ui/Pill.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Pill.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Pill.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Badge.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Badge.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Badge.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Input.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Input.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Input.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Alert.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Alert.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Alert.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Modal.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Modal.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Modal.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Pagination.tsx (1:0): Error when using
+│  sourcemap for reporting an error: Can't resolve original location of
+│  error.
+│
+▲  Vite src/components/ui/Pagination.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui/Pagination.tsx" was ignored.
+│
+▲  Vite src/components/ui/Card.tsx (1:0): Error when using sourcemap for
+│  reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Card.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Card.tsx" was
+│  ignored.
+│
+▲  Vite src/components/ui/Select.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Select.tsx (1:0): Module level directives cause
+│  errors when bundled, "use client" in "src/components/ui/Select.tsx"
+│  was ignored.
+│
+▲  Vite src/components/ui/Skeleton.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui/Skeleton.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui/Skeleton.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Pill.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Pill.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Pill.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Badge.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Badge.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Badge.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Alert.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Alert.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Alert.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Button.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Button.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Button.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Input.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Input.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Input.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Card.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Card.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Card.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Skeleton.tsx (1:0): Error when using
+│  sourcemap for reporting an error: Can't resolve original location of
+│  error.
+│
+▲  Vite src/components/ui-v4/Skeleton.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Skeleton.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Select.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Select.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Select.tsx" was ignored.
+│
+▲  Vite src/components/ui-v4/Modal.tsx (1:0): Error when using sourcemap
+│  for reporting an error: Can't resolve original location of error.
+│
+▲  Vite src/components/ui-v4/Modal.tsx (1:0): Module level directives
+│  cause errors when bundled, "use client" in
+│  "src/components/ui-v4/Modal.tsx" was ignored.
+│  Vite ✓ 474 modules transformed.
+│  Vite rendering chunks...
+│  Vite computing gzip size...
+│  Vite storybook-static/iframe.html
+│  18.79 kB │ gzip:   5.22 kB
+│  Vite storybook-static/assets/iframe-CiU2Iw--.css
+│  63.81 kB │ gzip:  10.72 kB
+│  Vite storybook-static/assets/jsx-runtime-BHj4-8di.js
+│  0.07 kB │ gzip:   0.08 kB
+│  Vite storybook-static/assets/index-Bqd4KQ8N.js
+│  0.09 kB │ gzip:   0.10 kB
+│  Vite storybook-static/assets/style-DLbl0wRg.js
+│  0.14 kB │ gzip:   0.14 kB
+│  Vite storybook-static/assets/formatter-EIJCOSYU-Do1NnD20.js
+│  0.28 kB │ gzip:   0.23 kB
+│  Vite storybook-static/assets/index-BauiskeP.js
+│  0.42 kB │ gzip:   0.27 kB
+│  Vite storybook-static/assets/Pill.stories-Dy15FVPe.js
+│  2.62 kB │ gzip:   1.01 kB
+│  Vite storybook-static/assets/Input.stories-B0377Y6N.js
+│  2.77 kB │ gzip:   0.91 kB
+│  Vite storybook-static/assets/Button.stories-CnrwivfW.js
+│  3.15 kB │ gzip:   0.95 kB
+│  Vite storybook-static/assets/Button-nidMRkSo.js
+│  3.71 kB │ gzip:   1.36 kB
+│  Vite storybook-static/assets/Input-BukPERnM.js
+│  4.03 kB │ gzip:   1.20 kB
+│  Vite storybook-static/assets/Pagination.stories-G141EL1h.js
+│  4.10 kB │ gzip:   1.48 kB
+│  Vite storybook-static/assets/Badge.stories-D4Hy3wnu.js
+│  4.33 kB │ gzip:   1.40 kB
+│  Vite storybook-static/assets/Card.stories-QjAQ5okh.js
+│  5.94 kB │ gzip:   1.70 kB
+│  Vite storybook-static/assets/Select.stories-DBTxUGvM.js
+│  6.91 kB │ gzip:   2.06 kB
+│  Vite storybook-static/assets/Modal.stories-jNqvAAfL.js
+│  8.94 kB │ gzip:   2.72 kB
+│  Vite storybook-static/assets/Alert.stories-CbKz37-3.js
+│  9.15 kB │ gzip:   2.32 kB
+│  Vite storybook-static/assets/Skeleton.stories-DXjygEg0.js
+│  9.45 kB │ gzip:   2.28 kB
+│  Vite storybook-static/assets/matchers-DMFSMG2O-N4FjKbka.js
+│  29.23 kB │ gzip:  10.05 kB
+│  Vite storybook-static/assets/Color-ASIRERSW-DoleJ9jQ.js
+│  29.95 kB │ gzip:  11.37 kB
+│  Vite storybook-static/assets/WithTooltip-65CFNBJE-DruGDrLN.js
+│  33.10 kB │ gzip:  11.65 kB
+│  Vite storybook-static/assets/syntaxhighlighter-W7WJGI2T-DC4pKMQ5.js
+│  78.56 kB │ gzip:  27.53 kB
+│  Vite storybook-static/assets/react-18-D_A0Mqhw.js
+│  206.28 kB │ gzip:  64.59 kB
+│  Vite storybook-static/assets/axe-BP4okE4t.js
+│  578.56 kB │ gzip: 159.33 kB
+│  Vite storybook-static/assets/DocsRenderer-GHJI37HO-BWMhnN-E.js
+│  817.66 kB │ gzip: 262.02 kB
+│  Vite storybook-static/assets/iframe-BPvbVSnp.js
+│  1,274.74 kB │ gzip: 361.34 kB
+│
+▲  Vite
+│  (!) Some chunks are larger than 500 kB after minification. Consider:
+│  - Using dynamic import() to code-split the application
+│  - Use build.rollupOptions.output.manualChunks to improve chunking:
+│  ]8;;https://rollupjs.org/configuration-options/#output-manualchunkshttps://rollupjs.org/configuration-options/#output-manualchunks]8;;
+│  - Adjust chunk size limit for this warning via
+│  build.chunkSizeWarningLimit.
+│  Vite ✓ built in 5.30s
+│
+◇  Output directory:
+│  /data/dexter/Desktop/supabase-vercel-stack/storybook-static
+│
+└  Storybook build completed successfully
+
+
+exec
+/bin/bash -lc "sed -n '1,140p' .github/workflows/deploy.yml && git show d3e4930"'^:.github/workflows/deploy.yml | sed -n '"'1,130p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: Install, lint, build, and test
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-nextauth-secret-change-me
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+      SUPABASE_SECRET_KEY: ci-secret-key
+      NEXT_PUBLIC_DEFAULT_LOCALE: en-US
+      NEXT_PUBLIC_DEFAULT_CURRENCY: USD
+      NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY: US
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_placeholder
+      PAYPAL_CLIENT_ID: paypal-client-id-placeholder
+      PAYPAL_CLIENT_SECRET: paypal-client-secret-placeholder
+      PAYPAL_WEBHOOK_ID: paypal-webhook-id-placeholder
+      PAYPAL_ENV: sandbox
+      PAYMENT_SITE_NAME: Supabase Vercel Stack
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-upstash-token-placeholder
+      R2_ACCOUNT_ID: ci-r2-account-placeholder
+      R2_ACCESS_KEY_ID: ci-r2-access-key-placeholder
+      R2_SECRET_ACCESS_KEY: ci-r2-secret-placeholder
+      R2_BUCKET_NAME: ci-media-bucket
+      R2_PUBLIC_URL: https://media.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm --prefix tests ci
+
+      - name: Verify repository config
+        run: npm run verify
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Storybook build
+        run: npm run build-storybook
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: Verify and test
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-nextauth-secret-change-me
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+      SUPABASE_SECRET_KEY: ci-secret-key
+      NEXT_PUBLIC_DEFAULT_LOCALE: en-US
+      NEXT_PUBLIC_DEFAULT_CURRENCY: USD
+      NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY: US
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_placeholder
+      PAYPAL_CLIENT_ID: paypal-client-id-placeholder
+      PAYPAL_CLIENT_SECRET: paypal-client-secret-placeholder
+      PAYPAL_WEBHOOK_ID: paypal-webhook-id-placeholder
+      PAYPAL_ENV: sandbox
+      PAYMENT_SITE_NAME: Supabase Vercel Stack
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-upstash-token-placeholder
+      R2_ACCOUNT_ID: ci-r2-account-placeholder
+      R2_ACCESS_KEY_ID: ci-r2-access-key-placeholder
+      R2_SECRET_ACCESS_KEY: ci-r2-secret-placeholder
+      R2_BUCKET_NAME: ci-media-bucket
+      R2_PUBLIC_URL: https://media.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm --prefix tests ci
+
+      - name: Verify repository config
+        run: npm run verify
+
+      - name: Unit tests
+        run: npm --prefix tests run test:unit
+
+      - name: Production build
+        run: node scripts/generate-build-version.js && npx next build --webpack
+
+exec
+/bin/bash -lc "CI=true DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=ci-nextauth-secret-change-me NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key NEXT_PUBLIC_DEFAULT_LOCALE=en-US NEXT_PUBLIC_DEFAULT_CURRENCY=USD NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US STRIPE_SECRET_KEY=sk_test_placeholder NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_placeholder STRIPE_WEBHOOK_SECRET=whsec_placeholder PAYPAL_CLIENT_ID=paypal-client-id-placeholder PAYPAL_CLIENT_SECRET=paypal-client-secret-placeholder PAYPAL_WEBHOOK_ID=paypal-webhook-id-placeholder PAYPAL_ENV=sandbox PAYMENT_SITE_NAME='Supabase Vercel Stack' UPSTASH_REDIS_REST_URL=https://example.upstash.io UPSTASH_REDIS_REST_TOKEN=ci-upstash-token-placeholder R2_ACCOUNT_ID=ci-r2-account-placeholder R2_ACCESS_KEY_ID=ci-r2-access-key-placeholder R2_SECRET_ACCESS_KEY=ci-r2-secret-placeholder R2_BUCKET_NAME=ci-media-bucket R2_PUBLIC_URL=https://media.example.com npm run test:ci" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 1783ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit --
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.1.7 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+ ❯ unit/lib/rate-limit.test.ts (0 test)
+ ❯ unit/lib/redis-client.test.ts (0 test)
+ ❯ unit/lib/with-cache.test.ts (0 test)
+ ❯ unit/api/tags.test.ts (0 test)
+ ❯ unit/lib/email-client.test.ts (0 test)
+ ❯ unit/lib/request-utils.test.ts (0 test)
+ ❯ unit/lib/storage-validators.test.ts (0 test)
+ ❯ unit/lib/storage.test.ts (0 test)
+ ❯ unit/lib/supabase.test.ts (0 test)
+ ❯ unit/lib/with-logging.test.ts (0 test)
+ ❯ unit/middleware.test.ts (0 test)
+ ❯ unit/api/categories.test.ts (0 test)
+ ❯ unit/api/search.test.ts (0 test)
+ ❯ unit/lib/logger.test.ts (0 test)
+ ❯ unit/lib/storage-r2-adapter.test.ts (0 test)
+ ❯ unit/services/user-service-queries.test.ts (0 test)
+ ❯ unit/services/category-service.test.ts (0 test)
+ ❯ unit/services/activity-log-service.test.ts (0 test)
+ ❯ unit/services/promo-service.test.ts (0 test)
+ ❯ unit/services/search-service.test.ts (0 test)
+ ❯ unit/services/settings-service.test.ts (0 test)
+ ❯ unit/lib/with-rate-limit.test.ts (0 test)
+ ❯ unit/services/auth-service.test.ts (0 test)
+ ❯ unit/services/user-service-validation.test.ts (0 test)
+ ❯ unit/services/admin-service.test.ts (0 test)
+ ❯ unit/services/transaction-service.test.ts (0 test)
+ ❯ unit/services/user-service.test.ts (0 test)
+ ❯ unit/services/product-service.test.ts (0 test)
+ ❯ unit/services/tag-service.test.ts (0 test)
+ ❯ unit/services/user-service-password.test.ts (0 test)
+ ❯ unit/store/toast-store.test.ts (0 test)
+ ❯ unit/services/wishlist-service.test.ts (0 test)
+ ❯ unit/store/cart-store.test.ts (0 test)
+ ❯ unit/store/user-store.test.ts (0 test)
+ ❯ unit/store/checkout-store.test.ts (0 test)
+ ❯ unit/utils/password-validation.test.ts (0 test)
+ ❯ unit/utils/text.test.ts (0 test)
+ ❯ unit/utils/format.test.ts (0 test)
+ ❯ unit/api/admin/transactions-id.test.ts (0 test)
+ ❯ unit/api/admin/stats.test.ts (0 test)
+ ❯ unit/store/wishlist-store.test.ts (0 test)
+ ❯ unit/api/admin/transactions.test.ts (0 test)
+ ❯ unit/api/admin/settings.test.ts (0 test)
+ ❯ unit/utils/url.test.ts (0 test)
+ ❯ unit/api/admin/users-bulk.test.ts (0 test)
+ ❯ unit/api/auth/nextauth.test.ts (0 test)
+ ❯ unit/api/admin/users-id.test.ts (0 test)
+ ❯ unit/api/admin/users.test.ts (0 test)
+ ❯ unit/api/auth/register.test.ts (0 test)
+ ❯ unit/api/transactions/create-status.test.ts (0 test)
+ ❯ unit/api/transactions/paypal-capture.test.ts (0 test)
+ ❯ unit/api/transactions/webhook-stripe.test.ts (0 test)
+ ❯ unit/api/user/password.test.ts (0 test)
+ ❯ unit/api/auth/login.test.ts (0 test)
+ ❯ unit/api/transactions/webhook-paypal.test.ts (0 test)
+ ❯ unit/api/user/transactions.test.ts (0 test)
+ ❯ unit/api/user/profile.test.ts (0 test)
+ ❯ unit/api/user/wishlist-count.test.ts (0 test)
+ ❯ unit/api/user/wishlist-check.test.ts (0 test)
+ ❯ unit/api/user/wishlist-id.test.ts (0 test)
+ ❯ unit/api/user/wishlist.test.ts (0 test)
+ ❯ unit/api/user/wishlist-merge.test.ts (0 test)
+ ❯ unit/api/products/media.test.ts (0 test)
+ ❯ unit/api/promo/active.test.ts (0 test)
+ ❯ unit/api/products/products.test.ts (0 test)
+ ❯ unit/api/products/variants.test.ts (0 test)
+ ❯ unit/api/promo/validate.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 67 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  unit/middleware.test.ts [ unit/middleware.test.ts ]
+ FAIL  unit/api/categories.test.ts [ unit/api/categories.test.ts ]
+ FAIL  unit/api/search.test.ts [ unit/api/search.test.ts ]
+ FAIL  unit/api/tags.test.ts [ unit/api/tags.test.ts ]
+ FAIL  unit/lib/email-client.test.ts [ unit/lib/email-client.test.ts ]
+ FAIL  unit/lib/logger.test.ts [ unit/lib/logger.test.ts ]
+ FAIL  unit/lib/rate-limit.test.ts [ unit/lib/rate-limit.test.ts ]
+ FAIL  unit/lib/redis-client.test.ts [ unit/lib/redis-client.test.ts ]
+ FAIL  unit/lib/request-utils.test.ts [ unit/lib/request-utils.test.ts ]
+ FAIL  unit/lib/storage-r2-adapter.test.ts [ unit/lib/storage-r2-adapter.test.ts ]
+ FAIL  unit/lib/storage-validators.test.ts [ unit/lib/storage-validators.test.ts ]
+ FAIL  unit/lib/storage.test.ts [ unit/lib/storage.test.ts ]
+ FAIL  unit/lib/supabase.test.ts [ unit/lib/supabase.test.ts ]
+ FAIL  unit/lib/with-cache.test.ts [ unit/lib/with-cache.test.ts ]
+ FAIL  unit/lib/with-logging.test.ts [ unit/lib/with-logging.test.ts ]
+ FAIL  unit/lib/with-rate-limit.test.ts [ unit/lib/with-rate-limit.test.ts ]
+ FAIL  unit/services/activity-log-service.test.ts [ unit/services/activity-log-service.test.ts ]
+ FAIL  unit/services/admin-service.test.ts [ unit/services/admin-service.test.ts ]
+ FAIL  unit/services/auth-service.test.ts [ unit/services/auth-service.test.ts ]
+ FAIL  unit/services/category-service.test.ts [ unit/services/category-service.test.ts ]
+ FAIL  unit/services/product-service.test.ts [ unit/services/product-service.test.ts ]
+ FAIL  unit/services/promo-service.test.ts [ unit/services/promo-service.test.ts ]
+ FAIL  unit/services/search-service.test.ts [ unit/services/search-service.test.ts ]
+ FAIL  unit/services/settings-service.test.ts [ unit/services/settings-service.test.ts ]
+ FAIL  unit/services/tag-service.test.ts [ unit/services/tag-service.test.ts ]
+ FAIL  unit/services/transaction-service.test.ts [ unit/services/transaction-service.test.ts ]
+ FAIL  unit/services/user-service-password.test.ts [ unit/services/user-service-password.test.ts ]
+ FAIL  unit/services/user-service-queries.test.ts [ unit/services/user-service-queries.test.ts ]
+ FAIL  unit/services/user-service-validation.test.ts [ unit/services/user-service-validation.test.ts ]
+ FAIL  unit/services/user-service.test.ts [ unit/services/user-service.test.ts ]
+ FAIL  unit/services/wishlist-service.test.ts [ unit/services/wishlist-service.test.ts ]
+ FAIL  unit/store/cart-store.test.ts [ unit/store/cart-store.test.ts ]
+ FAIL  unit/store/checkout-store.test.ts [ unit/store/checkout-store.test.ts ]
+ FAIL  unit/store/toast-store.test.ts [ unit/store/toast-store.test.ts ]
+ FAIL  unit/store/user-store.test.ts [ unit/store/user-store.test.ts ]
+ FAIL  unit/store/wishlist-store.test.ts [ unit/store/wishlist-store.test.ts ]
+ FAIL  unit/utils/format.test.ts [ unit/utils/format.test.ts ]
+ FAIL  unit/utils/password-validation.test.ts [ unit/utils/password-validation.test.ts ]
+ FAIL  unit/utils/text.test.ts [ unit/utils/text.test.ts ]
+ FAIL  unit/utils/url.test.ts [ unit/utils/url.test.ts ]
+ FAIL  unit/api/admin/settings.test.ts [ unit/api/admin/settings.test.ts ]
+ FAIL  unit/api/admin/stats.test.ts [ unit/api/admin/stats.test.ts ]
+ FAIL  unit/api/admin/transactions-id.test.ts [ unit/api/admin/transactions-id.test.ts ]
+ FAIL  unit/api/admin/transactions.test.ts [ unit/api/admin/transactions.test.ts ]
+ FAIL  unit/api/admin/users-bulk.test.ts [ unit/api/admin/users-bulk.test.ts ]
+ FAIL  unit/api/admin/users-id.test.ts [ unit/api/admin/users-id.test.ts ]
+ FAIL  unit/api/admin/users.test.ts [ unit/api/admin/users.test.ts ]
+ FAIL  unit/api/auth/login.test.ts [ unit/api/auth/login.test.ts ]
+ FAIL  unit/api/auth/nextauth.test.ts [ unit/api/auth/nextauth.test.ts ]
+ FAIL  unit/api/auth/register.test.ts [ unit/api/auth/register.test.ts ]
+ FAIL  unit/api/transactions/create-status.test.ts [ unit/api/transactions/create-status.test.ts ]
+ FAIL  unit/api/transactions/paypal-capture.test.ts [ unit/api/transactions/paypal-capture.test.ts ]
+ FAIL  unit/api/transactions/webhook-paypal.test.ts [ unit/api/transactions/webhook-paypal.test.ts ]
+ FAIL  unit/api/transactions/webhook-stripe.test.ts [ unit/api/transactions/webhook-stripe.test.ts ]
+ FAIL  unit/api/user/password.test.ts [ unit/api/user/password.test.ts ]
+ FAIL  unit/api/user/profile.test.ts [ unit/api/user/profile.test.ts ]
+ FAIL  unit/api/user/transactions.test.ts [ unit/api/user/transactions.test.ts ]
+ FAIL  unit/api/user/wishlist-check.test.ts [ unit/api/user/wishlist-check.test.ts ]
+ FAIL  unit/api/user/wishlist-count.test.ts [ unit/api/user/wishlist-count.test.ts ]
+ FAIL  unit/api/user/wishlist-id.test.ts [ unit/api/user/wishlist-id.test.ts ]
+ FAIL  unit/api/user/wishlist-merge.test.ts [ unit/api/user/wishlist-merge.test.ts ]
+ FAIL  unit/api/user/wishlist.test.ts [ unit/api/user/wishlist.test.ts ]
+ FAIL  unit/api/products/media.test.ts [ unit/api/products/media.test.ts ]
+ FAIL  unit/api/products/products.test.ts [ unit/api/products/products.test.ts ]
+ FAIL  unit/api/products/variants.test.ts [ unit/api/products/variants.test.ts ]
+ FAIL  unit/api/promo/active.test.ts [ unit/api/promo/active.test.ts ]
+ FAIL  unit/api/promo/validate.test.ts [ unit/api/promo/validate.test.ts ]
+Error: FATAL: unsafe shared-service credentials detected in the test environment.
+Tests must run against local Supabase and no Redis by default.
+For a dedicated disposable hosted test project, set TEST_ALLOW_DESTRUCTIVE_DB="I_UNDERSTAND_TEST_DATABASE_IS_DESTRUCTIVE".
+For a dedicated disposable Redis instance, set TEST_ALLOW_SHARED_REDIS="I_UNDERSTAND_TEST_REDIS_IS_DESTRUCTIVE".
+ ❯ setup.ts:65:9
+     63|     process.env.TEST_ALLOW_SHARED_REDIS !== TEST_REDIS_CONFIRMATION)
+     64| ) {
+     65|   throw new Error(
+       |         ^
+     66|     'FATAL: unsafe shared-service credentials detected in the test env…
+     67|       'Tests must run against local Supabase and no Redis by default.\…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/67]⎯
+
+
+ Test Files  67 failed (67)
+      Tests  no tests
+   Start at  23:00:45
+   Duration  1.20s (transform 360ms, setup 0ms, import 0ms, tests 0ms, environment 10ms)
+
+
+exec
+/bin/bash -lc 'git diff d3e4930''^ d3e4930 -- package-lock.json | sed -n '"'1,220p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+diff --git a/package-lock.json b/package-lock.json
+index 745da72..736f3aa 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,13 @@
+ {
+-  "name": "kitia",
++  "name": "supabase-vercel-stack",
+   "version": "0.1.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "kitia",
++      "name": "supabase-vercel-stack",
+       "version": "0.1.0",
++      "license": "MIT",
+       "dependencies": {
+         "@aws-sdk/client-s3": "^3.943.0",
+         "@aws-sdk/lib-storage": "^3.943.0",
+@@ -20,15 +21,15 @@
+         "@supabase/supabase-js": "^2.88.0",
+         "@upstash/ratelimit": "^2.0.7",
+         "@upstash/redis": "^1.35.7",
++        "axios": "^1.16.1",
+         "bcryptjs": "^2.4.3",
+         "date-fns": "^3.6.0",
+         "dotenv": "^17.2.3",
+         "form-data": "^4.0.5",
+-        "kavenegar": "^1.1.4",
+         "libphonenumber-js": "^1.12.30",
+         "next": "^16.2.6",
+         "next-auth": "^4.24.0",
+-        "nodemailer": "^8.0.8",
++        "nodemailer": "^8.0.10",
+         "pdfkit": "^0.15.0",
+         "pino": "^10.1.0",
+         "postgres": "^3.4.7",
+@@ -38,11 +39,12 @@
+         "server-only": "^0.0.1",
+         "stripe": "^20.3.1",
+         "uuid": "^14.0.0",
+-        "zarinpal-node-sdk": "^2.2.0",
+         "zustand": "^4.5.0"
+       },
+       "devDependencies": {
+         "@chromatic-com/storybook": "^4.1.3",
++        "@eslint/js": "^9.39.4",
++        "@next/eslint-plugin-next": "^16.2.6",
+         "@storybook/addon-a11y": "^10.1.11",
+         "@storybook/addon-docs": "^10.1.11",
+         "@storybook/addon-onboarding": "^10.1.11",
+@@ -65,7 +67,9 @@
+         "eslint-config-next": "^16.2.6",
+         "eslint-config-prettier": "^10.1.8",
+         "eslint-plugin-prettier": "^5.5.4",
++        "eslint-plugin-react-hooks": "^7.0.1",
+         "eslint-plugin-storybook": "^10.1.11",
++        "globals": "^16.5.0",
+         "husky": "^9.1.7",
+         "lint-staged": "^16.2.7",
+         "pino-pretty": "^13.1.2",
+@@ -1748,6 +1752,19 @@
+         "url": "https://opencollective.com/eslint"
+       }
+     },
++    "node_modules/@eslint/eslintrc/node_modules/globals": {
++      "version": "14.0.0",
++      "resolved": "https://registry.npmjs.org/globals/-/globals-14.0.0.tgz",
++      "integrity": "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/sindresorhus"
++      }
++    },
+     "node_modules/@eslint/js": {
+       "version": "9.39.4",
+       "resolved": "https://registry.npmjs.org/@eslint/js/-/js-9.39.4.tgz",
+@@ -9209,9 +9226,9 @@
+       }
+     },
+     "node_modules/globals": {
+-      "version": "14.0.0",
+-      "resolved": "https://registry.npmjs.org/globals/-/globals-14.0.0.tgz",
+-      "integrity": "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ==",
++      "version": "16.5.0",
++      "resolved": "https://registry.npmjs.org/globals/-/globals-16.5.0.tgz",
++      "integrity": "sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ==",
+       "dev": true,
+       "license": "MIT",
+       "engines": {
+@@ -10253,12 +10270,6 @@
+         "node": ">=4.0"
+       }
+     },
+-    "node_modules/kavenegar": {
+-      "version": "1.1.4",
+-      "resolved": "https://registry.npmjs.org/kavenegar/-/kavenegar-1.1.4.tgz",
+-      "integrity": "sha512-t7oqXS1zZjlFkeofF2J0qSKQeYAmCYogfqROCl/ZQZ3hvCnq9fBBiZIThGnozQ5mMEAJPI5TwWh9RyQ3bOqH3Q==",
+-      "license": "MIT"
+-    },
+     "node_modules/keyv": {
+       "version": "4.5.4",
+       "resolved": "https://registry.npmjs.org/keyv/-/keyv-4.5.4.tgz",
+@@ -10957,9 +10968,9 @@
+       "license": "MIT"
+     },
+     "node_modules/nodemailer": {
+-      "version": "8.0.8",
+-      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-8.0.8.tgz",
+-      "integrity": "sha512-p+XsnzXGdtIHXUu2ugxdfG+eX2nehsGhMjW9h0CWj1BhE30hrFz0kh0yIM0/VjUgVsRrDj+80ZO+I1nSkGE4tA==",
++      "version": "8.0.10",
++      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-8.0.10.tgz",
++      "integrity": "sha512-BLFuSth7QtHOkBzyqTehWWyub0NTRDuK2Q2SQfnGLsrJnzyU+Yeh4WpV1eZGuARFj1xQJHIdnTuJZLP+b9R1GQ==",
+       "license": "MIT-0",
+       "engines": {
+         "node": ">=6.0.0"
+@@ -14726,15 +14737,6 @@
+         "url": "https://github.com/sponsors/sindresorhus"
+       }
+     },
+-    "node_modules/zarinpal-node-sdk": {
+-      "version": "2.2.0",
+-      "resolved": "https://registry.npmjs.org/zarinpal-node-sdk/-/zarinpal-node-sdk-2.2.0.tgz",
+-      "integrity": "sha512-T6oRxE6b98HpUwOLiM1/TA3z7U4SJJny0Uni2Vod7feNxV7E/NiHFkblHTvCoPwIP7qSgCf75oF2tpQ3KZP4yw==",
+-      "dependencies": {
+-        "axios": "^1.7.7",
+-        "tslib": "^2.8.0"
+-      }
+-    },
+     "node_modules/zod": {
+       "version": "4.4.3",
+       "resolved": "https://registry.npmjs.org/zod/-/zod-4.4.3.tgz",
+
+exec
+/bin/bash -lc 'git show d3e4930''^:.eslintrc.json && cat eslint.config.mjs && cat package.json' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:prettier/recommended",
+    "plugin:storybook/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "ignorePatterns": [
+    "next.config.js",
+    "ecosystem.config.js",
+    "tests/**/*",
+    "config/**/*",
+    "scripts/**/*",
+    "docs/kavenegar-examples-node-master (2)/**/*",
+    "**/*.stories.tsx",
+    "**/*.stories.ts",
+    ".storybook/**/*",
+    "vitest.config.ts",
+    "storybook-static/**/*"
+  ],
+  "plugins": ["@typescript-eslint", "prettier"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
+    "@typescript-eslint/consistent-return": "warn",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/ban-ts-comment": "error",
+    "prettier/prettier": "error",
+    "semi": ["error", "always"],
+    "quotes": [
+      "error",
+      "single",
+      {
+        "avoidEscape": true
+      }
+    ],
+    "no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-unsafe-call": "off"
+  }
+}
+import js from '@eslint/js';
+import nextPlugin from '@next/eslint-plugin-next';
+import tsParser from '@typescript-eslint/parser';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import prettierPlugin from 'eslint-plugin-prettier';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default [
+  {
+    linterOptions: {
+      reportUnusedDisableDirectives: 'off',
+    },
+  },
+  {
+    ignores: [
+      '.next/**',
+      '.storybook/**',
+      'config/**',
+      'coverage/**',
+      'docs/**',
+      'node_modules/**',
+      'public/**',
+      'scripts/**',
+      'storybook-static/**',
+      'supabase/**',
+      'tests/**',
+      'vps/**',
+      '**/*.stories.ts',
+      '**/*.stories.tsx',
+      '*.config.js',
+      '*.config.mjs',
+      'next-env.d.ts',
+    ],
+  },
+  {
+    files: ['src/**/*.{ts,tsx}', 'middleware.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: __dirname,
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2021,
+      },
+    },
+    plugins: {
+      '@next/next': nextPlugin,
+      '@typescript-eslint': tsPlugin,
+      prettier: prettierPlugin,
+      'react-hooks': reactHooksPlugin,
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      ...tsPlugin.configs.recommended.rules,
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/rules-of-hooks': 'error',
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/consistent-return': 'warn',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/ban-ts-comment': 'error',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      semi: ['error', 'always'],
+      quotes: [
+        'error',
+        'single',
+        {
+          avoidEscape: true,
+        },
+      ],
+      'no-console': [
+        'warn',
+        {
+          allow: ['warn', 'error'],
+        },
+      ],
+    },
+  },
+];
+{
+  "name": "supabase-vercel-stack",
+  "version": "0.1.0",
+  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+    "dev:plain": "rm -rf .next && next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "verify:routes": "bash scripts/verify-api-routes.sh",
+    "verify:config": "bash scripts/verify-config-files.sh",
+    "verify": "npm run verify:config && npm run verify:routes",
+    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
+    "test:ci": "npm run test:unit",
+    "prebuild": "npm run verify && node scripts/generate-build-version.js",
+    "predev": "npm run verify:config",
+    "test": "npm --prefix tests run test --",
+    "test:all": "npm --prefix tests run test:all --",
+    "test:unit": "npm --prefix tests run test:unit --",
+    "test:integration": "npm --prefix tests run test:integration --",
+    "test:e2e": "npm --prefix tests run test:e2e --",
+    "unit": "npm --prefix tests run test:unit --",
+    "integration": "npm --prefix tests run test:integration --",
+    "e2e": "npm --prefix tests run test:e2e --",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.943.0",
+    "@aws-sdk/lib-storage": "^3.943.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.1.0",
+    "@smithy/node-http-handler": "^4.4.5",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.7",
+    "axios": "^1.16.1",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
+    "form-data": "^4.0.5",
+    "libphonenumber-js": "^1.12.30",
+    "next": "^16.2.6",
+    "next-auth": "^4.24.0",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.15.0",
+    "pino": "^10.1.0",
+    "postgres": "^3.4.7",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "resend": "^6.6.0",
+    "server-only": "^0.0.1",
+    "stripe": "^20.3.1",
+    "uuid": "^14.0.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@chromatic-com/storybook": "^4.1.3",
+    "@next/eslint-plugin-next": "^16.2.6",
+    "@storybook/addon-a11y": "^10.1.11",
+    "@storybook/addon-docs": "^10.1.11",
+    "@storybook/addon-onboarding": "^10.1.11",
+    "@storybook/addon-vitest": "^10.1.11",
+    "@storybook/nextjs-vite": "^10.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.0",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.13.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitest/browser-playwright": "^4.0.16",
+    "@vitest/coverage-v8": "^4.0.16",
+    "autoprefixer": "^10.4.0",
+    "critters": "^0.0.23",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-storybook": "^10.1.11",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "pino-pretty": "^13.1.2",
+    "playwright": "^1.57.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.7.4",
+    "storybook": "^10.1.11",
+    "supabase": "^2.67.2",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "uuid": "$uuid",
+    "glob": "10.5.0"
+  }
+}
+
+exec
+/bin/bash -lc 'find database -maxdepth 2 -type f | head -50 2>/dev/null || true; find . -maxdepth 2 -type d -name database -print' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+database/schema-dumps/preview-public-metadata-canonical.txt
+database/schema-dumps/production-public-metadata-canonical.txt
+database/schema-dumps/public-schema-parity-checksums.txt
+database/schema-contract.md
+./database
+
+exec
+/bin/bash -lc 'git ls-files database | head -50 && git log --oneline -- database | head' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+database/schema-contract.md
+database/schema-dumps/preview-public-metadata-canonical.txt
+database/schema-dumps/production-public-metadata-canonical.txt
+database/schema-dumps/public-schema-parity-checksums.txt
+712444f task005: prepare Supabase schema and seed setup
+db4ac9b task-001: lock payment schema contract and preview/prod parity
+
+exec
+/bin/bash -lc 'git diff d3e4930''^ d3e4930 -- tests/package-lock.json | sed -n '"'1,260p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+diff --git a/tests/package-lock.json b/tests/package-lock.json
+index 9bf12fc..eac5e90 100644
+--- a/tests/package-lock.json
++++ b/tests/package-lock.json
+@@ -1,11 +1,11 @@
+ {
+-  "name": "kitia-tests",
++  "name": "supabase-vercel-stack-tests",
+   "version": "1.0.0",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+-      "name": "kitia-tests",
++      "name": "supabase-vercel-stack-tests",
+       "version": "1.0.0",
+       "dependencies": {
+         "@supabase/supabase-js": "^2.88.0",
+@@ -15,15 +15,15 @@
+       "devDependencies": {
+         "@playwright/test": "^1.57.0",
+         "@types/node": "^20.12.0",
+-        "@vitest/coverage-v8": "^4.1.7",
+-        "@vitest/ui": "^4.1.7",
++        "@vitest/coverage-v8": "4.0.16",
++        "@vitest/ui": "4.0.16",
+         "dotenv": "^16.4.5",
+         "jsdom": "^24.1.3",
+         "msw": "^2.6.8",
+         "typescript": "^5.4.0",
+         "undici": "^6.25.0",
+-        "vite": "^7.3.3",
+-        "vitest": "^4.1.7"
++        "vite": "7.3.0",
++        "vitest": "4.0.16"
+       },
+       "engines": {
+         "node": ">=20.0.0"
+@@ -1384,29 +1384,30 @@
+       }
+     },
+     "node_modules/@vitest/coverage-v8": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/coverage-v8/-/coverage-v8-4.1.7.tgz",
+-      "integrity": "sha512-qsYPeXc5Q9dFLd1i8Ap+Bx8sQgcp+rFVQo4R0dDsWNBzl26ldVF1qOO+RL24K7FDrR6pA+50XedRLSoSG24bVQ==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/coverage-v8/-/coverage-v8-4.0.16.tgz",
++      "integrity": "sha512-2rNdjEIsPRzsdu6/9Eq0AYAzYdpP6Bx9cje9tL3FE5XzXRQF1fNU9pe/1yE8fCrS0HD+fBtt6gLPh6LI57tX7A==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+         "@bcoe/v8-coverage": "^1.0.2",
+-        "@vitest/utils": "4.1.7",
+-        "ast-v8-to-istanbul": "^1.0.0",
++        "@vitest/utils": "4.0.16",
++        "ast-v8-to-istanbul": "^0.3.8",
+         "istanbul-lib-coverage": "^3.2.2",
+         "istanbul-lib-report": "^3.0.1",
++        "istanbul-lib-source-maps": "^5.0.6",
+         "istanbul-reports": "^3.2.0",
+-        "magicast": "^0.5.2",
++        "magicast": "^0.5.1",
+         "obug": "^2.1.1",
+-        "std-env": "^4.0.0-rc.1",
+-        "tinyrainbow": "^3.1.0"
++        "std-env": "^3.10.0",
++        "tinyrainbow": "^3.0.3"
+       },
+       "funding": {
+         "url": "https://opencollective.com/vitest"
+       },
+       "peerDependencies": {
+-        "@vitest/browser": "4.1.7",
+-        "vitest": "4.1.7"
++        "@vitest/browser": "4.0.16",
++        "vitest": "4.0.16"
+       },
+       "peerDependenciesMeta": {
+         "@vitest/browser": {
+@@ -1415,31 +1416,31 @@
+       }
+     },
+     "node_modules/@vitest/expect": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/expect/-/expect-4.1.7.tgz",
+-      "integrity": "sha512-1R+tw0ortHEbZDGMymm+pN7/AFQ/RkFFdtd7EN+VBpynKmLbP8A3rpEXdshBJ7+8hQ9zBJh/i1s0yKNtxAnU7w==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/expect/-/expect-4.0.16.tgz",
++      "integrity": "sha512-eshqULT2It7McaJkQGLkPjPjNph+uevROGuIMJdG3V+0BSR2w9u6J9Lwu+E8cK5TETlfou8GRijhafIMhXsimA==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@standard-schema/spec": "^1.1.0",
++        "@standard-schema/spec": "^1.0.0",
+         "@types/chai": "^5.2.2",
+-        "@vitest/spy": "4.1.7",
+-        "@vitest/utils": "4.1.7",
+-        "chai": "^6.2.2",
+-        "tinyrainbow": "^3.1.0"
++        "@vitest/spy": "4.0.16",
++        "@vitest/utils": "4.0.16",
++        "chai": "^6.2.1",
++        "tinyrainbow": "^3.0.3"
+       },
+       "funding": {
+         "url": "https://opencollective.com/vitest"
+       }
+     },
+     "node_modules/@vitest/mocker": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/mocker/-/mocker-4.1.7.tgz",
+-      "integrity": "sha512-vY7nuamKgfvpA1Koa3oYIw/k7D6kZnpGyNMZW8loow2bsBYla1TFdqTaXncWdRn4pgwNs+90RhnXhJScDwQeJA==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/mocker/-/mocker-4.0.16.tgz",
++      "integrity": "sha512-yb6k4AZxJTB+q9ycAvsoxGn+j/po0UaPgajllBgt1PzoMAAmJGYFdDk0uCcRcxb3BrME34I6u8gHZTQlkqSZpg==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@vitest/spy": "4.1.7",
++        "@vitest/spy": "4.0.16",
+         "estree-walker": "^3.0.3",
+         "magic-string": "^0.30.21"
+       },
+@@ -1448,7 +1449,7 @@
+       },
+       "peerDependencies": {
+         "msw": "^2.4.9",
+-        "vite": "^6.0.0 || ^7.0.0 || ^8.0.0"
++        "vite": "^6.0.0 || ^7.0.0-0"
+       },
+       "peerDependenciesMeta": {
+         "msw": {
+@@ -1460,26 +1461,26 @@
+       }
+     },
+     "node_modules/@vitest/pretty-format": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/pretty-format/-/pretty-format-4.1.7.tgz",
+-      "integrity": "sha512-umgCarTOYQWIaDMvGDRZij+6b9oVeLIyJzfN+AS88e0ZOU3QTgNNSTtjQOpcvWr3np1N0j4WgZj+sb3oYBDscw==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/pretty-format/-/pretty-format-4.0.16.tgz",
++      "integrity": "sha512-eNCYNsSty9xJKi/UdVD8Ou16alu7AYiS2fCPRs0b1OdhJiV89buAXQLpTbe+X8V9L6qrs9CqyvU7OaAopJYPsA==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "tinyrainbow": "^3.1.0"
++        "tinyrainbow": "^3.0.3"
+       },
+       "funding": {
+         "url": "https://opencollective.com/vitest"
+       }
+     },
+     "node_modules/@vitest/runner": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/runner/-/runner-4.1.7.tgz",
+-      "integrity": "sha512-BapjmAQ2aI78WdMEfeUWivnfVzB+VPGwWRQcJE0OUq7qEeEcBsCSf+0T5iREBNE5nBb4wA5Ya0W6IA+sghdEFw==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/runner/-/runner-4.0.16.tgz",
++      "integrity": "sha512-VWEDm5Wv9xEo80ctjORcTQRJ539EGPB3Pb9ApvVRAY1U/WkHXmmYISqU5E79uCwcW7xYUV38gwZD+RV755fu3Q==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@vitest/utils": "4.1.7",
++        "@vitest/utils": "4.0.16",
+         "pathe": "^2.0.3"
+       },
+       "funding": {
+@@ -1487,14 +1488,13 @@
+       }
+     },
+     "node_modules/@vitest/snapshot": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/snapshot/-/snapshot-4.1.7.tgz",
+-      "integrity": "sha512-ZacLzja+TmJeZ1h14xW2FB/WpeimUD3haBXQPyJqxvo8jQTmfeA8zv58mtjN2C7EHXZDYVcVYdYmAxjkWVvKCw==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/snapshot/-/snapshot-4.0.16.tgz",
++      "integrity": "sha512-sf6NcrYhYBsSYefxnry+DR8n3UV4xWZwWxYbCJUt2YdvtqzSPR7VfGrY0zsv090DAbjFZsi7ZaMi1KnSRyK1XA==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@vitest/pretty-format": "4.1.7",
+-        "@vitest/utils": "4.1.7",
++        "@vitest/pretty-format": "4.0.16",
+         "magic-string": "^0.30.21",
+         "pathe": "^2.0.3"
+       },
+@@ -1503,9 +1503,9 @@
+       }
+     },
+     "node_modules/@vitest/spy": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/spy/-/spy-4.1.7.tgz",
+-      "integrity": "sha512-kbkI5LMWakyuTIvs6fUJ5qdIVb1XVKsYJAT4OJ938cHMROYMSfmoQdZy0aaAnjbbc8F61vkoTqz/Az+/HiIu5Q==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/spy/-/spy-4.0.16.tgz",
++      "integrity": "sha512-4jIOWjKP0ZUaEmJm00E0cOBLU+5WE0BpeNr3XN6TEF05ltro6NJqHWxXD0kA8/Zc8Nh23AT8WQxwNG+WeROupw==",
+       "dev": true,
+       "license": "MIT",
+       "funding": {
+@@ -1513,37 +1513,36 @@
+       }
+     },
+     "node_modules/@vitest/ui": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/ui/-/ui-4.1.7.tgz",
+-      "integrity": "sha512-TP6utB2yX6rsJNVRo2qAlsi48i1YwFTrLV2tnTtWqJaYX7m4lRCCLirZBjU6xC5m0RsPHr+L2+N+eIPhgEzFfw==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/ui/-/ui-4.0.16.tgz",
++      "integrity": "sha512-rkoPH+RqWopVxDnCBE/ysIdfQ2A7j1eDmW8tCxxrR9nnFBa9jKf86VgsSAzxBd1x+ny0GC4JgiD3SNfRHv3pOg==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@vitest/utils": "4.1.7",
++        "@vitest/utils": "4.0.16",
+         "fflate": "^0.8.2",
+-        "flatted": "^3.4.2",
++        "flatted": "^3.3.3",
+         "pathe": "^2.0.3",
+         "sirv": "^3.0.2",
+         "tinyglobby": "^0.2.15",
+-        "tinyrainbow": "^3.1.0"
++        "tinyrainbow": "^3.0.3"
+       },
+       "funding": {
+         "url": "https://opencollective.com/vitest"
+       },
+       "peerDependencies": {
+-        "vitest": "4.1.7"
++        "vitest": "4.0.16"
+       }
+     },
+     "node_modules/@vitest/utils": {
+-      "version": "4.1.7",
+-      "resolved": "https://registry.npmjs.org/@vitest/utils/-/utils-4.1.7.tgz",
+-      "integrity": "sha512-T532WBu791cBxJlCl6SO+J14l81DQx6uQHm1bQbmCDY7nqlEIgkza/UFnSBNaUtSf41unldDFjdOBYEQC4b5Hw==",
++      "version": "4.0.16",
++      "resolved": "https://registry.npmjs.org/@vitest/utils/-/utils-4.0.16.tgz",
++      "integrity": "sha512-h8z9yYhV3e1LEfaQ3zdypIrnAg/9hguReGZoS7Gl0aBG5xgA410zBqECqmaF/+RkTggRsfnzc1XaAHA6bmUufA==",
+       "dev": true,
+       "license": "MIT",
+       "dependencies": {
+-        "@vitest/pretty-format": "4.1.7",
+-        "convert-source-map": "^2.0.0",
+-        "tinyrainbow": "^3.1.0"
++        "@vitest/pretty-format": "4.0.16",
++        "tinyrainbow": "^3.0.3"
+       },
+       "funding": {
+         "url": "https://opencollective.com/vitest"
+@@ -1586,9 +1585,9 @@
+       }
+     },
+     "node_modules/ast-v8-to-istanbul": {
+-      "version": "1.0.0",
+-      "resolved": "https://registry.npmjs.org/ast-v8-to-istanbul/-/ast-v8-to-istanbul-1.0.0.tgz",
+-      "integrity": "sha512-1fSfIwuDICFA4LKkCzRPO7F0hzFf0B7+Xqrl27ynQaa+Rh0e1Es0v6kWHPott3lU10AyAr7oKHa65OppjLn3Rg==",
++      "version": "0.3.12",
++      "resolved": "https://registry.npmjs.org/ast-v8-to-istanbul/-/ast-v8-to-istanbul-0.3.12.tgz",
++      "integrity": "sha512-BRRC8VRZY2R4Z4lFIL35MwNXmwVqBityvOIwETtsCSwvjl0IdgFsy9NhdaA6j74nUdtJJlIypeRhpDam19Wq3g==",
+       "dev": true,
+
+exec
+/bin/bash -lc 'npm --prefix tests ci' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 2919ms:
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+
+added 207 packages, and audited 208 packages in 3s
+
+41 packages are looking for funding
+  run `npm fund` for details
+
+4 vulnerabilities (1 high, 3 critical)
+
+To address all issues, run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+exec
+/bin/bash -lc "sed -n '1,120p' tests/setup.ts && CI=true DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=ci-nextauth-secret-change-me NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key NEXT_PUBLIC_DEFAULT_LOCALE=en-US NEXT_PUBLIC_DEFAULT_CURRENCY=USD NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US STRIPE_SECRET_KEY=sk_test_placeholder NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_placeholder STRIPE_WEBHOOK_SECRET=whsec_placeholder PAYPAL_CLIENT_ID=paypal-client-id-placeholder PAYPAL_CLIENT_SECRET=paypal-client-secret-placeholder PAYPAL_WEBHOOK_ID=paypal-webhook-id-placeholder PAYPAL_ENV=sandbox PAYMENT_SITE_NAME='Supabase Vercel Stack' UPSTASH_REDIS_REST_URL=https://example.upstash.io UPSTASH_REDIS_REST_TOKEN=ci-upstash-token-placeholder R2_ACCOUNT_ID=ci-r2-account-placeholder R2_ACCESS_KEY_ID=ci-r2-access-key-placeholder R2_SECRET_ACCESS_KEY=ci-r2-secret-placeholder R2_BUCKET_NAME=ci-media-bucket R2_PUBLIC_URL=https://media.example.com npm run test:ci" in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 1628ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit --
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.0.16 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 67 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  unit/middleware.test.ts [ unit/middleware.test.ts ]
+ FAIL  unit/api/categories.test.ts [ unit/api/categories.test.ts ]
+ FAIL  unit/api/search.test.ts [ unit/api/search.test.ts ]
+ FAIL  unit/api/tags.test.ts [ unit/api/tags.test.ts ]
+ FAIL  unit/lib/email-client.test.ts [ unit/lib/email-client.test.ts ]
+ FAIL  unit/lib/logger.test.ts [ unit/lib/logger.test.ts ]
+ FAIL  unit/lib/rate-limit.test.ts [ unit/lib/rate-limit.test.ts ]
+ FAIL  unit/lib/redis-client.test.ts [ unit/lib/redis-client.test.ts ]
+ FAIL  unit/lib/request-utils.test.ts [ unit/lib/request-utils.test.ts ]
+ FAIL  unit/lib/storage-r2-adapter.test.ts [ unit/lib/storage-r2-adapter.test.ts ]
+ FAIL  unit/lib/storage-validators.test.ts [ unit/lib/storage-validators.test.ts ]
+ FAIL  unit/lib/storage.test.ts [ unit/lib/storage.test.ts ]
+ FAIL  unit/lib/supabase.test.ts [ unit/lib/supabase.test.ts ]
+ FAIL  unit/lib/with-cache.test.ts [ unit/lib/with-cache.test.ts ]
+ FAIL  unit/lib/with-logging.test.ts [ unit/lib/with-logging.test.ts ]
+ FAIL  unit/lib/with-rate-limit.test.ts [ unit/lib/with-rate-limit.test.ts ]
+ FAIL  unit/services/activity-log-service.test.ts [ unit/services/activity-log-service.test.ts ]
+ FAIL  unit/services/admin-service.test.ts [ unit/services/admin-service.test.ts ]
+ FAIL  unit/services/auth-service.test.ts [ unit/services/auth-service.test.ts ]
+ FAIL  unit/services/category-service.test.ts [ unit/services/category-service.test.ts ]
+ FAIL  unit/services/product-service.test.ts [ unit/services/product-service.test.ts ]
+ FAIL  unit/services/promo-service.test.ts [ unit/services/promo-service.test.ts ]
+ FAIL  unit/services/search-service.test.ts [ unit/services/search-service.test.ts ]
+ FAIL  unit/services/settings-service.test.ts [ unit/services/settings-service.test.ts ]
+ FAIL  unit/services/tag-service.test.ts [ unit/services/tag-service.test.ts ]
+ FAIL  unit/services/transaction-service.test.ts [ unit/services/transaction-service.test.ts ]
+ FAIL  unit/services/user-service-password.test.ts [ unit/services/user-service-password.test.ts ]
+ FAIL  unit/services/user-service-queries.test.ts [ unit/services/user-service-queries.test.ts ]
+ FAIL  unit/services/user-service-validation.test.ts [ unit/services/user-service-validation.test.ts ]
+ FAIL  unit/services/user-service.test.ts [ unit/services/user-service.test.ts ]
+ FAIL  unit/services/wishlist-service.test.ts [ unit/services/wishlist-service.test.ts ]
+ FAIL  unit/store/cart-store.test.ts [ unit/store/cart-store.test.ts ]
+ FAIL  unit/store/checkout-store.test.ts [ unit/store/checkout-store.test.ts ]
+ FAIL  unit/store/toast-store.test.ts [ unit/store/toast-store.test.ts ]
+ FAIL  unit/store/user-store.test.ts [ unit/store/user-store.test.ts ]
+ FAIL  unit/store/wishlist-store.test.ts [ unit/store/wishlist-store.test.ts ]
+ FAIL  unit/utils/format.test.ts [ unit/utils/format.test.ts ]
+ FAIL  unit/utils/password-validation.test.ts [ unit/utils/password-validation.test.ts ]
+ FAIL  unit/utils/text.test.ts [ unit/utils/text.test.ts ]
+ FAIL  unit/utils/url.test.ts [ unit/utils/url.test.ts ]
+ FAIL  unit/api/admin/settings.test.ts [ unit/api/admin/settings.test.ts ]
+ FAIL  unit/api/admin/stats.test.ts [ unit/api/admin/stats.test.ts ]
+ FAIL  unit/api/admin/transactions-id.test.ts [ unit/api/admin/transactions-id.test.ts ]
+ FAIL  unit/api/admin/transactions.test.ts [ unit/api/admin/transactions.test.ts ]
+ FAIL  unit/api/admin/users-bulk.test.ts [ unit/api/admin/users-bulk.test.ts ]
+ FAIL  unit/api/admin/users-id.test.ts [ unit/api/admin/users-id.test.ts ]
+ FAIL  unit/api/admin/users.test.ts [ unit/api/admin/users.test.ts ]
+ FAIL  unit/api/auth/login.test.ts [ unit/api/auth/login.test.ts ]
+ FAIL  unit/api/auth/nextauth.test.ts [ unit/api/auth/nextauth.test.ts ]
+ FAIL  unit/api/auth/register.test.ts [ unit/api/auth/register.test.ts ]
+ FAIL  unit/api/products/media.test.ts [ unit/api/products/media.test.ts ]
+ FAIL  unit/api/products/products.test.ts [ unit/api/products/products.test.ts ]
+ FAIL  unit/api/products/variants.test.ts [ unit/api/products/variants.test.ts ]
+ FAIL  unit/api/transactions/create-status.test.ts [ unit/api/transactions/create-status.test.ts ]
+ FAIL  unit/api/transactions/paypal-capture.test.ts [ unit/api/transactions/paypal-capture.test.ts ]
+ FAIL  unit/api/transactions/webhook-paypal.test.ts [ unit/api/transactions/webhook-paypal.test.ts ]
+ FAIL  unit/api/transactions/webhook-stripe.test.ts [ unit/api/transactions/webhook-stripe.test.ts ]
+ FAIL  unit/api/promo/active.test.ts [ unit/api/promo/active.test.ts ]
+ FAIL  unit/api/promo/validate.test.ts [ unit/api/promo/validate.test.ts ]
+ FAIL  unit/api/user/password.test.ts [ unit/api/user/password.test.ts ]
+ FAIL  unit/api/user/profile.test.ts [ unit/api/user/profile.test.ts ]
+ FAIL  unit/api/user/transactions.test.ts [ unit/api/user/transactions.test.ts ]
+ FAIL  unit/api/user/wishlist-check.test.ts [ unit/api/user/wishlist-check.test.ts ]
+ FAIL  unit/api/user/wishlist-count.test.ts [ unit/api/user/wishlist-count.test.ts ]
+ FAIL  unit/api/user/wishlist-id.test.ts [ unit/api/user/wishlist-id.test.ts ]
+ FAIL  unit/api/user/wishlist-merge.test.ts [ unit/api/user/wishlist-merge.test.ts ]
+ FAIL  unit/api/user/wishlist.test.ts [ unit/api/user/wishlist.test.ts ]
+Error: FATAL: unsafe shared-service credentials detected in the test environment.
+Tests must run against local Supabase and no Redis by default.
+For a dedicated disposable hosted test project, set TEST_ALLOW_DESTRUCTIVE_DB="I_UNDERSTAND_TEST_DATABASE_IS_DESTRUCTIVE".
+For a dedicated disposable Redis instance, set TEST_ALLOW_SHARED_REDIS="I_UNDERSTAND_TEST_REDIS_IS_DESTRUCTIVE".
+ ❯ setup.ts:65:9
+     63|     process.env.TEST_ALLOW_SHARED_REDIS !== TEST_REDIS_CONFIRMATION)
+     64| ) {
+     65|   throw new Error(
+       |         ^
+     66|     'FATAL: unsafe shared-service credentials detected in the test env…
+     67|       'Tests must run against local Supabase and no Redis by default.\…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/67]⎯
+
+
+ Test Files  67 failed (67)
+      Tests  no tests
+   Start at  23:01:42
+   Duration  1.05s (transform 119ms, setup 0ms, import 0ms, tests 0ms, environment 16ms)
+
+
+exec
+/bin/bash -lc "nl -ba package.json | sed -n '1,60p'; nl -ba .github/workflows/deploy.yml | sed -n '45,90p'; nl -ba eslint.config.mjs | sed -n '1,120p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+     1	{
+     2	  "name": "supabase-vercel-stack",
+     3	  "version": "0.1.0",
+     4	  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
+     5	  "license": "MIT",
+     6	  "scripts": {
+     7	    "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+     8	    "dev:plain": "rm -rf .next && next dev",
+     9	    "build": "next build --webpack",
+    10	    "start": "next start",
+    11	    "lint": "eslint .",
+    12	    "lint:fix": "eslint --fix .",
+    13	    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    14	    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    15	    "verify:routes": "bash scripts/verify-api-routes.sh",
+    16	    "verify:config": "bash scripts/verify-config-files.sh",
+    17	    "verify": "npm run verify:config && npm run verify:routes",
+    18	    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
+    19	    "test:ci": "npm run test:unit",
+    20	    "prebuild": "npm run verify && node scripts/generate-build-version.js",
+    21	    "predev": "npm run verify:config",
+    22	    "test": "npm --prefix tests run test --",
+    23	    "test:all": "npm --prefix tests run test:all --",
+    24	    "test:unit": "npm --prefix tests run test:unit --",
+    25	    "test:integration": "npm --prefix tests run test:integration --",
+    26	    "test:e2e": "npm --prefix tests run test:e2e --",
+    27	    "unit": "npm --prefix tests run test:unit --",
+    28	    "integration": "npm --prefix tests run test:integration --",
+    29	    "e2e": "npm --prefix tests run test:e2e --",
+    30	    "prepare": "husky",
+    31	    "storybook": "storybook dev -p 6006",
+    32	    "build-storybook": "storybook build"
+    33	  },
+    34	  "dependencies": {
+    35	    "@aws-sdk/client-s3": "^3.943.0",
+    36	    "@aws-sdk/lib-storage": "^3.943.0",
+    37	    "@dnd-kit/core": "^6.3.1",
+    38	    "@dnd-kit/sortable": "^10.0.0",
+    39	    "@dnd-kit/utilities": "^3.2.2",
+    40	    "@headlessui/react": "^2.2.9",
+    41	    "@heroicons/react": "^2.1.0",
+    42	    "@smithy/node-http-handler": "^4.4.5",
+    43	    "@supabase/ssr": "^0.8.0",
+    44	    "@supabase/supabase-js": "^2.88.0",
+    45	    "@upstash/ratelimit": "^2.0.7",
+    46	    "@upstash/redis": "^1.35.7",
+    47	    "axios": "^1.16.1",
+    48	    "bcryptjs": "^2.4.3",
+    49	    "date-fns": "^3.6.0",
+    50	    "dotenv": "^17.2.3",
+    51	    "form-data": "^4.0.5",
+    52	    "libphonenumber-js": "^1.12.30",
+    53	    "next": "^16.2.6",
+    54	    "next-auth": "^4.24.0",
+    55	    "nodemailer": "^8.0.10",
+    56	    "pdfkit": "^0.15.0",
+    57	    "pino": "^10.1.0",
+    58	    "postgres": "^3.4.7",
+    59	    "react": "^19.2.6",
+    60	    "react-dom": "^19.2.6",
+    45	        uses: actions/setup-node@v4
+    46	        with:
+    47	          node-version: '22'
+    48	          cache: 'npm'
+    49	          cache-dependency-path: |
+    50	            package-lock.json
+    51	            tests/package-lock.json
+    52	
+    53	      - name: Install app dependencies
+    54	        run: npm ci
+    55	
+    56	      - name: Install test dependencies
+    57	        run: npm --prefix tests ci
+    58	
+    59	      - name: Verify repository config
+    60	        run: npm run verify
+    61	
+    62	      - name: Lint
+    63	        run: npm run lint
+    64	
+    65	      - name: Unit tests
+    66	        run: npm run test:ci
+    67	
+    68	      - name: Production build
+    69	        run: npm run build
+    70	
+    71	      - name: Storybook build
+    72	        run: npm run build-storybook
+    73	
+    74	      - name: Production dependency audit
+    75	        run: npm audit --omit=dev
+     1	import js from '@eslint/js';
+     2	import nextPlugin from '@next/eslint-plugin-next';
+     3	import tsParser from '@typescript-eslint/parser';
+     4	import tsPlugin from '@typescript-eslint/eslint-plugin';
+     5	import prettierPlugin from 'eslint-plugin-prettier';
+     6	import reactHooksPlugin from 'eslint-plugin-react-hooks';
+     7	import globals from 'globals';
+     8	import { fileURLToPath } from 'node:url';
+     9	import path from 'node:path';
+    10	
+    11	const __filename = fileURLToPath(import.meta.url);
+    12	const __dirname = path.dirname(__filename);
+    13	
+    14	export default [
+    15	  {
+    16	    linterOptions: {
+    17	      reportUnusedDisableDirectives: 'off',
+    18	    },
+    19	  },
+    20	  {
+    21	    ignores: [
+    22	      '.next/**',
+    23	      '.storybook/**',
+    24	      'config/**',
+    25	      'coverage/**',
+    26	      'docs/**',
+    27	      'node_modules/**',
+    28	      'public/**',
+    29	      'scripts/**',
+    30	      'storybook-static/**',
+    31	      'supabase/**',
+    32	      'tests/**',
+    33	      'vps/**',
+    34	      '**/*.stories.ts',
+    35	      '**/*.stories.tsx',
+    36	      '*.config.js',
+    37	      '*.config.mjs',
+    38	      'next-env.d.ts',
+    39	    ],
+    40	  },
+    41	  {
+    42	    files: ['src/**/*.{ts,tsx}', 'middleware.ts'],
+    43	    languageOptions: {
+    44	      parser: tsParser,
+    45	      parserOptions: {
+    46	        project: './tsconfig.json',
+    47	        tsconfigRootDir: __dirname,
+    48	      },
+    49	      globals: {
+    50	        ...globals.browser,
+    51	        ...globals.node,
+    52	        ...globals.es2021,
+    53	      },
+    54	    },
+    55	    plugins: {
+    56	      '@next/next': nextPlugin,
+    57	      '@typescript-eslint': tsPlugin,
+    58	      prettier: prettierPlugin,
+    59	      'react-hooks': reactHooksPlugin,
+    60	    },
+    61	    rules: {
+    62	      ...js.configs.recommended.rules,
+    63	      ...tsPlugin.configs.recommended.rules,
+    64	      ...nextPlugin.configs.recommended.rules,
+    65	      ...nextPlugin.configs['core-web-vitals'].rules,
+    66	      'react-hooks/exhaustive-deps': 'warn',
+    67	      'react-hooks/rules-of-hooks': 'error',
+    68	      'no-unused-vars': 'off',
+    69	      'no-undef': 'off',
+    70	      '@typescript-eslint/no-explicit-any': 'error',
+    71	      '@typescript-eslint/no-unused-vars': [
+    72	        'error',
+    73	        {
+    74	          argsIgnorePattern: '^_',
+    75	          varsIgnorePattern: '^_',
+    76	        },
+    77	      ],
+    78	      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+    79	      '@typescript-eslint/consistent-return': 'warn',
+    80	      '@typescript-eslint/no-non-null-assertion': 'error',
+    81	      '@typescript-eslint/ban-ts-comment': 'error',
+    82	      '@typescript-eslint/explicit-function-return-type': 'off',
+    83	      '@typescript-eslint/explicit-module-boundary-types': 'off',
+    84	      '@typescript-eslint/no-unsafe-assignment': 'off',
+    85	      '@typescript-eslint/no-unsafe-member-access': 'off',
+    86	      '@typescript-eslint/no-unsafe-call': 'off',
+    87	      semi: ['error', 'always'],
+    88	      quotes: [
+    89	        'error',
+    90	        'single',
+    91	        {
+    92	          avoidEscape: true,
+    93	        },
+    94	      ],
+    95	      'no-console': [
+    96	        'warn',
+    97	        {
+    98	          allow: ['warn', 'error'],
+    99	        },
+   100	      ],
+   101	    },
+   102	  },
+   103	];
+
+exec
+/bin/bash -lc "CI=true DATABASE_URL=postgresql://postgres:postgres@localhost:54322/postgres NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXTAUTH_URL=http://localhost:3000 NEXTAUTH_SECRET=ci-nextauth-secret-change-me NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=ci-publishable-key SUPABASE_SECRET_KEY=ci-secret-key NEXT_PUBLIC_DEFAULT_LOCALE=en-US NEXT_PUBLIC_DEFAULT_CURRENCY=USD NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US STRIPE_SECRET_KEY=sk_test_placeholder NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_placeholder STRIPE_WEBHOOK_SECRET=whsec_placeholder PAYPAL_CLIENT_ID=paypal-client-id-placeholder PAYPAL_CLIENT_SECRET=paypal-client-secret-placeholder PAYPAL_WEBHOOK_ID=paypal-webhook-id-placeholder PAYPAL_ENV=sandbox PAYMENT_SITE_NAME='Supabase Vercel Stack' R2_ACCOUNT_ID=ci-r2-account-placeholder R2_ACCESS_KEY_ID=ci-r2-access-key-placeholder R2_SECRET_ACCESS_KEY=ci-r2-secret-placeholder R2_BUCKET_NAME=ci-media-bucket R2_PUBLIC_URL=https://media.example.com npm run test:ci" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 2283ms:
+
+> supabase-vercel-stack@0.1.0 test:unit
+> npm --prefix tests run test:unit --
+
+
+> supabase-vercel-stack-tests@1.0.0 test:unit
+> vitest run --config vitest.config.unit.ts
+
+ DEPRECATED  `test.poolOptions` was removed in Vitest 4. All previous `poolOptions` are now top-level options. Please, refer to the migration guide: https://vitest.dev/guide/migration#pool-rework
+
+ RUN  v4.0.16 /data/dexter/Desktop/supabase-vercel-stack/tests
+
+stdout | unit/lib/redis-client.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/email-client.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/request-utils.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/storage.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/supabase.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/storage-r2-adapter.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/storage-validators.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/with-cache.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/search.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/tags.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/logger.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/rate-limit.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/with-logging.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/categories.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/middleware.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/lib/storage-validators.test.ts (5 tests) 5ms
+ ✓ unit/lib/logger.test.ts (1 test) 56ms
+ ✓ unit/lib/request-utils.test.ts (115 tests) 20ms
+ ✓ unit/lib/storage-r2-adapter.test.ts (4 tests) 78ms
+ ✓ unit/lib/rate-limit.test.ts (4 tests) 94ms
+ ✓ unit/lib/storage.test.ts (2 tests) 91ms
+ ✓ unit/lib/with-logging.test.ts (2 tests) 22ms
+ ✓ unit/lib/redis-client.test.ts (6 tests) 104ms
+ ✓ unit/lib/supabase.test.ts (2 tests) 103ms
+ ✓ unit/lib/with-cache.test.ts (4 tests) 25ms
+stderr | unit/api/categories.test.ts > GET /api/categories > returns 500 when service fails
+Get categories error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/categories.test.ts:73:47
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/search.test.ts (5 tests) 57ms
+ ✓ unit/lib/email-client.test.ts (5 tests) 133ms
+stderr | unit/api/tags.test.ts > GET /api/tags > returns 500 when service fails
+Get tags error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/tags.test.ts:52:38
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/categories.test.ts > GET /api/categories/[slug] > returns 500 when service fails
+Get category error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/categories.test.ts:129:45
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/categories.test.ts (6 tests) 71ms
+ ✓ unit/middleware.test.ts (40 tests) 146ms
+stderr | unit/api/tags.test.ts > GET /api/tags/search > returns 500 when service fails
+Search tags error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/tags.test.ts:101:38
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/tags.test.ts (5 tests) 75ms
+stdout | unit/services/activity-log-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/admin-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/lib/with-rate-limit.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/category-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/auth-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/search-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/settings-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/tag-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/user-service-queries.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/transaction-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/promo-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/product-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/user-service-validation.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/services/user-service-password.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/services/category-service.test.ts (4 tests) 6ms
+stdout | unit/services/user-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/lib/with-rate-limit.test.ts (2 tests) 12ms
+ ✓ unit/services/search-service.test.ts (5 tests) 12ms
+ ✓ unit/services/tag-service.test.ts (15 tests) 20ms
+ ✓ unit/services/activity-log-service.test.ts (47 tests) 53ms
+ ✓ unit/services/admin-service.test.ts (39 tests) 38ms
+ ✓ unit/services/settings-service.test.ts (4 tests) 6ms
+ ✓ unit/services/promo-service.test.ts (21 tests) 25ms
+ ✓ unit/services/transaction-service.test.ts (17 tests) 37ms
+ ✓ unit/services/user-service-password.test.ts (8 tests) 20ms
+ ✓ unit/services/product-service.test.ts (20 tests) 38ms
+ ✓ unit/services/user-service-queries.test.ts (8 tests) 30ms
+stdout | unit/services/wishlist-service.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/services/user-service-validation.test.ts (5 tests) 21ms
+ ✓ unit/services/user-service.test.ts (13 tests) 44ms
+ ✓ unit/services/auth-service.test.ts (8 tests) 39ms
+stdout | unit/store/cart-store.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/store/checkout-store.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/store/toast-store.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/store/user-store.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/utils/text.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/utils/password-validation.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/utils/format.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/store/wishlist-store.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/services/wishlist-service.test.ts (26 tests) 33ms
+stdout | unit/utils/url.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+(node:3082026) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ unit/store/checkout-store.test.ts (4 tests) 5ms
+(node:3082026) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ unit/store/toast-store.test.ts (3 tests) 7ms
+stdout | unit/api/admin/settings.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/utils/format.test.ts (2 tests) 4ms
+(node:3082026) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ unit/store/user-store.test.ts (1 test) 4ms
+ ✓ unit/store/cart-store.test.ts (6 tests) 7ms
+ ✓ unit/utils/url.test.ts (2 tests) 5ms
+ ✓ unit/utils/password-validation.test.ts (2 tests) 8ms
+(node:3082026) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ unit/store/wishlist-store.test.ts (4 tests) 8ms
+stdout | unit/api/admin/stats.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/admin/transactions-id.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/utils/text.test.ts (6 tests) 18ms
+stdout | unit/api/admin/transactions.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/admin/users-bulk.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/admin/users-id.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stderr | unit/api/admin/stats.test.ts > admin stats API > GET returns 500 when service throws
+Error fetching stats: Error: stats failed
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/stats.test.ts:85:45
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | unit/api/admin/transactions-id.test.ts > admin transaction detail API > GET returns 500 when service throws
+Error fetching transaction: Error: missing
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/transactions-id.test.ts:87:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+ ✓ unit/api/admin/settings.test.ts (8 tests) 82ms
+ ✓ unit/api/admin/transactions-id.test.ts (4 tests) 44ms
+ ✓ unit/api/admin/stats.test.ts (4 tests) 90ms
+stdout | unit/api/auth/login.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/admin/users.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/auth/nextauth.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/products/products.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/products/media.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/auth/register.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/products/variants.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/promo/active.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/admin/transactions.test.ts (4 tests) 49ms
+ ✓ unit/api/admin/users-bulk.test.ts (14 tests) 66ms
+stdout | unit/api/promo/validate.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/auth/nextauth.test.ts (1 test) 32ms
+ ✓ unit/api/auth/login.test.ts (3 tests) 35ms
+stderr | unit/api/admin/users-id.test.ts > admin user detail API > GET returns 500 when service throws
+Error fetching user: Error: not found
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/users-id.test.ts:142:39
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stdout | unit/api/transactions/webhook-paypal.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stderr | unit/api/admin/users-id.test.ts > admin user detail API > PUT returns 500 when update fails
+Error updating user: Error: update failed
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/users-id.test.ts:212:42
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | unit/api/admin/users-id.test.ts > admin user detail API > DELETE returns 500 when delete fails
+Error deleting user: Error: delete failed
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/users-id.test.ts:267:38
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | unit/api/admin/users.test.ts > admin users API > GET returns 500 when service throws
+Error fetching users: Error: db down
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/admin/users.test.ts:105:39
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stdout | unit/api/transactions/create-status.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/transactions/paypal-capture.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/admin/users.test.ts (4 tests) 63ms
+ ✓ unit/api/admin/users-id.test.ts (13 tests) 75ms
+stderr | unit/api/promo/active.test.ts > GET /api/promo/active > returns 500 when service throws
+Error fetching promo code: Error: fail
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/promo/active.test.ts:67:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/media.test.ts > GET /api/products/[id]/media > returns 500 when service fails
+Get product media error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/media.test.ts:78:43
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/variants.test.ts > GET /api/products/[id]/variants > returns 500 when service fails
+Get product variants error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/variants.test.ts:99:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/promo/active.test.ts (3 tests) 67ms
+stderr | unit/api/products/media.test.ts > POST /api/products/[id]/media > returns 500 when service fails
+Add product media error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/media.test.ts:169:43
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/products.test.ts > GET /api/products > returns 500 when service fails
+Error fetching products: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/products.test.ts:123:45
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/variants.test.ts > POST /api/products/[id]/variants > returns 500 when service fails
+Create product variant error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/variants.test.ts:204:48
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/auth/register.test.ts (3 tests) 62ms
+stderr | unit/api/products/products.test.ts > POST /api/products > returns 400 when service throws
+Error creating product: Error: bad
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/products.test.ts:215:41
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/auth/register.test.ts > POST /api/auth/register > returns 400 when createUser throws
+Registration error: Error: duplicate
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/auth/register.test.ts:114:38
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/media.test.ts > PATCH /api/products/[id]/media/[mediaId] > returns 500 when service fails
+Update product media error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/media.test.ts:234:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/media.test.ts > DELETE /api/products/[id]/media/[mediaId] > returns 500 when service fails
+Delete product media error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/media.test.ts:292:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/products/media.test.ts (12 tests) 76ms
+stderr | unit/api/products/products.test.ts > GET /api/products/[id] > returns 404 when service fails
+Error fetching product: Error: missing
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/products.test.ts:285:42
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/variants.test.ts > PUT /api/products/[id]/variants/[variantId] > returns 500 when service fails
+Update product variant error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/variants.test.ts:310:48
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/variants.test.ts > DELETE /api/products/[id]/variants/[variantId] > returns 500 when service fails
+Delete product variant error: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/variants.test.ts:369:48
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/products/products.test.ts > PUT /api/products/[id] > returns 400 when service throws
+Error updating product: Error: bad
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/products.test.ts:367:41
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | unit/api/promo/validate.test.ts > POST /api/promo/validate > returns 500 when validation throws
+Error validating promo code: Error: boom
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/promo/validate.test.ts:123:45
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/promo/validate.test.ts (5 tests) 60ms
+stderr | unit/api/products/products.test.ts > DELETE /api/products/[id] > returns 400 when service throws
+Error deleting product: Error: bad
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/products/products.test.ts:428:41
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/products/products.test.ts (16 tests) 97ms
+ ✓ unit/api/products/variants.test.ts (20 tests) 103ms
+stdout | unit/api/transactions/webhook-stripe.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/password.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/profile.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/transactions.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/transactions/paypal-capture.test.ts (2 tests) 44ms
+stdout | unit/api/user/wishlist-count.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/transactions/webhook-paypal.test.ts (7 tests) 55ms
+stdout | unit/api/user/wishlist-check.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/wishlist-id.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/wishlist.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+stdout | unit/api/user/wishlist-merge.test.ts
+🧪 Test Environment Configuration:
+  - Supabase: http://localhost:54321
+  - Redis: Not configured
+  - Record Mode: Disabled
+  - Timeout: 30000 ms
+
+
+ ✓ unit/api/transactions/webhook-stripe.test.ts (7 tests) 32ms
+ ✓ unit/api/transactions/create-status.test.ts (2 tests) 133ms
+ ✓ unit/api/user/wishlist-count.test.ts (2 tests) 54ms
+ ✓ unit/api/user/transactions.test.ts (3 tests) 26ms
+stderr | unit/api/user/password.test.ts > POST /api/user/password > returns 500 and logs failure when password change fails
+Error managing user password: Error: bad change
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/user/password.test.ts:166:46
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/user/password.test.ts (6 tests) 42ms
+stderr | unit/api/user/profile.test.ts > PATCH /api/user/profile > returns 500 when update fails
+Error updating user profile: Error: update failed
+    at /data/dexter/Desktop/supabase-vercel-stack/tests/unit/api/user/profile.test.ts:205:45
+    at file:///data/dexter/Desktop/supabase-vercel-stack/tests/node_modules/@vitest/runner/dist/index.js:915:20
+
+ ✓ unit/api/user/profile.test.ts (6 tests) 50ms
+ ✓ unit/api/user/wishlist-id.test.ts (3 tests) 15ms
+ ✓ unit/api/user/wishlist-check.test.ts (3 tests) 65ms
+ ✓ unit/api/user/wishlist.test.ts (6 tests) 19ms
+ ✓ unit/api/user/wishlist-merge.test.ts (4 tests) 17ms
+
+ Test Files  67 passed (67)
+      Tests  643 passed (643)
+   Start at  23:02:08
+   Duration  1.68s (transform 3.83s, setup 2.86s, import 5.93s, tests 3.13s, environment 12ms)
+
+
+exec
+/bin/bash -lc "rg \"database/|schema.*\\.sql|\\.dump|pg_dump|supabase db dump|schema-dumps\" -n scripts docs tests src .github database --glob '"'!node_modules/**'"' --glob '"'!tasks/**'"'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+database/schema-contract.md:6:- Canonical schema source: `supabase/migrations/20260531190011_initial_public_schema.sql`
+database/schema-contract.md:18:psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+database/schema-contract.md:60:psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/SETUP_CHECKLIST.md:18:  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/RLS_SECURITY.md:5:`supabase/migrations/20260531190011_initial_public_schema.sql` and grants
+docs/RLS_SECURITY.md:35:psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/RLS_SECURITY.md:38:See `database/schema-contract.md` for the expected payment enum values and transaction columns.
+docs/RELEASE_CHECKLIST.md:42:  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/DEVELOPMENT_WORKFLOW.md:15:The public payment schema contract is documented in `database/schema-contract.md`. Validate a configured database with:
+docs/DEVELOPMENT_WORKFLOW.md:18:psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/TEST_PREVIEW_DB.md:16:psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+docs/DEPLOYMENT.md:23:   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+scripts/backup-to-r2.mjs:354:  const schemaFile = path.join(tmpDir, 'schema.sql');
+scripts/backup-to-r2.mjs:355:  const pgDumpPath = await execSafe('test -f /usr/lib/postgresql/17/bin/pg_dump && echo "/usr/lib/postgresql/17/bin/pg_dump" || echo "pg_dump"');
+scripts/backup-to-r2.mjs:356:  const pgDump = (pgDumpPath || 'pg_dump').trim();
+scripts/backup-to-r2.mjs:371:        'schema.sql': await fs.readFile(schemaFile, 'utf-8'),
+
+exec
+/bin/bash -lc "ls -la | sed -n '1,80p'; test -f LICENSE && head -20 LICENSE || true" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+total 3272
+drwxrwxr-x  21 dexter dexter    4096 Jun  1 23:00 .
+drwxr-xr-x  21 dexter dexter    4096 Jun  1 14:48 ..
+-rw-rw-r--   1 dexter dexter    3446 Jun  1 18:15 .env
+-rw-rw-r--   1 dexter dexter    3193 Jun  1 20:49 .env.example
+-rw-rw-r--   1 dexter dexter    1553 Jun  1 22:58 .eslintrc.json
+drwxrwxr-x   9 dexter dexter    4096 Jun  1 22:58 .git
+drwxrwxr-x   3 dexter dexter    4096 Jun  1 15:39 .github
+-rw-rw-r--   1 dexter dexter    1423 Jun  1 22:58 .gitignore
+drwxrwxr-x   3 dexter dexter    4096 May 31 22:36 .husky
+-rw-rw-r--   1 dexter dexter      48 Jun  1 21:20 .ignore
+drwxrwxr-x   8 dexter dexter    4096 Jun  1 23:00 .next
+-rw-rw-r--   1 dexter dexter      22 Jun  1 16:31 .npmrc
+-rw-rw-r--   1 dexter dexter     119 May 31 22:00 .prettierignore
+-rw-rw-r--   1 dexter dexter     173 May 31 22:00 .prettierrc
+drwxrwxr-x   2 dexter dexter    4096 Jun  1 21:55 .storybook
+-rw-rw-r--   1 dexter dexter      23 May 31 22:00 .vercelignore
+-rw-rw-r--   1 dexter dexter    2417 May 31 22:00 AGENTS.md
+-rw-rw-r--   1 dexter dexter    1017 Jun  1 16:33 CONTRIBUTING.md
+-rw-rw-r--   1 dexter dexter    1091 Jun  1 16:33 LICENSE
+-rw-rw-r--   1 dexter dexter    4282 Jun  1 16:31 README.md
+-rw-rw-r--   1 dexter dexter     765 Jun  1 16:31 SECURITY.md
+drwxrwxr-x   2 dexter dexter    4096 Jun  1 20:47 config
+-rw-rw-r--   1 dexter dexter    4364 Jun  1 18:15 credentials.md
+drwxrwxr-x   3 dexter dexter    4096 Jun  1 17:28 database
+drwxrwxr-x   2 dexter dexter    4096 Jun  1 17:28 docs
+-rw-rw-r--   1 dexter dexter    2819 Jun  1 22:58 eslint.config.mjs
+drwxrwxr-x   2 dexter dexter    4096 Jun  1 17:28 migrations
+-rw-rw-r--   1 dexter dexter     247 Jun  1 18:14 next-env.d.ts
+-rw-rw-r--   1 dexter dexter    1950 Jun  1 16:31 next.config.js
+drwxrwxr-x 603 dexter dexter   20480 Jun  1 21:37 node_modules
+-rw-rw-r--   1 dexter dexter  520656 Jun  1 22:58 package-lock.json
+-rw-rw-r--   1 dexter dexter    4217 Jun  1 22:58 package.json
+-rw-rw-r--   1 dexter dexter      83 May 31 22:00 postcss.config.js
+drwxrwxr-x   3 dexter dexter    4096 Jun  1 22:46 public
+drwxrwxr-x   3 dexter dexter    4096 Jun  1 16:31 scripts
+drwxrwxr-x  10 dexter dexter    4096 Jun  1 21:20 src
+drwxrwxr-x   8 dexter dexter    4096 Jun  1 23:00 storybook-static
+drwxr-xr-x   4 dexter dexter    4096 Jun  1 17:28 supabase
+-rw-rw-r--   1 dexter dexter    2198 Jun  1 21:55 tailwind.config.ts
+drwxrwxr-x   3 dexter dexter    4096 Jun  1 15:03 tasks
+drwxrwxr-x  10 dexter dexter    4096 Jun  1 22:58 tests
+drwxrwxr-x   2 dexter dexter    4096 May 31 23:21 tmp
+-rw-rw-r--   1 dexter dexter     970 Jun  1 16:31 tsconfig.json
+-rw-rw-r--   1 dexter dexter 2612735 Jun  1 22:53 tsconfig.tsbuildinfo
+-rw-rw-r--   1 dexter dexter    1171 May 31 22:00 vitest.config.ts
+-rw-rw-r--   1 dexter dexter      53 May 31 22:00 vitest.shims.d.ts
+drwxrwxr-x   2 dexter dexter    4096 Jun  1 16:31 vps
+MIT License
+
+Copyright (c) 2026 Supabase Vercel Stack contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+
+exec
+/bin/bash -lc 'git ls-files credentials.md .env .env.example .npmrc .ignore tasks tests/node_modules | head -20; git status --short | head -20' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+.env.example
+.ignore
+.npmrc
+tasks/lessons.md
+tasks/open-source-boilerplate-conversion/handoff.md
+tasks/open-source-boilerplate-conversion/reviews/task003-round6.txt
+tasks/open-source-boilerplate-conversion/reviews/task003-round7.txt
+tasks/open-source-boilerplate-conversion/reviews/task004-round1.txt
+tasks/open-source-boilerplate-conversion/reviews/task005-round1.txt
+tasks/open-source-boilerplate-conversion/reviews/task005-round2.txt
+tasks/open-source-boilerplate-conversion/reviews/task005-round3.txt
+tasks/open-source-boilerplate-conversion/reviews/task005-round4.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round1.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round10.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round11.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round12.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round13.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round14.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round15.txt
+tasks/open-source-boilerplate-conversion/reviews/task006-round16.txt
+
+exec
+/bin/bash -lc 'cat .gitignore' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/tests/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+/test-results
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+.env.production
+
+# credentials (consolidated)
+CREDENTIALS.md
+credentials.md
+
+# production sync script (contains credentials)
+sync-to-production.sh
+
+# Claude Code project instructions
+CLAUDE.md
+
+# tasks folder (project notes and planning)
+/tasks
+
+# local database dumps and generated schema artifacts
+*.dump
+*.sql.gz
+*.schema.local.sql
+
+# mcp config
+.mcp.json
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# temporary test files
+/tmp
+
+# education folder
+/education
+
+# local uploads (files stored in R2 cloud storage)
+/public/uploads/
+
+# Prevent routing conflicts - products route is at /src/app/products, not (public)/products
+/src/app/(public)/products/
+
+# Integration tests
+tests/node_modules/
+tests/.env
+tests/.env.local
+tests/.env.test
+tests/coverage/
+tests/dist/
+tests/*.tsbuildinfo
+tests/contracts/*.recorded.json
+tests/.vitest/
+tests/test-results/
+tests/e2e/test-results/
+
+# Generated cache busting files (created at build time)
+public/build-version.json
+public/sw.js
+
+# VPS connection info
+vps.txt
+
+*storybook.log
+storybook-static
+
+exec
+/bin/bash -lc "npm ls axios --omit=dev && node -e \"const l=require('./package-lock.json'); console.log(l.packages['node_modules/axios'])\"" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 639ms:
+supabase-vercel-stack@0.1.0 /data/dexter/Desktop/supabase-vercel-stack
+├── axios@1.16.1
+└─┬ zarinpal-node-sdk@2.2.0 extraneous
+  └── axios@1.16.1 deduped
+
+{
+  version: '1.16.1',
+  resolved: 'https://registry.npmjs.org/axios/-/axios-1.16.1.tgz',
+  integrity: 'sha512-caYkukvroVPO8KrzuJEb50Hm07KwfBZPEC3VeFHTsqWHvKTsy54hjJz9BS/cdaypROE2rH6xvm9mHX4fgWkr3A==',
+  license: 'MIT',
+  dependencies: {
+    'follow-redirects': '^1.16.0',
+    'form-data': '^4.0.5',
+    'https-proxy-agent': '^5.0.1',
+    'proxy-from-env': '^2.1.0'
+  }
+}
+
+exec
+/bin/bash -lc 'npm --prefix tests audit --json' in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 959ms:
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "@vitest/coverage-v8": {
+      "name": "@vitest/coverage-v8",
+      "severity": "critical",
+      "isDirect": true,
+      "via": [
+        "vitest"
+      ],
+      "effects": [],
+      "range": "<=4.1.0-beta.6",
+      "nodes": [
+        "node_modules/@vitest/coverage-v8"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/coverage-v8",
+        "version": "4.1.8",
+        "isSemVerMajor": false
+      }
+    },
+    "@vitest/ui": {
+      "name": "@vitest/ui",
+      "severity": "critical",
+      "isDirect": true,
+      "via": [
+        "vitest"
+      ],
+      "effects": [
+        "vitest"
+      ],
+      "range": "<=0.0.130 || 0.31.0 - 4.1.0-beta.6",
+      "nodes": [
+        "node_modules/@vitest/ui"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/ui",
+        "version": "4.1.8",
+        "isSemVerMajor": false
+      }
+    },
+    "vite": {
+      "name": "vite",
+      "severity": "high",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1116230,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+          "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-22",
+            "CWE-200"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.0.0 <=7.3.1"
+        },
+        {
+          "source": 1116232,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite: `server.fs.deny` bypassed with queries",
+          "url": "https://github.com/advisories/GHSA-v2wj-q39q-566r",
+          "severity": "high",
+          "cwe": [
+            "CWE-180",
+            "CWE-284"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.1.0 <=7.3.1"
+        },
+        {
+          "source": 1116235,
+          "name": "vite",
+          "dependency": "vite",
+          "title": "Vite Vulnerable to Arbitrary File Read via Vite Dev Server WebSocket",
+          "url": "https://github.com/advisories/GHSA-p9ff-h696-f583",
+          "severity": "high",
+          "cwe": [
+            "CWE-200",
+            "CWE-306"
+          ],
+          "cvss": {
+            "score": 0,
+            "vectorString": null
+          },
+          "range": ">=7.0.0 <=7.3.1"
+        }
+      ],
+      "effects": [],
+      "range": "7.0.0 - 7.3.1",
+      "nodes": [
+        "node_modules/vite"
+      ],
+      "fixAvailable": {
+        "name": "vite",
+        "version": "7.3.5",
+        "isSemVerMajor": false
+      }
+    },
+    "vitest": {
+      "name": "vitest",
+      "severity": "critical",
+      "isDirect": true,
+      "via": [
+        "@vitest/ui",
+        {
+          "source": 1120011,
+          "name": "vitest",
+          "dependency": "vitest",
+          "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+          "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
+          "severity": "critical",
+          "cwe": [
+            "CWE-862"
+          ],
+          "cvss": {
+            "score": 9.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": "<4.1.0"
+        }
+      ],
+      "effects": [
+        "@vitest/coverage-v8",
+        "@vitest/ui"
+      ],
+      "range": "<=4.1.0-beta.6",
+      "nodes": [
+        "node_modules/vitest"
+      ],
+      "fixAvailable": {
+        "name": "@vitest/ui",
+        "version": "4.1.8",
+        "isSemVerMajor": false
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 1,
+      "critical": 3,
+      "total": 4
+    },
+    "dependencies": {
+      "prod": 17,
+      "dev": 242,
+      "optional": 53,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 258
+    }
+  }
+}
+
+exec
+/bin/bash -lc 'cat tests/package.json' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+{
+  "name": "supabase-vercel-stack-tests",
+  "version": "1.0.0",
+  "description": "Test suite for the Supabase Vercel Stack commerce boilerplate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:integration",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e:chromium",
+    "test:unit": "vitest run --config vitest.config.unit.ts",
+    "test:unit:watch": "vitest watch --config vitest.config.unit.ts",
+    "test:unit:parallel": "vitest run --config vitest.config.unit.ts --reporter=verbose",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
+    "test:integration:watch": "vitest watch --config vitest.config.integration.ts",
+    "test:integration:fast": "node scripts/run-integration-fast.js",
+    "test:ui": "vitest --ui --config vitest.config.unit.ts",
+    "test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
+    "test:coverage:all": "vitest run --coverage",
+    "test:contract": "vitest run --config vitest.config.contract.ts",
+    "mock:record": "node scripts/record-contracts.js",
+    "mock:validate": "node scripts/validate-contracts.js",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:headed": "playwright test --config=e2e/playwright.config.ts --headed",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:e2e:debug": "playwright test --config=e2e/playwright.config.ts --debug",
+    "test:e2e:chromium": "playwright test --config=e2e/playwright.config.ts --project=chromium",
+    "test:e2e:firefox": "playwright test --config=e2e/playwright.config.ts --project=firefox",
+    "test:e2e:mobile": "playwright test --config=e2e/playwright.config.ts --project=mobile",
+    "test:e2e:report": "playwright show-report e2e/playwright-report"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/redis": "^1.35.7",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^20.12.0",
+    "@vitest/coverage-v8": "4.0.16",
+    "@vitest/ui": "4.0.16",
+    "dotenv": "^16.4.5",
+    "jsdom": "^24.1.3",
+    "msw": "^2.6.8",
+    "typescript": "^5.4.0",
+    "undici": "^6.25.0",
+    "vite": "7.3.0",
+    "vitest": "4.0.16"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+
+exec
+/bin/bash -lc 'npm audit --json' in /data/dexter/Desktop/supabase-vercel-stack
+ exited 1 in 1171ms:
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "vitest": {
+      "name": "vitest",
+      "severity": "critical",
+      "isDirect": true,
+      "via": [
+        {
+          "source": 1120011,
+          "name": "vitest",
+          "dependency": "vitest",
+          "title": "When Vitest UI server is listening, arbitrary file can be read and executed",
+          "url": "https://github.com/advisories/GHSA-5xrq-8626-4rwp",
+          "severity": "critical",
+          "cwe": [
+            "CWE-862"
+          ],
+          "cvss": {
+            "score": 9.8,
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": "<4.1.0"
+        }
+      ],
+      "effects": [],
+      "range": "<4.1.0",
+      "nodes": [
+        "node_modules/vitest"
+      ],
+      "fixAvailable": true
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 1,
+      "total": 1
+    },
+    "dependencies": {
+      "prod": 274,
+      "dev": 702,
+      "optional": 164,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 1011
+    }
+  }
+}
+
+exec
+/bin/bash -lc "nl -ba tests/package.json | sed -n '30,55p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+    30	  },
+    31	  "dependencies": {
+    32	    "@supabase/supabase-js": "^2.88.0",
+    33	    "@upstash/redis": "^1.35.7",
+    34	    "date-fns": "^3.6.0"
+    35	  },
+    36	  "devDependencies": {
+    37	    "@playwright/test": "^1.57.0",
+    38	    "@types/node": "^20.12.0",
+    39	    "@vitest/coverage-v8": "4.0.16",
+    40	    "@vitest/ui": "4.0.16",
+    41	    "dotenv": "^16.4.5",
+    42	    "jsdom": "^24.1.3",
+    43	    "msw": "^2.6.8",
+    44	    "typescript": "^5.4.0",
+    45	    "undici": "^6.25.0",
+    46	    "vite": "7.3.0",
+    47	    "vitest": "4.0.16"
+    48	  },
+    49	  "engines": {
+    50	    "node": ">=20.0.0"
+    51	  }
+    52	}
+
+codex
+The patch downgrades/pins test tooling to versions with current critical/high advisories, which undermines the release-readiness goal. The issue is actionable by moving the test package back to non-vulnerable patched versions.
+
+Review comment:
+
+- [P2] Restore safe test-tooling versions — /data/dexter/Desktop/supabase-vercel-stack/tests/package.json:39-47
+  Pinning the tests package back to `vitest`/`@vitest/ui` 4.0.16 and `vite` 7.3.0 reintroduces known security advisories: after `npm --prefix tests ci`, `npm --prefix tests audit` reports critical Vitest UI arbitrary file read/execution for `<4.1.0` and high Vite dev-server issues for `<=7.3.1`. This affects developers or CI jobs running the tests package UI/watch/dev tooling, and it regresses the previous 4.1.7/7.3.3 lock state.
+The patch downgrades/pins test tooling to versions with current critical/high advisories, which undermines the release-readiness goal. The issue is actionable by moving the test package back to non-vulnerable patched versions.
+
+Review comment:
+
+- [P2] Restore safe test-tooling versions — /data/dexter/Desktop/supabase-vercel-stack/tests/package.json:39-47
+  Pinning the tests package back to `vitest`/`@vitest/ui` 4.0.16 and `vite` 7.3.0 reintroduces known security advisories: after `npm --prefix tests ci`, `npm --prefix tests audit` reports critical Vitest UI arbitrary file read/execution for `<4.1.0` and high Vite dev-server issues for `<=7.3.1`. This affects developers or CI jobs running the tests package UI/watch/dev tooling, and it regresses the previous 4.1.7/7.3.3 lock state.

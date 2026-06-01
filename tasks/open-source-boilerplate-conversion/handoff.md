@@ -512,3 +512,47 @@ Checks run after final amend:
 - Production build with placeholder Supabase/Auth/Stripe/PayPal env passed.
 
 Current task012 status: commit-reviewed clean. Task013 is next in the sequential commit-based review queue.
+
+## Task013 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task013 only, following the revised commit-based workflow.
+
+Final task013 code commit:
+- `bf5f086d3a0146470762b4d1d0d0c774b7773d1d` - `task013: update CI tests and release workflow`
+
+Review loop:
+- Rounds 1-7 reviewed earlier task013 commits and found valid issues. Each valid finding was fixed into task013, the commit was amended, and the branch was replayed.
+- Round 8 reviewed commit `bf5f086`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task013-round8.txt`; the run ended without a final finding section and was not treated as clean.
+- Round 9 reviewed final commit `bf5f086d3a0146470762b4d1d0d0c774b7773d1d`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task013-round9.txt`.
+- Round 9 result: no regressions introduced by the commit were found.
+- Full task013 review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task013-round1.txt` through `task013-round9.txt`.
+
+Checks run after final review:
+- `git diff --check bf5f086^ bf5f086` passed.
+- `npm ci` passed. It still reports the known dev-only critical audit warning; `npm audit --omit=dev` passed.
+- `npm --prefix tests ci` passed with 0 vulnerabilities.
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `npm run format:check` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- Local/test-safe `npm run test:unit` passed: 67 files / 643 tests.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal/R2 env passed.
+- `npm run build-storybook` passed with existing Vite/Storybook warnings.
+- `npm audit --omit=dev` passed with 0 vulnerabilities.
+- `npm --prefix tests audit` passed with 0 vulnerabilities.
+- `npm --prefix tests run test:e2e -- --list` passed and listed 309 tests in 16 files.
+- Full release scrub returned no matches for Persian/Kitia/private artifact/legacy provider/secret-like patterns.
+
+Fixes folded into final task013:
+- Restored request IP fallback test behavior.
+- Updated tests package Vitest/Vite dependencies and lockfile.
+- Corrected tests env setup docs.
+- Restored raw local database SQL dump ignore coverage.
+- Removed Persian/Kitia fallback selectors and assertions from task013-owned E2E/unit tests.
+- Fixed duplicated admin variant image select confirmation selector.
+- Restored Prettier enforcement in ESLint flat config and formatted affected files.
+
+Blocked/skipped:
+- Full integration tests, full E2E tests, and live Supabase schema validation remain environment-gated and are not claimed as passing. They require a reachable local or disposable preview Supabase environment with real-format matching keys plus the relevant browser/runtime and sandbox service settings.
+
+Current task013 status: commit-reviewed clean. The task003-task013 commit-based review queue is finalized in this handoff; task001-task002 evidence should be audited before marking the overall thread goal complete.
