@@ -39,7 +39,7 @@ describe('withRateLimit', () => {
     const body = await response.json();
 
     expect(response.status).toBe(429);
-    expect(body.error).toContain('تعداد درخواست');
+    expect(body.error).toBe('Too many requests. Please wait before trying again.');
     expect(body.retryAfter).toBe(reset);
     expect(handler).not.toHaveBeenCalled();
     expect(response.headers.get('X-RateLimit-Limit')).toBe('10');

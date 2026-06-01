@@ -125,7 +125,7 @@ test.describe('Admin Panel Journey', () => {
 
     // Verify admin panel loaded - look for dashboard heading
     const dashboardHeading = page.getByRole('heading', {
-      name: /Dashboard|داشبورد مدیریت/i,
+      name: /Dashboard/i,
     });
     await expect(dashboardHeading).toBeVisible({ timeout: 10000 });
 
@@ -176,7 +176,7 @@ test.describe('Admin Panel Journey', () => {
     // Verify user is NOT in admin panel (either redirected or showing nothing)
     // The admin layout returns null for non-admin users
     const dashboardHeading = page.getByRole('heading', {
-      name: /Dashboard|داشبورد مدیریت/i,
+      name: /Dashboard/i,
     });
     await expect(dashboardHeading).not.toBeVisible({ timeout: 3000 });
 
@@ -200,7 +200,7 @@ test.describe('Admin Panel Journey', () => {
     // Verify on login page
     await expect(page).toHaveURL(/\/login/);
 
-    const loginHeading = page.getByRole('heading', { name: /Sign in|ورود/i });
+    const loginHeading = page.getByRole('heading', { name: /Sign in/i });
     await expect(loginHeading).toBeVisible();
 
     console.log('Unauthenticated user correctly redirected to login');

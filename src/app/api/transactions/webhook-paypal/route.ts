@@ -37,11 +37,7 @@ function hasValidE2EWebhookBypass(req: NextRequest): boolean {
   const expectedSecret = process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET;
   const providedSecret = req.headers.get('x-e2e-paypal-webhook-secret');
 
-  if (
-    process.env.E2E_TEST !== 'true' ||
-    !expectedSecret ||
-    !providedSecret
-  ) {
+  if (process.env.E2E_TEST !== 'true' || !expectedSecret || !providedSecret) {
     return false;
   }
 

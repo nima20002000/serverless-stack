@@ -88,7 +88,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // Find and click the rendered add-to-cart button (task009 translates this UI).
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید|Add to Cart/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
     await expect(addToCartButton).toBeVisible();
     await expect(addToCartButton).toBeEnabled();
@@ -107,7 +107,7 @@ test.describe('Guest Checkout Journey', () => {
     await expect(page).toHaveURL('/cart');
 
     // Wait for cart to show items (not empty state)
-    const cartItemsContainer = page.locator('h2:has-text("لیست کالاها")');
+    const cartItemsContainer = page.locator('h2:has-text("Items")');
     await expect(cartItemsContainer).toBeVisible({ timeout: 10000 });
 
     // ============================================================
@@ -115,7 +115,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // Click checkout button.
     await page
-      .getByRole('button', { name: /ادامه فرآیند خرید|Checkout/i })
+      .getByRole('button', { name: /Checkout/i })
       .click();
 
     // Should be on checkout page
@@ -144,7 +144,7 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // Click the pay button (there might be multiple, get the visible one)
     const payButton = page
-      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|Payment/i })
       .first();
     await expect(payButton).toBeEnabled();
     await payButton.click();
@@ -253,7 +253,7 @@ test.describe('Guest Checkout Journey', () => {
 
     // Click pay
     const payButton = page
-      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|Payment/i })
       .first();
     await payButton.click();
 
@@ -313,7 +313,7 @@ test.describe('Guest Checkout Journey', () => {
 
     // Try to submit without filling required fields
     const payButton = page
-      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
+      .getByRole('button', { name: /Pay|Payment/i })
       .first();
 
     // HTML5 validation should prevent submission
@@ -455,7 +455,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
 
     // Click "Send OTP" button
     const sendOtpButton = page.getByRole('button', {
-      name: /Send code|ارسال کد|Shipping Code/i,
+      name: /Send code|Shipping Code/i,
     });
     await expect(sendOtpButton).toBeVisible();
     await sendOtpButton.click();
@@ -474,7 +474,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await otpInput.fill(otpCode);
 
     // Click verify button
-    const verifyButton = page.getByRole('button', { name: /Verify code|تایید کد|Code/i });
+    const verifyButton = page.getByRole('button', { name: /Verify code|Code/i });
     await verifyButton.click();
 
     // Wait for verification
@@ -527,7 +527,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await createAccountCheckbox.check({ force: true });
 
     const sendOtpButton = page.getByRole('button', {
-      name: /Send code|ارسال کد|Shipping Code/i,
+      name: /Send code|Shipping Code/i,
     });
     await sendOtpButton.click();
 
@@ -538,7 +538,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     // Enter WRONG OTP
     await otpInput.fill('000000');
 
-    const verifyButton = page.getByRole('button', { name: /Verify code|تایید کد|Code/i });
+    const verifyButton = page.getByRole('button', { name: /Verify code|Code/i });
     await verifyButton.click();
 
     // Should see error message

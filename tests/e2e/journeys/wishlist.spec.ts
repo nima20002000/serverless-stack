@@ -133,7 +133,7 @@ test.describe('Wishlist Journey', () => {
 
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.getByRole('heading', { name: /Sign in|ورود/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in/i })).toBeVisible();
 
     await page.locator('input[name="identifier"]').fill(user.email);
     await page.locator('input[name="password"]').fill(user.password);
@@ -159,7 +159,7 @@ test.describe('Wishlist Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show empty wishlist message for new guest
-    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /empty/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -218,13 +218,13 @@ test.describe('Wishlist Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show empty wishlist message
-    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /empty/i })).toBeVisible({
       timeout: 10000,
     });
 
     // Should show "View Products" button
     await expect(
-      page.getByRole('link', { name: /View Products|مشاهده محصولات/i })
+      page.getByRole('link', { name: /View Products/i })
     ).toBeVisible();
   });
 
@@ -310,7 +310,7 @@ test.describe('Wishlist Journey', () => {
       .locator(
         '[data-testid="wishlist-item"]'
       )
-      .getByRole('button', { name: /Remove from wishlist|حذف/i })
+      .getByRole('button', { name: /Remove from wishlist/i })
       .first();
     await removeButton.click();
 
@@ -320,7 +320,7 @@ test.describe('Wishlist Journey', () => {
     );
 
     // Should show empty wishlist message
-    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /empty/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -404,7 +404,7 @@ test.describe('Wishlist Journey', () => {
     if (!buttonText?.includes('Out of stock')) {
       await addToCartButton.click();
 
-      await expect(page.getByText(/Added to cart|به سبد/i)).toBeVisible({
+      await expect(page.getByText(/Added to cart/i)).toBeVisible({
         timeout: 10000,
       });
     }
@@ -414,7 +414,7 @@ test.describe('Wishlist Journey', () => {
       .locator(
         '[data-testid="wishlist-item"]'
       )
-      .getByRole('button', { name: /Remove from wishlist|حذف/i })
+      .getByRole('button', { name: /Remove from wishlist/i })
       .first();
     if (await removeButton.isVisible()) {
       await removeButton.click();
@@ -509,7 +509,7 @@ test.describe('Wishlist Journey', () => {
 
     // Click "Delete All" button
     const clearButton = page.getByRole('button', {
-      name: /Delete all|Clear all|حذف همه/i,
+      name: /Delete all|Clear all/i,
     });
     await expect(clearButton).toBeVisible();
     await clearButton.click();
@@ -520,7 +520,7 @@ test.describe('Wishlist Journey', () => {
     );
 
     // Should show empty wishlist message
-    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /empty/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -562,7 +562,7 @@ test.describe('Wishlist Journey', () => {
     await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /empty/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -599,7 +599,7 @@ test.describe('Wishlist Journey', () => {
 
     // The title should show the count
     await expect(
-      page.getByRole('heading', { name: /Wishlist|علاقه‌مندی‌ها/i })
+      page.getByRole('heading', { name: /Wishlist/i })
     ).toContainText(/\(1\)/, { timeout: 10000 });
 
     // Clean up
@@ -607,7 +607,7 @@ test.describe('Wishlist Journey', () => {
       .locator(
         '[data-testid="wishlist-item"]'
       )
-      .getByRole('button', { name: /Remove from wishlist|حذف/i })
+      .getByRole('button', { name: /Remove from wishlist/i })
       .first();
     if (await removeButton.isVisible()) {
       await removeButton.click();

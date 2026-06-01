@@ -84,10 +84,7 @@ export async function PUT(
       );
     }
 
-    const user = await updateUserRole(
-      params.id,
-      role as 'USER' | 'ADMIN'
-    );
+    const user = await updateUserRole(params.id, role as 'USER' | 'ADMIN');
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error updating user:', error);

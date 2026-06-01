@@ -7,7 +7,7 @@ on:
 
 jobs:
   checks:
-    name: Verify and test
+    name: Install, lint, build, and test
     runs-on: ubuntu-latest
     env:
       CI: true
@@ -59,8 +59,17 @@ jobs:
       - name: Verify repository config
         run: npm run verify
 
+      - name: Lint
+        run: npm run lint
+
       - name: Unit tests
-        run: npm --prefix tests run test:unit
+        run: npm run test:ci
 
       - name: Production build
-        run: node scripts/generate-build-version.js && npx next build --webpack
+        run: npm run build
+
+      - name: Storybook build
+        run: npm run build-storybook
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev

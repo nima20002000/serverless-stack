@@ -126,12 +126,12 @@ test.describe('Promo Code Journey', () => {
     await expect(promoInput).toBeVisible({ timeout: 10000 });
     await promoInput.fill(testPromoCode);
 
-    await page.getByRole('button', { name: /Apply|اعمال/i }).click();
+    await page.getByRole('button', { name: /Apply/i }).click();
 
     const appliedPromo = page.locator('code', { hasText: testPromoCode });
     await expect(appliedPromo).toBeVisible({ timeout: 10000 });
 
-    const discountApplied = page.getByText(/Discount applied|تخفیف اعمال/i);
+    const discountApplied = page.getByText(/Discount applied/i);
     await expect(discountApplied).toBeVisible({ timeout: 10000 });
 
     console.log(`Promo code ${testPromoCode} applied on checkout`);

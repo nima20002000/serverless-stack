@@ -45,8 +45,11 @@ CLAUDE.md
 # tasks folder (project notes and planning)
 /tasks
 
-# database dumps and local schema artifacts
-/database
+# local database dumps and generated schema artifacts
+database/**/*.sql
+*.dump
+*.sql.gz
+*.schema.local.sql
 
 # mcp config
 .mcp.json

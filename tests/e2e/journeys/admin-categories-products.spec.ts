@@ -149,7 +149,7 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(
-      page.getByRole('heading', { name: /Categories|مدیریت دسته‌بندی‌ها/i })
+      page.getByRole('heading', { name: /Categories/i })
     ).toBeVisible();
 
     await page.getByRole('button', { name: /Add category/i }).click();

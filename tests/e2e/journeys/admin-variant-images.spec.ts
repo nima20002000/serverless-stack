@@ -253,7 +253,7 @@ test.describe('Admin Variant Images', () => {
 
           // Click confirm button in R2 modal (first one is R2 modal cancel)
           const confirmBtn = page.getByRole('button', {
-            name: /Select \(1\)|انتخاب \(1\)/,
+            name: /Select \(1\)/,
           });
           if (await confirmBtn.isEnabled()) {
             await confirmBtn.click();
@@ -471,7 +471,7 @@ test.describe('Admin Variant Images', () => {
             await page.waitForTimeout(300);
 
             const confirmBtn = page.getByRole('button', {
-              name: /Select \(1\)|انتخاب \(1\)/,
+              name: /Select \(1\)/,
             });
             if (await confirmBtn.isEnabled()) {
               await confirmBtn.click();

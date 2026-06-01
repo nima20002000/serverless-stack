@@ -71,7 +71,7 @@ describe('text utils', () => {
     process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY = 'IR';
 
     try {
-      expect(getPhoneLookupCandidates('۰۹۱۲۳۴۵۶۷۸۹')).toEqual([
+      expect(getPhoneLookupCandidates('09123456789')).toEqual([
         '+989123456789',
         '09123456789',
       ]);

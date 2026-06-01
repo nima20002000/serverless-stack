@@ -41,7 +41,7 @@ test.describe('User Registration Journey', () => {
 
     await page.goto('/register');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: /Create account|ثبت‌نام|ثبت نام/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Create account/i })).toBeVisible();
 
     await page.locator('input[name="name"]').fill(testUser.name);
     await page.locator('input[name="identifier"]').fill(testUser.email);
@@ -49,7 +49,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Create account|Send code/i })
       .click();
 
     // Wait for OTP page or error
@@ -83,14 +83,14 @@ test.describe('User Registration Journey', () => {
     // Submit
     await page
       .locator('form')
-      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Send code|Shipping Code/i })
       .click();
 
     // Wait for OTP page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
 
     // Verify phone is shown
-    await expect(page.getByText(/Phone number|شماره تلفن/i)).toBeVisible();
+    await expect(page.getByText(/Phone number/i)).toBeVisible();
     await expect(page.locator(`text=${testUser.phone}`)).toBeVisible();
 
     // Get OTP from database
@@ -131,7 +131,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Send code|Shipping Code/i })
       .click();
 
     // Complete registration
@@ -162,7 +162,7 @@ test.describe('User Registration Journey', () => {
       .fill('DifferentPass123!');
     await page
       .locator('form')
-      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Send code|Shipping Code/i })
       .click();
 
     // Wait for response
@@ -205,7 +205,7 @@ test.describe('User Registration Journey', () => {
     // Try to submit
     await page
       .locator('form')
-      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Create account|Send code/i })
       .click();
 
     // Should show password error
@@ -230,11 +230,11 @@ test.describe('User Registration Journey', () => {
 
     await page
       .locator('form')
-      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Create account|Send code/i })
       .click();
 
     // Should show mismatch error
-    await expect(page.locator('text=/match|مطابقت/i')).toBeVisible({
+    await expect(page.locator('text=/match/i')).toBeVisible({
       timeout: 5000,
     });
 
@@ -260,7 +260,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Create account|Send code/i })
       .click();
 
     // Wait for OTP page
@@ -289,7 +289,7 @@ test.describe('User Registration Journey', () => {
 
     // Verify "Resend OTP" button is visible
     const resendButton = page.getByRole('button', {
-      name: /Send code|ارسال کد|Shipping Code/i,
+      name: /Send code|Shipping Code/i,
     });
     await expect(resendButton).toBeVisible();
 
@@ -308,7 +308,7 @@ test.describe('User Registration Journey', () => {
 
     await page
       .locator('form')
-      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
+      .getByRole('button', { name: /Create account|Send code/i })
       .click();
 
     // Should show format error

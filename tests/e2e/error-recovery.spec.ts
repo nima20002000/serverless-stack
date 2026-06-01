@@ -74,7 +74,7 @@ test.describe('Error Recovery Scenarios', () => {
     await mockPaymentFailure(page, 'stripe');
 
     // Click pay
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for failure page
@@ -126,7 +126,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.route('**/api/transactions/**', (route) => route.abort());
 
     // Try to pay (will fail due to network)
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for error feedback
@@ -195,7 +195,7 @@ test.describe('Error Recovery Scenarios', () => {
     await mockStripeSuccess(page);
 
     // Try to pay
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for response (should either fail or show error)
@@ -239,7 +239,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Try to submit without filling any fields
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Should still be on checkout page (form validation prevents submission)
@@ -289,7 +289,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Try to submit
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for validation
@@ -350,7 +350,7 @@ test.describe('Concurrent Access Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Cart should have items but not necessarily 3 (depends on debouncing)
-    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart")');
     const hasItems = await cartItemsHeading.isVisible();
 
     console.log(`Rapid clicks handling: cart has items = ${hasItems}`);
@@ -445,7 +445,7 @@ test.describe('API Error Responses', () => {
     await page.locator('#phone').fill(testPhone);
     await page.locator('#shippingAddress').fill('Sample City Address Test');
 
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for error handling

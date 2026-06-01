@@ -83,7 +83,7 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify login form loaded
-    await expect(page.getByRole('heading', { name: /Sign in|ورود/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in/i })).toBeVisible();
 
     // Fill login form
     await page.locator('input[name="identifier"]').fill(registeredUser.email);
@@ -105,7 +105,7 @@ test.describe('User Login Journey', () => {
     await expect(page).toHaveURL('/profile');
 
     // Verify profile page content
-    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible({
       timeout: 10000,
     });
 
@@ -145,7 +145,7 @@ test.describe('User Login Journey', () => {
 
     // Click "Login with OTP" link
     const otpLoginLink = page.locator(
-      'button:has-text("Sign in with code"), button:has-text("کد")'
+      'button:has-text("Sign in with code")'
     );
     await expect(otpLoginLink).toBeVisible();
     await otpLoginLink.click();
@@ -154,7 +154,7 @@ test.describe('User Login Journey', () => {
     await expect(page.locator('input[name="password"]')).not.toBeVisible();
 
     // Submit to send OTP
-    await page.getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ورود/i }).click();
+    await page.getByRole('button', { name: /Send code|Shipping Code/i }).click();
 
     // Wait for redirect to OTP verification page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
@@ -189,13 +189,13 @@ test.describe('User Login Journey', () => {
 
     // Click "Login with OTP" link
     const otpLoginLink = page.locator(
-      'button:has-text("Sign in with code"), button:has-text("کد")'
+      'button:has-text("Sign in with code")'
     );
     await expect(otpLoginLink).toBeVisible();
     await otpLoginLink.click();
 
     // Submit to send OTP
-    await page.getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ورود/i }).click();
+    await page.getByRole('button', { name: /Send code|Shipping Code/i }).click();
 
     // Wait for redirect to OTP verification page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
@@ -297,7 +297,7 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page).toHaveURL('/profile');
-    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -318,7 +318,7 @@ test.describe('User Login Journey', () => {
     // Go to profile
     await page.goto('/profile');
     await page.waitForLoadState('networkidle');
-    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile/i })).toBeVisible({
       timeout: 10000,
     });
 
@@ -391,9 +391,9 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Click register link
-    await page.getByRole('link', { name: /Create account|ثبت‌نام|ثبت نام/i }).click();
+    await page.getByRole('link', { name: /Create account/i }).click();
 
     await expect(page).toHaveURL('/register');
-    await expect(page.getByRole('heading', { name: /Create account|ثبت‌نام|ثبت نام/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Create account/i })).toBeVisible();
   });
 });

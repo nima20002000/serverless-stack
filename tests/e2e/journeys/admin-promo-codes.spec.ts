@@ -155,10 +155,10 @@ test.describe('Admin Promo Codes', () => {
     await page.locator('input[type="datetime-local"]').fill(expiresAt);
 
     await page.getByPlaceholder('Namedetails').fill('2');
-    await page.getByPlaceholder(/No limit|بدون محدودیت/i).fill('100000');
-    await page.getByPlaceholder(/No limit|بدون سقف/i).fill('50000');
+    await page.getByPlaceholder(/No limit/i).fill('100000');
+    await page.getByPlaceholder(/No limit/i).fill('50000');
     await page
-      .getByPlaceholder(/Promo code description|مثال: کد تخفیف/i)
+      .getByPlaceholder(/Promo code description/i)
       .fill('Create details Test E2E');
 
     const createResponsePromise = page.waitForResponse(
@@ -215,7 +215,7 @@ test.describe('Admin Promo Codes', () => {
 
     const updatedDescription = 'to day details Test E2E';
     await page
-      .getByPlaceholder(/Promo code description|مثال: کد تخفیف/i)
+      .getByPlaceholder(/Promo code description/i)
       .fill(updatedDescription);
 
     const updateResponsePromise = page.waitForResponse(

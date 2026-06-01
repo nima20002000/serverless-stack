@@ -103,7 +103,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify cart has items
-    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 10000 });
 
     // Verify multiple items in cart
@@ -180,7 +180,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify item exists
-    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 5000 });
 
     // Find and click remove button (trash icon or "Delete" button)
@@ -196,7 +196,7 @@ test.describe('Multi-Product Cart Journey', () => {
 
       // Either cart is empty or item count decreased
       // Check for empty cart message
-      const emptyCartMessage = page.getByText(/empty|خالی/i);
+      const emptyCartMessage = page.getByText(/empty/i);
       if (await emptyCartMessage.isVisible()) {
         console.log('Cart is now empty after removing item');
       } else {
@@ -253,7 +253,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const checkoutButton = page.getByRole('button', {
-      name: /Checkout|ادامه فرآیند خرید/i,
+      name: /Checkout/i,
     });
     await checkoutButton.click();
 
@@ -269,7 +269,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await mockStripeSuccess(page);
 
     // Click pay
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for payment flow
@@ -327,7 +327,7 @@ test.describe('Multi-Product Cart Journey', () => {
     }
 
     // Verify cart has items
-    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 5000 });
   });
 });
@@ -431,7 +431,7 @@ test.describe('Cart Stock Management', () => {
     await mockStripeSuccess(page);
 
     // Pay
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     // Wait for success
@@ -513,9 +513,9 @@ test.describe('Product Variant Selection', () => {
 
       // Check for error message or successful add
       const errorMessage = page.getByText(
-        /Select a product option|Please select|انتخاب/i
+        /Select a product option|Please select/i
       );
-      const successFeedback = page.getByText(/Added to cart|به سبد/i);
+      const successFeedback = page.getByText(/Added to cart/i);
 
       const hasError = await errorMessage.isVisible();
       const hasSuccess = await successFeedback.isVisible();
@@ -614,8 +614,8 @@ test.describe('Cart Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify cart still has items (not empty)
-    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
-    const emptyCartMessage = page.getByText(/empty|خالی/i);
+    const cartItemsHeading = page.locator('h1:has-text("Cart")');
+    const emptyCartMessage = page.getByText(/empty/i);
 
     const hasItems = await cartItemsHeading.isVisible();
     const isEmpty = await emptyCartMessage.isVisible();
@@ -654,7 +654,7 @@ test.describe('Cart Persistence', () => {
 
     await mockStripeSuccess(page);
 
-    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|Payment/i }).first();
     await payButton.click();
 
     await page.waitForURL(/\/payment\/success/, { timeout: 30000 });
@@ -663,7 +663,7 @@ test.describe('Cart Persistence', () => {
     await page.goto('/cart');
     await page.waitForLoadState('networkidle');
 
-    const emptyCartMessage = page.getByText(/empty|خالی/i);
+    const emptyCartMessage = page.getByText(/empty/i);
     const hasEmptyMessage = await emptyCartMessage.isVisible();
 
     // Cart should be empty after successful checkout

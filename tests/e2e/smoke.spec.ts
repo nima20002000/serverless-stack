@@ -5,7 +5,7 @@ test.describe('E2E Infrastructure Smoke Tests', () => {
     await page.goto('/');
 
     // Verify page loaded with correct title
-    await expect(page).toHaveTitle(/Supabase Vercel Stack|Kitia|کیتیا/);
+    await expect(page).toHaveTitle(/Supabase Vercel Stack/);
 
     // Verify neutral default direction and language are set on html element
     const html = page.locator('html');
@@ -26,7 +26,9 @@ test.describe('E2E Infrastructure Smoke Tests', () => {
 
     if (isMobile) {
       // On mobile, we need to open the hamburger menu first
-      const mobileMenuButton = page.locator('button[aria-label="منوی موبایل"]');
+      const mobileMenuButton = page.locator(
+        'button[aria-label="Toggle navigation menu"]'
+      );
       await expect(mobileMenuButton).toBeVisible();
       await mobileMenuButton.click();
 
@@ -61,7 +63,7 @@ test.describe('E2E Infrastructure Smoke Tests', () => {
 
     // Find visible cart icon button (there are 2: desktop and mobile, one is hidden based on viewport)
     const cartIcon = page
-      .locator('button[aria-label="سبد خرید"]:visible')
+      .locator('button[aria-label="Cart"]:visible')
       .first();
     await expect(cartIcon).toBeVisible();
 
@@ -72,13 +74,13 @@ test.describe('E2E Infrastructure Smoke Tests', () => {
     // HeadlessUI Dialog uses transitions, so we wait for the panel content to appear
     const drawerTitle = page
       .getByRole('dialog')
-      .getByRole('heading', { name: 'سبد خرید', exact: true });
+      .getByRole('heading', { name: 'Cart', exact: true });
     await expect(drawerTitle).toBeVisible({ timeout: 5000 });
 
     // Verify the cart content is rendered (empty cart message showing empty state)
     const cartEmptyMessage = page
       .locator('[role="dialog"]')
-      .getByText('سبد خرید خالی است');
+      .getByText('Your cart is empty');
     await expect(cartEmptyMessage).toBeVisible({ timeout: 5000 });
 
     // Close the drawer by clicking the close button (XMarkIcon button)
