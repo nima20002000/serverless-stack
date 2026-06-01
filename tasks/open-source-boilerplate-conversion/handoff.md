@@ -380,3 +380,35 @@ Fixes folded into final task007:
 - E2E selector cleanup from the commit-based review loop, replacing placeholder and literal-pipe selectors with real current-copy-compatible role/text selectors.
 
 Current task007 status: commit-reviewed clean. Task008 is next in the sequential commit-based review queue.
+
+## Task008 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task008 only, following the revised commit-based workflow.
+
+Final task008 code commit:
+- `b7e7c0a` - `task008: neutralize Tailwind design system`
+
+Review loop:
+- Rounds 1-3 reviewed earlier task008 commits and produced valid findings. Each valid finding was fixed into task008, the commit was amended, and the branch was replayed.
+- Round 4 reviewed final commit `b7e7c0a`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task008-round4.txt`.
+- Round 4 result: no valid findings.
+- Full task008 review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task008-round1.txt` through `task008-round4.txt`.
+
+Checks run after final amend:
+- `git diff --check b7e7c0a^ b7e7c0a` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `rg -n "rose|pink|girlish|Kitia|کیتیا|BYekan|fa-IR|[\\u0600-\\u06FF]" src/components/ui src/components/ui-v4 .storybook src/app/globals.css tailwind.config.ts` returned no matches.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal env passed.
+- `npm run build-storybook` passed with existing Vite sourcemap, `"use client"`, Browserslist, and chunk-size warnings.
+- Focused `npm run test:unit -- unit/hooks/useVersionCheck.test.tsx` was attempted but did not run because the current Vitest include only matches `unit/**/*.test.ts`, not `.test.tsx`.
+
+Fixes folded into final task008:
+- Canonical `@/components/ui/Pill` import/tone migration for task008-era callers.
+- Neutral readable rate-limit, variant validation, and delete-confirmation fallback copy.
+- Restored still-referenced blob animation utilities.
+- Logical RTL-aware `SearchBar` positioning.
+- Legacy build-version key migration, dark modal backdrop correction, and unique generated input IDs.
+
+Current task008 status: commit-reviewed clean. Task009 is next in the sequential commit-based review queue.
