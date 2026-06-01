@@ -2,7 +2,7 @@
 
 import { useState, useMemo, memo, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
-import { formatNumber, formatPrice } from '@/lib/utils/format';
+import { formatPrice } from '@/lib/utils/format';
 
 interface Variant {
   id: string;
@@ -83,11 +83,11 @@ function VariantSelector({
         disabled={outOfStock}
         className={`relative w-12 h-12 rounded-full border-2 transition-all ${
           isSelected
-            ? 'border-rose-500 ring-2 ring-rose-200/70'
-            : 'border-rose-200/70 hover:border-rose-300'
+            ? 'border-blue-600 ring-2 ring-blue-200/70'
+            : 'border-slate-200 hover:border-slate-300'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         style={{ background: variant.color || '#ddd' }}
-        title={`${variant.name}${outOfStock ? ' (ناموجود)' : ''}`}
+        title={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
         aria-label={variant.name}
       >
         {isSelected && (
@@ -115,10 +115,10 @@ function VariantSelector({
         disabled={outOfStock}
         className={`px-4 py-2 rounded-2xl border-2 transition-all min-w-[4rem] ${
           isSelected
-            ? 'border-rose-500 bg-rose-50 text-rose-700'
-            : 'border-rose-200/70 hover:border-rose-300 text-slate-700'
+            ? 'border-blue-600 bg-blue-50 text-blue-700'
+            : 'border-slate-200 hover:border-slate-300 text-slate-700'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed line-through' : 'cursor-pointer'}`}
-        title={outOfStock ? 'ناموجود' : variant.name}
+        title={outOfStock ? 'Out of stock' : variant.name}
       >
         <div className="text-sm font-medium">{variant.size}</div>
       </button>
@@ -134,10 +134,10 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`px-4 py-3 rounded-2xl border-2 transition-all text-right ${
+        className={`rounded-lg border-2 px-4 py-3 text-left transition-all ${
           isSelected
-            ? 'border-rose-500 bg-rose-50/80'
-            : 'border-rose-200/70 hover:border-rose-300'
+            ? 'border-blue-600 bg-blue-50'
+            : 'border-slate-200 hover:border-slate-300'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className="flex items-start justify-between gap-4">
@@ -149,15 +149,15 @@ function VariantSelector({
           </div>
           <div className="text-left">
             {variant.priceAdjust !== 0 && (
-              <div className="text-sm font-medium text-rose-600">
+              <div className="text-sm font-medium text-blue-700">
                 {variant.priceAdjust > 0 ? '+' : ''}
                 {formatPrice(Number(variant.priceAdjust))}
               </div>
             )}
             <div
-              className={`text-xs ${outOfStock ? 'text-rose-600' : 'text-slate-500'}`}
+              className={`text-xs ${outOfStock ? 'text-red-600' : 'text-slate-500'}`}
             >
-              {outOfStock ? 'ناموجود' : `موجودی: ${variant.stock}`}
+              {outOfStock ? 'Out of stock' : `Stock: ${variant.stock}`}
             </div>
           </div>
         </div>
@@ -174,8 +174,8 @@ function VariantSelector({
       {/* Color Variants */}
       {colorVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-rose-900/80 mb-3">
-            رنگ
+          <label className="mb-3 block text-sm font-medium text-slate-700">
+            Color
           </label>
           <div className="flex flex-wrap gap-3">
             {colorVariants.map((variant) => (
@@ -188,8 +188,8 @@ function VariantSelector({
       {/* Size Variants */}
       {sizeVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-rose-900/80 mb-3">
-            سایز
+          <label className="mb-3 block text-sm font-medium text-slate-700">
+            Size
           </label>
           <div className="flex flex-wrap gap-2">
             {sizeVariants.map((variant) => (
@@ -202,8 +202,8 @@ function VariantSelector({
       {/* Material Variants */}
       {materialVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-rose-900/80 mb-3">
-            جنس
+          <label className="mb-3 block text-sm font-medium text-slate-700">
+            Material
           </label>
           <div className="flex flex-wrap gap-2">
             {materialVariants.map((variant) => (
@@ -213,8 +213,8 @@ function VariantSelector({
                 disabled={isOutOfStock(variant)}
                 className={`px-4 py-2 rounded-2xl border-2 transition-all ${
                   selected === variant.id
-                    ? 'border-rose-500 bg-rose-50 text-rose-700'
-                    : 'border-rose-200/70 hover:border-rose-300 text-slate-700'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700'
+                    : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 } ${isOutOfStock(variant) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {variant.material}
@@ -227,8 +227,8 @@ function VariantSelector({
       {/* Other Variants */}
       {otherVariants.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-rose-900/80 mb-3">
-            انتخاب نوع
+          <label className="mb-3 block text-sm font-medium text-slate-700">
+            Option
           </label>
           <div className="space-y-2">
             {otherVariants.map((variant) => (
@@ -240,22 +240,22 @@ function VariantSelector({
 
       {/* Selected Variant Info */}
       {selectedVariant && (
-        <div className="p-4 bg-rose-50/70 border border-rose-200/70 rounded-2xl">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-rose-900/80">
-                انتخاب شما:
+              <p className="text-sm font-medium text-slate-700">
+                Selected option
               </p>
-              <p className="text-base font-semibold text-rose-950 mt-1">
+              <p className="mt-1 text-base font-semibold text-slate-950">
                 {selectedVariant.name}
               </p>
             </div>
             <div className="text-left">
-              <p className="text-lg font-bold text-rose-700">
+              <p className="text-lg font-bold text-blue-700">
                 {getVariantPrice(selectedVariant)}
               </p>
               <p className="text-xs text-slate-600 mt-1">
-                موجودی: {formatNumber(selectedVariant.stock)} عدد
+                Stock: {selectedVariant.stock}
               </p>
             </div>
           </div>

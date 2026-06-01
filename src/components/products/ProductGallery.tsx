@@ -217,7 +217,7 @@ export default function ProductGallery({
   if (!sortedMedia || sortedMedia.length === 0) {
     return (
       <div className="w-full aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
-        <p className="text-gray-400">تصویری موجود نیست</p>
+        <p className="text-gray-400">No image available</p>
       </div>
     );
   }
@@ -361,7 +361,7 @@ export default function ProductGallery({
             }`}
             poster={currentMedia.url.replace(/\.[^.]+$/, '-poster.jpg')}
           >
-            مرورگر شما از نمایش ویدیو پشتیبانی نمی‌کند.
+            Your browser does not support video playback.
           </video>
         )}
 
@@ -371,7 +371,7 @@ export default function ProductGallery({
             <button
               onClick={goToPrevious}
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
-              aria-label="تصویر قبلی"
+              aria-label="Previous image"
             >
               <ChevronLeftIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
             </button>
@@ -379,7 +379,7 @@ export default function ProductGallery({
             <button
               onClick={goToNext}
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
-              aria-label="تصویر بعدی"
+              aria-label="Next image"
             >
               <ChevronRightIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
             </button>
@@ -398,13 +398,13 @@ export default function ProductGallery({
           <div
             className={`absolute top-4 right-4 text-white text-xs px-3 py-1.5 rounded-full shadow-lg ${
               selectedVariant.media && selectedVariant.media.length > 0
-                ? 'bg-rose-500'
+                ? 'bg-blue-600'
                 : 'bg-slate-600'
             }`}
           >
             {selectedVariant.media && selectedVariant.media.length > 0
-              ? `تصاویر ویژه نوع: ${selectedVariant.media.length}`
-              : 'تصاویر پیش‌فرض محصول'}
+              ? `Variant images: ${selectedVariant.media.length}`
+              : 'Default product images'}
           </div>
         )}
       </div>
@@ -418,8 +418,8 @@ export default function ProductGallery({
               onClick={() => handleThumbnailClick(index)}
               className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${
                 index === selectedIndex
-                  ? 'border-rose-500 ring-2 ring-rose-200/70'
-                  : 'border-rose-200/70 hover:border-rose-300'
+                  ? 'border-blue-600 ring-2 ring-blue-200/70'
+                  : 'border-slate-200 hover:border-slate-300'
               }`}
             >
               {item.type === 'IMAGE' ? (
@@ -475,7 +475,7 @@ export default function ProductGallery({
               setIsZoomed(false);
             }}
             className="absolute top-4 right-4 text-white bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-colors z-10"
-            aria-label="بستن"
+            aria-label="Close"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
@@ -489,7 +489,7 @@ export default function ProductGallery({
                   goToPrevious();
                 }}
                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
-                aria-label="تصویر قبلی"
+                aria-label="Previous image"
               >
                 <ChevronLeftIcon className="h-6 w-6 text-white" />
               </button>
@@ -500,7 +500,7 @@ export default function ProductGallery({
                   goToNext();
                 }}
                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
-                aria-label="تصویر بعدی"
+                aria-label="Next image"
               >
                 <ChevronRightIcon className="h-6 w-6 text-white" />
               </button>

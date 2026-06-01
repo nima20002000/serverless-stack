@@ -11,7 +11,7 @@ import { useState, useCallback, memo, useMemo, useEffect, useRef } from 'react';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
-import BadgeV4 from '@/components/ui-v4/Badge';
+import Badge from '@/components/ui/Badge';
 
 interface Variant {
   id: string;
@@ -272,7 +272,7 @@ function ProductCard({ product }: ProductCardProps) {
     try {
       // If product has variants, variant selection is REQUIRED
       if (hasVariants && !selectedVariant) {
-        toast.warning('لطفاً یک نوع محصول (رنگ، سایز، ...) انتخاب کنید');
+        toast.warning('Select a product option first');
         return;
       }
 
@@ -294,16 +294,16 @@ function ProductCard({ product }: ProductCardProps) {
       // Show success feedback and offer checkout
       setTimeout(() => {
         setIsAdding(false);
-        toast.success('محصول به سبد خرید اضافه شد', {
+        toast.success('Product added to cart', {
           action: {
-            label: 'رفتن به تسویه حساب',
+            label: 'Go to checkout',
             onClick: () => router.push('/checkout'),
           },
         });
       }, 300);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'خطا در افزودن به سبد خرید'
+        error instanceof Error ? error.message : 'Could not add product to cart'
       );
       setIsAdding(false);
     }
@@ -320,11 +320,11 @@ function ProductCard({ product }: ProductCardProps) {
   ]);
 
   return (
-    <div className="bg-white rounded-3xl border border-rose-100 overflow-hidden shadow-[0_18px_40px_-30px_rgba(244,63,94,0.4)] hover:shadow-[0_28px_60px_-36px_rgba(244,63,94,0.45)] transition-all">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
       {/* Product Image */}
       <Link href={`/products/${product.id}`}>
         <div
-          className="relative w-full aspect-[4/5] bg-rose-50 overflow-hidden group"
+          className="group relative aspect-[4/5] w-full overflow-hidden bg-slate-100 dark:bg-slate-800"
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
@@ -345,12 +345,12 @@ function ProductCard({ product }: ProductCardProps) {
               sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-rose-300 text-4xl">📦</div>
+            <div className="flex h-full w-full items-center justify-center">
+              <div className="text-sm font-medium text-slate-400">No image</div>
             </div>
           )}
           {/* Wishlist Button - Left side (RTL: visually on right) */}
-          <div className="absolute top-2 left-2 z-10">
+          <div className="absolute left-2 top-2 z-10">
             <WishlistButton
               product={{
                 id: product.id,
@@ -370,49 +370,49 @@ function ProductCard({ product }: ProductCardProps) {
                   : null
               }
               size="md"
-              className="bg-white/80 shadow-md backdrop-blur-sm"
+              className="bg-white/90 shadow-sm backdrop-blur-sm"
             />
           </div>
           {/* Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-2">
             {product.isFeatured && (
-              <BadgeV4 variant="premium" size="sm">
-                ویژه
-              </BadgeV4>
+              <Badge variant="premium" size="sm">
+                Featured
+              </Badge>
             )}
             {discountPercent > 0 && (
-              <BadgeV4 variant="error" size="sm">
-                {discountPercent}% تخفیف
-              </BadgeV4>
+              <Badge variant="error" size="sm">
+                {discountPercent}% off
+              </Badge>
             )}
           </div>
           {isOutOfStock && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">ناموجود</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/55">
+              <span className="text-lg font-bold text-white">Out of stock</span>
             </div>
           )}
         </div>
       </Link>
 
       {/* Product Info */}
-      <div className="p-4 text-right space-y-3">
-        <p className="text-xs text-rose-500/80 line-clamp-1">
+      <div className="space-y-3 p-4">
+        <p className="line-clamp-1 text-xs text-slate-500">
           {product.description}
         </p>
-        <div className="flex flex-wrap gap-1.5 justify-end">
+        <div className="flex flex-wrap gap-1.5">
           {discountPercent > 0 && (
-            <BadgeV4 variant="error" size="sm">
-              فروش ویژه
-            </BadgeV4>
+            <Badge variant="error" size="sm">
+              Sale
+            </Badge>
           )}
           {product.isFeatured && (
-            <BadgeV4 variant="premium" size="sm">
-              نسخه محدود
-            </BadgeV4>
+            <Badge variant="premium" size="sm">
+              Featured
+            </Badge>
           )}
         </div>
         <Link href={`/products/${product.id}`}>
-          <h3 className="text-base font-semibold text-rose-900 hover:text-rose-600 line-clamp-2">
+          <h3 className="line-clamp-2 text-base font-semibold text-slate-950 hover:text-blue-700 dark:text-white dark:hover:text-blue-300">
             {product.name}
           </h3>
         </Link>
@@ -421,7 +421,7 @@ function ProductCard({ product }: ProductCardProps) {
         {hasVariants && (
           <div className="space-y-2">
             {colorVariants.length > 0 && (
-              <div className="flex flex-wrap justify-end gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {colorVariants.map((variant) => {
                   const isSelected = selectedVariant?.id === variant.id;
                   const variantOutOfStock = variant.stock === 0;
@@ -436,10 +436,10 @@ function ProductCard({ product }: ProductCardProps) {
                       disabled={variantOutOfStock}
                       className={`relative h-6 w-6 rounded-lg border transition-all ${
                         isSelected
-                          ? 'border-rose-500 ring-2 ring-rose-200/70'
-                          : 'border-rose-200/70 hover:border-rose-300'
+                          ? 'border-blue-600 ring-2 ring-blue-200/70'
+                          : 'border-slate-200 hover:border-slate-300'
                       } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                      title={variantOutOfStock ? 'ناموجود' : variant.name}
+                      title={variantOutOfStock ? 'Out of stock' : variant.name}
                       aria-label={variant.name}
                     >
                       <span
@@ -453,7 +453,7 @@ function ProductCard({ product }: ProductCardProps) {
             )}
 
             {activeVariants.some((variant) => !variant.color) && (
-              <div className="flex flex-wrap justify-end gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {activeVariants
                   .filter((variant) => !variant.color)
                   .map((variant) => {
@@ -472,10 +472,12 @@ function ProductCard({ product }: ProductCardProps) {
                         disabled={variantOutOfStock}
                         className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
                           isSelected
-                            ? 'border-rose-500 bg-rose-50 text-rose-700 font-medium'
-                            : 'border-rose-200/70 hover:border-rose-300 text-slate-600'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
+                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
                         } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
-                        title={variantOutOfStock ? 'ناموجود' : variant.name}
+                        title={
+                          variantOutOfStock ? 'Out of stock' : variant.name
+                        }
                       >
                         {label}
                       </button>
@@ -487,10 +489,10 @@ function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Price */}
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           {discountPercent > 0 ? (
-            <div className="flex flex-row-reverse items-center gap-2">
-              <span className="text-lg font-semibold text-rose-600">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-slate-950 dark:text-white">
                 {formatPrice(discountedPrice)}
               </span>
               <span className="text-sm text-slate-400 line-through">
@@ -498,7 +500,7 @@ function ProductCard({ product }: ProductCardProps) {
               </span>
             </div>
           ) : (
-            <span className="text-lg font-semibold text-rose-900">
+            <span className="text-lg font-semibold text-slate-950 dark:text-white">
               {formatPrice(effectivePrice)}
             </span>
           )}
@@ -514,10 +516,10 @@ function ProductCard({ product }: ProductCardProps) {
           onClick={handleAddToCart}
         >
           {isOutOfStock
-            ? 'ناموجود'
+            ? 'Out of stock'
             : isAdding
-              ? 'در حال افزودن...'
-              : 'افزودن به سبد خرید'}
+              ? 'Adding...'
+              : 'Add to Cart'}
         </Button>
       </div>
     </div>

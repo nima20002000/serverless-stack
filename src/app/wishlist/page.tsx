@@ -1,22 +1,21 @@
 import { Metadata } from 'next';
 import { WishlistPage } from '@/components/wishlist/WishlistPage';
-import { siteLocale } from '@/config/site';
+import { siteConfig, siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
-  title: 'علاقه‌مندی‌ها - کیتیا',
-  description:
-    'مشاهده و مدیریت لیست علاقه‌مندی‌های شما. محصولات مورد علاقه خود را ذخیره کنید و هر زمان به سبد خرید اضافه کنید.',
+  title: `Wishlist - ${siteConfig.displayName}`,
+  description: 'Save products for later and move them into your cart.',
   openGraph: {
-    title: 'علاقه‌مندی‌ها - کیتیا',
-    description: 'لیست محصولات مورد علاقه شما در فروشگاه کیتیا',
+    title: `Wishlist - ${siteConfig.displayName}`,
+    description: 'Save products for later and move them into your cart.',
     type: 'website',
     locale: siteLocale.ogLocale,
-    siteName: 'کیتیا',
+    siteName: siteConfig.displayName,
   },
   twitter: {
     card: 'summary',
-    title: 'علاقه‌مندی‌ها - کیتیا',
-    description: 'لیست محصولات مورد علاقه شما',
+    title: `Wishlist - ${siteConfig.displayName}`,
+    description: 'Save products for later.',
   },
   robots: {
     index: false,
@@ -26,8 +25,8 @@ export const metadata: Metadata = {
 
 export default function WishlistPageRoute() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/60 to-white py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-slate-50 pt-24 pb-10 dark:bg-slate-950">
+      <div className="mx-auto max-w-6xl px-4">
         <WishlistPage />
       </div>
     </div>

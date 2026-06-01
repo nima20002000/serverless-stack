@@ -156,9 +156,7 @@ export function WishlistButton({
         ${isLoading ? 'opacity-50 cursor-wait' : 'cursor-pointer'}
         ${className}
       `}
-      aria-label={
-        isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'
-      }
+      aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
       aria-pressed={isWishlisted}
       data-testid="wishlist-button"
     >

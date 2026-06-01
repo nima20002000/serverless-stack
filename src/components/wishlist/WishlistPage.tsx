@@ -14,19 +14,19 @@ import type { WishlistItem } from '@/store/wishlist-store';
 
 function WishlistSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-2xl shadow-sm border border-rose-100 overflow-hidden animate-pulse"
+          className="animate-pulse overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
         >
-          <div className="w-full aspect-[4/5] bg-rose-100/60" />
+          <div className="aspect-[4/5] w-full bg-slate-100 dark:bg-slate-800" />
           <div className="p-4">
-            <div className="h-5 bg-rose-100/70 rounded-lg mb-2" />
-            <div className="h-6 bg-rose-100/70 rounded-lg w-1/2 mb-3" />
+            <div className="mb-2 h-5 rounded bg-slate-100 dark:bg-slate-800" />
+            <div className="mb-3 h-6 w-1/2 rounded bg-slate-100 dark:bg-slate-800" />
             <div className="flex gap-2">
-              <div className="h-9 bg-rose-100/70 rounded-xl flex-1" />
-              <div className="h-9 w-9 bg-rose-100/70 rounded-xl" />
+              <div className="h-9 flex-1 rounded bg-slate-100 dark:bg-slate-800" />
+              <div className="h-9 w-20 rounded bg-slate-100 dark:bg-slate-800" />
             </div>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function WishlistPage() {
 
   const handleAddToCart = async (item: WishlistItem) => {
     if (item.stock <= 0) {
-      toast.warning('این محصول ناموجود است');
+      toast.warning('This product is out of stock');
       return;
     }
 
@@ -97,28 +97,27 @@ export function WishlistPage() {
         },
         1
       );
-      toast.success('محصول به سبد خرید اضافه شد', {
+      toast.success('Product added to cart', {
         action: {
-          label: 'رفتن به تسویه حساب',
+          label: 'Go to checkout',
           onClick: () => router.push('/checkout'),
         },
       });
     } catch (error) {
       console.error('Error adding to cart:', error);
-      toast.error('خطا در افزودن به سبد خرید');
+      toast.error('Could not add product to cart');
     } finally {
       setAddingToCart(null);
     }
   };
 
   const handleClearAll = async () => {
-    if (!confirm('آیا از حذف همه موارد اطمینان دارید؟')) return;
+    if (!confirm('Remove all items from your wishlist?')) return;
 
     setIsClearing(true);
     try {
       const session = await fetch('/api/auth/session').then((r) => r.json());
       if (session?.user) {
-        // Delete each item from server
         for (const item of items) {
           await fetch('/api/user/wishlist', {
             method: 'DELETE',
@@ -143,31 +142,15 @@ export function WishlistPage() {
 
   if (itemCount === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="text-6xl mb-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1}
-            stroke="currentColor"
-            className="w-20 h-20 mx-auto text-rose-200"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"
-            />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold text-rose-900 mb-2">
-          لیست علاقه‌مندی‌ها خالی است
+      <div className="rounded-lg border border-slate-200 bg-white p-12 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="mb-2 text-2xl font-bold text-slate-950 dark:text-white">
+          Your wishlist is empty
         </h2>
-        <p className="text-rose-600 mb-6">
-          محصولات مورد علاقه خود را با کلیک روی آیکون قلب ذخیره کنید
+        <p className="mb-6 text-slate-600 dark:text-slate-400">
+          Save products from the catalog and return to them later.
         </p>
         <Link href="/products">
-          <Button variant="primary">مشاهده محصولات</Button>
+          <Button variant="primary">Browse products</Button>
         </Link>
       </div>
     );
@@ -175,44 +158,21 @@ export function WishlistPage() {
 
   return (
     <div>
-      {/* Guest user info banner */}
       {status === 'unauthenticated' && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-6 h-6 text-rose-400 flex-shrink-0 mt-0.5"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
-              />
-            </svg>
-            <div>
-              <p className="text-rose-700 text-sm">
-                لیست علاقه‌مندی‌ها روی این دستگاه ذخیره شده است.{' '}
-                <Link
-                  href="/login"
-                  className="font-medium underline text-rose-700 hover:text-rose-900"
-                >
-                  وارد شوید
-                </Link>{' '}
-                تا لیست شما در حساب کاربری‌تان ذخیره شود و از هر دستگاهی به آن
-                دسترسی داشته باشید.
-              </p>
-            </div>
-          </div>
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm text-blue-900">
+            This wishlist is stored on this device.{' '}
+            <Link href="/login" className="font-medium underline">
+              Sign in
+            </Link>{' '}
+            to sync it with your account.
+          </p>
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-rose-900">
-          علاقه‌مندی‌ها ({itemCount})
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold text-slate-950 dark:text-white">
+          Wishlist ({itemCount})
         </h1>
         <Button
           variant="secondary"
@@ -221,11 +181,11 @@ export function WishlistPage() {
           disabled={isClearing}
           isLoading={isClearing}
         >
-          {isClearing ? 'در حال حذف...' : 'حذف همه'}
+          {isClearing ? 'Removing...' : 'Remove all'}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => {
           const cartKey = item.variantId
             ? `${item.productId}:${item.variantId}`

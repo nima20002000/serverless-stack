@@ -22,12 +22,12 @@ export default function CartIcon({ onClick, className = '' }: CartIconProps) {
   return (
     <button
       onClick={onClick}
-      className={`relative p-2 hover:bg-rose-50 dark:hover:bg-slate-800 rounded-xl transition-colors ${className}`}
-      aria-label="سبد خرید"
+      className={`relative rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 ${className}`}
+      aria-label="Cart"
     >
-      <ShoppingCartIcon className="w-6 h-6 text-rose-600 dark:text-slate-200" />
+      <ShoppingCartIcon className="h-6 w-6" />
       {displayCount > 0 && (
-        <span className="absolute -top-1 -right-1 bg-gradient-to-br from-rose-500 to-pink-500 dark:from-slate-600 dark:to-slate-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-[0_2px_8px_-2px_rgba(244,63,94,0.5)] dark:shadow-none">
+        <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
           {displayCount > 9 ? '9+' : displayCount}
         </span>
       )}

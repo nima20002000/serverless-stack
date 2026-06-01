@@ -1,22 +1,21 @@
 import { Metadata } from 'next';
 import CartPageClient from '@/components/cart/CartPageClient';
-import { siteLocale } from '@/config/site';
+import { siteConfig, siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
-  title: 'سبد خرید - کیتیا',
-  description:
-    'مشاهده و مدیریت سبد خرید شما. بررسی محصولات، تغییر تعداد، حذف کالا و ادامه فرآیند خرید در کیتیا.',
+  title: `Cart - ${siteConfig.displayName}`,
+  description: 'Review and manage the products in your shopping cart.',
   openGraph: {
-    title: 'سبد خرید - کیتیا',
-    description: 'مشاهده و مدیریت سبد خرید شما در فروشگاه کیتیا',
+    title: `Cart - ${siteConfig.displayName}`,
+    description: 'Review and manage the products in your shopping cart.',
     type: 'website',
     locale: siteLocale.ogLocale,
-    siteName: 'کیتیا',
+    siteName: siteConfig.displayName,
   },
   twitter: {
     card: 'summary',
-    title: 'سبد خرید - کیتیا',
-    description: 'مشاهده و مدیریت سبد خرید شما',
+    title: `Cart - ${siteConfig.displayName}`,
+    description: 'Review and manage your cart.',
   },
   robots: {
     index: false,

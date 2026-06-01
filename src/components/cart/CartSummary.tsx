@@ -20,42 +20,40 @@ export default function CartSummary({
   return (
     <Card>
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-gray-900 text-right border-b pb-3">
-          خلاصه سبد خرید
+        <h2 className="border-b border-slate-200 pb-3 text-lg font-bold text-slate-950 dark:border-slate-800 dark:text-white">
+          Order summary
         </h2>
 
-        {/* Item Count */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-900">{itemCount}</span>
-          <span className="text-gray-600">تعداد کالاها</span>
+          <span className="text-slate-600">Items</span>
+          <span className="font-medium text-slate-950 dark:text-white">
+            {itemCount}
+          </span>
         </div>
 
-        {/* Subtotal */}
-        <div className="flex items-center justify-between text-sm border-t pt-3">
-          <span className="text-gray-900 font-medium" dir="rtl">
+        <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-sm dark:border-slate-800">
+          <span className="text-slate-600">Subtotal</span>
+          <span className="font-medium text-slate-950 dark:text-white">
             {formatPrice(subtotal)}
           </span>
-          <span className="text-gray-600">جمع جزء</span>
         </div>
 
-        {/* Total */}
-        <div className="flex items-center justify-between text-lg font-bold border-t pt-3">
-          <span className="text-gray-900" dir="rtl">
+        <div className="flex items-center justify-between border-t border-slate-200 pt-3 text-lg font-bold dark:border-slate-800">
+          <span className="text-slate-950 dark:text-white">Total</span>
+          <span className="text-slate-950 dark:text-white">
             {formatPrice(subtotal)}
           </span>
-          <span className="text-gray-900">مبلغ قابل پرداخت</span>
         </div>
 
-        {/* Checkout Button */}
         {onCheckout && (
           <Button
             variant="primary"
-            className="w-full mt-4"
+            className="mt-4 w-full"
             onClick={onCheckout}
             isLoading={isLoading}
             disabled={itemCount === 0}
           >
-            ادامه فرآیند خرید
+            Continue to checkout
           </Button>
         )}
       </div>

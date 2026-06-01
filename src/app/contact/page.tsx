@@ -1,38 +1,21 @@
 import { Metadata } from 'next';
-import {
-  PhoneIcon,
-  MapPinIcon,
-  ChatBubbleLeftRightIcon,
-} from '@heroicons/react/24/outline';
-import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
-import { siteLocale } from '@/config/site';
+import { siteConfig, siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
-  title: 'تماس با ما - کیتیا',
-  description:
-    'راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳، آدرس تهران - خیابان اردستانی - مجتمع مهسان. پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب.',
+  title: `Contact - ${siteConfig.displayName}`,
+  description: 'Contact and support information for the storefront.',
   openGraph: {
-    title: 'تماس با ما - کیتیا',
-    description:
-      'با تیم پشتیبانی کیتیا در ارتباط باشید. تلفن و واتساپ: ۰۹۹۱۲۲۱۸۴۶۳',
+    title: `Contact - ${siteConfig.displayName}`,
+    description: 'Contact and support information for the storefront.',
     type: 'website',
     locale: siteLocale.ogLocale,
-    siteName: 'کیتیا',
-    images: [
-      {
-        url: DEFAULT_OG_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: 'کیتیا - فروشگاه آنلاین',
-      },
-    ],
+    siteName: siteConfig.displayName,
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'تماس با ما - کیتیا',
-    description: 'راه‌های ارتباطی با کیتیا: تلفن و واتساپ ۰۹۹۱۲۲۱۸۴۶۳',
-    images: [DEFAULT_OG_IMAGE],
+    card: 'summary',
+    title: `Contact - ${siteConfig.displayName}`,
+    description: 'Contact and support information for the storefront.',
   },
   alternates: {
     canonical: getAbsoluteUrl('/contact'),
@@ -41,140 +24,37 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/50 to-white py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-rose-900 mb-4">تماس با ما</h1>
-          <p className="text-lg text-rose-600">
-            ما همیشه آماده پاسخگویی به سوالات شما هستیم
-          </p>
-        </div>
+    <main className="min-h-screen bg-slate-50 pt-24 pb-16 dark:bg-slate-950">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <h1 className="text-4xl font-bold text-slate-950 dark:text-white">
+          Contact
+        </h1>
+        <p className="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">
+          Replace this placeholder with your support email, help desk link,
+          business address, or customer service hours before launching.
+        </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Phone Contact */}
-          <div className="bg-white/90 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] p-8 border border-rose-100 hover:shadow-[0_28px_60px_-34px_rgba(236,72,153,0.5)] transition-shadow">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center">
-                <PhoneIcon className="w-7 h-7 text-rose-500" />
-              </div>
-              <h2 className="text-xl font-bold text-rose-900">تماس تلفنی</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="text-right">
-                <p className="text-sm text-rose-600 mb-2">
-                  شماره تماس و واتساپ:
-                </p>
-                <div className="space-y-2">
-                  <a
-                    href="tel:09912218463"
-                    className="text-2xl font-bold text-rose-600 hover:text-rose-700 transition-colors dir-ltr inline-block"
-                  >
-                    09912218463
-                  </a>
-                  <br />
-                  <a
-                    href="tel:09910258259"
-                    className="text-2xl font-bold text-rose-600 hover:text-rose-700 transition-colors dir-ltr inline-block"
-                  >
-                    09910258259
-                  </a>
-                </div>
-              </div>
-              <p className="text-sm text-rose-500 pt-4 border-t border-rose-100">
-                پاسخگویی از ساعت ۱۲ ظهر تا ۹ شب
-              </p>
-            </div>
-          </div>
-
-          {/* WhatsApp Contact */}
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-3xl shadow-[0_18px_40px_-28px_rgba(16,185,129,0.35)] p-8 border border-emerald-200 hover:shadow-[0_28px_60px_-34px_rgba(16,185,129,0.5)] transition-shadow">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center">
-                <ChatBubbleLeftRightIcon className="w-7 h-7 text-emerald-600" />
-              </div>
-              <h2 className="text-xl font-bold text-emerald-900">واتساپ</h2>
-            </div>
-            <div className="space-y-3">
-              <div className="text-right">
-                <p className="text-sm text-emerald-700 mb-2">
-                  ارتباط سریع از طریق واتساپ:
-                </p>
-                <a
-                  href="https://wa.me/989912218463"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors"
-                >
-                  <span>شروع گفتگو</span>
-                </a>
-              </div>
-              <p className="text-sm text-emerald-600 pt-4 border-t border-emerald-200">
-                پاسخ سریع به پیام‌های شما
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Address Section */}
-        <div className="bg-white/90 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] p-8 mb-8 border border-rose-100">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center">
-              <MapPinIcon className="w-7 h-7 text-purple-600" />
-            </div>
-            <h2 className="text-xl font-bold text-rose-900">آدرس</h2>
-          </div>
-          <div className="text-right">
-            <p className="text-lg text-rose-700 leading-relaxed">
-              تهران - خیابان اردستانی - مجتمع مهسان - بلوک آ2
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
+              Customer support
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Add a monitored support channel for order questions, product
+              questions, and returns.
             </p>
-          </div>
-        </div>
-
-        {/* Order Tracking Section */}
-        <div className="bg-gradient-to-br from-rose-50 to-pink-100 rounded-3xl shadow-[0_18px_40px_-28px_rgba(236,72,153,0.35)] p-8 border border-rose-200">
-          <h2 className="text-xl font-bold text-rose-900 mb-4 text-center">
-            پیگیری سفارش
-          </h2>
-          <div className="space-y-4 text-center">
-            <p className="text-rose-700">
-              برای پیگیری وضعیت سفارش خود می‌توانید به کانال تلگرام ما مراجعه
-              کنید:
+          </section>
+          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-white">
+              Order help
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+              Direct customers to account order history or your shipment
+              tracking provider.
             </p>
-            <a
-              href="https://t.me/kitia_a"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-rose-500 text-white rounded-2xl hover:bg-rose-600 transition-colors"
-            >
-              <span>کانال تلگرام کیتیا</span>
-            </a>
-            <div className="pt-4 border-t border-rose-200">
-              <p className="text-sm text-rose-600">
-                کد رهگیری تیپاکس خود را در پروفایل کاربری‌تان مشاهده کنید و از
-                طریق سایت تیپاکس پیگیری نمایید.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Working Hours */}
-        <div className="mt-8 bg-rose-50 rounded-3xl p-6 border border-rose-100">
-          <h3 className="text-lg font-bold text-rose-900 mb-4 text-center">
-            ساعات پاسخگویی
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
-            <div>
-              <p className="text-sm text-rose-600">شنبه تا پنج‌شنبه</p>
-              <p className="text-lg font-bold text-rose-900">۹:۰۰ - ۲۱:۰۰</p>
-            </div>
-            <div>
-              <p className="text-sm text-rose-600">جمعه</p>
-              <p className="text-lg font-bold text-rose-900">تعطیل</p>
-            </div>
-          </div>
+          </section>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

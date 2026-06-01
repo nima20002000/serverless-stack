@@ -47,11 +47,11 @@ export default function RelatedProducts({ products }: RelatedProductsProps) {
   }
 
   return (
-    <section className="mt-12 pt-8 border-t border-gray-200">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 text-right">
-        محصولات مرتبط
+    <section className="mt-12 border-t border-slate-200 pt-8 dark:border-slate-800">
+      <h2 className="mb-6 text-2xl font-bold text-slate-950 dark:text-white">
+        Related products
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

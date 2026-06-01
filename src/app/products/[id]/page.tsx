@@ -12,8 +12,8 @@ import {
 } from '@/lib/seo/structured-data';
 import { getProductOgImage } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
-import { siteConfig, siteLocale } from '@/config/site';
 import { formatPrice } from '@/lib/utils/format';
+import { siteConfig, siteLocale } from '@/config/site';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -220,8 +220,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: renderJsonLd(breadcrumbSchema) }}
       />
-      <div className="min-h-screen bg-gradient-to-b from-slate-50/70 to-white">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-slate-50 pt-16 dark:bg-slate-950">
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <ProductDetail product={serializedProduct} />
           <RelatedProducts products={serializedRelatedProducts} />
         </main>

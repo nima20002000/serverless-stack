@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   getFeaturedProducts,
@@ -12,44 +11,34 @@ import Button from '@/components/ui/Button';
 import Pill from '@/components/ui/Pill';
 import FeaturesSection from '@/components/home/FeaturesSection';
 import CtaSection from '@/components/home/CtaSection';
-import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
-import { siteLocale } from '@/config/site';
-import { generateCategoryAltText } from '@/lib/seo/alt-text';
+import { siteConfig, siteLocale } from '@/config/site';
 
 export const dynamic = 'force-dynamic';
 
-// Optimized hero image URL (640x640, WebP, 85% quality)
-// Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
-const HERO_IMAGE_OPTIMIZED =
-  'https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg';
-
 export const metadata: Metadata = {
-  title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
-  description:
-    'خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع به سراسر کشور، کمک به گربه‌های خیابانی با هر خرید.',
+  title: siteConfig.displayName,
+  description: siteConfig.description,
   openGraph: {
-    title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
-    description:
-      'دنیایی از محصولات زیبا و با کیفیت برای شما. خرید آنلاین لیوان‌های سفری و ماگ با ارسال سریع و کمک به حیوانات خیابانی.',
+    title: siteConfig.displayName,
+    description: siteConfig.description,
     type: 'website',
     locale: siteLocale.ogLocale,
-    siteName: 'کیتیا',
+    siteName: siteConfig.displayName,
     images: [
       {
         url: DEFAULT_OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: 'کیتیا - فروشگاه آنلاین',
+        alt: `${siteConfig.displayName} storefront`,
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
-    description:
-      'خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع، کمک به گربه‌های خیابانی.',
+    title: siteConfig.displayName,
+    description: siteConfig.description,
     images: [DEFAULT_OG_IMAGE],
   },
   alternates: {
@@ -58,8 +47,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  // Fetch featured and discounted products directly from database
-  // Using database-level filtering for optimal performance
   const [featuredProductsRaw, discountedProductsRaw] = await Promise.all([
     getFeaturedProducts({ limit: 4 }),
     getDiscountedProducts({ limit: 4 }),
@@ -72,8 +59,6 @@ export default async function Home() {
     console.error('Failed to load category tree for homepage', error);
   }
 
-  // Convert price and variant priceAdjust to number for display
-  // Also ensure images is always an array (not null)
   const featuredProducts = featuredProductsRaw.map((p) => ({
     ...p,
     price: Number(p.price),
@@ -83,6 +68,7 @@ export default async function Home() {
       priceAdjust: Number(v.priceAdjust),
     })),
   }));
+
   const discountedProducts = discountedProductsRaw.map((p) => ({
     ...p,
     price: Number(p.price),
@@ -93,101 +79,85 @@ export default async function Home() {
     })),
   }));
 
-  // Get top 3 categories
   const topCategories = categories.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div className="order-2 md:order-1 text-right">
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-end mb-5 sm:mb-6">
-              <Pill
-                tone="primary"
-                size="sm"
-                className="md:h-7 md:px-4 md:text-sm"
-              >
-                ارسال سریع
-              </Pill>
-              <Pill
-                tone="warning"
-                size="sm"
-                className="md:h-7 md:px-4 md:text-sm"
-              >
-                امکان خرید قسطی
-              </Pill>
-              <Pill
-                tone="primary"
-                size="sm"
-                className="md:h-7 md:px-4 md:text-sm"
-              >
-                کمک به گربه‌های خیابانی
-              </Pill>
+    <div className="min-h-screen bg-white pt-16 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+      <section className="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[1.1fr_0.9fr] md:py-14 lg:px-8">
+          <div className="flex flex-col justify-center">
+            <div className="mb-5 flex flex-wrap gap-2">
+              <Pill tone="primary">Supabase ready</Pill>
+              <Pill tone="success">Stripe and PayPal</Pill>
+              <Pill tone="neutral">LTR and RTL capable</Pill>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-rose-900 mb-5 sm:mb-6 leading-tight">
-              به کیتیا خوش آمدید
+            <h1 className="max-w-3xl text-4xl font-bold leading-tight text-slate-950 sm:text-5xl dark:text-white">
+              A production-minded commerce storefront for modern stacks.
             </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-rose-700 mb-6 sm:mb-8 leading-relaxed">
-              دنیایی از محصولات زیبا و با کیفیت برای شما
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg dark:text-slate-300">
+              Start with a working storefront, product catalog, wishlist, cart,
+              and checkout-ready commerce flow powered by Supabase and Vercel.
             </p>
-            <p className="text-base sm:text-lg text-rose-500 mb-8 sm:mb-10 leading-relaxed">
-              کیتیا، عرضه کننده ترند ترین ماگ ها با بهترین قیمت
-            </p>
-            <div className="flex flex-wrap gap-4 justify-end">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/products">
                 <Button variant="primary" size="lg">
-                  مشاهده محصولات
+                  Browse products
                 </Button>
               </Link>
-              <Link href="/products?discounted=true">
-                <Button variant="soft" size="lg">
-                  پیشنهادهای ویژه
+              <Link href="/cart">
+                <Button variant="secondary" size="lg">
+                  View cart
                 </Button>
               </Link>
             </div>
           </div>
 
-          <div className="order-1 md:order-2 flex justify-center">
-            <div className="relative w-full max-w-md aspect-square">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full h-full rounded-full bg-white opacity-80 blur-3xl"></div>
-              </div>
-              <div className="relative w-full h-full rounded-full overflow-hidden shadow-2xl border-8 border-white">
-                <Image
-                  src={HERO_IMAGE_OPTIMIZED}
-                  alt="کیتیا - فروشگاه آنلاین"
-                  fill
-                  priority
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-              </div>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1">
+            <Card className="bg-white p-6 dark:bg-slate-900">
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Storefront surface
+              </p>
+              <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">
+                Catalog first
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                The first screen sends shoppers directly into live product data
+                instead of a marketing-only landing page.
+              </p>
+            </Card>
+            <Card className="bg-white p-6 dark:bg-slate-900">
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                Payment stack
+              </p>
+              <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">
+                Provider neutral
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                Built-in commerce contracts stay aligned with Stripe and PayPal
+                while keeping copy and policies configurable.
+              </p>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Featured Products Section */}
       {featuredProducts.length > 0 && (
-        <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10">
-            <div className="text-right">
-              <Pill tone="primary">منتخب‌ها</Pill>
-              <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-4">
-                کالکشن 2026
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Pill tone="primary">Featured</Pill>
+              <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
+                Featured products
               </h2>
-              <p className="text-rose-500 text-lg mt-3">
-                ترند ترین استنلی هامون
+              <p className="mt-2 text-slate-600 dark:text-slate-400">
+                A compact section for curated or high-priority catalog items.
               </p>
             </div>
-            <Link href="/products" className="self-end">
-              <Button variant="secondary" size="lg">
-                مشاهده همه محصولات
-              </Button>
+            <Link href="/products">
+              <Button variant="secondary">View all products</Button>
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -195,77 +165,61 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Discounted Products Section */}
       {discountedProducts.length > 0 && (
-        <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 my-10">
-          <Card className="p-10 bg-white/90 border-rose-100 shadow-[0_32px_80px_-55px_rgba(244,63,94,0.6)]">
-            <div className="absolute -top-6 left-10">
-              <Pill tone="primary">فقط امروز</Pill>
-            </div>
-            <div className="text-right mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-rose-600 mb-3">
-                پیشنهاد شگفت‌انگیز
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Pill tone="warning">Promotions</Pill>
+              <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
+                Current offers
               </h2>
-              <p className="text-rose-500 text-lg">
-                تخفیف های ویژه برای عاشقان تراول ماگ
+              <p className="mt-2 text-slate-600 dark:text-slate-400">
+                Highlight discounted products without locking the boilerplate to
+                a specific product category.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {discountedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </Card>
+            <Link href="/products?discounted=true">
+              <Button variant="secondary">Shop offers</Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {discountedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </section>
       )}
 
-      {/* Categories Section */}
       {topCategories.length > 0 && (
-        <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-right mb-10">
-            <Pill tone="warning">دسته‌بندی‌ها</Pill>
-            <h2 className="text-3xl md:text-4xl font-bold text-rose-900 mt-4">
-              انتخاب بر اساس حس و حال
+        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <Pill tone="neutral">Categories</Pill>
+            <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
+              Shop by category
             </h2>
-            <p className="text-rose-500 text-lg mt-3">هر دسته یک تجربه تازه</p>
+            <p className="mt-2 text-slate-600 dark:text-slate-400">
+              Use your own category tree to guide product discovery.
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {topCategories.map((category) => (
               <Link
                 key={category.id}
                 href={`/products?category=${category.slug}`}
+                className="block"
               >
-                <Card className="hover:shadow-[0_28px_60px_-40px_rgba(244,63,94,0.45)] transition-all duration-300 transform hover:-translate-y-2 cursor-pointer h-full">
-                  <div className="text-center">
-                    <div className="w-full aspect-[4/5] rounded-[22px] mb-5 flex items-center justify-center overflow-hidden relative">
-                      {category.image ? (
-                        <Image
-                          src={optimizeImage.categoryCard(category.image)}
-                          alt={generateCategoryAltText({
-                            categoryName: category.name,
-                          })}
-                          fill
-                          className="object-cover object-center"
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                        />
-                      ) : (
-                        <div className="text-6xl text-rose-400">📦</div>
-                      )}
-                    </div>
-                    <h3 className="text-xl font-bold text-rose-900 mb-2">
-                      {category.name}
-                    </h3>
-                    {category.description && (
-                      <p className="text-rose-500 text-sm mb-4 line-clamp-2">
-                        {category.description}
-                      </p>
-                    )}
-                    <div className="flex justify-center">
-                      <Pill tone="primary" size="sm">
-                        مشاهده محصولات
-                      </Pill>
-                    </div>
-                  </div>
+                <Card className="h-full p-5 transition hover:-translate-y-1 hover:shadow-md">
+                  <h3 className="text-lg font-semibold text-slate-950 dark:text-white">
+                    {category.name}
+                  </h3>
+                  {category.description && (
+                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                      {category.description}
+                    </p>
+                  )}
+                  <span className="mt-4 inline-flex text-sm font-medium text-blue-700 dark:text-blue-300">
+                    View products
+                  </span>
                 </Card>
               </Link>
             ))}
@@ -274,7 +228,6 @@ export default async function Home() {
       )}
 
       <FeaturesSection />
-
       <CtaSection />
     </div>
   );

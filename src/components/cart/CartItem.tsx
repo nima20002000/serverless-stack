@@ -35,81 +35,75 @@ export default function CartItem({
   const subtotal = item.price * item.quantity;
 
   return (
-    <div className="flex gap-4 py-4 border-b border-gray-200 last:border-b-0">
-      {/* Product Image */}
-      <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
+    <div className="flex gap-4 border-b border-slate-200 py-4 last:border-b-0 dark:border-slate-800">
+      <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
         {item.image ? (
           <Image
             src={optimizeImage.cartItem(item.image)}
             alt={item.name}
             width={80}
             height={80}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <span className="text-xs">بدون تصویر</span>
+          <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+            No image
           </div>
         )}
       </div>
 
-      {/* Product Info */}
-      <div className="flex-1 flex flex-col justify-between">
+      <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
-          <h3 className="text-sm font-medium text-gray-900 text-right mb-1">
+          <h3 className="mb-1 truncate text-sm font-medium text-slate-950 dark:text-white">
             {item.name}
           </h3>
           {item.variantName && (
-            <p className="text-xs text-gray-500 text-right mb-1">
-              {item.variantName}
-            </p>
+            <p className="mb-1 text-xs text-slate-500">{item.variantName}</p>
           )}
-          <p className="text-sm text-gray-600 text-right">
+          <p className="text-sm text-slate-600 dark:text-slate-400">
             {formatPrice(item.price)}
           </p>
         </div>
 
-        {/* Quantity Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleDecrement}
             disabled={item.quantity <= 1}
-            className="p-1 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label="کاهش تعداد"
+            className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            aria-label="Decrease quantity"
           >
-            <MinusIcon className="w-4 h-4 text-gray-600" />
+            <MinusIcon className="h-4 w-4 text-slate-600" />
           </button>
 
-          <span className="text-sm font-medium text-gray-900 min-w-[2rem] text-center">
+          <span className="min-w-[2rem] text-center text-sm font-medium text-slate-950 dark:text-white">
             {item.quantity}
           </span>
 
           <button
             onClick={handleIncrement}
             disabled={item.quantity >= item.stock}
-            className="p-1 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            aria-label="افزایش تعداد"
+            className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+            aria-label="Increase quantity"
           >
-            <PlusIcon className="w-4 h-4 text-gray-600" />
+            <PlusIcon className="h-4 w-4 text-slate-600" />
           </button>
 
           {item.quantity >= item.stock && (
-            <span className="text-xs text-orange-600 mr-2">حداکثر موجودی</span>
+            <span className="text-xs text-amber-600">Maximum stock</span>
           )}
         </div>
       </div>
 
-      {/* Price and Remove */}
       <div className="flex flex-col items-end justify-between">
         <button
           onClick={() => onRemove(item.productId, item.variantId)}
-          className="p-1 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-          aria-label="حذف از سبد"
+          className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-50"
+          aria-label="Remove from cart"
         >
-          <TrashIcon className="w-5 h-5" />
+          <TrashIcon className="h-5 w-5" />
         </button>
 
-        <p className="text-sm font-bold text-gray-900" dir="rtl">
+        <p className="text-sm font-bold text-slate-950 dark:text-white">
           {formatPrice(subtotal)}
         </p>
       </div>

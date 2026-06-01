@@ -1,34 +1,24 @@
 import { Metadata } from 'next';
 import FAQList from '@/components/faq/FAQList';
-import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
-import { siteLocale } from '@/config/site';
+import { siteConfig, siteLocale } from '@/config/site';
 
 export const metadata: Metadata = {
-  title: 'سوالات متداول - کیتیا',
+  title: `FAQ - ${siteConfig.displayName}`,
   description:
-    'پاسخ سوالات رایج درباره خرید، ارسال، پرداخت، مرجوعی و خدمات کیتیا. راهنمای کامل برای خرید لیوان سفری و ماگ.',
+    'Answers to common storefront, shipping, payment, and return questions.',
   openGraph: {
-    title: 'سوالات متداول - کیتیا',
+    title: `FAQ - ${siteConfig.displayName}`,
     description:
-      'پاسخ به سوالات رایج درباره خرید، ارسال، پرداخت و مرجوعی در کیتیا',
+      'Answers to common storefront, shipping, payment, and return questions.',
     type: 'website',
     locale: siteLocale.ogLocale,
-    siteName: 'کیتیا',
-    images: [
-      {
-        url: DEFAULT_OG_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: 'کیتیا - فروشگاه آنلاین',
-      },
-    ],
+    siteName: siteConfig.displayName,
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'سوالات متداول - کیتیا',
-    description: 'پاسخ سوالات رایج درباره خرید و خدمات کیتیا',
-    images: [DEFAULT_OG_IMAGE],
+    card: 'summary',
+    title: `FAQ - ${siteConfig.displayName}`,
+    description: 'Answers to common storefront questions.',
   },
   alternates: {
     canonical: getAbsoluteUrl('/faq'),

@@ -248,10 +248,10 @@ function ProductList({
 
   if (paginatedProducts.length === 0 && !isLoading) {
     return (
-      <div className="text-center py-12">
-        <div className="text-gray-600 text-lg mb-2">محصولی یافت نشد</div>
-        <p className="text-gray-500">
-          در حال حاضر محصولی برای نمایش وجود ندارد
+      <div className="py-12 text-center">
+        <div className="mb-2 text-lg text-slate-700">No products found</div>
+        <p className="text-slate-500">
+          There are no products available for this view.
         </p>
       </div>
     );
@@ -281,14 +281,14 @@ function ProductList({
           <Select
             value={sortBy}
             onChange={(value) => handleSortChange(value as ProductSortOption)}
-            label="مرتب‌سازی:"
+            label="Sort by"
             options={[
-              { value: 'popular', label: 'محبوب‌ترین‌ها' },
-              { value: 'newest', label: 'جدیدترین' },
-              { value: 'price-asc', label: 'قیمت: کم به زیاد' },
-              { value: 'price-desc', label: 'قیمت: زیاد به کم' },
-              { value: 'featured', label: 'محصولات ویژه' },
-              { value: 'discount', label: 'بیشترین تخفیف' },
+              { value: 'popular', label: 'Popular' },
+              { value: 'newest', label: 'Newest' },
+              { value: 'price-asc', label: 'Price: low to high' },
+              { value: 'price-desc', label: 'Price: high to low' },
+              { value: 'featured', label: 'Featured' },
+              { value: 'discount', label: 'Best discount' },
             ]}
           />
         </div>
@@ -314,7 +314,7 @@ function ProductList({
                 disabled={page === 1}
                 onClick={() => handlePageChange(page - 1)}
               >
-                قبلی
+                Previous
               </Button>
 
               <div className="flex items-center gap-1">
@@ -336,16 +336,16 @@ function ProductList({
                 disabled={page === totalPages}
                 onClick={() => handlePageChange(page + 1)}
               >
-                بعدی
+                Next
               </Button>
             </div>
           )}
 
           {/* Results Count */}
-          <div className="text-center mt-4 text-gray-600 text-sm">
-            نمایش {(page - 1) * perPage + 1} تا{' '}
-            {Math.min(page * perPage, sortedProducts.length)} از{' '}
-            {sortedProducts.length} محصول
+          <div className="mt-4 text-center text-sm text-slate-600">
+            Showing {(page - 1) * perPage + 1} to{' '}
+            {Math.min(page * perPage, sortedProducts.length)} of{' '}
+            {sortedProducts.length} products
           </div>
         </>
       )}

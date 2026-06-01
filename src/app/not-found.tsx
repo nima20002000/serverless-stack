@@ -7,59 +7,51 @@ import SearchBar from '@/components/ui/SearchBar';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50/60 to-white flex items-center justify-center px-4">
-      <div className="max-w-lg w-full text-center">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 pt-16 dark:bg-slate-950">
+      <div className="w-full max-w-lg text-center">
         <div className="mb-8">
-          <h1 className="text-9xl font-bold text-rose-200">404</h1>
+          <h1 className="text-8xl font-bold text-slate-300">404</h1>
           <div className="mt-4 space-y-2">
-            <h2 className="text-2xl font-bold text-rose-900">
-              صفحه مورد نظر یافت نشد
+            <h2 className="text-2xl font-bold text-slate-950 dark:text-white">
+              Page not found
             </h2>
-            <p className="text-rose-600">
-              متأسفانه صفحه‌ای که به دنبال آن هستید وجود ندارد یا منتقل شده است.
+            <p className="text-slate-600 dark:text-slate-400">
+              The page you are looking for does not exist or has moved.
             </p>
           </div>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-8">
-          <p className="text-sm text-rose-600 mb-3">
-            می‌توانید محصول یا دسته‌بندی مورد نظر خود را جستجو کنید:
+          <p className="mb-3 text-sm text-slate-600 dark:text-slate-400">
+            Search for a product or category:
           </p>
-          <SearchBar placeholder="جستجو در کیتیا..." />
+          <SearchBar placeholder="Search products..." />
         </div>
 
         <div className="space-y-4">
           <Link href="/">
             <Button variant="primary" className="gap-2">
-              <HomeIcon className="w-5 h-5" />
-              <span>بازگشت به صفحه اصلی</span>
+              <HomeIcon className="h-5 w-5" />
+              <span>Back home</span>
             </Button>
           </Link>
 
-          <div className="pt-6 border-t border-rose-100">
-            <p className="text-sm text-rose-400 mb-3">صفحات پرکاربرد:</p>
+          <div className="border-t border-slate-200 pt-6 dark:border-slate-800">
+            <p className="mb-3 text-sm text-slate-500">Helpful links:</p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                href="/products"
-                className="text-sm text-rose-600 hover:text-rose-800 hover:underline"
-              >
-                محصولات
-              </Link>
-              <span className="text-rose-200">|</span>
-              <Link
-                href="/cart"
-                className="text-sm text-rose-600 hover:text-rose-800 hover:underline"
-              >
-                سبد خرید
-              </Link>
-              <span className="text-rose-200">|</span>
-              <Link
-                href="/contact"
-                className="text-sm text-rose-600 hover:text-rose-800 hover:underline"
-              >
-                تماس با ما
-              </Link>
+              {[
+                ['Products', '/products'],
+                ['Cart', '/cart'],
+                ['Contact', '/contact'],
+              ].map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-sm text-blue-700 hover:underline dark:text-blue-300"
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>
