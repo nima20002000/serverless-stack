@@ -1,0 +1,2402 @@
+OpenAI Codex v0.135.0
+--------
+workdir: /data/dexter/Desktop/supabase-vercel-stack
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: high
+reasoning summaries: none
+session id: 019e83ad-fedc-71b3-9749-6d51ff192017
+--------
+user
+commit e168964: task006 Locale Direction And Currency Foundation
+exec
+/bin/bash -lc 'git status --short && git rev-parse --show-toplevel && git show --stat --oneline --decorate --no-renames e168964' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+/data/dexter/Desktop/supabase-vercel-stack
+e168964 task006: add neutral locale and currency foundation
+ config/tailwind.config.ts        |   2 +-
+ public/fonts/BYekan.ttf          | Bin 51652 -> 0 bytes
+ src/app/layout.tsx               |  27 ++--------
+ src/config/site.ts               |  31 +++++++++---
+ src/lib/utils/format.ts          |  33 ++++++++++--
+ src/lib/utils/persian.ts         | 106 ---------------------------------------
+ src/lib/utils/text.ts            |  82 ++++++++++++++++++++++++++++++
+ tests/unit/utils/format.test.ts  |   6 +--
+ tests/unit/utils/persian.test.ts |  34 -------------
+ tests/unit/utils/text.test.ts    |  39 ++++++++++++++
+ 10 files changed, 183 insertions(+), 177 deletions(-)
+
+exec
+/bin/bash -lc 'git show --find-renames --find-copies --src-prefix=a/ --dst-prefix=b/ --format=fuller --stat --patch e168964' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+commit e168964b66e6a7cf9781d8aab3e5bdc6a97cb92c
+Author:     nima20002000 <nima20002000@users.noreply.github.com>
+AuthorDate: Mon Jun 1 14:49:44 2026 +0330
+Commit:     nima20002000 <nima20002000@users.noreply.github.com>
+CommitDate: Mon Jun 1 18:13:37 2026 +0330
+
+    task006: add neutral locale and currency foundation
+---
+ config/tailwind.config.ts        |   2 +-
+ public/fonts/BYekan.ttf          | Bin 51652 -> 0 bytes
+ src/app/layout.tsx               |  27 ++--------
+ src/config/site.ts               |  31 +++++++++---
+ src/lib/utils/format.ts          |  33 ++++++++++--
+ src/lib/utils/persian.ts         | 106 ---------------------------------------
+ src/lib/utils/text.ts            |  82 ++++++++++++++++++++++++++++++
+ tests/unit/utils/format.test.ts  |   6 +--
+ tests/unit/utils/persian.test.ts |  34 -------------
+ tests/unit/utils/text.test.ts    |  39 ++++++++++++++
+ 10 files changed, 183 insertions(+), 177 deletions(-)
+
+diff --git a/config/tailwind.config.ts b/config/tailwind.config.ts
+index da5a213..9758a70 100644
+--- a/config/tailwind.config.ts
++++ b/config/tailwind.config.ts
+@@ -9,7 +9,7 @@ const config: Config = {
+   theme: {
+     extend: {
+       fontFamily: {
+-        sans: ["'B Yekan'", 'system-ui', 'sans-serif'],
++        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+       },
+     },
+   },
+diff --git a/public/fonts/BYekan.ttf b/public/fonts/BYekan.ttf
+deleted file mode 100644
+index 3cd474a..0000000
+Binary files a/public/fonts/BYekan.ttf and /dev/null differ
+diff --git a/src/app/layout.tsx b/src/app/layout.tsx
+index 984c480..1f4fa42 100644
+--- a/src/app/layout.tsx
++++ b/src/app/layout.tsx
+@@ -10,11 +10,12 @@ import {
+   generateWebSiteSchema,
+   renderJsonLd,
+ } from '@/lib/seo/structured-data';
+-import { ToastContainer } from '@/components/ui-v4';
++import { ToastContainer } from '@/components/ui/Toast';
++import { siteConfig } from '@/config/site';
+ 
+ export const metadata: Metadata = {
+-  title: 'Kitia - فروشگاه آنلاین',
+-  description: 'پلتفرم خرید آنلاین کیتیا',
++  title: siteConfig.name,
++  description: siteConfig.description,
+   icons: {
+     icon: [
+       { url: '/favicon.ico', sizes: 'any' },
+@@ -33,26 +34,8 @@ export default function RootLayout({
+   const webSiteSchema = generateWebSiteSchema();
+ 
+   return (
+-    <html lang="fa" dir="rtl">
++    <html lang={siteConfig.language} dir={siteConfig.direction}>
+       <head>
+-        {/* Preconnect to CDN for faster resource loading */}
+-        <link rel="preconnect" href="https://cdn.kitia.ir" />
+-        <link rel="dns-prefetch" href="https://cdn.kitia.ir" />
+-        {/* Preload critical font for faster LCP */}
+-        <link
+-          rel="preload"
+-          href="/fonts/BYekan.ttf"
+-          as="font"
+-          type="font/ttf"
+-          crossOrigin="anonymous"
+-        />
+-        {/* Preload hero image for LCP optimization */}
+-        <link
+-          rel="preload"
+-          href="https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover/media-library/images/2uvp4v-1764882490100.jpg"
+-          as="image"
+-          fetchPriority="high"
+-        />
+         {/* Organization JSON-LD structured data */}
+         <script
+           type="application/ld+json"
+diff --git a/src/config/site.ts b/src/config/site.ts
+index 8689c81..9072319 100644
+--- a/src/config/site.ts
++++ b/src/config/site.ts
+@@ -1,10 +1,29 @@
++export type SiteDirection = 'ltr' | 'rtl';
++
++function getDirection(value: string | undefined): SiteDirection {
++  return value === 'rtl' ? 'rtl' : 'ltr';
++}
++
+ export const siteConfig = {
+-  name: 'کیتیا',
+-  description: 'پلتفرم خرید آنلاین',
+-  direction: 'rtl',
+-  language: 'fa',
+-  currency: 'تومان',
+-  currencySymbol: '﷼',
++  name: process.env.NEXT_PUBLIC_SITE_NAME || 'Supabase Vercel Stack',
++  description:
++    process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
++    'Open-source commerce boilerplate for Supabase and Vercel.',
++  language: process.env.NEXT_PUBLIC_SITE_LANGUAGE || 'en',
++  direction: getDirection(process.env.NEXT_PUBLIC_SITE_DIRECTION),
++  locale: process.env.NEXT_PUBLIC_SITE_LOCALE || 'en-US',
++  currency: (process.env.NEXT_PUBLIC_SITE_CURRENCY || 'USD').toUpperCase(),
++  displayName:
++    process.env.NEXT_PUBLIC_SITE_DISPLAY_NAME || 'Supabase Vercel Stack',
++  timeZone: process.env.NEXT_PUBLIC_SITE_TIME_ZONE,
++};
++
++export const siteLocale = {
++  language: siteConfig.language,
++  direction: siteConfig.direction,
++  locale: siteConfig.locale,
++  ogLocale: siteConfig.locale.replace('-', '_'),
++  currency: siteConfig.currency,
+ };
+ 
+ export type SiteConfig = typeof siteConfig;
+diff --git a/src/lib/utils/format.ts b/src/lib/utils/format.ts
+index 52de525..1aec69c 100644
+--- a/src/lib/utils/format.ts
++++ b/src/lib/utils/format.ts
+@@ -1,8 +1,33 @@
+-/**
+- * Format price in Persian format with Toman currency
+- */
++import { siteLocale } from '@/config/site';
++
+ export function formatPrice(price: number): string {
+-  return new Intl.NumberFormat('fa-IR').format(price) + ' تومن';
++  return new Intl.NumberFormat(siteLocale.locale, {
++    style: 'currency',
++    currency: siteLocale.currency,
++  }).format(price);
++}
++
++export function formatNumber(value: number): string {
++  return new Intl.NumberFormat(siteLocale.locale).format(value);
++}
++
++export function formatDate(
++  value: Date | string | number,
++  options: Intl.DateTimeFormatOptions = {}
++): string {
++  return new Intl.DateTimeFormat(siteLocale.locale, {
++    year: 'numeric',
++    month: '2-digit',
++    day: '2-digit',
++    ...options,
++  }).format(new Date(value));
++}
++
++export function formatDateTime(value: Date | string | number): string {
++  return formatDate(value, {
++    hour: '2-digit',
++    minute: '2-digit',
++  });
+ }
+ 
+ /**
+diff --git a/src/lib/utils/persian.ts b/src/lib/utils/persian.ts
+deleted file mode 100644
+index 5170749..0000000
+--- a/src/lib/utils/persian.ts
++++ /dev/null
+@@ -1,106 +0,0 @@
+-/**
+- * Persian text utility functions
+- * Handles conversion between Persian and English characters
+- */
+-
+-/**
+- * Map of Persian digits to English digits
+- */
+-const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+-const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+-
+-/**
+- * Convert Persian/Arabic digits to English digits
+- * @param text - Text containing Persian or Arabic digits
+- * @returns Text with English digits
+- */
+-export function convertPersianToEnglish(text: string): string {
+-  if (!text) return text;
+-
+-  let result = text;
+-
+-  // Convert Persian digits
+-  persianDigits.forEach((persianDigit, index) => {
+-    result = result.replace(new RegExp(persianDigit, 'g'), index.toString());
+-  });
+-
+-  // Convert Arabic digits
+-  arabicDigits.forEach((arabicDigit, index) => {
+-    result = result.replace(new RegExp(arabicDigit, 'g'), index.toString());
+-  });
+-
+-  return result;
+-}
+-
+-/**
+- * Check if text contains Persian/Arabic characters
+- * @param text - Text to check
+- * @returns true if text contains Persian/Arabic characters
+- */
+-export function containsPersianCharacters(text: string): boolean {
+-  if (!text) return false;
+-
+-  // Persian/Arabic Unicode ranges
+-  const persianPattern =
+-    /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+-  return persianPattern.test(text);
+-}
+-
+-/**
+- * Validate Persian name (allows Persian letters, spaces, and common Persian characters)
+- * @param name - Name to validate
+- * @returns true if name is valid Persian name
+- */
+-export function isValidPersianName(name: string): boolean {
+-  if (!name || !name.trim()) return false;
+-
+-  // Allow Persian letters, spaces, Arabic diacritics, and common Persian punctuation
+-  const persianNamePattern =
+-    /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+$/;
+-  return persianNamePattern.test(name.trim());
+-}
+-
+-/**
+- * Validate if text can be a valid name (Persian or English)
+- * @param name - Name to validate
+- * @returns true if name is valid (Persian or English letters)
+- */
+-export function isValidName(name: string): boolean {
+-  if (!name || !name.trim()) return false;
+-
+-  // Allow Persian, Arabic, English letters, spaces, hyphens, and apostrophes
+-  const namePattern =
+-    /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFFa-zA-Z\s'-]+$/;
+-  return namePattern.test(name.trim());
+-}
+-
+-/**
+- * Normalize phone number by converting Persian/Arabic digits to English
+- * @param phone - Phone number with potentially Persian/Arabic digits
+- * @returns Normalized phone number with English digits
+- */
+-export function normalizePhoneNumber(phone: string): string {
+-  if (!phone) return phone;
+-
+-  // Convert Persian/Arabic digits to English
+-  const normalized = convertPersianToEnglish(phone);
+-
+-  // Remove any non-digit characters except leading +
+-  return normalized.replace(/[^\d+]/g, '').replace(/\+(?=.)/g, '');
+-}
+-
+-/**
+- * Validate Iranian phone number format (09xxxxxxxxx)
+- * Accepts both Persian and English digits
+- * @param phone - Phone number to validate
+- * @returns true if valid Iranian phone format
+- */
+-export function isValidIranianPhone(phone: string): boolean {
+-  if (!phone) return false;
+-
+-  // Normalize first
+-  const normalized = normalizePhoneNumber(phone);
+-
+-  // Check if matches Iranian phone format (09xxxxxxxxx - 11 digits starting with 09)
+-  return /^09\d{9}$/.test(normalized);
+-}
+diff --git a/src/lib/utils/text.ts b/src/lib/utils/text.ts
+new file mode 100644
+index 0000000..d9c3531
+--- /dev/null
++++ b/src/lib/utils/text.ts
+@@ -0,0 +1,82 @@
++import {
++  parsePhoneNumberFromString,
++  type CountryCode,
++} from 'libphonenumber-js';
++
++const easternArabicDigitStart = 0x06f0;
++const arabicIndicDigitStart = 0x0660;
++
++export function normalizeDigits(text: string): string {
++  if (!text) return text;
++
++  return Array.from(text)
++    .map((char) => {
++      const code = char.charCodeAt(0);
++      if (
++        code >= easternArabicDigitStart &&
++        code <= easternArabicDigitStart + 9
++      ) {
++        return String(code - easternArabicDigitStart);
++      }
++      if (code >= arabicIndicDigitStart && code <= arabicIndicDigitStart + 9) {
++        return String(code - arabicIndicDigitStart);
++      }
++      return char;
++    })
++    .join('');
++}
++
++export function containsRightToLeftCharacters(text: string): boolean {
++  if (!text) return false;
++
++  return /[\u0590-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]/.test(text);
++}
++
++export function isValidName(name: string): boolean {
++  const trimmed = name.trim();
++  if (!trimmed) return false;
++  if (trimmed.length > 120) return false;
++
++  return /^[\p{L}\p{M}][\p{L}\p{M}\s.'-]*$/u.test(trimmed);
++}
++
++export function normalizePhoneNumber(phone: string): string {
++  if (!phone) return phone;
++
++  const defaultCountry = (
++    process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY || 'US'
++  ).toUpperCase() as CountryCode;
++  let normalized = normalizeDigits(phone.trim()).replace(/[^\d+]/g, '');
++
++  normalized = normalized.replace(/(?!^)\+/g, '');
++  if (normalized.startsWith('00')) {
++    normalized = `+${normalized.slice(2)}`;
++  }
++
++  try {
++    const parsed = parsePhoneNumberFromString(normalized, defaultCountry);
++    if (parsed?.isValid()) {
++      return parsed.number;
++    }
++  } catch {
++    return normalized;
++  }
++
++  return normalized;
++}
++
++export function isValidPhoneNumber(phone: string): boolean {
++  if (!phone) return false;
++
++  const normalized = normalizePhoneNumber(phone);
++  const defaultCountry = (
++    process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY || 'US'
++  ).toUpperCase() as CountryCode;
++
++  try {
++    const parsed = parsePhoneNumberFromString(normalized, defaultCountry);
++    return parsed?.isValid() ?? false;
++  } catch {
++    return false;
++  }
++}
+diff --git a/tests/unit/utils/format.test.ts b/tests/unit/utils/format.test.ts
+index 97b235b..9f90989 100644
+--- a/tests/unit/utils/format.test.ts
++++ b/tests/unit/utils/format.test.ts
+@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
+ import { formatPrice, calculateDiscountedPrice } from '@/lib/utils/format';
+ 
+ describe('format utils', () => {
+-  it('formats price with toman suffix', () => {
++  it('formats price with the configured currency', () => {
+     const result = formatPrice(1234);
+-    // Production code uses 'تومن' (toman - informal Persian)
+-    expect(result.endsWith(' تومن')).toBe(true);
+-    expect(result).toContain('۱');
++    expect(result).toBe('$1,234.00');
+   });
+ 
+   it('calculates discounted price', () => {
+diff --git a/tests/unit/utils/persian.test.ts b/tests/unit/utils/persian.test.ts
+deleted file mode 100644
+index 9bd080e..0000000
+--- a/tests/unit/utils/persian.test.ts
++++ /dev/null
+@@ -1,34 +0,0 @@
+-import { describe, it, expect } from 'vitest';
+-import {
+-  convertPersianToEnglish,
+-  containsPersianCharacters,
+-  isValidPersianName,
+-  isValidName,
+-  normalizePhoneNumber,
+-  isValidIranianPhone,
+-} from '@/lib/utils/persian';
+-
+-describe('persian utils', () => {
+-  it('converts Persian and Arabic digits to English', () => {
+-    expect(convertPersianToEnglish('۱۲۳۴۵۶۷۸۹۰')).toBe('1234567890');
+-    expect(convertPersianToEnglish('٠١٢٣٤٥٦٧٨٩')).toBe('0123456789');
+-  });
+-
+-  it('detects Persian characters', () => {
+-    expect(containsPersianCharacters('سلام')).toBe(true);
+-    expect(containsPersianCharacters('hello')).toBe(false);
+-  });
+-
+-  it('validates Persian and mixed names', () => {
+-    expect(isValidPersianName('علی رضایی')).toBe(true);
+-    expect(isValidPersianName('Ali')).toBe(false);
+-    expect(isValidName("Ali O'Reilly")).toBe(true);
+-    expect(isValidName('')).toBe(false);
+-  });
+-
+-  it('normalizes phone numbers and validates Iranian format', () => {
+-    expect(normalizePhoneNumber('۰۹۱۲-۳۴۵-۶۷۸۹')).toBe('09123456789');
+-    expect(isValidIranianPhone('۰۹۱۲۳۴۵۶۷۸۹')).toBe(true);
+-    expect(isValidIranianPhone('9123456789')).toBe(false);
+-  });
+-});
+diff --git a/tests/unit/utils/text.test.ts b/tests/unit/utils/text.test.ts
+new file mode 100644
+index 0000000..9bc977a
+--- /dev/null
++++ b/tests/unit/utils/text.test.ts
+@@ -0,0 +1,39 @@
++import { describe, it, expect } from 'vitest';
++import {
++  normalizeDigits,
++  containsRightToLeftCharacters,
++  isValidName,
++  normalizePhoneNumber,
++  isValidPhoneNumber,
++} from '@/lib/utils/text';
++
++describe('text utils', () => {
++  it('keeps ASCII digits unchanged', () => {
++    expect(normalizeDigits('1234567890')).toBe('1234567890');
++    expect(normalizeDigits('0123456789')).toBe('0123456789');
++  });
++
++  it('detects right-to-left characters', () => {
++    expect(
++      containsRightToLeftCharacters(
++        String.fromCharCode(0x0633, 0x0644, 0x0627, 0x0645)
++      )
++    ).toBe(true);
++    expect(containsRightToLeftCharacters('hello')).toBe(false);
++  });
++
++  it('validates international names', () => {
++    expect(isValidName('Alex Taylor')).toBe(true);
++    expect(isValidName("Ali O'Reilly")).toBe(true);
++    expect(isValidName('Maria Garcia')).toBe(true);
++    expect(isValidName('')).toBe(false);
++  });
++
++  it('normalizes phone numbers and validates international formats', () => {
++    expect(normalizePhoneNumber('+1 (212) 555-1234')).toBe('+12125551234');
++    expect(normalizePhoneNumber('2125551234')).toBe('+12125551234');
++    expect(isValidPhoneNumber('+12125551234')).toBe(true);
++    expect(isValidPhoneNumber('2125551234')).toBe(true);
++    expect(isValidPhoneNumber('12345')).toBe(false);
++  });
++});
+
+exec
+/bin/bash -lc "rg \"lib/utils/persian|convertPersian|containsPersian|isValidPersianName|isValidIranianPhone|normalizePhoneNumber|isValidPhoneNumber|formatPrice\\(|currencySymbol|currency\\b|siteConfig\\.currency|siteLocale|BYekan|B Yekan|ui-v4|ToastContainer\" -n" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+tests/unit/utils/format.test.ts:5:  it('formats price with the configured currency', () => {
+tests/unit/utils/format.test.ts:6:    const result = formatPrice(1234);
+tests/unit/utils/text.test.ts:6:  normalizePhoneNumber,
+tests/unit/utils/text.test.ts:7:  isValidPhoneNumber,
+tests/unit/utils/text.test.ts:33:    expect(normalizePhoneNumber('+1 (212) 555-1234')).toBe('+12125551234');
+tests/unit/utils/text.test.ts:34:    expect(normalizePhoneNumber('2125551234')).toBe('+12125551234');
+tests/unit/utils/text.test.ts:35:    expect(isValidPhoneNumber('+12125551234')).toBe(true);
+tests/unit/utils/text.test.ts:36:    expect(isValidPhoneNumber('2125551234')).toBe(true);
+tests/unit/utils/text.test.ts:37:    expect(isValidPhoneNumber('12345')).toBe(false);
+docs/ENVIRONMENT.md:25:Optional payment currency variables:
+tests/vitest.config.integration.ts:17: * - sequence.concurrent: false - Disable test-level concurrency
+tests/unit/api/transactions/paypal-capture.test.ts:25:  toPayPalAmountValue: vi.fn((amount: number, currency: string) =>
+tests/unit/api/transactions/paypal-capture.test.ts:26:    currency === 'JPY' ? String(Math.round(amount)) : amount.toFixed(2)
+tests/unit/api/transactions/paypal-capture.test.ts:137:        error: 'PayPal amount or currency does not match the transaction',
+docs/PAYMENT_METHOD_DEPLOYMENT.md:70:Copy the printed `whsec_...` value into `STRIPE_WEBHOOK_SECRET`. Use Stripe test mode and create a checkout session through the app so transaction metadata, amount, and currency are generated by the application.
+tests/unit/api/transactions/webhook-stripe.test.ts:114:          currency: 'usd',
+tests/unit/api/transactions/webhook-stripe.test.ts:170:          currency: 'usd',
+tests/unit/api/transactions/webhook-stripe.test.ts:214:          currency: 'usd',
+tests/unit/api/transactions/webhook-stripe.test.ts:243:  it('does not complete transaction when Stripe currency does not match', async () => {
+tests/unit/api/transactions/webhook-stripe.test.ts:255:          currency: 'eur',
+tests/unit/api/transactions/webhook-stripe.test.ts:271:    const response = await POST(createStripeRequest({ currency: 'mismatch' }));
+tests/unit/api/transactions/webhook-stripe.test.ts:296:          currency: 'usd',
+tests/unit/api/transactions/webhook-paypal.test.ts:21:  toPayPalAmountValue: vi.fn((amount: number, currency: string) =>
+tests/unit/api/transactions/webhook-paypal.test.ts:22:    currency === 'JPY' ? String(Math.round(amount)) : amount.toFixed(2)
+tests/unit/api/transactions/webhook-paypal.test.ts:287:  it('does not complete transaction when PayPal currency does not match', async () => {
+tests/integration/payment-verification.test.ts:41:  toPayPalAmountValue: vi.fn((amount: number, currency: string) =>
+tests/integration/payment-verification.test.ts:42:    currency === 'JPY' ? String(Math.round(amount)) : amount.toFixed(2)
+tests/integration/payment-verification.test.ts:203:          currency: 'usd',
+src/config/site.ts:15:  currency: (process.env.NEXT_PUBLIC_SITE_CURRENCY || 'USD').toUpperCase(),
+src/config/site.ts:21:export const siteLocale = {
+src/config/site.ts:26:  currency: siteConfig.currency,
+src/app/page.tsx:16:import { siteConfig, siteLocale } from '@/config/site';
+src/app/page.tsx:27:    locale: siteLocale.ogLocale,
+src/app/privacy/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/privacy/page.tsx:12:    locale: siteLocale.ogLocale,
+src/lib/paypal/client.ts:31:  currency?: string;
+src/lib/paypal/client.ts:154:export function toPayPalAmountValue(amount: number, currency: string): string {
+src/lib/paypal/client.ts:159:  const normalizedCurrency = currency.toLowerCase();
+src/lib/paypal/client.ts:237:  const currency = (request.currency || getPayPalCurrency()).toUpperCase();
+src/lib/paypal/client.ts:238:  const amountValue = toPayPalAmountValue(request.amount, currency);
+src/lib/paypal/client.ts:252:            currency_code: currency,
+src/lib/paypal/client.ts:278:      currency,
+src/components/products/ProductDetail.tsx:304:                  {formatPrice(basePrice)}
+src/components/products/ProductDetail.tsx:308:                {formatPrice(effectivePrice)}
+src/components/products/ProductDetail.tsx:323:                Base price: {formatPrice(product.price)}
+src/app/checkout/page.tsx:286:                {`Pay ${formatPrice(finalTotal)}`}
+src/app/checkout/page.tsx:337:                        {formatPrice(item.price * item.quantity)}
+src/app/checkout/page.tsx:372:                  <span>{formatPrice(subtotal)}</span>
+src/app/checkout/page.tsx:378:                    <span>- {formatPrice(discountAmount)}</span>
+src/app/checkout/page.tsx:395:                  {formatPrice(finalTotal)}
+src/app/checkout/page.tsx:409:                  {`Pay ${formatPrice(finalTotal)}`}
+tests/e2e/helpers/payment.ts:118:  const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+tests/e2e/helpers/payment.ts:119:  return ZERO_DECIMAL_CURRENCIES.has(currency)
+tests/e2e/helpers/payment.ts:125:  const currency = (process.env.PAYPAL_CURRENCY || 'USD').toLowerCase();
+tests/e2e/helpers/payment.ts:126:  return ZERO_DECIMAL_CURRENCIES.has(currency)
+tests/e2e/helpers/payment.ts:175:    const currency = (process.env.STRIPE_CURRENCY || 'usd').toLowerCase();
+tests/e2e/helpers/payment.ts:189:          currency,
+tests/e2e/helpers/payment.ts:210:  const currency = (process.env.PAYPAL_CURRENCY || 'USD').toUpperCase();
+tests/e2e/helpers/payment.ts:224:              currency_code: currency,
+tests/e2e/helpers/payment.ts:233:                    currency_code: currency,
+src/app/products/[id]/page.tsx:16:import { siteConfig, siteLocale } from '@/config/site';
+src/app/products/[id]/page.tsx:70:    const priceText = `Price: ${formatPrice(finalPrice)}`;
+src/app/products/[id]/page.tsx:79:        locale: siteLocale.ogLocale,
+src/app/products/[id]/page.tsx:104:        'product:price:currency': siteLocale.currency,
+src/app/admin/page.tsx:209:          value={formatPrice(stats.revenue.total)}
+src/app/admin/page.tsx:210:          subtitle={`${formatPrice(stats.revenue.thisMonth)} this month`}
+src/app/admin/page.tsx:276:                        {formatPrice(Number(transaction.amount))}
+src/components/products/VariantSelector.tsx:70:    return formatPrice(price);
+src/components/products/VariantSelector.tsx:154:                {formatPrice(Number(variant.priceAdjust))}
+src/app/refund-policy/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/refund-policy/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/admin/promo-codes/page.tsx:9:import { siteLocale } from '@/config/site';
+src/app/admin/promo-codes/page.tsx:339:                      : `Amount Discount (${siteLocale.currency}) *`}
+src/app/admin/promo-codes/page.tsx:398:                    Minimum order amount ({siteLocale.currency})
+src/app/admin/promo-codes/page.tsx:417:                      Maximum discount ({siteLocale.currency})
+src/app/admin/promo-codes/page.tsx:557:                          : formatPrice(promo.discountValue)}
+src/app/admin/promo-codes/page.tsx:561:                          Minimum: {formatPrice(promo.minOrderAmount)}
+src/app/products/page.tsx:7:import { siteConfig, siteLocale } from '@/config/site';
+src/app/products/page.tsx:64:      locale: siteLocale.ogLocale,
+src/components/products/ProductCard.tsx:496:                {formatPrice(discountedPrice)}
+src/components/products/ProductCard.tsx:499:                {formatPrice(effectivePrice)}
+src/components/products/ProductCard.tsx:504:              {formatPrice(effectivePrice)}
+src/app/terms/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/terms/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/contact/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/contact/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/admin/transactions/page.tsx:393:                        {formatPrice(Number(transaction.amount))}
+src/lib/utils/format.ts:1:import { siteLocale } from '@/config/site';
+src/lib/utils/format.ts:3:export function formatPrice(price: number): string {
+src/lib/utils/format.ts:4:  return new Intl.NumberFormat(siteLocale.locale, {
+src/lib/utils/format.ts:5:    style: 'currency',
+src/lib/utils/format.ts:6:    currency: siteLocale.currency,
+src/lib/utils/format.ts:11:  return new Intl.NumberFormat(siteLocale.locale).format(value);
+src/lib/utils/format.ts:18:  return new Intl.DateTimeFormat(siteLocale.locale, {
+src/app/admin/users/[id]/page.tsx:348:                          {formatPrice(Number(transaction.amount))}
+src/components/faq/FAQList.tsx:38:      'No. The app reads site language, direction, locale, and currency from configuration so LTR and RTL stores can be supported.',
+src/lib/utils/text.ts:43:export function normalizePhoneNumber(phone: string): string {
+src/lib/utils/text.ts:68:export function isValidPhoneNumber(phone: string): boolean {
+src/lib/utils/text.ts:71:  const normalized = normalizePhoneNumber(phone);
+src/app/wishlist/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/wishlist/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/shipping/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/shipping/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/admin/products/page.tsx:201:                {formatPrice(Number(product.price))}
+src/app/admin/products/page.tsx:204:                {formatPrice(
+src/app/admin/products/page.tsx:211:              {formatPrice(Number(product.price))}
+src/app/faq/page.tsx:4:import { siteConfig, siteLocale } from '@/config/site';
+src/app/faq/page.tsx:15:    locale: siteLocale.ogLocale,
+src/app/cart/page.tsx:3:import { siteConfig, siteLocale } from '@/config/site';
+src/app/cart/page.tsx:12:    locale: siteLocale.ogLocale,
+src/app/layout.tsx:13:import { ToastContainer } from '@/components/ui/Toast';
+src/app/layout.tsx:54:            <ToastContainer />
+src/lib/seo/structured-data.ts:1:import { siteConfig, siteLocale } from '@/config/site';
+src/lib/seo/structured-data.ts:124:      priceCurrency: siteLocale.currency,
+src/lib/seo/config.ts:5:import { siteConfig, siteLocale } from '@/config/site';
+src/lib/seo/config.ts:69:  locale: siteLocale.ogLocale,
+src/app/about/page.tsx:4:import { siteConfig, siteLocale } from '@/config/site';
+src/app/about/page.tsx:15:    locale: siteLocale.ogLocale,
+src/app/about/page.tsx:68:              'Use environment settings for name, locale, direction, and currency.',
+src/lib/auth/options.ts:6:import { normalizePhoneNumber } from '@/lib/utils/text';
+src/lib/auth/options.ts:64:            ? normalizePhoneNumber(credentials.identifier)
+src/app/(auth)/login/page.tsx:12:import { normalizePhoneNumber, isValidPhoneNumber } from '@/lib/utils/text';
+src/app/(auth)/login/page.tsx:33:    const normalizedPhone = normalizePhoneNumber(value);
+src/app/(auth)/login/page.tsx:36:    if (isValidPhoneNumber(normalizedPhone)) return 'phone';
+src/app/(auth)/login/page.tsx:77:          ? normalizePhoneNumber(formData.identifier)
+src/lib/email/client.ts:264:      const unitPrice = formatPrice(Number(item.price));
+src/lib/email/client.ts:265:      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+src/lib/email/client.ts:299:      const unitPrice = formatPrice(Number(item.price));
+src/lib/email/client.ts:300:      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+src/lib/email/client.ts:340:  const total = formatPrice(Number(transaction.amount));
+src/lib/email/client.ts:447:  const total = formatPrice(Number(transaction.amount));
+src/components/ui/Button.tsx:1:export { default } from '../ui-v4/Button';
+src/components/ui/Button.tsx:2:export type { ButtonV4Props as ButtonProps } from '../ui-v4/Button';
+src/lib/stripe/client.ts:32:  currency?: string;
+src/lib/stripe/client.ts:65:export function toStripeMinorUnits(amount: number, currency: string): number {
+src/lib/stripe/client.ts:70:  const normalizedCurrency = currency.toLowerCase();
+src/lib/stripe/client.ts:91:  const currency = (request.currency || getStripeCurrency()).toLowerCase();
+src/lib/stripe/client.ts:92:  const amountMinorUnits = toStripeMinorUnits(request.amount, currency);
+src/lib/stripe/client.ts:103:    currency,
+src/lib/stripe/client.ts:118:            currency,
+src/lib/stripe/client.ts:131:        currency: currency.toUpperCase(),
+src/lib/stripe/client.ts:138:          currency: currency.toUpperCase(),
+src/components/ui/index.ts:13:export { ToastContainer } from './Toast';
+src/components/ui/index.ts:16:export type { BadgeV4Props as BadgeProps } from '../ui-v4/Badge';
+src/components/ui/index.ts:17:export type { ButtonV4Props as ButtonProps } from '../ui-v4/Button';
+src/components/ui/index.ts:21:export type { PillV4Props as PillProps } from '../ui-v4/Pill';
+src/components/ui/Card.tsx:4:import CardV4 from '../ui-v4/Card';
+src/app/(auth)/register/page.tsx:13:  normalizePhoneNumber,
+src/app/(auth)/register/page.tsx:14:  isValidPhoneNumber,
+src/app/(auth)/register/page.tsx:40:    const normalizedPhone = normalizePhoneNumber(value);
+src/app/(auth)/register/page.tsx:43:    if (isValidPhoneNumber(normalizedPhone)) return 'phone';
+src/app/(auth)/register/page.tsx:100:          ? normalizePhoneNumber(formData.identifier)
+src/components/ui/Alert.tsx:4:import AlertV4 from '../ui-v4/Alert';
+src/components/ui/Toast.tsx:3:export { default as ToastContainer } from '../ui-v4/Toast';
+src/store/cart-store.ts:163:export function formatPrice(price: number): string {
+src/components/ui/Badge.tsx:3:export { default } from '../ui-v4/Badge';
+src/components/ui/Badge.tsx:4:export type { BadgeV4Props as BadgeProps } from '../ui-v4/Badge';
+src/components/ui/SearchBar.tsx:240:                                    {formatPrice(product.price)}
+src/components/ui/Modal.tsx:4:import ModalV4 from '../ui-v4/Modal';
+src/services/promo-service.ts:124:      const formattedMin = formatPrice(promoCode.minOrderAmount);
+src/services/user-service/validation.ts:2:import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+src/services/user-service/validation.ts:17:  return isValidPhoneNumber(phone);
+src/services/user-service/validation.ts:75:    const normalizedPhone = normalizePhoneNumber(phone);
+src/components/ui/Pill.tsx:3:export { default } from '../ui-v4/Pill';
+src/components/ui/Pill.tsx:4:export type { PillV4Props as PillProps } from '../ui-v4/Pill';
+src/components/checkout/PromoCodeInput.tsx:103:                    : `${formatPrice(promoCode.discountValue)} off`}
+src/components/checkout/PromoCodeInput.tsx:107:                Discount applied: {formatPrice(promoCode.discountAmount)}
+src/components/ui/Skeleton.tsx:3:import SkeletonV4, { SkeletonText as SkeletonTextV4 } from '../ui-v4/Skeleton';
+src/components/ui/Select.tsx:3:import SelectV4, { type SelectOption } from '../ui-v4/Select';
+src/services/auth-service.ts:6:import { normalizePhoneNumber } from '@/lib/utils/text';
+src/services/auth-service.ts:45:        ? normalizePhoneNumber(identifier)
+src/services/auth-service.ts:122:    const normalizedPhone = normalizePhoneNumber(phone);
+src/components/wishlist/WishlistItemCard.tsx:77:            {formatPrice(Math.round(effectivePrice))}
+src/components/wishlist/WishlistItemCard.tsx:106:                {formatPrice(item.price)}
+src/components/wishlist/WishlistItemCard.tsx:109:                {formatPrice(Math.round(effectivePrice))}
+src/components/wishlist/WishlistItemCard.tsx:114:              {formatPrice(item.price)}
+src/components/profile/ProfileEditForm.tsx:7:  normalizePhoneNumber,
+src/components/profile/ProfileEditForm.tsx:8:  isValidPhoneNumber,
+src/components/profile/ProfileEditForm.tsx:56:      const normalizedPhone = normalizePhoneNumber(formData.phone);
+src/components/profile/ProfileEditForm.tsx:57:      if (!isValidPhoneNumber(normalizedPhone)) {
+src/components/profile/ProfileEditForm.tsx:67:        ? normalizePhoneNumber(formData.phone)
+src/components/ui/Input.tsx:4:import InputV4 from '../ui-v4/Input';
+src/components/checkout/CheckoutForm.tsx:11:  normalizePhoneNumber,
+src/components/checkout/CheckoutForm.tsx:12:  isValidPhoneNumber,
+src/components/checkout/CheckoutForm.tsx:156:    const normalizedPhone = normalizePhoneNumber(phone);
+src/components/checkout/CheckoutForm.tsx:157:    if (!phone.trim() || !isValidPhoneNumber(normalizedPhone)) {
+src/services/user-service.ts:6:import { normalizePhoneNumber } from '@/lib/utils/text';
+src/services/user-service.ts:93:  const phone = data.phone ? normalizePhoneNumber(data.phone) : data.phone;
+src/services/user-service.ts:291:  return queryUser({ phone: normalizePhoneNumber(phone) });
+src/services/user-service.ts:369:    const phone = data.phone ? normalizePhoneNumber(data.phone) : data.phone;
+src/services/product-service.ts:1477: * Format prices with the configured locale and currency defaults.
+src/app/api/transactions/paypal/capture/route.ts:128:    throw new Error('PayPal amount or currency does not match the transaction');
+src/components/admin/ProductFormFields.tsx:5:import { siteLocale } from '@/config/site';
+src/components/admin/ProductFormFields.tsx:97:          label={`Price (${siteLocale.currency})`}
+src/components/admin/VariantManager.tsx:29:import { siteLocale } from '@/config/site';
+src/components/admin/VariantManager.tsx:112:              Price adjustment: {formatPrice(parseInt(variant.priceAdjust))}
+src/components/admin/VariantManager.tsx:337:              label={`Price adjustment (${siteLocale.currency})`}
+src/components/profile/TransactionHistory.tsx:158:                      {formatPrice(Number(item.price))}
+src/components/profile/TransactionHistory.tsx:168:                {formatPrice(Number(transaction.amount))}
+src/components/cart/CartItem.tsx:64:            {formatPrice(item.price)}
+src/components/cart/CartItem.tsx:107:          {formatPrice(subtotal)}
+src/components/cart/CartSummary.tsx:37:            {formatPrice(subtotal)}
+src/components/cart/CartSummary.tsx:44:            {formatPrice(subtotal)}
+src/components/cart/CartDrawer.tsx:136:                            {formatPrice(total)}
+src/components/admin/TransactionDetailModal.tsx:191:                  {formatPrice(Number(transaction.amount))}
+src/components/admin/TransactionDetailModal.tsx:436:                      {formatPrice(Number(item.price))}
+src/components/admin/TransactionDetailModal.tsx:439:                      {formatPrice(Number(item.price) * item.quantity)}
+src/components/admin/TransactionDetailModal.tsx:453:                    {formatPrice(Number(transaction.amount))}
+src/app/api/transactions/webhook-stripe/route.ts:45:  currency: string | null
+src/app/api/transactions/webhook-stripe/route.ts:47:  if (amountMinorUnits === null || !currency) {
+src/app/api/transactions/webhook-stripe/route.ts:58:    expectedCurrency === currency.toLowerCase() &&
+src/app/api/transactions/webhook-stripe/route.ts:325:          session.currency
+src/app/api/transactions/webhook-stripe/route.ts:328:        log.error('Stripe webhook amount/currency mismatch', {
+src/app/api/transactions/webhook-stripe/route.ts:334:          receivedCurrency: session.currency,
+src/app/api/transactions/webhook-stripe/route.ts:405:          intent.currency
+src/app/api/transactions/webhook-stripe/route.ts:408:        log.error('Stripe payment_intent amount/currency mismatch', {
+src/app/api/transactions/webhook-stripe/route.ts:413:          receivedCurrency: intent.currency,
+src/components/ui-v4/Toast.tsx:76:export default function ToastContainer() {
+src/components/ui-v4/index.ts:1:// Compatibility exports for the legacy ui-v4 path.
+src/components/ui-v4/index.ts:47:export { default as ToastContainer } from './Toast';
+src/app/api/transactions/create/route.ts:22:import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+src/app/api/transactions/create/route.ts:166:      finalPhone = normalizePhoneNumber(phone);
+src/app/api/transactions/create/route.ts:181:    finalPhone = normalizePhoneNumber(finalPhone);
+src/app/api/transactions/create/route.ts:182:    if (!isValidPhoneNumber(finalPhone)) {
+src/app/api/transactions/create/route.ts:522:        currency: stripeCurrency,
+src/app/api/transactions/create/route.ts:551:            currency: stripeCurrency.toUpperCase(),
+src/app/api/transactions/create/route.ts:589:        currency: paypalCurrency,
+src/app/api/transactions/create/route.ts:604:            currency: paypalCurrency,
+src/app/api/transactions/webhook-paypal/route.ts:185:    log.error('PayPal webhook amount/currency mismatch', {
+
+exec
+/bin/bash -lc "git grep -n \"lib/utils/persian\\|convertPersian\\|containsPersian\\|isValidPersianName\\|isValidIranianPhone\\|lib/utils/text\" e168964"'^ -- '"':"'!node_modules'"' | head -100 && git grep -n \"lib/utils/persian\\|convertPersian\\|containsPersian\\|isValidPersianName\\|isValidIranianPhone\\|lib/utils/text\" e168964 -- ':"'!node_modules'"' | head -100" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+e168964^:src/app/(auth)/login/page.tsx:12:import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+e168964^:src/app/(auth)/login/page.tsx:36:    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+e168964^:src/app/(auth)/register/page.tsx:14:  isValidIranianPhone,
+e168964^:src/app/(auth)/register/page.tsx:16:} from '@/lib/utils/persian';
+e168964^:src/app/(auth)/register/page.tsx:43:    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+e168964^:src/app/api/transactions/create/route.ts:22:import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+e168964^:src/components/checkout/CheckoutForm.tsx:12:  isValidIranianPhone,
+e168964^:src/components/checkout/CheckoutForm.tsx:14:} from '@/lib/utils/persian';
+e168964^:src/components/checkout/CheckoutForm.tsx:155:    if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
+e168964^:src/components/profile/ProfileEditForm.tsx:8:  isValidIranianPhone,
+e168964^:src/components/profile/ProfileEditForm.tsx:10:} from '@/lib/utils/persian';
+e168964^:src/components/profile/ProfileEditForm.tsx:55:      if (!isValidIranianPhone(normalizedPhone)) {
+e168964^:src/lib/utils/persian.ts:17:export function convertPersianToEnglish(text: string): string {
+e168964^:src/lib/utils/persian.ts:40:export function containsPersianCharacters(text: string): boolean {
+e168964^:src/lib/utils/persian.ts:54:export function isValidPersianName(name: string): boolean {
+e168964^:src/lib/utils/persian.ts:86:  const normalized = convertPersianToEnglish(phone);
+e168964^:src/lib/utils/persian.ts:98:export function isValidIranianPhone(phone: string): boolean {
+e168964^:tests/unit/utils/persian.test.ts:3:  convertPersianToEnglish,
+e168964^:tests/unit/utils/persian.test.ts:4:  containsPersianCharacters,
+e168964^:tests/unit/utils/persian.test.ts:5:  isValidPersianName,
+e168964^:tests/unit/utils/persian.test.ts:8:  isValidIranianPhone,
+e168964^:tests/unit/utils/persian.test.ts:9:} from '@/lib/utils/persian';
+e168964^:tests/unit/utils/persian.test.ts:13:    expect(convertPersianToEnglish('۱۲۳۴۵۶۷۸۹۰')).toBe('1234567890');
+e168964^:tests/unit/utils/persian.test.ts:14:    expect(convertPersianToEnglish('٠١٢٣٤٥٦٧٨٩')).toBe('0123456789');
+e168964^:tests/unit/utils/persian.test.ts:18:    expect(containsPersianCharacters('سلام')).toBe(true);
+e168964^:tests/unit/utils/persian.test.ts:19:    expect(containsPersianCharacters('hello')).toBe(false);
+e168964^:tests/unit/utils/persian.test.ts:23:    expect(isValidPersianName('علی رضایی')).toBe(true);
+e168964^:tests/unit/utils/persian.test.ts:24:    expect(isValidPersianName('Ali')).toBe(false);
+e168964^:tests/unit/utils/persian.test.ts:31:    expect(isValidIranianPhone('۰۹۱۲۳۴۵۶۷۸۹')).toBe(true);
+e168964^:tests/unit/utils/persian.test.ts:32:    expect(isValidIranianPhone('9123456789')).toBe(false);
+e168964:src/app/(auth)/login/page.tsx:12:import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+e168964:src/app/(auth)/login/page.tsx:36:    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+e168964:src/app/(auth)/register/page.tsx:14:  isValidIranianPhone,
+e168964:src/app/(auth)/register/page.tsx:16:} from '@/lib/utils/persian';
+e168964:src/app/(auth)/register/page.tsx:43:    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+e168964:src/app/api/transactions/create/route.ts:22:import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+e168964:src/components/checkout/CheckoutForm.tsx:12:  isValidIranianPhone,
+e168964:src/components/checkout/CheckoutForm.tsx:14:} from '@/lib/utils/persian';
+e168964:src/components/checkout/CheckoutForm.tsx:155:    if (!phone.trim() || !isValidIranianPhone(normalizedPhone)) {
+e168964:src/components/profile/ProfileEditForm.tsx:8:  isValidIranianPhone,
+e168964:src/components/profile/ProfileEditForm.tsx:10:} from '@/lib/utils/persian';
+e168964:src/components/profile/ProfileEditForm.tsx:55:      if (!isValidIranianPhone(normalizedPhone)) {
+e168964:tests/unit/utils/text.test.ts:8:} from '@/lib/utils/text';
+
+exec
+/bin/bash -lc 'cat package.json' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+{
+  "name": "supabase-vercel-stack",
+  "version": "0.1.0",
+  "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "rm -rf .next && next dev 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+    "dev:plain": "rm -rf .next && next dev",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "verify:routes": "bash scripts/verify-api-routes.sh",
+    "verify:config": "bash scripts/verify-config-files.sh",
+    "verify": "npm run verify:config && npm run verify:routes",
+    "check": "npm run verify && npm run lint && npm run test:unit && npm run build",
+    "test:ci": "npm run test:unit",
+    "prebuild": "npm run verify && node scripts/generate-build-version.js",
+    "predev": "npm run verify:config",
+    "test": "npm --prefix tests run test --",
+    "test:all": "npm --prefix tests run test:all --",
+    "test:unit": "npm --prefix tests run test:unit --",
+    "test:integration": "npm --prefix tests run test:integration --",
+    "test:e2e": "npm --prefix tests run test:e2e --",
+    "unit": "npm --prefix tests run test:unit --",
+    "integration": "npm --prefix tests run test:integration --",
+    "e2e": "npm --prefix tests run test:e2e --",
+    "prepare": "husky",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.943.0",
+    "@aws-sdk/lib-storage": "^3.943.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.1.0",
+    "@smithy/node-http-handler": "^4.4.5",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.88.0",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.7",
+    "axios": "^1.16.1",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
+    "form-data": "^4.0.5",
+    "libphonenumber-js": "^1.12.30",
+    "next": "^16.2.6",
+    "next-auth": "^4.24.0",
+    "nodemailer": "^8.0.10",
+    "pdfkit": "^0.15.0",
+    "pino": "^10.1.0",
+    "postgres": "^3.4.7",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "resend": "^6.6.0",
+    "server-only": "^0.0.1",
+    "stripe": "^20.3.1",
+    "uuid": "^14.0.0",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@chromatic-com/storybook": "^4.1.3",
+    "@next/eslint-plugin-next": "^16.2.6",
+    "@storybook/addon-a11y": "^10.1.11",
+    "@storybook/addon-docs": "^10.1.11",
+    "@storybook/addon-onboarding": "^10.1.11",
+    "@storybook/addon-vitest": "^10.1.11",
+    "@storybook/nextjs-vite": "^10.1.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.12.0",
+    "@types/nodemailer": "^7.0.4",
+    "@types/pdfkit": "^0.13.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "@vitest/browser-playwright": "^4.0.16",
+    "@vitest/coverage-v8": "^4.0.16",
+    "autoprefixer": "^10.4.0",
+    "critters": "^0.0.23",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.6",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-storybook": "^10.1.11",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "pino-pretty": "^13.1.2",
+    "playwright": "^1.57.0",
+    "postcss": "^8.5.14",
+    "prettier": "^3.7.4",
+    "storybook": "^10.1.11",
+    "supabase": "^2.67.2",
+    "tailwindcss": "^3.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.16"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "uuid": "$uuid",
+    "glob": "10.5.0"
+  }
+}
+
+exec
+/bin/bash -lc 'git rev-parse HEAD && git log --oneline --decorate -5 && git diff e168964''^ e168964 --name-only && git grep -n "@/lib/utils/persian" e168964 -- src || true && git grep -n "@/lib/utils/text" e168964 -- src || true' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+817511158d69d7effd71b489dc68280b7b813a82
+8175111 (HEAD -> main) task005: record commit-based review finalization
+ab264ed task004: record commit-based review finalization
+9ba24d8 task003: record commit-based review finalization
+3f12ea7 task013: update CI tests and release workflow
+25a0172 task012: neutralize email SEO assets and storage
+config/tailwind.config.ts
+public/fonts/BYekan.ttf
+src/app/layout.tsx
+src/config/site.ts
+src/lib/utils/format.ts
+src/lib/utils/persian.ts
+src/lib/utils/text.ts
+tests/unit/utils/format.test.ts
+tests/unit/utils/persian.test.ts
+tests/unit/utils/text.test.ts
+e168964:src/app/(auth)/login/page.tsx:12:import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+e168964:src/app/(auth)/register/page.tsx:16:} from '@/lib/utils/persian';
+e168964:src/components/checkout/CheckoutForm.tsx:14:} from '@/lib/utils/persian';
+e168964:src/components/profile/ProfileEditForm.tsx:10:} from '@/lib/utils/persian';
+e168964:src/app/api/transactions/create/route.ts:22:import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+
+exec
+/bin/bash -lc "git show e168964:.env.example 2>/dev/null | sed -n '1,200p' || true; git show e168964:docs/ENVIRONMENT.md | sed -n '1,80p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+# Database
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/commerce?schema=public"
+
+# Application URLs
+NEXTAUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Authentication
+NEXTAUTH_SECRET="replace-with-a-long-random-secret"
+
+# Supabase
+# Get values from Supabase Dashboard > Project Settings > API.
+# Use publishable/secret keys. Do not expose SUPABASE_SECRET_KEY in client code.
+NEXT_PUBLIC_SUPABASE_URL="https://your-project-ref.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="replace-with-supabase-publishable-key"
+SUPABASE_SECRET_KEY="replace-with-supabase-secret-key"
+
+# Stripe payment
+STRIPE_SECRET_KEY="sk_test_replace_with_your_key"
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_replace_with_your_key"
+STRIPE_WEBHOOK_SECRET="whsec_replace_with_your_secret"
+# Optional, defaults to usd
+STRIPE_CURRENCY="usd"
+
+# Optional neutral label used in provider checkout/order descriptions
+PAYMENT_SITE_NAME="Commerce Starter"
+
+# PayPal payment
+PAYPAL_CLIENT_ID="replace-with-paypal-client-id"
+PAYPAL_CLIENT_SECRET="replace-with-paypal-client-secret"
+PAYPAL_WEBHOOK_ID="replace-with-paypal-webhook-id"
+# Allowed values: sandbox | live
+PAYPAL_ENV="sandbox"
+# Optional, defaults to USD
+PAYPAL_CURRENCY="USD"
+
+# Logging
+LOG_LEVEL="info"
+
+# Optional: Upstash Redis cache and rate limiting
+UPSTASH_REDIS_REST_URL="https://example.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="replace-with-upstash-token"
+
+# Optional: Email delivery
+# Development can use Ethereal or any SMTP account when SMTP variables are set.
+EMAIL_FROM='"Commerce Starter" <noreply@example.com>'
+ADMIN_EMAIL="admin@example.com"
+RESEND_API_KEY="re_replace_with_resend_key"
+
+# Optional: Resend SMTP mode
+# RESEND_SMTP="true"
+# RESEND_SMTP_HOST="smtp.resend.com"
+# RESEND_SMTP_PORT="587"
+# RESEND_SMTP_SECURE="false"
+# RESEND_SMTP_USER="resend"
+# RESEND_SMTP_PASS="replace-with-resend-api-key"
+
+# Optional: Custom SMTP
+# EMAIL_SMTP_HOST="smtp.example.com"
+# EMAIL_SMTP_PORT="587"
+# EMAIL_SMTP_SECURE="false"
+# EMAIL_SMTP_USER="user@example.com"
+# EMAIL_SMTP_PASS="replace-with-smtp-password"
+
+# Optional: Cloudflare R2-compatible product media storage
+R2_ACCOUNT_ID="replace-with-cloudflare-account-id"
+R2_ACCESS_KEY_ID="replace-with-r2-access-key-id"
+R2_SECRET_ACCESS_KEY="replace-with-r2-secret-access-key"
+R2_BUCKET_NAME="commerce-media"
+R2_PUBLIC_URL="https://media.example.com"
+NEXT_PUBLIC_IMAGE_REMOTE_HOSTNAME="media.example.com"
+
+# Optional: R2 backup helper configuration
+R2_BACKUP_BUCKET_NAME="commerce-backups"
+R2_BACKUP_ACCESS_KEY_ID="replace-with-r2-backup-access-key-id"
+R2_BACKUP_SECRET_ACCESS_KEY="replace-with-r2-backup-secret-access-key"
+BACKUP_FILE_PATHS="app-env=.env.production"
+
+# Optional: Cloudflare Image Resizing
+# Set to "false" to disable image transformations.
+NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED="true"
+# Environment Variables
+
+`.env.example` is the source of truth for setup variables. Keep local `.env` files out of git.
+
+## Required App Variables
+
+- `DATABASE_URL`: Postgres connection string.
+- `NEXTAUTH_URL`: Base URL used by NextAuth.
+- `NEXTAUTH_SECRET`: Long random secret for session signing.
+- `NEXT_PUBLIC_APP_URL`: Public app URL for links and callbacks.
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Supabase browser-safe publishable key.
+- `SUPABASE_SECRET_KEY`: Server-only Supabase secret key.
+
+## Required Payment Variables
+
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_WEBHOOK_ID`
+- `PAYPAL_ENV`
+
+Optional payment currency variables:
+
+- `STRIPE_CURRENCY`
+- `PAYPAL_CURRENCY`
+
+## Optional Integrations
+
+Cloudflare R2-compatible storage:
+
+- `R2_ACCOUNT_ID`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_BUCKET_NAME`
+- `R2_PUBLIC_URL`
+
+Email:
+
+- `EMAIL_FROM`
+- `ADMIN_EMAIL`
+- `RESEND_API_KEY`
+- `RESEND_SMTP_*`
+- `EMAIL_SMTP_*`
+
+Upstash Redis:
+
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+Cloudflare Image Resizing:
+
+- `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED`
+
+exec
+/bin/bash -lc "git show e168964:src/app/'(auth)'/login/page.tsx | sed -n '1,120p'; echo '---'; git show e168964:src/app/api/transactions/create/route.ts | sed -n '150,195p'; echo '---'; git show e168964:src/lib/auth/options.ts | sed -n '1,90p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+import Link from 'next/link';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import RateLimitError from '@/components/ui/RateLimitError';
+import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    identifier: '', // Email or phone
+    password: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [rateLimitRetryAfter, setRateLimitRetryAfter] = useState<number | null>(
+    null
+  );
+
+  // Detect if identifier is email or phone
+  const detectIdentifierType = (
+    value: string
+  ): 'email' | 'phone' | 'invalid' => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Normalize phone number first to handle Persian digits
+    const normalizedPhone = normalizePhoneNumber(value);
+
+    if (emailRegex.test(value)) return 'email';
+    if (isValidIranianPhone(normalizedPhone)) return 'phone';
+    return 'invalid';
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.identifier.trim()) {
+      newErrors.identifier = 'ایمیل یا شماره تلفن الزامی است';
+    } else {
+      const type = detectIdentifierType(formData.identifier);
+      if (type === 'invalid') {
+        newErrors.identifier =
+          'فرمت ایمیل یا شماره تلفن نامعتبر است (از اعداد فارسی یا انگلیسی استفاده کنید)';
+      }
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'رمز عبور الزامی است';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setRateLimitRetryAfter(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const identifierType = detectIdentifierType(formData.identifier);
+
+      // Normalize identifier before sending
+      const normalizedIdentifier =
+        identifierType === 'phone'
+          ? normalizePhoneNumber(formData.identifier)
+          : formData.identifier;
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: normalizedIdentifier, // Using 'email' for backward compatibility
+          password: formData.password,
+        }),
+      });
+
+      // Check for rate limiting
+      if (response.status === 429) {
+        const rateLimitData = await response.json();
+        setRateLimitRetryAfter(rateLimitData.retryAfter || Date.now() + 120000);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'خطا در ورود');
+      }
+
+      // Use NextAuth's signIn to create the session
+      const result = await signIn('credentials', {
+        identifier: normalizedIdentifier,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setErrorMessage(result.error);
+      } else if (result?.ok) {
+        router.push('/');
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+---
+          email: !session.user.email && !!email,
+        },
+        willUpdateProfile: shouldUpdateProfile,
+      });
+    } else {
+      // For guest users, use form data
+      const { fullName, phone, email } = shippingInfo;
+
+      if (!fullName || !phone) {
+        return NextResponse.json(
+          { error: 'Please complete all required fields.' },
+          { status: 400 }
+        );
+      }
+
+      finalFullName = fullName;
+      finalPhone = normalizePhoneNumber(phone);
+      finalEmail = email || undefined;
+    }
+
+    // Validate shipping address (both logged-in and guest users)
+    const { shippingAddress, postalCode, createAccount } = shippingInfo;
+
+    if (!shippingAddress) {
+      return NextResponse.json(
+        { error: 'Please enter a shipping address.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone format
+    finalPhone = normalizePhoneNumber(finalPhone);
+    if (!isValidPhoneNumber(finalPhone)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format.' },
+        { status: 400 }
+      );
+    }
+
+    // Verify stock availability
+    const stockCheck = await verifyStockAvailability(items);
+    if (!stockCheck.available) {
+      log.warn('Stock verification failed', {
+        userId: session?.user?.id || 'guest',
+        errors: stockCheck.errors,
+        unavailableProductIds: stockCheck.unavailableProductIds,
+---
+import { NextAuthOptions } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
+import { createClient } from '@/lib/supabase/server';
+import { detectIdentifierType } from '@/services/user-service';
+
+// Extend the built-in types
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      email: string | null;
+      phone: string | null;
+      name: string;
+      role: 'USER' | 'ADMIN';
+      isVerified: boolean;
+    };
+  }
+
+  interface User {
+    id: string;
+    email: string | null;
+    phone: string | null;
+    name: string;
+    role: 'USER' | 'ADMIN';
+    isVerified: boolean;
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id: string;
+    role: 'USER' | 'ADMIN';
+    email: string | null;
+    phone: string | null;
+    name: string;
+    isVerified: boolean;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        identifier: { label: 'ایمیل یا شماره تلفن', type: 'text' },
+        password: { label: 'رمز عبور', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.identifier || !credentials.password) {
+          throw new Error('ایمیل یا شماره تلفن و رمز عبور الزامی است');
+        }
+
+        // Detect if identifier is email or phone
+        const identifierType = detectIdentifierType(credentials.identifier);
+
+        if (identifierType === 'invalid') {
+          throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
+        }
+
+        const supabase = createClient();
+
+        // Find user by email or phone
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq(
+            identifierType === 'email' ? 'email' : 'phone',
+            credentials.identifier
+          )
+          .single();
+
+        if (error || !user) {
+          throw new Error('کاربری با این مشخصات یافت نشد');
+        }
+
+        if (!user.password) {
+          throw new Error(
+            'این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید'
+          );
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordValid) {
+          throw new Error('رمز عبور اشتباه است');
+        }
+
+exec
+/bin/bash -lc 'git ls-tree e168964''^:src/lib/utils && git show --name-only --oneline e168964''^ | head -50' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+100644 blob 52de525167d209fa6b62056008f9c66e70019ff5	format.ts
+100644 blob 7d0d2d65d2b4532468aa9bf28fa589d1d501ef9e	password-validation.ts
+100644 blob 517074984690f31b33f47c6bdfa70ef56064208d	persian.ts
+100644 blob 12740ae6e2349e5be441dbccc8ba02dae0e4d96a	url.ts
+712444f task005: prepare Supabase schema and seed setup
+database/schema-contract.md
+database/schema-dumps/preview-public-metadata-canonical.txt
+database/schema-dumps/production-public-metadata-canonical.txt
+database/schema-dumps/public-schema-parity-checksums.txt
+migrations/20260206_payment_sms_cleanup_and_stripe_paypal.sql
+migrations/add_payment_method_tracking.sql
+migrations/add_user_activity_tracking.sql
+migrations/add_user_uid.sql
+migrations/add_wishlist.sql
+migrations/fix_production_defaults.sql
+scripts/db/validate_payment_schema.sql
+src/lib/supabase/middleware.ts
+supabase/.gitignore
+supabase/config.toml
+supabase/migrations/20260531190011_initial_public_schema.sql
+supabase/seed.sql
+tests/.env.example
+tests/docs/GETTING_SUPABASE_KEYS.md
+tests/e2e/.env.example
+tests/e2e/fixtures/cleanup.ts
+tests/e2e/fixtures/products.ts
+tests/e2e/fixtures/users.ts
+tests/e2e/journeys/user-registration.spec.ts
+tests/e2e/utils/database.ts
+tests/fixtures/categories.ts
+tests/fixtures/products.ts
+tests/fixtures/tags.ts
+tests/fixtures/transactions.ts
+tests/fixtures/users.ts
+tests/setup.ts
+tests/utils/test-client.ts
+
+exec
+/bin/bash -lc "ls -d node_modules tests/node_modules 2>/dev/null | tr '\\n' ' ' && echo" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+node_modules tests/node_modules 
+
+exec
+/bin/bash -lc "git grep -n \"BYekan\\|B Yekan\\|/fonts\" e168964 -- . ':(exclude)public/fonts/BYekan.ttf'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+e168964:next.config.js:65:        source: '/fonts/:path*',
+e168964:src/app/globals.css:6:  font-family: 'B Yekan';
+e168964:src/app/globals.css:7:  src: url('/fonts/BYekan.ttf') format('truetype');
+e168964:src/app/globals.css:19:    font-family: 'B Yekan', sans-serif;
+e168964:tailwind.config.ts:13:        sans: ["'B Yekan'", 'system-ui', 'sans-serif'],
+e168964:tests/e2e/smoke.spec.ts:18:    // Verify Persian font is loaded (B Yekan is used as primary font)
+e168964:tests/e2e/smoke.spec.ts:22:    // The font family should include a Persian font (B Yekan with space or Vazirmatn)
+
+exec
+/bin/bash -lc "git ls-tree e168964 --name-only | sed -n '1,100p'; git show e168964:src/app/globals.css | sed -n '1,50p'; git show e168964:tailwind.config.ts | sed -n '1,40p'; git show e168964:config/tailwind.config.ts | sed -n '1,30p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+.env.example
+.eslintrc.json
+.github
+.gitignore
+.husky
+.npmrc
+.prettierignore
+.prettierrc
+.storybook
+.vercelignore
+AGENTS.md
+CONTRIBUTING.md
+LICENSE
+README.md
+SECURITY.md
+config
+database
+docs
+migrations
+next.config.js
+package-lock.json
+package.json
+postcss.config.js
+public
+scripts
+src
+supabase
+tailwind.config.ts
+tasks
+tests
+tsconfig.json
+vitest.config.ts
+vitest.shims.d.ts
+vps
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'B Yekan';
+  src: url('/fonts/BYekan.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  body {
+    @apply bg-white text-gray-900;
+    font-family: 'B Yekan', sans-serif;
+  }
+}
+
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  .animate-fade-in {
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  darkMode: 'class',
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ["'B Yekan'", 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+import type { Config } from 'tailwindcss';
+
+const config: Config = {
+  content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;
+
+exec
+/bin/bash -lc 'git show e168964:postcss.config.js; git show e168964:package.json | rg "tailwind|postcss" -n; git show e168964:config/README.md 2>/dev/null || true' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+98:    "postcss": "^8.5.14",
+102:    "tailwindcss": "^3.4.0",
+118:    "postcss": "$postcss",
+
+exec
+/bin/bash -lc 'rg "config/tailwind|tailwind.config" -n .storybook config scripts package.json next.config.js postcss.config.js || true' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+scripts/verify-config-files.sh:12:  "tailwind.config.ts"
+
+exec
+/bin/bash -lc "git show e168964:config/tailwind.config.ts | nl -ba | sed -n '1,25p'; echo '--- persian deleted line numbers in parent'; git show e168964"'^:src/lib/utils/persian.ts | nl -ba | sed -n '"'1,25p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+     1	import type { Config } from 'tailwindcss';
+     2	
+     3	const config: Config = {
+     4	  content: [
+     5	    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
+     6	    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+     7	    './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+     8	  ],
+     9	  theme: {
+    10	    extend: {
+    11	      fontFamily: {
+    12	        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+    13	      },
+    14	    },
+    15	  },
+    16	  plugins: [],
+    17	};
+    18	
+    19	export default config;
+--- persian deleted line numbers in parent
+     1	/**
+     2	 * Persian text utility functions
+     3	 * Handles conversion between Persian and English characters
+     4	 */
+     5	
+     6	/**
+     7	 * Map of Persian digits to English digits
+     8	 */
+     9	const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    10	const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    11	
+    12	/**
+    13	 * Convert Persian/Arabic digits to English digits
+    14	 * @param text - Text containing Persian or Arabic digits
+    15	 * @returns Text with English digits
+    16	 */
+    17	export function convertPersianToEnglish(text: string): string {
+    18	  if (!text) return text;
+    19	
+    20	  let result = text;
+    21	
+    22	  // Convert Persian digits
+    23	  persianDigits.forEach((persianDigit, index) => {
+    24	    result = result.replace(new RegExp(persianDigit, 'g'), index.toString());
+    25	  });
+
+exec
+/bin/bash -lc "git show e168964:src/lib/seo/structured-data.ts | sed -n '1,180p'; git show e168964:src/lib/seo/config.ts | sed -n '1,100p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+// Minimal product interface for schema generation
+interface SchemaProduct {
+  id: string;
+  name: string;
+  description: string;
+  slug?: string; // Optional, will use id if not present
+  price: number;
+  stock: number;
+  discount?: number | null;
+  discountPercent?: number | null;
+  sku?: string | null;
+  images?: string[] | null;
+  category?: { name: string; slug: string } | null;
+  media?: Array<{ url: string; type?: string }>;
+  variants?: Array<{ media?: Array<{ url: string; type?: string }> }>;
+}
+
+// Minimal variant interface for schema generation
+interface SchemaVariant {
+  name: string;
+  stock: number;
+  priceAdjust: number;
+  media?: Array<{ url: string; type?: string }>;
+}
+
+// Get base URL from environment or default
+const getBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || 'https://kitia.ir';
+};
+
+/**
+ * Generate Product JSON-LD structured data
+ * Creates rich snippet for product pages with offers, images, and ratings
+ */
+export function generateProductSchema(
+  product: SchemaProduct,
+  selectedVariant?: SchemaVariant
+): object {
+  const baseUrl = getBaseUrl();
+
+  // Get images from product media or variant media
+  const images: string[] = [];
+
+  if (selectedVariant?.media && selectedVariant.media.length > 0) {
+    // Use selected variant's media
+    const variantImages = selectedVariant.media
+      .filter((m) => m.type === 'IMAGE' || !m.type)
+      .map((m) => m.url);
+    images.push(...variantImages);
+  } else if (product.media && product.media.length > 0) {
+    // Use product-level media
+    const productImages = product.media
+      .filter((m) => m.type === 'IMAGE' || !m.type)
+      .map((m) => m.url);
+    images.push(...productImages);
+  } else if (product.images && product.images.length > 0) {
+    // Use legacy images field
+    images.push(...product.images);
+  } else if (product.variants && product.variants.length > 0) {
+    // Fallback: collect images from all variants if product has no direct media
+    for (const variant of product.variants) {
+      if (variant.media && variant.media.length > 0) {
+        const variantImages = variant.media
+          .filter((m) => m.type === 'IMAGE' || !m.type)
+          .map((m) => m.url);
+        images.push(...variantImages);
+      }
+    }
+  }
+
+  // Calculate final price (with variant adjustment if applicable)
+  let finalPrice = product.price;
+  if (selectedVariant) {
+    finalPrice += selectedVariant.priceAdjust;
+  }
+
+  // Apply discount if exists
+  if (product.discount && product.discount > 0) {
+    finalPrice = finalPrice * (1 - product.discount / 100);
+  }
+
+  // Determine stock availability
+  let stock = product.stock;
+  if (selectedVariant) {
+    stock = selectedVariant.stock;
+  }
+
+  const availability =
+    stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+
+  // Schema.org requires at least one image - use logo as absolute last resort
+  const schemaImages = images.length > 0 ? images : [`${baseUrl}/logo.png`];
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: selectedVariant
+      ? `${product.name} - ${selectedVariant.name}`
+      : product.name,
+    description:
+      product.description || `${product.name} - خرید آنلاین از کیتیا`,
+    image: schemaImages,
+    ...(product.sku && { sku: product.sku }),
+    brand: {
+      '@type': 'Brand',
+      name: 'کیتیا',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: finalPrice.toString(),
+      priceCurrency: 'IRR',
+      availability,
+      url: `${baseUrl}/products/${product.slug || product.id}`,
+      ...(product.discount &&
+        product.discount > 0 && {
+          priceValidUntil: new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          ).toISOString(), // 30 days
+        }),
+    },
+  };
+
+  return schema;
+}
+
+/**
+ * Generate Organization JSON-LD structured data
+ * Should be included in the root layout for site-wide branding
+ */
+export function generateOrganizationSchema(): object {
+  const baseUrl = getBaseUrl();
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'کیتیا',
+    url: baseUrl,
+    logo: `${baseUrl}/logo.png`,
+    description: 'فروشگاه آنلاین محصولات با کیفیت',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'پشتیبانی مشتریان',
+      availableLanguage: 'Persian',
+      telephone: '+98-21-1234-5678', // Replace with actual phone
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'IR',
+      addressLocality: 'تهران',
+      addressRegion: 'تهران',
+    },
+  };
+}
+
+/**
+ * Generate BreadcrumbList JSON-LD structured data
+ * Shows navigation hierarchy (Home > Category > Subcategory > Product)
+ */
+export function generateBreadcrumbSchema(items: BreadcrumbItem[]): object {
+  const baseUrl = getBaseUrl();
+
+  const listItems = items.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.name,
+    item: item.url.startsWith('http') ? item.url : `${baseUrl}${item.url}`,
+  }));
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: listItems,
+/**
+ * SEO Configuration
+ * Central configuration for SEO-related constants and utilities
+ */
+
+/**
+ * Get the base URL for the application
+ * Uses environment variables with fallback to production URL
+ */
+export function getBaseUrl(): string {
+  // Check if we're on the server side
+  if (typeof window === 'undefined') {
+    // Server-side: use environment variable or production URL
+
+    // Priority 1: Use NEXT_PUBLIC_SITE_URL if set (allows dynamic configuration in Vercel)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (siteUrl) {
+      return siteUrl;
+    }
+
+    // Priority 2: In production, use the production domain
+    // VERCEL_ENV is 'production' for production deployments
+    if (process.env.VERCEL_ENV === 'production') {
+      return 'https://kitia.ir';
+    }
+
+    // Priority 3: For preview deployments, use VERCEL_URL
+    // Note: VERCEL_URL contains deployment URL (like kitia-xxx.vercel.app), not custom domain
+    const vercelUrl = process.env.VERCEL_URL;
+    if (vercelUrl && !vercelUrl.includes('localhost')) {
+      return `https://${vercelUrl}`;
+    }
+
+    // Priority 4: Use NEXT_PUBLIC_APP_URL if set and not localhost (for local dev)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl && !appUrl.includes('localhost')) {
+      return appUrl;
+    }
+
+    // Fallback to production URL
+    return 'https://kitia.ir';
+  }
+
+  // Client-side: use window.location.origin
+  return window.location.origin;
+}
+
+/**
+ * Construct absolute URL from path
+ * @param path - Relative or absolute path
+ * @returns Absolute URL
+ */
+export function getAbsoluteUrl(path: string): string {
+  const baseUrl = getBaseUrl();
+
+  // If path is already absolute, return it
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  return `${baseUrl}${cleanPath}`;
+}
+
+/**
+ * Site metadata constants
+ */
+export const SITE_CONFIG = {
+  name: 'کیتیا',
+  locale: 'fa_IR',
+  defaultTitle: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
+  defaultDescription:
+    'خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع به سراسر کشور، کمک به گربه‌های خیابانی با هر خرید.',
+} as const;
+
+exec
+/bin/bash -lc "git show e168964:src/app/products/'[id]'/page.tsx | sed -n '1,125p'; git show e168964:src/app/page.tsx | sed -n '1,50p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import ProductDetail from '@/components/products/ProductDetail';
+import RelatedProducts from '@/components/products/RelatedProducts';
+import { getProductById, getRelatedProducts } from '@/services/product-service';
+import { Tables } from '@/lib/supabase/types';
+import {
+  generateProductSchema,
+  generateBreadcrumbSchema,
+  generateProductBreadcrumbs,
+  renderJsonLd,
+} from '@/lib/seo/structured-data';
+import { getProductOgImage } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+
+type Product = Tables<'products'>;
+type ProductVariant = Tables<'product_variants'>;
+import { cache } from 'react';
+
+export const dynamic = 'force-dynamic';
+
+interface ProductPageProps {
+  params: Promise<{ id: string }>;
+}
+
+// Cache the product query to avoid duplicate fetching between metadata and page
+const getCachedProduct = cache(async (id: string) => {
+  return getProductById(id, true);
+});
+
+export async function generateMetadata({
+  params,
+}: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const product = await getCachedProduct(id);
+
+    // Get first image from media or fallback to legacy images
+    const productWithRelations = product as Product & {
+      media?: Array<{
+        id: string;
+        type: 'IMAGE' | 'VIDEO';
+        url: string;
+        alt?: string;
+        order: number;
+      }>;
+      category?: { id: string; name: string; slug: string } | null;
+    };
+
+    const firstImage =
+      productWithRelations.media && productWithRelations.media.length > 0
+        ? productWithRelations.media.find((m) => m.type === 'IMAGE')?.url
+        : product.images && product.images.length > 0
+          ? product.images[0]
+          : undefined;
+
+    // Optimize image for Open Graph (1200x630)
+    const ogImage = firstImage ? getProductOgImage(firstImage) : undefined;
+
+    // Calculate final price
+    const finalPrice = product.discountPercent
+      ? Number(product.price) * (1 - product.discountPercent / 100)
+      : Number(product.price);
+
+    // Build description
+    const categoryName = productWithRelations.category?.name || '';
+    const stockStatus = product.stock > 0 ? 'موجود' : 'ناموجود';
+    const priceText = `قیمت: ${finalPrice.toLocaleString('fa-IR')} تومان`;
+    const fullDescription = `${product.description} | ${categoryName ? `دسته: ${categoryName} | ` : ''}${priceText} | وضعیت: ${stockStatus}`;
+
+    return {
+      title: `${product.name} - کیتیا`,
+      description: fullDescription.substring(0, 160),
+      openGraph: {
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        locale: 'fa_IR',
+        siteName: 'کیتیا',
+        images: ogImage
+          ? [
+              {
+                url: ogImage,
+                width: 1200,
+                height: 630,
+                alt: product.name,
+              },
+            ]
+          : undefined,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${product.name} - کیتیا`,
+        description: product.description,
+        images: ogImage ? [ogImage] : undefined,
+      },
+      alternates: {
+        canonical: getAbsoluteUrl(`/products/${id}`),
+      },
+      other: {
+        'og:type': 'product',
+        'product:price:amount': finalPrice.toString(),
+        'product:price:currency': 'IRR',
+        'product:availability': product.stock > 0 ? 'in stock' : 'out of stock',
+        'product:condition': 'new',
+      },
+    };
+  } catch {
+    return {
+      title: 'محصول یافت نشد - کیتیا',
+      description: 'این محصول در حال حاضر در دسترس نیست.',
+    };
+  }
+}
+
+export default async function ProductDetailPage({ params }: ProductPageProps) {
+  const { id } = await params;
+  let product;
+  let relatedProducts;
+
+  try {
+    product = await getCachedProduct(id);
+    // Fetch related products
+    relatedProducts = await getRelatedProducts(id, { limit: 4 });
+  } catch {
+    notFound();
+import { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  getFeaturedProducts,
+  getDiscountedProducts,
+} from '@/services/product-service';
+import { getCategoryTree } from '@/services/category-service';
+import ProductCard from '@/components/products/ProductCard';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import PillV4 from '@/components/ui-v4/Pill';
+import FeaturesSection from '@/components/home/FeaturesSection';
+import CtaSection from '@/components/home/CtaSection';
+import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
+import { getAbsoluteUrl } from '@/lib/seo/config';
+import { generateCategoryAltText } from '@/lib/seo/alt-text';
+
+export const dynamic = 'force-dynamic';
+
+// Optimized hero image URL (640x640, WebP, 85% quality)
+// Using Cloudflare Image Resizing for automatic WebP conversion and size optimization
+const HERO_IMAGE_OPTIMIZED =
+  'https://cdn.kitia.ir/cdn-cgi/image/width=640,height=640,format=auto,quality=85,fit=cover,gravity=center/hero-section-image/hero%20section.jpg';
+
+export const metadata: Metadata = {
+  title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
+  description:
+    'خرید بهترین لیوان‌های سفری و ماگ‌های باکیفیت. ارسال سریع به سراسر کشور، کمک به گربه‌های خیابانی با هر خرید.',
+  openGraph: {
+    title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
+    description:
+      'دنیایی از محصولات زیبا و با کیفیت برای شما. خرید آنلاین لیوان‌های سفری و ماگ با ارسال سریع و کمک به حیوانات خیابانی.',
+    type: 'website',
+    locale: 'fa_IR',
+    siteName: 'کیتیا',
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: 'کیتیا - فروشگاه آنلاین',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'کیتیا - فروشگاه آنلاین لیوان سفری و ماگ',
+    description:
+
+exec
+/bin/bash -lc "git show e168964:src/lib/utils/format.ts | nl -ba | sed -n '1,40p'; git show e168964:src/config/site.ts | nl -ba | sed -n '1,35p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+     1	import { siteLocale } from '@/config/site';
+     2	
+     3	export function formatPrice(price: number): string {
+     4	  return new Intl.NumberFormat(siteLocale.locale, {
+     5	    style: 'currency',
+     6	    currency: siteLocale.currency,
+     7	  }).format(price);
+     8	}
+     9	
+    10	export function formatNumber(value: number): string {
+    11	  return new Intl.NumberFormat(siteLocale.locale).format(value);
+    12	}
+    13	
+    14	export function formatDate(
+    15	  value: Date | string | number,
+    16	  options: Intl.DateTimeFormatOptions = {}
+    17	): string {
+    18	  return new Intl.DateTimeFormat(siteLocale.locale, {
+    19	    year: 'numeric',
+    20	    month: '2-digit',
+    21	    day: '2-digit',
+    22	    ...options,
+    23	  }).format(new Date(value));
+    24	}
+    25	
+    26	export function formatDateTime(value: Date | string | number): string {
+    27	  return formatDate(value, {
+    28	    hour: '2-digit',
+    29	    minute: '2-digit',
+    30	  });
+    31	}
+    32	
+    33	/**
+    34	 * Calculate discounted price
+    35	 */
+    36	export function calculateDiscountedPrice(
+    37	  basePrice: number,
+    38	  discountPercent: number | null | undefined
+    39	): number {
+    40	  if (!discountPercent || discountPercent <= 0) {
+     1	export type SiteDirection = 'ltr' | 'rtl';
+     2	
+     3	function getDirection(value: string | undefined): SiteDirection {
+     4	  return value === 'rtl' ? 'rtl' : 'ltr';
+     5	}
+     6	
+     7	export const siteConfig = {
+     8	  name: process.env.NEXT_PUBLIC_SITE_NAME || 'Supabase Vercel Stack',
+     9	  description:
+    10	    process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
+    11	    'Open-source commerce boilerplate for Supabase and Vercel.',
+    12	  language: process.env.NEXT_PUBLIC_SITE_LANGUAGE || 'en',
+    13	  direction: getDirection(process.env.NEXT_PUBLIC_SITE_DIRECTION),
+    14	  locale: process.env.NEXT_PUBLIC_SITE_LOCALE || 'en-US',
+    15	  currency: (process.env.NEXT_PUBLIC_SITE_CURRENCY || 'USD').toUpperCase(),
+    16	  displayName:
+    17	    process.env.NEXT_PUBLIC_SITE_DISPLAY_NAME || 'Supabase Vercel Stack',
+    18	  timeZone: process.env.NEXT_PUBLIC_SITE_TIME_ZONE,
+    19	};
+    20	
+    21	export const siteLocale = {
+    22	  language: siteConfig.language,
+    23	  direction: siteConfig.direction,
+    24	  locale: siteConfig.locale,
+    25	  ogLocale: siteConfig.locale.replace('-', '_'),
+    26	  currency: siteConfig.currency,
+    27	};
+    28	
+    29	export type SiteConfig = typeof siteConfig;
+
+exec
+/bin/bash -lc 'git grep -n "@/lib/utils/persian" e168964 -- src' in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+e168964:src/app/(auth)/login/page.tsx:12:import { normalizePhoneNumber, isValidIranianPhone } from '@/lib/utils/persian';
+e168964:src/app/(auth)/register/page.tsx:16:} from '@/lib/utils/persian';
+e168964:src/components/checkout/CheckoutForm.tsx:14:} from '@/lib/utils/persian';
+e168964:src/components/profile/ProfileEditForm.tsx:10:} from '@/lib/utils/persian';
+
+exec
+/bin/bash -lc "git show e168964:tests/e2e/smoke.spec.ts | sed -n '1,60p'" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+import { test, expect } from '@playwright/test';
+
+test.describe('E2E Infrastructure Smoke Tests', () => {
+  test('should load homepage with RTL Persian layout', async ({
+    page,
+    browserName,
+  }) => {
+    await page.goto('/');
+
+    // Verify page loaded with correct title
+    await expect(page).toHaveTitle(/کیتیا|Kitia/);
+
+    // Verify RTL direction is set on html element
+    const html = page.locator('html');
+    await expect(html).toHaveAttribute('dir', 'rtl');
+    await expect(html).toHaveAttribute('lang', 'fa');
+
+    // Verify Persian font is loaded (B Yekan is used as primary font)
+    const bodyFontFamily = await page.locator('body').evaluate((el) => {
+      return window.getComputedStyle(el).fontFamily;
+    });
+    // The font family should include a Persian font (B Yekan with space or Vazirmatn)
+    expect(bodyFontFamily.toLowerCase()).toMatch(/b\s*yekan|vazir|iran/);
+
+    // Verify header is visible with logo
+    const header = page.locator('header');
+    await expect(header).toBeVisible();
+
+    // Verify Persian logo text "کیتیا" is visible in header
+    const logo = page.locator('header h1:has-text("کیتیا")').first();
+    await expect(logo).toBeVisible();
+  });
+
+  test('should navigate to products page', async ({ page, isMobile }) => {
+    await page.goto('/');
+
+    if (isMobile) {
+      // On mobile, we need to open the hamburger menu first
+      const mobileMenuButton = page.locator('button[aria-label="منوی موبایل"]');
+      await expect(mobileMenuButton).toBeVisible();
+      await mobileMenuButton.click();
+
+      // Wait for mobile menu to expand
+      await page.waitForTimeout(400);
+    }
+
+    // Find visible products link in navigation (there are multiple, some hidden on mobile/desktop)
+    const productsLink = page.locator('a[href="/products"]:visible').first();
+    await expect(productsLink).toBeVisible();
+    await productsLink.click();
+
+    // Verify URL changed to products page
+    await expect(page).toHaveURL(/\/products/);
+
+    // Verify products page loaded with expected content
+    // Wait for DOM content to be ready (networkidle can timeout on Next.js HMR)
+    await page.waitForLoadState('domcontentloaded');
+
+    // The products page should have a heading or product grid
+    const pageContent = page.locator('main, [role="main"]').first();
+
+exec
+/bin/bash -lc "git grep -n \"rtl\\|fa\\|کیتیا\\|B Yekan\\|تومان\\|تومن\\|fa-IR\\|IRR\" e168964 -- tests src | head -200" in /data/dexter/Desktop/supabase-vercel-stack
+ succeeded in 0ms:
+e168964:src/app/(auth)/layout.tsx:3:export default function AuthLayout({ children }: { children: ReactNode }) {
+e168964:src/app/(auth)/layout.tsx:9:          <h1 className="text-4xl font-bold text-rose-900 mb-2">کیتیا</h1>
+e168964:src/app/(auth)/login/page.tsx:14:export default function LoginPage() {
+e168964:src/app/(auth)/login/page.tsx:21:  const [isLoading, setIsLoading] = useState(false);
+e168964:src/app/(auth)/login/page.tsx:62:    e.preventDefault();
+e168964:src/app/(auth)/login/page.tsx:96:        setIsLoading(false);
+e168964:src/app/(auth)/login/page.tsx:110:        redirect: false,
+e168964:src/app/(auth)/login/page.tsx:125:      setIsLoading(false);
+e168964:src/app/(auth)/register/page.tsx:18:export default function RegisterPage() {
+e168964:src/app/(auth)/register/page.tsx:27:  const [isLoading, setIsLoading] = useState(false);
+e168964:src/app/(auth)/register/page.tsx:80:    e.preventDefault();
+e168964:src/app/(auth)/register/page.tsx:116:        setIsLoading(false);
+e168964:src/app/(auth)/register/page.tsx:128:        redirect: false,
+e168964:src/app/(auth)/register/page.tsx:153:      setIsLoading(false);
+e168964:src/app/about/page.tsx:11:  title: 'درباره ما - کیتیا',
+e168964:src/app/about/page.tsx:13:    'کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد. کیفیت برتر، مسئولیت اجتماعی و قیمت مناسب.',
+e168964:src/app/about/page.tsx:15:    title: 'درباره ما - کیتیا',
+e168964:src/app/about/page.tsx:17:      'کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. با هر خرید از کیتیا، قدمی کوچک برای یک دنیای بهتر برمی‌داریم.',
+e168964:src/app/about/page.tsx:19:    locale: 'fa_IR',
+e168964:src/app/about/page.tsx:20:    siteName: 'کیتیا',
+e168964:src/app/about/page.tsx:26:        alt: 'کیتیا - فروشگاه آنلاین',
+e168964:src/app/about/page.tsx:32:    title: 'درباره ما - کیتیا',
+e168964:src/app/about/page.tsx:34:      'کیتیا، فروشگاه آنلاین لیوان‌های سفری و ماگ‌های باکیفیت. بخشی از درآمد به کمک گربه‌های خیابانی اختصاص می‌یابد.',
+e168964:src/app/about/page.tsx:42:export default function AboutPage() {
+e168964:src/app/about/page.tsx:49:            درباره کیتیا
+e168964:src/app/about/page.tsx:64:              کیتیا با هدف ارائه بهترین لیوان‌های سفری و ماگ‌های باکیفیت برای
+e168964:src/app/about/page.tsx:88:              در کیتیا، ما فقط به فروش محصول فکر نمی‌کنیم. بخشی از درآمد حاصل از
+e168964:src/app/about/page.tsx:94:              خرید از کیتیا، شما نه تنها یک محصول باکیفیت دریافت می‌کنید، بلکه
+e168964:src/app/about/page.tsx:99:                &quot;با هر خرید از کیتیا، قدمی کوچک برای یک دنیای بهتر
+e168964:src/app/admin/categories/page.tsx:14:interface Category {
+e168964:src/app/admin/categories/page.tsx:32:export default function CategoriesManagementPage() {
+e168964:src/app/admin/categories/page.tsx:37:  const [showForm, setShowForm] = useState(false);
+e168964:src/app/admin/categories/page.tsx:52:  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+e168964:src/app/admin/categories/page.tsx:65:      setIsLoading(false);
+e168964:src/app/admin/categories/page.tsx:74:    e.preventDefault();
+e168964:src/app/admin/categories/page.tsx:102:      setShowForm(false);
+e168964:src/app/admin/categories/page.tsx:154:    setShowForm(false);
+e168964:src/app/admin/categories/page.tsx:266:          updates: { isActive: false },
+e168964:src/app/admin/categories/page.tsx:586:                        {category._count.products.toLocaleString('fa-IR')}
+e168964:src/app/admin/categories/page.tsx:647:                          {child._count.products.toLocaleString('fa-IR')}
+e168964:src/app/admin/categories/page.tsx:689:        onClose={() => setShowMediaBrowser(false)}
+e168964:src/app/admin/categories/page.tsx:691:        multiSelect={false}
+e168964:src/app/admin/layout.tsx:8:export default function AdminLayout({
+e168964:src/app/admin/page.tsx:20:interface DashboardStats {
+e168964:src/app/admin/page.tsx:33:    failed: number;
+e168964:src/app/admin/page.tsx:52:export default function AdminDashboard() {
+e168964:src/app/admin/page.tsx:73:      setIsLoading(false);
+e168964:src/app/admin/page.tsx:192:          value={stats.users.total.toLocaleString('fa-IR')}
+e168964:src/app/admin/page.tsx:193:          subtitle={`${stats.users.new.toLocaleString('fa-IR')} کاربر جدید این ماه`}
+e168964:src/app/admin/page.tsx:198:          value={stats.products.total.toLocaleString('fa-IR')}
+e168964:src/app/admin/page.tsx:199:          subtitle={`${stats.products.active.toLocaleString('fa-IR')} محصول فعال`}
+e168964:src/app/admin/page.tsx:204:          value={stats.transactions.total.toLocaleString('fa-IR')}
+e168964:src/app/admin/page.tsx:205:          subtitle={`${stats.transactions.completed.toLocaleString('fa-IR')} موفق، ${stats.transactions.failed.toLocaleString('fa-IR')} ناموفق`}
+e168964:src/app/admin/page.tsx:220:          value={stats.transactions.pending.toLocaleString('fa-IR')}
+e168964:src/app/admin/page.tsx:224:          value={stats.transactions.completed.toLocaleString('fa-IR')}
+e168964:src/app/admin/page.tsx:228:          value={stats.transactions.failed.toLocaleString('fa-IR')}
+e168964:src/app/admin/products/[id]/edit/page.tsx:22:interface EditProductPageProps {
+e168964:src/app/admin/products/[id]/edit/page.tsx:32:  fallbackMessage: string
+e168964:src/app/admin/products/[id]/edit/page.tsx:39:  throw new Error(text || fallbackMessage);
+e168964:src/app/admin/products/[id]/edit/page.tsx:44:  fallbackMessage: string
+e168964:src/app/admin/products/[id]/edit/page.tsx:54:  return text || fallbackMessage;
+e168964:src/app/admin/products/[id]/edit/page.tsx:57:export default function EditProductPage({ params }: EditProductPageProps) {
+e168964:src/app/admin/products/[id]/edit/page.tsx:66:    hasVariants: false,
+e168964:src/app/admin/products/[id]/edit/page.tsx:67:    isFeatured: false,
+e168964:src/app/admin/products/[id]/edit/page.tsx:74:  const [isSaving, setIsSaving] = useState(false);
+e168964:src/app/admin/products/[id]/edit/page.tsx:79:  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+e168964:src/app/admin/products/[id]/edit/page.tsx:102:        hasVariants: product.hasVariants || false,
+e168964:src/app/admin/products/[id]/edit/page.tsx:103:        isFeatured: product.isFeatured || false,
+e168964:src/app/admin/products/[id]/edit/page.tsx:146:      setIsLoading(false);
+e168964:src/app/admin/products/[id]/edit/page.tsx:186:    e.preventDefault();
+e168964:src/app/admin/products/[id]/edit/page.tsx:397:          isDefault?: boolean;
+e168964:src/app/admin/products/[id]/edit/page.tsx:401:          isDefault?: boolean;
+e168964:src/app/admin/products/[id]/edit/page.tsx:428:            isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/[id]/edit/page.tsx:433:      // Media to update isDefault (product-level)
+e168964:src/app/admin/products/[id]/edit/page.tsx:439:        if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+e168964:src/app/admin/products/[id]/edit/page.tsx:442:            isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/[id]/edit/page.tsx:479:                isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/[id]/edit/page.tsx:484:          // Update isDefault for existing variant media
+e168964:src/app/admin/products/[id]/edit/page.tsx:491:              if (oldMedia && oldMedia.isDefault !== mediaItem.isDefault) {
+e168964:src/app/admin/products/[id]/edit/page.tsx:494:                  isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/[id]/edit/page.tsx:553:      setIsSaving(false);
+e168964:src/app/admin/products/[id]/edit/page.tsx:631:            onSetDefault={productMedia.setDefaultMedia}
+e168964:src/app/admin/products/[id]/edit/page.tsx:635:            onCloseBrowser={() => setShowMediaBrowser(false)}
+e168964:src/app/admin/products/new/page.tsx:19:  fallbackMessage: string
+e168964:src/app/admin/products/new/page.tsx:26:  throw new Error(text || fallbackMessage);
+e168964:src/app/admin/products/new/page.tsx:31:  fallbackMessage: string
+e168964:src/app/admin/products/new/page.tsx:41:  return text || fallbackMessage;
+e168964:src/app/admin/products/new/page.tsx:44:export default function NewProductPage() {
+e168964:src/app/admin/products/new/page.tsx:52:    hasVariants: false,
+e168964:src/app/admin/products/new/page.tsx:53:    isFeatured: false,
+e168964:src/app/admin/products/new/page.tsx:59:  const [isLoading, setIsLoading] = useState(false);
+e168964:src/app/admin/products/new/page.tsx:63:  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+e168964:src/app/admin/products/new/page.tsx:91:    // Stock validation - required only if hasVariants is false
+e168964:src/app/admin/products/new/page.tsx:108:    e.preventDefault();
+e168964:src/app/admin/products/new/page.tsx:200:          isDefault?: boolean;
+e168964:src/app/admin/products/new/page.tsx:204:          isDefault?: boolean;
+e168964:src/app/admin/products/new/page.tsx:215:          isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/new/page.tsx:230:              isDefault: mediaItem.isDefault,
+e168964:src/app/admin/products/new/page.tsx:261:      setIsLoading(false);
+e168964:src/app/admin/products/new/page.tsx:329:            onSetDefault={productMedia.setDefaultMedia}
+e168964:src/app/admin/products/new/page.tsx:333:            onCloseBrowser={() => setShowMediaBrowser(false)}
+e168964:src/app/admin/products/page.tsx:34:interface Product {
+e168964:src/app/admin/products/page.tsx:47:interface ProductsResponse {
+e168964:src/app/admin/products/page.tsx:230:export default function AdminProductsPage() {
+e168964:src/app/admin/products/page.tsx:233:  const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false);
+e168964:src/app/admin/products/page.tsx:243:  const [hasOrderChanges, setHasOrderChanges] = useState(false);
+e168964:src/app/admin/products/page.tsx:244:  const [isSavingOrder, setIsSavingOrder] = useState(false);
+e168964:src/app/admin/products/page.tsx:296:      setIsLoading(false);
+e168964:src/app/admin/products/page.tsx:345:      setHasOrderChanges(false);
+e168964:src/app/admin/products/page.tsx:352:      setIsSavingOrder(false);
+e168964:src/app/admin/products/page.tsx:357:    setHasOrderChanges(false);
+e168964:src/app/admin/products/page.tsx:362:    e.preventDefault();
+e168964:src/app/admin/products/page.tsx:484:          updates: { isActive: false },
+e168964:src/app/admin/products/page.tsx:667:                    نمایش {data.data.length.toLocaleString('fa-IR')} محصول از{' '}
+e168964:src/app/admin/products/page.tsx:668:                    {data.total.toLocaleString('fa-IR')} محصول
+e168964:src/app/admin/products/page.tsx:671:                    صفحه {data.page.toLocaleString('fa-IR')} از{' '}
+e168964:src/app/admin/products/page.tsx:672:                    {data.totalPages.toLocaleString('fa-IR')}
+e168964:src/app/admin/promo-codes/page.tsx:10:interface PromoCode {
+e168964:src/app/admin/promo-codes/page.tsx:27:export default function PromoCodesManagementPage() {
+e168964:src/app/admin/promo-codes/page.tsx:32:  const [showForm, setShowForm] = useState(false);
+e168964:src/app/admin/promo-codes/page.tsx:34:  const [isSaving, setIsSaving] = useState(false);
+e168964:src/app/admin/promo-codes/page.tsx:60:      setIsLoading(false);
+e168964:src/app/admin/promo-codes/page.tsx:69:    e.preventDefault();
+e168964:src/app/admin/promo-codes/page.tsx:110:      setIsSaving(false);
+e168964:src/app/admin/promo-codes/page.tsx:161:    setShowForm(false);
+e168964:src/app/admin/promo-codes/page.tsx:203:    return price.toLocaleString('fa-IR') + ' تومان';
+e168964:src/app/admin/promo-codes/page.tsx:346:                      : 'مبلغ تخفیف (تومان) *'}
+e168964:src/app/admin/promo-codes/page.tsx:405:                    حداقل مبلغ سفارش (تومان)
+e168964:src/app/admin/promo-codes/page.tsx:424:                      سقف تخفیف (تومان)
+e168964:src/app/admin/settings/page.tsx:11:interface SiteSetting {
+e168964:src/app/admin/settings/page.tsx:16:export default function SiteSettingsPage() {
+e168964:src/app/admin/settings/page.tsx:18:    favicon: '',
+e168964:src/app/admin/settings/page.tsx:20:    site_name: 'کیتیا',
+e168964:src/app/admin/settings/page.tsx:27:  const [isSaving, setIsSaving] = useState(false);
+e168964:src/app/admin/settings/page.tsx:30:  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+e168964:src/app/admin/settings/page.tsx:32:    'favicon' | 'logo' | null
+e168964:src/app/admin/settings/page.tsx:46:        favicon: '',
+e168964:src/app/admin/settings/page.tsx:48:        site_name: 'کیتیا',
+e168964:src/app/admin/settings/page.tsx:59:      setIsLoading(false);
+e168964:src/app/admin/settings/page.tsx:87:      setIsSaving(false);
+e168964:src/app/admin/settings/page.tsx:95:        `${currentEditingKey === 'favicon' ? 'فاویکون' : 'لوگو'} با موفقیت انتخاب شد`
+e168964:src/app/admin/settings/page.tsx:100:  const openMediaBrowser = (key: 'favicon' | 'logo') => {
+e168964:src/app/admin/settings/page.tsx:158:              placeholder="کیتیا"
+e168964:src/app/admin/settings/page.tsx:168:              {settings.favicon && (
+e168964:src/app/admin/settings/page.tsx:172:                      src={settings.favicon}
+e168964:src/app/admin/settings/page.tsx:180:                      {settings.favicon}
+e168964:src/app/admin/settings/page.tsx:185:                    onClick={() => setSettings({ ...settings, favicon: '' })}
+e168964:src/app/admin/settings/page.tsx:195:                onClick={() => openMediaBrowser('favicon')}
+e168964:src/app/admin/settings/page.tsx:197:                {settings.favicon ? 'تغییر فاویکون' : 'انتخاب فاویکون از R2'}
+e168964:src/app/admin/settings/page.tsx:269:          setShowMediaBrowser(false);
+e168964:src/app/admin/settings/page.tsx:273:        multiSelect={false}
+e168964:src/app/admin/transactions/page.tsx:12:interface Transaction {
+e168964:src/app/admin/transactions/page.tsx:59:interface TransactionsResponse {
+e168964:src/app/admin/transactions/page.tsx:67:export default function TransactionsManagementPage() {
+e168964:src/app/admin/transactions/page.tsx:78:  const [isModalOpen, setIsModalOpen] = useState(false);
+e168964:src/app/admin/transactions/page.tsx:79:  const [loadingTransaction, setLoadingTransaction] = useState(false);
+e168964:src/app/admin/transactions/page.tsx:103:      setIsLoading(false);
+e168964:src/app/admin/transactions/page.tsx:112:    e.preventDefault();
+e168964:src/app/admin/transactions/page.tsx:138:      setLoadingTransaction(false);
+e168964:src/app/admin/transactions/page.tsx:143:    setIsModalOpen(false);
+e168964:src/app/admin/transactions/page.tsx:310:                  نمایش {data.data.length.toLocaleString('fa-IR')} تراکنش از{' '}
+e168964:src/app/admin/transactions/page.tsx:311:                  {data.total.toLocaleString('fa-IR')} تراکنش
+e168964:src/app/admin/transactions/page.tsx:314:                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
+e168964:src/app/admin/transactions/page.tsx:315:                  {data.totalPages.toLocaleString('fa-IR')}
+e168964:src/app/admin/transactions/page.tsx:356:                          {transaction.items.length.toLocaleString('fa-IR')}{' '}
+e168964:src/app/admin/transactions/page.tsx:369:                                  (×{item.quantity.toLocaleString('fa-IR')})
+e168964:src/app/admin/transactions/page.tsx:377:                                  ).toLocaleString('fa-IR')}{' '}
+e168964:src/app/admin/transactions/page.tsx:476:                صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
+e168964:src/app/admin/transactions/page.tsx:477:                {data.totalPages.toLocaleString('fa-IR')}
+e168964:src/app/admin/users/[id]/page.tsx:13:interface UserDetailPageProps {
+e168964:src/app/admin/users/[id]/page.tsx:17:interface User {
+e168964:src/app/admin/users/[id]/page.tsx:42:export default function UserDetailPage({ params }: UserDetailPageProps) {
+e168964:src/app/admin/users/[id]/page.tsx:67:      setIsLoading(false);
+e168964:src/app/admin/users/[id]/page.tsx:262:                  {user._count.transactions.toLocaleString('fa-IR')}
+e168964:src/app/admin/users/[id]/page.tsx:270:                  {user._count.promoCodes.toLocaleString('fa-IR')}
+e168964:src/app/admin/users/[id]/page.tsx:323:              {user.transactions.length.toLocaleString('fa-IR')})
+e168964:src/app/admin/users/[id]/page.tsx:384:              کدهای تخفیف ({user.promoCodes.length.toLocaleString('fa-IR')})
+e168964:src/app/admin/users/page.tsx:13:interface User {
+e168964:src/app/admin/users/page.tsx:27:interface UsersResponse {
+e168964:src/app/admin/users/page.tsx:35:export default function UsersManagementPage() {
+e168964:src/app/admin/users/page.tsx:62:      setIsLoading(false);
+e168964:src/app/admin/users/page.tsx:71:    e.preventDefault();
+e168964:src/app/admin/users/page.tsx:367:                  نمایش {data.data.length.toLocaleString('fa-IR')} کاربر از{' '}
+e168964:src/app/admin/users/page.tsx:368:                  {data.total.toLocaleString('fa-IR')} کاربر
+e168964:src/app/admin/users/page.tsx:371:                  صفحه {data.page.toLocaleString('fa-IR')} از{' '}
+e168964:src/app/admin/users/page.tsx:372:                  {data.totalPages.toLocaleString('fa-IR')}
+e168964:src/app/admin/users/page.tsx:460:                          {user._count.transactions.toLocaleString('fa-IR')}{' '}
+e168964:src/app/admin/users/page.tsx:507:                صفحه {currentPage.toLocaleString('fa-IR')} از{' '}
+e168964:src/app/admin/users/page.tsx:508:                {data.totalPages.toLocaleString('fa-IR')}
+e168964:src/app/api/admin/categories/bulk/route.ts:11:interface BulkDeleteRequest {
+e168964:src/app/api/admin/categories/bulk/route.ts:15:interface BulkUpdateRequest {
+e168964:src/app/api/admin/categories/bulk/route.ts:39:      default:
+e168964:src/app/api/admin/products/bulk/route.ts:11:interface BulkDeleteRequest {
+e168964:src/app/api/admin/products/bulk/route.ts:15:interface BulkUpdateRequest {
+e168964:src/app/api/admin/products/bulk/route.ts:40:      default:
+e168964:src/app/api/admin/products/route.ts:28:      includeRelations: false, // Admin list view doesn't need relations - major performance boost
+e168964:src/app/api/admin/promo-codes/[id]/route.ts:15:interface RouteParams {
+e168964:src/app/api/admin/promo-codes/[id]/route.ts:186:        { error: 'وضعیت باید true یا false باشد' },
+e168964:src/app/api/admin/r2-browser/route.ts:39:      log.error('R2 browser list failed', { error: result.error, prefix });
+e168964:src/app/api/admin/r2-browser/route.ts:94:      log.error('R2 browser delete failed', { error: result.error, path });
+
+codex
+The commit deletes a module that several app routes still import, which breaks builds for those routes. It also leaves missing font references and creates a visible-price versus SEO-currency mismatch.
+
+Full review comments:
+
+- [P1] Keep persian utility until callers are migrated — /data/dexter/Desktop/supabase-vercel-stack/src/lib/utils/persian.ts:98-98
+  Deleting this module leaves the e168964 tree with unresolved imports from `@/lib/utils/persian` in the login, register, checkout, and profile flows, so TypeScript/Next cannot build those routes. Either update those callers to `@/lib/utils/text` in this commit or keep a compatibility shim exporting the old names.
+
+- [P2] Update active font references before deleting BYekan — /data/dexter/Desktop/supabase-vercel-stack/config/tailwind.config.ts:12-12
+  This changes `config/tailwind.config.ts`, but the app still has the active root `tailwind.config.ts` and `src/app/globals.css` pointing at `B Yekan` and `/fonts/BYekan.ttf`. Since this commit removes that font file, every page still requests a missing font and the intended neutral font stack is not applied; update the active root config/globals or keep the font.
+
+- [P2] Use site currency consistently in product SEO — /data/dexter/Desktop/supabase-vercel-stack/src/lib/utils/format.ts:4-7
+  Visible prices now render with `siteLocale.currency` (USD by default), but product Open Graph metadata and JSON-LD remain hard-coded to IRR/fa-IR in the product page and structured-data helpers. Crawlers and social previews will report a different currency than shoppers whenever the new site currency is used, including the default USD configuration.
+The commit deletes a module that several app routes still import, which breaks builds for those routes. It also leaves missing font references and creates a visible-price versus SEO-currency mismatch.
+
+Full review comments:
+
+- [P1] Keep persian utility until callers are migrated — /data/dexter/Desktop/supabase-vercel-stack/src/lib/utils/persian.ts:98-98
+  Deleting this module leaves the e168964 tree with unresolved imports from `@/lib/utils/persian` in the login, register, checkout, and profile flows, so TypeScript/Next cannot build those routes. Either update those callers to `@/lib/utils/text` in this commit or keep a compatibility shim exporting the old names.
+
+- [P2] Update active font references before deleting BYekan — /data/dexter/Desktop/supabase-vercel-stack/config/tailwind.config.ts:12-12
+  This changes `config/tailwind.config.ts`, but the app still has the active root `tailwind.config.ts` and `src/app/globals.css` pointing at `B Yekan` and `/fonts/BYekan.ttf`. Since this commit removes that font file, every page still requests a missing font and the intended neutral font stack is not applied; update the active root config/globals or keep the font.
+
+- [P2] Use site currency consistently in product SEO — /data/dexter/Desktop/supabase-vercel-stack/src/lib/utils/format.ts:4-7
+  Visible prices now render with `siteLocale.currency` (USD by default), but product Open Graph metadata and JSON-LD remain hard-coded to IRR/fa-IR in the product page and structured-data helpers. Crawlers and social previews will report a different currency than shoppers whenever the new site currency is used, including the default USD configuration.

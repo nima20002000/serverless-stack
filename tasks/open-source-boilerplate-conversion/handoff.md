@@ -318,3 +318,37 @@ Fixes folded into final task005:
 - Fresh migration service-role grants, null-variant wishlist uniqueness, deterministic/no-persistence OTP handling, higher-entropy E2E phone fixtures, fail-closed Supabase/Redis test guards, and local-vs-hosted Supabase key handling.
 
 Current task005 status: commit-reviewed clean. Task006 is now the next task in the sequential commit-based review queue.
+
+## Task006 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task006 only, following the revised commit-based workflow.
+
+Final task006 code commit:
+- `d7d6019` - `task006: add neutral locale and currency foundation`
+
+Review loop:
+- Rounds 1-16 reviewed task006 commits and found valid issues. Each valid finding was fixed into task006, the branch was replayed, and the updated task006 commit was reviewed again.
+- Round 17 reviewed final commit `d7d6019`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task006-round17.txt`.
+- Round 17 result: no discrete regressions introduced by the commit were identified.
+- Full review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task006-round1.txt` through `task006-round17.txt`.
+
+Checks run after final amend:
+- `git diff --check d7d6019^ d7d6019` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `npm run lint -- --quiet` passed on the replayed branch.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run test:unit -- utils/format.test.ts utils/text.test.ts services/user-service.test.ts services/auth-service.test.ts` passed.
+- `npm run build` passed on the replayed branch.
+- Locale/dependency scrub passed with no matches across active task006 paths.
+
+Fixes folded into final task006:
+- Neutral, config-driven language/direction/locale/currency/display-name/time-zone foundation.
+- Shared `Intl` formatting with configured time zone.
+- Stripe/PayPal default currencies aligned to `NEXT_PUBLIC_SITE_CURRENCY` unless provider-specific env vars are set.
+- BYekan/Jalali/Persian-first dependencies and active defaults removed from task006 scope.
+- Neutral text utilities with explicit RTL support, neutral phone default, and validated legacy `09...` compatibility.
+- Task006-era unit and smoke expectations updated to match the new contracts.
+
+Remaining note:
+- Current final-head broad unit run has one task007-owned phone fixture expectation mismatch in `tests/unit/services/user-service-queries.test.ts`; handle it in the task007 commit-based review loop.
+
+Current task006 status: commit-reviewed clean. Task007 is next in the sequential commit-based review queue.
