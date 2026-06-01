@@ -1,47 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <defs>
-    <linearGradient id="cupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#A855F7"/>
-      <stop offset="100%" style="stop-color:#7C3AED"/>
-    </linearGradient>
-    <linearGradient id="liquidGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#E879F9"/>
-      <stop offset="100%" style="stop-color:#C026D3"/>
-    </linearGradient>
-  </defs>
-
-  <!-- Background circle -->
-  <circle cx="50" cy="50" r="48" fill="url(#cupGradient)"/>
-
-  <!-- Tumbler cup body -->
-  <path d="M30 28 L32 78 C32 82 36 85 50 85 C64 85 68 82 68 78 L70 28 Z"
-        fill="white"
-        opacity="0.95"/>
-
-  <!-- Cup tapered shape inner shadow -->
-  <path d="M33 30 L35 76 C35 79 39 82 50 82 C61 82 65 79 65 76 L67 30 Z"
-        fill="white"/>
-
-  <!-- Liquid inside -->
-  <path d="M35 40 L37 74 C37 77 41 79 50 79 C59 79 63 77 63 74 L65 40 C65 42 59 44 50 44 C41 44 35 42 35 40 Z"
-        fill="url(#liquidGradient)"
-        opacity="0.6"/>
-
-  <!-- Liquid surface ellipse -->
-  <ellipse cx="50" cy="40" rx="15" ry="4" fill="url(#liquidGradient)" opacity="0.7"/>
-
-  <!-- Cup rim -->
-  <ellipse cx="50" cy="28" rx="20" ry="5" fill="white" stroke="url(#cupGradient)" stroke-width="2"/>
-
-  <!-- Lid -->
-  <rect x="28" y="18" width="44" height="8" rx="3" fill="white" stroke="url(#cupGradient)" stroke-width="1.5"/>
-
-  <!-- Straw hole -->
-  <ellipse cx="50" cy="22" rx="4" ry="2" fill="url(#cupGradient)"/>
-
-  <!-- Straw -->
-  <rect x="48" y="8" width="4" height="20" rx="2" fill="url(#cupGradient)"/>
-
-  <!-- Shine highlight -->
-  <path d="M38 35 L39 70 Q40 72 41 70 L40 35 Z" fill="white" opacity="0.4"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Supabase Vercel Stack favicon">
+  <rect width="64" height="64" rx="14" fill="#111827"/>
+  <path d="M18 16h28v10H18z" fill="#ffffff"/>
+  <path d="M18 28h28v10H18z" fill="#38bdf8"/>
+  <path d="M18 40h28v10H18z" fill="#22c55e"/>
 </svg>

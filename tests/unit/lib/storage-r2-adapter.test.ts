@@ -48,7 +48,7 @@ describe('R2StorageAdapter', () => {
     process.env.R2_ACCESS_KEY_ID = 'access';
     process.env.R2_SECRET_ACCESS_KEY = 'secret';
     process.env.R2_BUCKET_NAME = 'bucket';
-    process.env.R2_PUBLIC_URL = 'https://cdn.kitia.ir';
+    process.env.R2_PUBLIC_URL = 'https://cdn.example.com';
     vi.resetModules();
   });
 
@@ -58,7 +58,18 @@ describe('R2StorageAdapter', () => {
     const adapter = new R2StorageAdapter();
 
     expect(adapter.getPublicUrl('path/file.jpg')).toBe(
-      'https://cdn.kitia.ir/path/file.jpg'
+      'https://cdn.example.com/path/file.jpg'
+    );
+  });
+
+  it('requires a public URL for renderable media links', async () => {
+    delete process.env.R2_PUBLIC_URL;
+    const { R2StorageAdapter } = await import('@/lib/storage/adapters/r2');
+
+    const adapter = new R2StorageAdapter();
+
+    expect(() => adapter.getPublicUrl('path/file.jpg')).toThrow(
+      'R2_PUBLIC_URL is required for public media URLs'
     );
   });
 
@@ -76,7 +87,7 @@ describe('R2StorageAdapter', () => {
 
     expect(result).toEqual({
       success: true,
-      url: 'https://cdn.kitia.ir/products/img.jpg',
+      url: 'https://cdn.example.com/products/img.jpg',
     });
     expect(putCommandMock).toHaveBeenCalledWith(
       expect.objectContaining({

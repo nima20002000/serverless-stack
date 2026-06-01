@@ -32,12 +32,12 @@ export class R2StorageAdapter implements StorageAdapter {
     const accountId = process.env.R2_ACCOUNT_ID;
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
-    this.bucketName = process.env.R2_BUCKET_NAME || 'kitia-products';
-    this.publicUrl = process.env.R2_PUBLIC_URL || '';
+    this.bucketName = process.env.R2_BUCKET_NAME || '';
+    this.publicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
 
-    if (!accountId || !accessKeyId || !secretAccessKey) {
+    if (!accountId || !accessKeyId || !secretAccessKey || !this.bucketName) {
       throw new Error(
-        'R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY'
+        'R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME'
       );
     }
 
@@ -128,7 +128,7 @@ export class R2StorageAdapter implements StorageAdapter {
       });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'خطا در آپلود فایل',
+        error: error instanceof Error ? error.message : 'File upload failed',
       };
     }
   }
@@ -149,23 +149,23 @@ export class R2StorageAdapter implements StorageAdapter {
       log.error('R2 delete error', { error, path });
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'خطا در حذف فایل',
+        error: error instanceof Error ? error.message : 'File deletion failed',
       };
     }
   }
 
   getPublicUrl(path: string): string {
+    const objectPath = path.replace(/^\/+/, '');
+
     // If custom domain is configured, use it
     if (this.publicUrl) {
-      return `${this.publicUrl}/${path}`;
+      return `${this.publicUrl}/${objectPath}`;
     }
 
-    // Otherwise use R2.dev subdomain (need to enable in Cloudflare dashboard)
-    // Format: https://pub-{hash}.r2.dev/{path}
-    log.warn(
-      'R2_PUBLIC_URL not configured, file may not be publicly accessible'
-    );
-    return `https://${this.bucketName}.r2.dev/${path}`;
+    log.error('R2_PUBLIC_URL is required for public media URLs', {
+      path: objectPath,
+    });
+    throw new Error('R2_PUBLIC_URL is required for public media URLs');
   }
 
   async exists(path: string): Promise<boolean> {
@@ -222,8 +222,7 @@ export class R2StorageAdapter implements StorageAdapter {
       log.error('R2 list error', { error, options });
       return {
         success: false,
-        error:
-          error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
+        error: error instanceof Error ? error.message : 'File listing failed',
       };
     }
   }

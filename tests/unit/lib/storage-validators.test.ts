@@ -23,7 +23,7 @@ describe('storage validators', () => {
 
     expect(result.valid).toBe(false);
     expect(result.error).toBe(
-      'فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM'
+      'Unsupported file type. Allowed types: JPG, PNG, WEBP, GIF, MP4, WEBM'
     );
   });
 
@@ -33,7 +33,7 @@ describe('storage validators', () => {
     const result = validateFile(file);
 
     expect(result.valid).toBe(false);
-    expect(result.error).toBe('حجم فایل نباید بیشتر از 8MB باشد');
+    expect(result.error).toBe('File size must be 8MB or less');
     expect(result.mediaType).toBe('IMAGE');
   });
 

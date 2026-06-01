@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
+  <title id="title">Canvas tote product placeholder</title>
+  <desc id="desc">Neutral product placeholder artwork for a seeded canvas tote.</desc>
+  <rect width="800" height="800" fill="#f8fafc"/>
+  <rect x="196" y="272" width="408" height="348" rx="32" fill="#fde68a" stroke="#92400e" stroke-width="20"/>
+  <path d="M314 290v-38c0-62 38-104 86-104s86 42 86 104v38" fill="none" stroke="#92400e" stroke-width="24" stroke-linecap="round"/>
+  <path d="M284 432h232" stroke="#0f766e" stroke-width="24" stroke-linecap="round"/>
+</svg>

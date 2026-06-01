@@ -103,7 +103,7 @@ export function generateProductSchema(
   const schemaImages =
     images.length > 0
       ? images.map((image) => toAbsoluteUrl(image, baseUrl))
-      : [`${baseUrl}/images/og-default.svg`];
+      : [`${baseUrl}/images/og-default.png`];
 
   const schema = {
     '@context': 'https://schema.org',

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
+  <title id="title">Desk lamp product placeholder</title>
+  <desc id="desc">Neutral product placeholder artwork for a seeded desk lamp.</desc>
+  <rect width="800" height="800" fill="#f8fafc"/>
+  <path d="M286 262h228l-44 146H330z" fill="#38bdf8" stroke="#075985" stroke-width="22" stroke-linejoin="round"/>
+  <path d="M400 408v154" stroke="#075985" stroke-width="24" stroke-linecap="round"/>
+  <path d="M310 608h180" stroke="#075985" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="400" cy="216" r="44" fill="#facc15" stroke="#854d0e" stroke-width="18"/>
+</svg>

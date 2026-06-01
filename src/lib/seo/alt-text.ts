@@ -25,12 +25,11 @@ interface CategoryAltTextOptions {
  * Strategy:
  * - Product images: "{productName} - {variantDetails}"
  * - Include variant details (color, size, material) when available
- * - Add image position for multiple images (e.g., "تصویر 1 از 3")
+ * - Add image position for multiple images (e.g., "Image 1 of 3")
  *
- * Examples:
- * - "لیوان سفری استیل - نقره‌ای، 500 میلی‌لیتر"
- * - "ماگ سرامیکی - رنگ سفید"
- * - "لیوان شیشه‌ای - تصویر 1 از 3"
+ * - "Travel mug - 500 ml stainless steel"
+ * - "Ceramic mug - White"
+ * - "products - Image 1 of 3"
  */
 export function generateProductAltText(options: ProductAltTextOptions): string {
   const {
@@ -71,7 +70,7 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
 
   // Append variant details if any
   if (variantDetails.length > 0) {
-    altText += ` - ${variantDetails.join('، ')}`;
+    altText += ` - ${variantDetails.join(' ')}`;
   }
 
   // Add image position for galleries (only if there are multiple images)
@@ -80,7 +79,7 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
     totalImages !== undefined &&
     totalImages > 1
   ) {
-    altText += ` - تصویر ${imageIndex + 1} از ${totalImages}`;
+    altText += ` - Image ${imageIndex + 1} of ${totalImages}`;
   }
 
   return altText;
@@ -89,15 +88,15 @@ export function generateProductAltText(options: ProductAltTextOptions): string {
 /**
  * Generate SEO-optimized alt text for category images
  *
- * Strategy: "دسته‌بندی {categoryName}"
+ * Strategy: "Category {categoryName}"
  *
- * Example: "دسته‌بندی لیوان‌های سفری"
+ * Example: "Category products"
  */
 export function generateCategoryAltText(
   options: CategoryAltTextOptions
 ): string {
   const { categoryName } = options;
-  return `دسته‌بندی ${categoryName}`;
+  return `Category ${categoryName}`;
 }
 
 /**

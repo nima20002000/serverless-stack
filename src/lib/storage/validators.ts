@@ -26,7 +26,7 @@ export function validateFile(file: File): FileValidation {
     return {
       valid: false,
       error:
-        'فرمت فایل مجاز نیست. فرمت‌های مجاز: JPG, PNG, WEBP, GIF, MP4, WEBM',
+        'Unsupported file type. Allowed types: JPG, PNG, WEBP, GIF, MP4, WEBM',
     };
   }
 
@@ -37,7 +37,7 @@ export function validateFile(file: File): FileValidation {
     const maxSizeMB = maxSize / (1024 * 1024);
     return {
       valid: false,
-      error: `حجم فایل نباید بیشتر از ${maxSizeMB}MB باشد`,
+      error: `File size must be ${maxSizeMB}MB or less`,
       mediaType,
     };
   }
