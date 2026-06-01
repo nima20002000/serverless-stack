@@ -236,6 +236,27 @@ Fixes folded into final task003:
 
 Current task003 status: commit-reviewed clean. Task004 is now the next task in the sequential commit-based review queue.
 
+## Task004 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task004 only, following the revised commit-based review workflow.
+
+Final task004 commit:
+- `86aa77c` - `task004: harden Stripe and PayPal payments`
+
+Review loop:
+- Round 1 reviewed commit `86aa77c`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task004-round1.txt`.
+- Round 1 result: no actionable regressions identified in payment provider normalization, Stripe/PayPal webhook verification, PayPal capture flow, or transaction status update changes.
+
+Checks run:
+- `npm run verify` passed.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=anon NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=anon SUPABASE_SERVICE_ROLE_KEY=service SUPABASE_SECRET_KEY=service NEXTAUTH_SECRET=test NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 STRIPE_SECRET_KEY=sk_test STRIPE_WEBHOOK_SECRET=whsec_test PAYPAL_CLIENT_ID=test PAYPAL_CLIENT_SECRET=test PAYPAL_WEBHOOK_ID=webhook npm --prefix tests run test:unit -- api/transactions/webhook-stripe.test.ts api/transactions/webhook-paypal.test.ts api/transactions/paypal-capture.test.ts api/transactions/create-status.test.ts services/transaction-service.test.ts` passed: 5 files / 35 tests.
+- Nested review ran `npm run lint -- --quiet`, `npm run build`, and `git diff --check 86aa77c^ 86aa77c`; those passed during review.
+
+Current task004 status: commit-reviewed clean. Task005 is now the next task in the sequential commit-based review queue.
+
+Remaining environment note:
+- Live payment integration verification with `npm run test:integration -- payment-verification` still requires a reachable local/test Supabase database and a real-format Supabase secret key.
+
 ## Task003-005 Finalization - Worker K - 2026-06-01
 
 Scope: finalized tasks003, task004, and task005 only. No locale/UI/admin/release areas were intentionally edited except direct transaction/payment test helpers impacted by the neutral transaction-code prefix.
