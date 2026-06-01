@@ -1,7 +1,7 @@
 /**
  * Get the application base URL from environment variables
  * This handles reverse proxy scenarios where req.url might contain internal URLs
- * (e.g., http://localhost:3001 instead of https://kitia.ir)
+ * (e.g., http://localhost:3001 instead of https://example.com)
  */
 export function getAppBaseUrl(): string {
   return (
