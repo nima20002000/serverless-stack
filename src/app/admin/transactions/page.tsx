@@ -63,6 +63,9 @@ interface TransactionsResponse {
   totalPages: number;
 }
 
+const getPaymentProviderLabel = (method: Transaction['paymentMethod']) =>
+  method === 'PAYPAL' ? 'PayPal' : 'Stripe';
+
 export default function TransactionsManagementPage() {
   const [data, setData] = useState<TransactionsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,12 +93,12 @@ export default function TransactionsManagementPage() {
       const response = await fetch(
         `/api/admin/transactions?page=${currentPage}&limit=20${statusParam}${searchParam}${dateFromParam}${dateToParam}`
       );
-      if (!response.ok) throw new Error('خطا در دریافت تراکنش‌ها');
+      if (!response.ok) throw new Error('Unable to load transactions');
       const result = await response.json();
       setData(result);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها'
+        error instanceof Error ? error.message : 'Unable to load transactions'
       );
       setData(null);
     } finally {
@@ -125,13 +128,15 @@ export default function TransactionsManagementPage() {
     try {
       setLoadingTransaction(true);
       const response = await fetch(`/api/admin/transactions/${transactionId}`);
-      if (!response.ok) throw new Error('خطا در دریافت جزئیات تراکنش');
+      if (!response.ok) throw new Error('Unable to load transaction details');
       const transactionData = await response.json();
       setSelectedTransaction(transactionData);
       setIsModalOpen(true);
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : 'خطا در دریافت جزئیات تراکنش'
+        error instanceof Error
+          ? error.message
+          : 'Unable to load transaction details'
       );
     } finally {
       setLoadingTransaction(false);
@@ -152,9 +157,9 @@ export default function TransactionsManagementPage() {
       FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
-      COMPLETED: 'موفق',
-      PENDING: 'در انتظار',
-      FAILED: 'ناموفق',
+      COMPLETED: 'Completed',
+      PENDING: 'Pending',
+      FAILED: 'Failed',
     };
     return (
       <span
@@ -168,13 +173,11 @@ export default function TransactionsManagementPage() {
   };
 
   const getPaymentMethodBadge = (method: string) => {
-    const labels = {
-      STRIPE: 'استرایپ',
-      PAYPAL: 'پی‌پال',
-    };
     return (
       <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
-        {labels[method as keyof typeof labels] || 'UNKNOWN'}
+        {method === 'PAYPAL' || method === 'STRIPE'
+          ? getPaymentProviderLabel(method)
+          : 'Unknown'}
       </span>
     );
   };
@@ -182,23 +185,22 @@ export default function TransactionsManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'مدیریت تراکنش‌ها' }]} />
+      <Breadcrumbs items={[{ label: 'Transactions' }]} />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          مدیریت تراکنش‌ها
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Transactions
         </h1>
-        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
-          مشاهده و مدیریت تراکنش‌های سیستم
+        <p className="text-gray-600 dark:text-slate-400 text-left mt-2">
+          Review Stripe and PayPal orders, payment references, and fulfillment
+          details.
         </p>
       </div>
 
@@ -219,15 +221,15 @@ export default function TransactionsManagementPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو بر اساس کد تراکنش، نام کاربر یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
+              placeholder="Search transaction code, customer name, or email..."
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
             />
             <Button
               type="submit"
               variant="primary"
               className="w-full sm:w-auto order-1 sm:order-2"
             >
-              جستجو
+              Search
             </Button>
           </form>
         </div>
@@ -239,7 +241,7 @@ export default function TransactionsManagementPage() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
               <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap order-1">
-                بازه تاریخ:
+                From:
               </label>
               <input
                 type="date"
@@ -251,7 +253,7 @@ export default function TransactionsManagementPage() {
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 order-2 dark:bg-slate-900 dark:text-slate-100"
               />
               <span className="text-sm text-gray-600 dark:text-slate-400 text-center order-3">
-                تا
+                to
               </span>
               <input
                 type="date"
@@ -270,7 +272,7 @@ export default function TransactionsManagementPage() {
               size="sm"
               className="w-full sm:w-auto"
             >
-              پاک کردن فیلترها
+              Clear filters
             </Button>
           </div>
         </div>
@@ -279,22 +281,22 @@ export default function TransactionsManagementPage() {
       {/* Status Filter */}
       <Card className="mb-6">
         <div className="p-4">
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex items-center gap-2 justify-start">
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
+              className="px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-left dark:text-slate-100"
             >
-              <option value="all">همه</option>
-              <option value="COMPLETED">موفق</option>
-              <option value="PENDING">در انتظار</option>
-              <option value="FAILED">ناموفق</option>
+              <option value="all">All statuses</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="PENDING">Pending</option>
+              <option value="FAILED">Failed</option>
             </select>
             <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
-              وضعیت:
+              Status:
             </label>
           </div>
         </div>
@@ -306,11 +308,11 @@ export default function TransactionsManagementPage() {
             <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  نمایش {formatNumber(data.data.length)} تراکنش از{' '}
-                  {formatNumber(data.total)} تراکنش
+                  Showing {formatNumber(data.data.length)} of{' '}
+                  {formatNumber(data.total)} transactions
                 </div>
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  صفحه {formatNumber(data.page)} از{' '}
+                  Page {formatNumber(data.page)} of{' '}
                   {formatNumber(data.totalPages)}
                 </div>
               </div>
@@ -320,26 +322,26 @@ export default function TransactionsManagementPage() {
               <table className="w-full min-w-[900px]">
                 <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
-                      محصولات
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
+                      Products
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
-                      درگاه
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
+                      Provider
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      وضعیت
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Status
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
-                      تاریخ
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
+                      Date
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      مبلغ
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Amount
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      کاربر
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      User
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      کد تراکنش
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Transaction code
                     </th>
                   </tr>
                 </thead>
@@ -350,9 +352,9 @@ export default function TransactionsManagementPage() {
                       className="hover:bg-gray-50 dark:hover:bg-slate-900/60 cursor-pointer transition-colors"
                       onClick={() => handleTransactionClick(transaction.id)}
                     >
-                      <td className="px-4 py-3 text-right hidden lg:table-cell">
+                      <td className="px-4 py-3 text-left hidden lg:table-cell">
                         <div className="text-sm text-gray-600 dark:text-slate-400">
-                          {formatNumber(transaction.items.length)} محصول
+                          {formatNumber(transaction.items.length)} Product
                           {transaction.items.length > 0 && (
                             <div className="text-xs text-gray-500 dark:text-slate-500 mt-1">
                               {transaction.items.slice(0, 2).map((item) => (
@@ -364,32 +366,33 @@ export default function TransactionsManagementPage() {
                                       ({item.variant.name})
                                     </span>
                                   )}{' '}
-                                  (×{formatNumber(item.quantity)})
+                                  (x{formatNumber(item.quantity)})
                                 </div>
                               ))}
                               {transaction.items.length > 2 && (
                                 <div>
-                                  و {formatNumber(transaction.items.length - 2)}{' '}
-                                  مورد دیگر...
+                                  and{' '}
+                                  {formatNumber(transaction.items.length - 2)}
+                                  more...
                                 </div>
                               )}
                             </div>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right hidden md:table-cell">
+                      <td className="px-4 py-3 text-left hidden md:table-cell">
                         {getPaymentMethodBadge(transaction.paymentMethod)}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-left">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">
+                      <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">
                         {formatDateTime(transaction.createdAt)}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className="px-4 py-3 text-left font-medium">
                         {formatPrice(Number(transaction.amount))}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-left">
                         <div className="text-sm">
                           <div className="font-medium text-gray-900 dark:text-slate-100 flex items-center gap-2">
                             <span>
@@ -399,7 +402,7 @@ export default function TransactionsManagementPage() {
                             </span>
                             {transaction.isGuest && (
                               <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-300 rounded">
-                                مهمان
+                                Guest
                               </span>
                             )}
                           </div>
@@ -410,7 +413,7 @@ export default function TransactionsManagementPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-left">
                         <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                           {transaction.transactionCode}
                         </code>
@@ -437,7 +440,7 @@ export default function TransactionsManagementPage() {
                         )}
                         {transaction.invoice && (
                           <div className="text-xs text-green-600 dark:text-emerald-300 mt-1">
-                            فاکتور: {transaction.invoice.invoiceNumber}
+                            Invoice: {transaction.invoice.invoiceNumber}
                           </div>
                         )}
                       </td>
@@ -448,7 +451,7 @@ export default function TransactionsManagementPage() {
 
               {data.data.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-                  هیچ تراکنشی یافت نشد
+                  No transactions found.
                 </div>
               )}
             </div>
@@ -462,10 +465,10 @@ export default function TransactionsManagementPage() {
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                قبلی
+                Previous
               </Button>
               <span className="text-sm text-gray-600 dark:text-slate-400">
-                صفحه {formatNumber(currentPage)} از{' '}
+                Page {formatNumber(currentPage)} of{' '}
                 {formatNumber(data.totalPages)}
               </span>
               <Button
@@ -475,7 +478,7 @@ export default function TransactionsManagementPage() {
                 }
                 disabled={currentPage === data.totalPages}
               >
-                بعدی
+                Next
               </Button>
             </div>
           )}
@@ -494,7 +497,7 @@ export default function TransactionsManagementPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-slate-950/70">
           <div className="bg-white dark:bg-slate-900 rounded-lg p-6 shadow-xl dark:shadow-none">
             <div className="text-gray-600 dark:text-slate-400">
-              در حال بارگذاری جزئیات...
+              Loading details...
             </div>
           </div>
         </div>

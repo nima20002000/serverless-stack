@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get query params
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     log.error('Error fetching transactions', { error });
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت تراکنش‌ها';
+      error instanceof Error ? error.message : 'Unable to load transactions';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

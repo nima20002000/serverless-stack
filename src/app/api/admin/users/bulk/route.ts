@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -39,14 +39,14 @@ export async function POST(req: NextRequest) {
         );
       default:
         return NextResponse.json(
-          { error: 'عملیات نامعتبر است' },
+          { error: 'Invalid bulk action' },
           { status: 400 }
         );
     }
   } catch (error) {
     console.error('Error in bulk operation:', error);
     return NextResponse.json(
-      { error: 'خطا در انجام عملیات گروهی' },
+      { error: 'Unable to complete bulk operation' },
       { status: 500 }
     );
   }
@@ -59,7 +59,7 @@ async function handleBulkDelete(
 
   if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
     return NextResponse.json(
-      { error: 'شناسه کاربران نامعتبر است' },
+      { error: 'User IDs are required' },
       { status: 400 }
     );
   }
@@ -70,20 +70,19 @@ async function handleBulkDelete(
     if (result.count === 0) {
       return NextResponse.json(
         {
-          error:
-            'هیچ کاربری برای حذف یافت نشد (فقط کاربران عادی قابل حذف هستند)',
+          error: 'No users were found to delete',
         },
         { status: 400 }
       );
     }
 
     return NextResponse.json({
-      message: `${result.count} کاربر با موفقیت حذف شد`,
+      message: `${result.count} users deleted successfully`,
       count: result.count,
     });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در حذف کاربران';
+      error instanceof Error ? error.message : 'Unable to delete users';
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
@@ -96,14 +95,14 @@ async function handleBulkUpdate(
 
   if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
     return NextResponse.json(
-      { error: 'شناسه کاربران نامعتبر است' },
+      { error: 'User IDs are required' },
       { status: 400 }
     );
   }
 
   if (!updates || Object.keys(updates).length === 0) {
     return NextResponse.json(
-      { error: 'داده‌های به‌روزرسانی نامعتبر است' },
+      { error: 'Invalid update action' },
       { status: 400 }
     );
   }
@@ -111,7 +110,7 @@ async function handleBulkUpdate(
   if (updates.role === 'USER') {
     if (userIds.includes(adminUserId)) {
       return NextResponse.json(
-        { error: 'نمی‌توانید نقش خود را تغییر دهید' },
+        { error: 'You cannot change your own role' },
         { status: 403 }
       );
     }
@@ -125,14 +124,14 @@ async function handleBulkUpdate(
 
     if (error) {
       return NextResponse.json(
-        { error: 'خطا در بررسی نقش کاربران' },
+        { error: 'Unable to update users' },
         { status: 500 }
       );
     }
 
     if (adminTargets && adminTargets.length > 0) {
       return NextResponse.json(
-        { error: 'امکان تغییر نقش مدیران به کاربر وجود ندارد' },
+        { error: 'Admin roles cannot be changed in bulk' },
         { status: 403 }
       );
     }
@@ -142,12 +141,12 @@ async function handleBulkUpdate(
     const result = await bulkUpdateUsers(userIds, updates);
 
     return NextResponse.json({
-      message: `${result.count} کاربر با موفقیت به‌روزرسانی شد`,
+      message: `${result.count} users updated successfully`,
       count: result.count,
     });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در بروزرسانی کاربران';
+      error instanceof Error ? error.message : 'Unable to update users';
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

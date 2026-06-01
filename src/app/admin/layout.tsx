@@ -31,7 +31,7 @@ export default function AdminLayout({
   if (!isE2E && status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100">
-        <div className="text-slate-400">در حال بارگذاری...</div>
+        <div className="text-slate-400">Loading...</div>
       </div>
     );
   }
@@ -49,14 +49,14 @@ export default function AdminLayout({
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
             <div className="text-xs sm:text-sm order-2 sm:order-1">
-              <span className="opacity-90">نقش: </span>
-              <span className="font-medium">مدیر سیستم</span>
+              <span className="opacity-90">Workspace: </span>
+              <span className="font-medium">Admin console</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm order-1 sm:order-2">
               <div>
-                <span className="opacity-90">خوش آمدید، </span>
+                <span className="opacity-90">Signed in as </span>
                 <span className="font-medium truncate max-w-[150px] sm:max-w-none inline-block">
-                  {session?.user?.name || session?.user?.email || 'مدیر سیستم'}
+                  {session?.user?.name || session?.user?.email || 'Admin'}
                 </span>
               </div>
             </div>

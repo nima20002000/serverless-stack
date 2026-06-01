@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت کدهای تخفیف',
+          error instanceof Error ? error.message : 'Unable to load promo codes',
       },
       { status: 500 }
     );
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -64,7 +64,10 @@ export async function POST(request: NextRequest) {
       !body.expiresAt
     ) {
       return NextResponse.json(
-        { error: 'لطفاً تمام فیلدهای ضروری را پر کنید' },
+        {
+          error:
+            'Code, discount type, discount value, and expiration date are required',
+        },
         { status: 400 }
       );
     }
@@ -72,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Validate discount type
     if (!['PERCENT', 'FIXED'].includes(body.discountType)) {
       return NextResponse.json(
-        { error: 'نوع تخفیف نامعتبر است' },
+        { error: 'Discount type is invalid' },
         { status: 400 }
       );
     }
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
     const discountValue = parseFloat(body.discountValue);
     if (isNaN(discountValue) || discountValue <= 0) {
       return NextResponse.json(
-        { error: 'مقدار تخفیف باید عددی مثبت باشد' },
+        { error: 'Discount percent must be at least 1' },
         { status: 400 }
       );
     }
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
     // For percentage, max is 100
     if (body.discountType === 'PERCENT' && discountValue > 100) {
       return NextResponse.json(
-        { error: 'درصد تخفیف نمی‌تواند بیش از ۱۰۰ باشد' },
+        { error: 'Discount percent cannot exceed 100' },
         { status: 400 }
       );
     }
@@ -122,7 +125,10 @@ export async function POST(request: NextRequest) {
     console.error('Error creating promo code:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در ایجاد کد تخفیف',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to create promo code',
       },
       { status: 500 }
     );

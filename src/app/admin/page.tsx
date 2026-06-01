@@ -60,12 +60,14 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/stats');
-      if (!response.ok) throw new Error('خطا در دریافت آمار');
+      if (!response.ok) throw new Error('Unable to load dashboard stats');
       const data = await response.json();
       setStats(data);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : 'خطا در دریافت آمار';
+        error instanceof Error
+          ? error.message
+          : 'Unable to load dashboard stats';
       setError(errorMessage);
       setStats(null);
     } finally {
@@ -82,9 +84,9 @@ export default function AdminDashboard() {
       FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
-      COMPLETED: 'موفق',
-      PENDING: 'در انتظار',
-      FAILED: 'ناموفق',
+      COMPLETED: 'Completed',
+      PENDING: 'Pending',
+      FAILED: 'Failed',
     };
     return (
       <span
@@ -100,9 +102,7 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
@@ -120,58 +120,58 @@ export default function AdminDashboard() {
   return (
     <div>
       <div className="mb-4 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          داشبورد مدیریت
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Dashboard
         </h1>
-        <p className="text-sm sm:text-base text-gray-600 dark:text-slate-400 text-right mt-1 sm:mt-2">
-          خلاصه آمار و فعالیت‌های سیستم
+        <p className="text-sm sm:text-base text-gray-600 dark:text-slate-400 text-left mt-1 sm:mt-2">
+          Monitor store activity, catalog health, and recent orders.
         </p>
       </div>
 
       {/* Quick Navigation Cards - Mobile First */}
       <div className="mb-6 sm:mb-8">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
-          دسترسی سریع
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+          Quick actions
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <NavigationCard
-            title="محصولات"
-            description="مدیریت محصولات، افزودن و ویرایش"
+            title="Products"
+            description="Add, edit, and organize catalog items."
             href="/admin/products"
             icon={<ShoppingBagIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="blue"
           />
           <NavigationCard
-            title="کاربران"
-            description="مشاهده و مدیریت کاربران سیستم"
+            title="Users"
+            description="Review customers and manage admin access."
             href="/admin/users"
             icon={<UsersIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="green"
           />
           <NavigationCard
-            title="تراکنش‌ها"
-            description="مشاهده و پیگیری تراکنش‌های مالی"
+            title="Transactions"
+            description="Track Stripe and PayPal orders."
             href="/admin/transactions"
             icon={<CreditCardIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="purple"
           />
           <NavigationCard
-            title="دسته‌بندی‌ها"
-            description="مدیریت دسته‌بندی محصولات"
+            title="Categories"
+            description="Organize products into storefront groups."
             href="/admin/categories"
             icon={<FolderIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="orange"
           />
           <NavigationCard
-            title="تنظیمات سایت"
-            description="تنظیمات عمومی و پیکربندی"
+            title="Site settings"
+            description="Manage logo, favicon, and site identity."
             href="/admin/settings"
             icon={<Cog6ToothIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="indigo"
           />
           <NavigationCard
-            title="کدهای تخفیف"
-            description="ایجاد و مدیریت کدهای تخفیف"
+            title="Promo codes"
+            description="Create and manage checkout discounts."
             href="/admin/promo-codes"
             icon={<TicketIcon className="w-5 h-5 sm:w-6 sm:h-6" />}
             color="purple"
@@ -181,33 +181,33 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="mb-4 sm:mb-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
-          آمار کلی
+        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+          Store overview
         </h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
-          title="کل کاربران"
+          title="Total users"
           value={formatNumber(stats.users.total)}
-          subtitle={`${formatNumber(stats.users.new)} کاربر جدید این ماه`}
+          subtitle={`${formatNumber(stats.users.new)} new this month`}
           icon={<UsersIcon className="w-6 h-6" />}
         />
         <StatsCard
-          title="محصولات"
+          title="Products"
           value={formatNumber(stats.products.total)}
-          subtitle={`${formatNumber(stats.products.active)} محصول فعال`}
+          subtitle={`${formatNumber(stats.products.active)} Product Active`}
           icon={<ShoppingBagIcon className="w-6 h-6" />}
         />
         <StatsCard
-          title="کل تراکنش‌ها"
+          title="Total transactions"
           value={formatNumber(stats.transactions.total)}
-          subtitle={`${formatNumber(stats.transactions.completed)} موفق، ${formatNumber(stats.transactions.failed)} ناموفق`}
+          subtitle={`${formatNumber(stats.transactions.completed)} completed, ${formatNumber(stats.transactions.failed)} failed`}
           icon={<CreditCardIcon className="w-6 h-6" />}
         />
         <StatsCard
-          title="درآمد کل"
+          title="Revenue"
           value={formatPrice(stats.revenue.total)}
-          subtitle={`${formatPrice(stats.revenue.thisMonth)} این ماه`}
+          subtitle={`${formatPrice(stats.revenue.thisMonth)} this month`}
           icon={<BanknotesIcon className="w-6 h-6" />}
         />
       </div>
@@ -215,15 +215,15 @@ export default function AdminDashboard() {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatsCard
-          title="تراکنش‌های در انتظار"
+          title="Pending transactions"
           value={formatNumber(stats.transactions.pending)}
         />
         <StatsCard
-          title="تراکنش‌های موفق"
+          title="Completed transactions"
           value={formatNumber(stats.transactions.completed)}
         />
         <StatsCard
-          title="تراکنش‌های ناموفق"
+          title="Failed transactions"
           value={formatNumber(stats.transactions.failed)}
         />
       </div>
@@ -231,32 +231,32 @@ export default function AdminDashboard() {
       {/* Recent Transactions */}
       <Card padding="sm">
         <div className="sm:p-2">
-          <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
-            آخرین تراکنش‌ها
+          <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Recent transactions
           </h2>
           {stats.recentTransactions.length === 0 ? (
             <div className="text-center py-6 sm:py-8 text-sm sm:text-base text-gray-500 dark:text-slate-500">
-              هیچ تراکنشی وجود ندارد
+              No transactions found.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[600px]">
                 <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      وضعیت
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Status
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      تاریخ
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Date
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      مبلغ
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Amount
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
-                      کاربر
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
+                      User
                     </th>
-                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      کد تراکنش
+                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Transaction code
                     </th>
                   </tr>
                 </thead>
@@ -266,16 +266,16 @@ export default function AdminDashboard() {
                       key={transaction.id}
                       className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
                     >
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-left">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
                         {formatDateTime(transaction.createdAt)}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-medium whitespace-nowrap">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium whitespace-nowrap">
                         {formatPrice(Number(transaction.amount))}
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right hidden sm:table-cell">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-left hidden sm:table-cell">
                         <div className="text-xs sm:text-sm">
                           <div className="font-medium text-gray-900 dark:text-slate-100">
                             {transaction.user.name}
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-right">
+                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-left">
                         <code className="text-[10px] sm:text-xs bg-gray-100 dark:bg-slate-800 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded break-all">
                           {transaction.transactionCode}
                         </code>

@@ -24,37 +24,37 @@ export function ProductTableRowSkeleton() {
       </td>
 
       {/* Actions */}
-      <td className="px-2 sm:px-4 py-3 text-right">
-        <div className="flex gap-1 sm:gap-2 justify-end">
+      <td className="px-2 sm:px-4 py-3 text-left">
+        <div className="flex gap-1 sm:gap-2 justify-start">
           <Skeleton variant="rectangular" className="h-8 w-16 sm:w-20" />
           <Skeleton variant="rectangular" className="h-8 w-12 sm:w-16" />
         </div>
       </td>
 
       {/* Status */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <Skeleton variant="rectangular" className="h-6 w-16 rounded-full" />
       </td>
 
       {/* Features */}
-      <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
-        <div className="flex gap-1 justify-end">
+      <td className="px-2 sm:px-4 py-3 text-left hidden md:table-cell">
+        <div className="flex gap-1 justify-start">
           <Skeleton variant="rectangular" className="h-6 w-12" />
         </div>
       </td>
 
       {/* Stock */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <Skeleton variant="text" className="h-5 w-8" />
       </td>
 
       {/* Price */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <Skeleton variant="text" className="h-5 w-24" />
       </td>
 
       {/* Name */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <Skeleton variant="text" className="h-5 w-32" />
       </td>
     </tr>
@@ -89,23 +89,23 @@ export default function ProductTableSkeleton({ rows = 10 }: { rows?: number }) {
                 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded"
               />
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-              عملیات
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+              Actions
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-              وضعیت
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+              Status
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
-              ویژگی‌ها
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
+              Flags
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-              موجودی
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+              Stock
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-              قیمت
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+              Price
             </th>
-            <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-              نام محصول
+            <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+              Product name
             </th>
           </tr>
         </thead>

@@ -69,6 +69,9 @@ interface TransactionDetailModalProps {
   transaction: Transaction | null;
 }
 
+const getPaymentProviderLabel = (method: Transaction['paymentMethod']) =>
+  method === 'PAYPAL' ? 'PayPal' : 'Stripe';
+
 export default function TransactionDetailModal({
   isOpen,
   onClose,
@@ -106,9 +109,9 @@ export default function TransactionDetailModal({
       FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
-      COMPLETED: 'موفق',
-      PENDING: 'در انتظار',
-      FAILED: 'ناموفق',
+      COMPLETED: 'Completed',
+      PENDING: 'Pending',
+      FAILED: 'Failed',
     };
     return (
       <span
@@ -121,13 +124,8 @@ export default function TransactionDetailModal({
     );
   };
 
-  const getPaymentMethodLabel = (method: string) => {
-    const labels = {
-      STRIPE: 'استرایپ',
-      PAYPAL: 'پی‌پال',
-    };
-    return labels[method as keyof typeof labels] || 'UNKNOWN';
-  };
+  const getPaymentMethodLabel = (method: Transaction['paymentMethod']) =>
+    getPaymentProviderLabel(method);
 
   const copyToClipboard = async (value: string, field: string) => {
     try {
@@ -148,7 +146,12 @@ export default function TransactionDetailModal({
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="جزئیات تراکنش" size="2xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Transaction details"
+      size="2xl"
+    >
       <div className="space-y-6">
         {/* Transaction Status Header */}
         <div className="flex items-center justify-between bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
@@ -156,14 +159,14 @@ export default function TransactionDetailModal({
             {getStatusIcon(transaction.status)}
             <div>
               <div className="text-sm text-gray-600 dark:text-slate-400">
-                وضعیت تراکنش
+                Transaction status
               </div>
               <div className="mt-1">{getStatusBadge(transaction.status)}</div>
             </div>
           </div>
           <div className="text-left">
             <div className="text-sm text-gray-600 dark:text-slate-400">
-              کد تراکنش
+              Transaction code
             </div>
             <code className="text-lg font-bold bg-white dark:bg-slate-800 px-3 py-1 rounded mt-1 inline-block">
               {transaction.transactionCode}
@@ -177,12 +180,12 @@ export default function TransactionDetailModal({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <CreditCardIcon className="w-5 h-5" />
-              اطلاعات پرداخت
+              Payment
             </h3>
             <div className="space-y-3 bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  مبلغ کل:
+                  Amount:
                 </span>
                 <span className="font-bold text-lg">
                   {formatPrice(Number(transaction.amount))}
@@ -190,7 +193,7 @@ export default function TransactionDetailModal({
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  درگاه پرداخت:
+                  Provider:
                 </span>
                 <span className="font-medium">
                   {getPaymentMethodLabel(transaction.paymentMethod)}
@@ -199,7 +202,7 @@ export default function TransactionDetailModal({
               {transaction.paymentProviderRef && (
                 <div className="space-y-2">
                   <span className="text-sm text-gray-600 dark:text-slate-400">
-                    مرجع پرداخت:
+                    Provider reference:
                   </span>
                   <code
                     className="block text-xs bg-white dark:bg-slate-800 px-2 py-1 rounded break-all text-left"
@@ -231,12 +234,12 @@ export default function TransactionDetailModal({
                       }
                       className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
                     >
-                      کپی
+                      Copy
                     </button>
                   </div>
                   {copiedField === 'stripe-intent' && (
                     <span className="text-xs text-emerald-600 dark:text-emerald-300">
-                      شناسه Stripe کپی شد
+                      Stripe ID copied.
                     </span>
                   )}
                 </div>
@@ -263,19 +266,19 @@ export default function TransactionDetailModal({
                       }
                       className="text-xs px-2 py-1 rounded border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800"
                     >
-                      کپی
+                      Copy
                     </button>
                   </div>
                   {copiedField === 'paypal-order' && (
                     <span className="text-xs text-emerald-600 dark:text-emerald-300">
-                      شناسه PayPal کپی شد
+                      PayPal ID copied.
                     </span>
                   )}
                 </div>
               )}
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  تاریخ ایجاد:
+                  Created:
                 </span>
                 <span className="text-sm flex items-center gap-1">
                   <CalendarIcon className="w-4 h-4" />
@@ -283,7 +286,7 @@ export default function TransactionDetailModal({
                     formatDateTime(transaction.createdAt)
                   ) : (
                     <span className="text-gray-400 dark:text-slate-500">
-                      نامشخص
+                      Unknown
                     </span>
                   )}
                 </span>
@@ -295,14 +298,14 @@ export default function TransactionDetailModal({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <UserIcon className="w-5 h-5" />
-              اطلاعات مشتری
+              Customer
             </h3>
             <div className="space-y-3 bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
               <div className="flex items-start gap-2">
                 <UserIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                 <div className="flex-1">
                   <div className="text-sm text-gray-600 dark:text-slate-400">
-                    نام:
+                    Name:
                   </div>
                   <div className="font-medium flex items-center gap-2">
                     {transaction.user
@@ -310,7 +313,7 @@ export default function TransactionDetailModal({
                       : transaction.fullName}
                     {transaction.isGuest && (
                       <span className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-slate-200 rounded">
-                        مهمان
+                        Guest
                       </span>
                     )}
                   </div>
@@ -327,7 +330,7 @@ export default function TransactionDetailModal({
                 <PhoneIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                 <div className="flex-1">
                   <div className="text-sm text-gray-600 dark:text-slate-400">
-                    تلفن:
+                    Phone:
                   </div>
                   <div className="font-medium" dir="ltr">
                     {transaction.phone}
@@ -339,7 +342,7 @@ export default function TransactionDetailModal({
                   <EnvelopeIcon className="w-4 h-4 mt-1 text-gray-500 dark:text-slate-400" />
                   <div className="flex-1">
                     <div className="text-sm text-gray-600 dark:text-slate-400">
-                      ایمیل:
+                      Email:
                     </div>
                     <div className="font-medium text-sm" dir="ltr">
                       {transaction.user?.email || transaction.email}
@@ -349,7 +352,7 @@ export default function TransactionDetailModal({
               )}
               {transaction.createAccount && (
                 <div className="text-xs text-blue-600 dark:text-blue-200 bg-blue-50 dark:bg-blue-900/40 px-2 py-1 rounded">
-                  درخواست ایجاد حساب کاربری
+                  Customer requested account creation.
                 </div>
               )}
             </div>
@@ -360,7 +363,7 @@ export default function TransactionDetailModal({
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <MapPinIcon className="w-5 h-5" />
-            آدرس ارسال
+            Shipping address
           </h3>
           <div className="bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
             <p className="text-sm leading-relaxed">
@@ -369,7 +372,7 @@ export default function TransactionDetailModal({
             {transaction.postalCode && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  کد پستی:
+                  Postal code:
                 </span>
                 <code className="text-sm bg-white dark:bg-slate-800 px-2 py-1 rounded">
                   {transaction.postalCode}
@@ -383,23 +386,23 @@ export default function TransactionDetailModal({
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
             <ShoppingBagIcon className="w-5 h-5" />
-            محصولات ({formatNumber(totalItems)} عدد)
+            Products ({formatNumber(totalItems)} items)
           </h3>
           <div className="border border-gray-200 dark:border-slate-800 rounded-lg overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-slate-900/60">
                 <tr>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                    محصول
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    Product
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                    تعداد
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    Quantity
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                    قیمت واحد
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    Unit price
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                    جمع
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                    Total
                   </th>
                 </tr>
               </thead>
@@ -409,7 +412,7 @@ export default function TransactionDetailModal({
                     key={item.id}
                     className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
                   >
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <div className="font-medium text-gray-900 dark:text-slate-100">
                         {item.product.name}
                       </div>
@@ -417,22 +420,22 @@ export default function TransactionDetailModal({
                         <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                           {item.variant.name}
                           {item.variant.color &&
-                            ` - رنگ: ${item.variant.color}`}
-                          {item.variant.size && ` - سایز: ${item.variant.size}`}
+                            ` - Color: ${item.variant.color}`}
+                          {item.variant.size && ` - Size: ${item.variant.size}`}
                           {item.variant.material &&
-                            ` - جنس: ${item.variant.material}`}
+                            ` - Material: ${item.variant.material}`}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <span className="font-medium">
                         {formatNumber(item.quantity)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       {formatPrice(Number(item.price))}
                     </td>
-                    <td className="px-4 py-3 text-right font-semibold">
+                    <td className="px-4 py-3 text-left font-semibold">
                       {formatPrice(Number(item.price) * item.quantity)}
                     </td>
                   </tr>
@@ -442,11 +445,11 @@ export default function TransactionDetailModal({
                 <tr>
                   <td
                     colSpan={3}
-                    className="px-4 py-3 text-right font-semibold text-gray-900 dark:text-slate-100"
+                    className="px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-100"
                   >
-                    جمع کل:
+                    Total:
                   </td>
-                  <td className="px-4 py-3 text-right font-bold text-lg">
+                  <td className="px-4 py-3 text-left font-bold text-lg">
                     {formatPrice(Number(transaction.amount))}
                   </td>
                 </tr>
@@ -460,13 +463,13 @@ export default function TransactionDetailModal({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 flex items-center gap-2">
               <DocumentTextIcon className="w-5 h-5" />
-              اطلاعات فاکتور
+              Invoice
             </h3>
             <div className="bg-green-50 dark:bg-emerald-900/30 border border-green-200 dark:border-emerald-700/50 p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-gray-600 dark:text-slate-400">
-                    شماره فاکتور:
+                    Invoice number:
                   </div>
                   <div className="font-bold text-lg">
                     {transaction.invoice.invoiceNumber}
@@ -474,14 +477,14 @@ export default function TransactionDetailModal({
                 </div>
                 <div className="text-left">
                   <div className="text-sm text-gray-600 dark:text-slate-400">
-                    تاریخ صدور:
+                    Generated:
                   </div>
                   <div className="text-sm">
                     {transaction.invoice.generatedAt ? (
                       formatDateTime(transaction.invoice.generatedAt)
                     ) : (
                       <span className="text-gray-400 dark:text-slate-500">
-                        نامشخص
+                        Unknown
                       </span>
                     )}
                   </div>

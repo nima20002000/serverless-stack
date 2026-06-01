@@ -95,7 +95,7 @@ function SortableProductRow({
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
-          aria-label="جابجایی محصول"
+          aria-label="Reorder product"
           type="button"
         >
           <svg
@@ -121,15 +121,15 @@ function SortableProductRow({
       </td>
 
       {/* Actions */}
-      <td className="px-2 sm:px-4 py-3 text-right">
-        <div className="flex gap-1 sm:gap-2 justify-end">
+      <td className="px-2 sm:px-4 py-3 text-left">
+        <div className="flex gap-1 sm:gap-2 justify-start">
           <Link href={`/admin/products/${product.id}/edit`}>
             <Button
               variant="secondary"
               size="sm"
               className="text-xs sm:text-sm px-2 sm:px-3"
             >
-              ویرایش
+              Edit
             </Button>
           </Link>
           <Button
@@ -138,13 +138,13 @@ function SortableProductRow({
             className="text-xs sm:text-sm px-2 sm:px-3"
             onClick={() => onDelete(product.id, product.name)}
           >
-            حذف
+            Delete
           </Button>
         </div>
       </td>
 
       {/* Status */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <button
           onClick={() => onToggleActive(product.id, product.isActive)}
           className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium whitespace-nowrap ${
@@ -153,21 +153,21 @@ function SortableProductRow({
               : 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
           }`}
         >
-          {product.isActive ? 'فعال' : 'غیرفعال'}
+          {product.isActive ? 'Active' : 'Inactive'}
         </button>
       </td>
 
       {/* Features */}
-      <td className="px-2 sm:px-4 py-3 text-right hidden md:table-cell">
-        <div className="flex gap-1 justify-end flex-wrap">
+      <td className="px-2 sm:px-4 py-3 text-left hidden md:table-cell">
+        <div className="flex gap-1 justify-start flex-wrap">
           {product.isFeatured && (
             <span className="inline-block bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap">
-              ویژه
+              Featured
             </span>
           )}
           {product.discountPercent && product.discountPercent > 0 && (
             <span className="inline-block bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded whitespace-nowrap">
-              {product.discountPercent}% تخفیف
+              {product.discountPercent}% Discount
             </span>
           )}
           {!product.isFeatured &&
@@ -180,7 +180,7 @@ function SortableProductRow({
       </td>
 
       {/* Stock */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <span
           className={`text-xs sm:text-sm ${
             product.stock === 0
@@ -193,7 +193,7 @@ function SortableProductRow({
       </td>
 
       {/* Price */}
-      <td className="px-2 sm:px-4 py-3 text-right">
+      <td className="px-2 sm:px-4 py-3 text-left">
         <div className="flex flex-col gap-0.5 sm:gap-1">
           {product.discountPercent && product.discountPercent > 0 ? (
             <>
@@ -215,7 +215,7 @@ function SortableProductRow({
       </td>
 
       {/* Name */}
-      <td className="px-2 sm:px-4 py-3 text-right font-medium">
+      <td className="px-2 sm:px-4 py-3 text-left font-medium">
         <Link
           href={`/products/${product.id}`}
           className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline transition-colors text-xs sm:text-sm line-clamp-2"
@@ -286,11 +286,11 @@ export default function AdminProductsPage() {
         `/api/admin/products?page=${currentPage}&perPage=20${searchParam}${statusParam}${stockParam}`
       );
 
-      if (!response.ok) throw new Error('خطا در دریافت محصولات');
+      if (!response.ok) throw new Error('Unable to load products');
       const result = await response.json();
       setData(result);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
       setData(null);
     } finally {
       setIsLoading(false);
@@ -338,7 +338,7 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ productOrders }),
       });
 
-      if (!response.ok) throw new Error('خطا در ذخیره ترتیب محصولات');
+      if (!response.ok) throw new Error('Unable to save product order');
 
       const result = await response.json();
       setSuccessMessage(result.message);
@@ -347,7 +347,7 @@ export default function AdminProductsPage() {
       // Refresh products to get updated displayOrder from server
       await fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     } finally {
       setIsSavingOrder(false);
     }
@@ -372,7 +372,7 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`آیا از حذف محصول "${name}" اطمینان دارید؟`)) {
+    if (!confirm(`Delete product "${name}"?`)) {
       return;
     }
 
@@ -381,12 +381,12 @@ export default function AdminProductsPage() {
         method: 'DELETE',
       });
 
-      if (!response.ok) throw new Error('خطا در حذف محصول');
+      if (!response.ok) throw new Error('Unable to delete product');
 
-      setSuccessMessage('محصول با موفقیت حذف شد');
+      setSuccessMessage('Product deleted.');
       fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -398,12 +398,12 @@ export default function AdminProductsPage() {
         body: JSON.stringify({ isActive: !currentStatus }),
       });
 
-      if (!response.ok) throw new Error('خطا در به‌روزرسانی محصول');
+      if (!response.ok) throw new Error('Unable to update product');
 
-      setSuccessMessage('وضعیت محصول به‌روزرسانی شد');
+      setSuccessMessage('Product updated.');
       fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -439,14 +439,14 @@ export default function AdminProductsPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در حذف محصولات');
+      if (!response.ok) throw new Error('Unable to delete products');
 
       const data = await response.json();
       setSuccessMessage(data.message);
       setSelectedProducts(new Set());
       fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -462,14 +462,14 @@ export default function AdminProductsPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در فعال‌سازی محصولات');
+      if (!response.ok) throw new Error('Unable to activate products');
 
       const data = await response.json();
       setSuccessMessage(data.message);
       setSelectedProducts(new Set());
       fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -485,32 +485,32 @@ export default function AdminProductsPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در غیرفعال‌سازی محصولات');
+      if (!response.ok) throw new Error('Unable to deactivate products');
 
       const data = await response.json();
       setSuccessMessage(data.message);
       setSelectedProducts(new Set());
       fetchProducts();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
   const bulkActions: BulkAction[] = [
     {
-      label: 'حذف',
+      label: 'Delete',
       variant: 'danger',
       onClick: handleBulkDelete,
       requiresConfirmation: true,
-      confirmationMessage: `آیا از حذف ${selectedProducts.size} محصول انتخاب‌شده اطمینان دارید؟`,
+      confirmationMessage: `Delete ${selectedProducts.size} selected product(s)?`,
     },
     {
-      label: 'فعال‌سازی',
+      label: 'Activate',
       variant: 'primary',
       onClick: handleBulkActivate,
     },
     {
-      label: 'غیرفعال‌سازی',
+      label: 'Deactivate',
       variant: 'secondary',
       onClick: handleBulkDeactivate,
     },
@@ -518,7 +518,7 @@ export default function AdminProductsPage() {
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'مدیریت محصولات' }]} />
+      <Breadcrumbs items={[{ label: 'Products' }]} />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
         <div className="flex flex-wrap gap-2 order-2 sm:order-1 w-full sm:w-auto">
@@ -528,7 +528,7 @@ export default function AdminProductsPage() {
               size="sm"
               className="w-full sm:w-auto text-sm"
             >
-              افزودن محصول جدید
+              Add product
             </Button>
           </Link>
           {hasOrderChanges && (
@@ -540,7 +540,7 @@ export default function AdminProductsPage() {
                 disabled={isSavingOrder}
                 className="flex-1 sm:flex-none text-sm"
               >
-                {isSavingOrder ? 'در حال ذخیره...' : 'تأیید ترتیب'}
+                {isSavingOrder ? 'Saving...' : 'Save order'}
               </Button>
               <Button
                 variant="secondary"
@@ -549,13 +549,13 @@ export default function AdminProductsPage() {
                 disabled={isSavingOrder}
                 className="flex-1 sm:flex-none text-sm"
               >
-                لغو
+                Cancel
               </Button>
             </>
           )}
         </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 order-1 sm:order-2">
-          مدیریت محصولات
+          Products
         </h1>
       </div>
 
@@ -585,8 +585,8 @@ export default function AdminProductsPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="جستجو بر اساس نام محصول..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
+            placeholder="Search products by name..."
+            className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
           />
           <Button
             type="submit"
@@ -594,7 +594,7 @@ export default function AdminProductsPage() {
             size="sm"
             className="w-full sm:w-auto order-1 sm:order-2"
           >
-            جستجو
+            Search
           </Button>
         </form>
       </Card>
@@ -611,14 +611,14 @@ export default function AdminProductsPage() {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-left dark:text-slate-100"
               >
-                <option value="all">همه</option>
-                <option value="active">فعال</option>
-                <option value="inactive">غیرفعال</option>
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
               </select>
               <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
-                وضعیت:
+                Status:
               </label>
             </div>
 
@@ -630,14 +630,14 @@ export default function AdminProductsPage() {
                   setStockFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-left dark:text-slate-100"
               >
-                <option value="all">همه</option>
-                <option value="in-stock">موجود</option>
-                <option value="out-of-stock">ناموجود</option>
+                <option value="all">All stock levels</option>
+                <option value="in-stock">In stock</option>
+                <option value="out-of-stock">Out of stock</option>
               </select>
               <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
-                موجودی:
+                Stock:
               </label>
             </div>
           </div>
@@ -648,7 +648,7 @@ export default function AdminProductsPage() {
             size="sm"
             className="w-full sm:w-auto text-sm"
           >
-            پاک کردن فیلترها
+            Clear filters
           </Button>
         </div>
       </Card>
@@ -664,11 +664,11 @@ export default function AdminProductsPage() {
               <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <div className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-                    نمایش {formatNumber(data.data.length)} محصول از{' '}
-                    {formatNumber(data.total)} محصول
+                    Showing {formatNumber(data.data.length)} of{' '}
+                    {formatNumber(data.total)} products
                   </div>
                   <div className="text-xs sm:text-sm text-gray-600 dark:text-slate-400">
-                    صفحه {formatNumber(data.page)} از{' '}
+                    Page {formatNumber(data.page)} of{' '}
                     {formatNumber(data.totalPages)}
                   </div>
                 </div>
@@ -708,23 +708,23 @@ export default function AdminProductsPage() {
                             className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                           />
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          عملیات
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                          Actions
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          وضعیت
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                          Status
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
-                          ویژگی‌ها
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
+                          Flags
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          موجودی
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                          Stock
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          قیمت
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                          Price
                         </th>
-                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
-                          نام محصول
+                        <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 dark:text-slate-100">
+                          Product name
                         </th>
                       </tr>
                     </thead>
@@ -750,7 +750,7 @@ export default function AdminProductsPage() {
 
                 {data.data.length === 0 && (
                   <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-                    هیچ محصولی یافت نشد
+                    No products found.
                   </div>
                 )}
               </div>

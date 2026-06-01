@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get query params
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching users:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت کاربران';
+      error instanceof Error ? error.message : 'Unable to load users';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

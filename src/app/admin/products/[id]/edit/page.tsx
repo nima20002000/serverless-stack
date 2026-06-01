@@ -88,7 +88,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       const response = await fetch(
         `/api/products/${id}?includeRelations=true&includeInactive=true`
       );
-      if (!response.ok) throw new Error('محصول یافت نشد');
+      if (!response.ok) throw new Error('Product not found');
 
       const data = await response.json();
       const product = data.product;
@@ -140,7 +140,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       }
     } catch (error) {
       const errorMsg =
-        error instanceof Error ? error.message : 'خطا در بارگذاری محصول';
+        error instanceof Error ? error.message : 'Unable to load product';
       setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
@@ -156,26 +156,26 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'نام محصول الزامی است';
+      newErrors.name = 'Product name is required';
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'توضیحات محصول الزامی است';
+      newErrors.description = 'Product description is required';
     }
 
     if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = 'قیمت باید بیشتر از صفر باشد';
+      newErrors.price = 'Price must be greater than zero';
     }
 
     if (formData.discountPercent) {
       const discount = parseInt(formData.discountPercent);
       if (discount < 0 || discount > 100) {
-        newErrors.discountPercent = 'تخفیف باید بین 0 تا 100 درصد باشد';
+        newErrors.discountPercent = 'Discount must be between 0 and 100';
       }
     }
 
     if (!formData.stock || parseInt(formData.stock) < 0) {
-      newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+      newErrors.stock = 'Stock must be zero or greater';
     }
 
     setErrors(newErrors);
@@ -220,11 +220,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       const data = await readJsonResponse<{ error?: string }>(
         response,
-        'خطا در به‌روزرسانی محصول'
+        'Unable to update product'
       );
 
       if (!response.ok) {
-        throw new Error(data.error || 'خطا در به‌روزرسانی محصول');
+        throw new Error(data.error || 'Unable to update product');
       }
 
       // Step 2: Fetch existing media and variants in parallel
@@ -238,7 +238,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         throw new Error(
           await readErrorMessage(
             existingMediaResponse,
-            'خطا در دریافت رسانه‌های محصول'
+            'Unable to load product media'
           )
         );
       }
@@ -246,17 +246,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         throw new Error(
           await readErrorMessage(
             existingVariantsResponse,
-            'خطا در دریافت واریانت‌ها'
+            'Unable to load variants'
           )
         );
       }
 
       const existingMediaData = await readJsonResponse<{
         media: MediaItem[];
-      }>(existingMediaResponse, 'خطا در دریافت رسانه‌های محصول');
+      }>(existingMediaResponse, 'Unable to load product media');
       const existingVariantsData = await readJsonResponse<{
         variants?: Variant[];
-      }>(existingVariantsResponse, 'خطا در دریافت واریانت‌ها');
+      }>(existingVariantsResponse, 'Unable to load variants');
 
       const allExistingMedia = existingMediaData.media || [];
       const existingVariantsFromDB = existingVariantsData.variants || [];
@@ -337,7 +337,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           throw new Error(
             await readErrorMessage(
               batchUpdateResponse,
-              'خطا در به‌روزرسانی واریانت‌ها'
+              'Unable to update variants'
             )
           );
         }
@@ -372,10 +372,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         const batchData = await readJsonResponse<{
           error?: string;
           idMapping?: Record<string, string>;
-        }>(batchResponse, 'خطا در ایجاد واریانت‌ها');
+        }>(batchResponse, 'Unable to create variants');
 
         if (!batchResponse.ok) {
-          throw new Error(batchData.error || 'خطا در ایجاد واریانت‌ها');
+          throw new Error(batchData.error || 'Unable to create variants');
         }
 
         // Merge the ID mapping from batch creation
@@ -513,10 +513,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
         if (!batchSyncResponse.ok) {
           throw new Error(
-            await readErrorMessage(
-              batchSyncResponse,
-              'خطا در همگام‌سازی رسانه‌ها'
-            )
+            await readErrorMessage(batchSyncResponse, 'Unable to sync media')
           );
         }
       }
@@ -546,7 +543,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       router.push('/admin/products');
     } catch (error) {
       const errorMsg =
-        error instanceof Error ? error.message : 'خطا در ذخیره محصول';
+        error instanceof Error ? error.message : 'Unable to save product';
       setErrorMessage(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -573,9 +570,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
@@ -584,14 +579,14 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     <div>
       <Breadcrumbs
         items={[
-          { label: 'مدیریت محصولات', href: '/admin/products' },
-          { label: 'ویرایش محصول' },
+          { label: 'Products', href: '/admin/products' },
+          { label: 'Edit Product' },
         ]}
       />
 
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          ویرایش محصول
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Edit Product
         </h1>
       </div>
 
@@ -608,8 +603,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card padding="sm">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
-            اطلاعات پایه
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Basic information
           </h2>
 
           <ProductFormFields
@@ -634,7 +629,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             onOpenBrowser={() => setShowMediaBrowser(true)}
             onCloseBrowser={() => setShowMediaBrowser(false)}
             disabled={isSaving}
-            title="تصاویر و ویدیو محصول"
+            title="Media and Video Product"
           />
         </Card>
 
@@ -660,7 +655,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
         {/* Submit Buttons */}
         <Card padding="sm">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-start">
             <Button
               type="button"
               variant="secondary"
@@ -669,7 +664,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               disabled={isSaving}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              انصراف
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -678,7 +673,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               isLoading={isSaving}
               className="w-full sm:w-auto order-1 sm:order-2"
             >
-              ذخیره تغییرات
+              Save changes
             </Button>
           </div>
         </Card>

@@ -54,13 +54,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/admin/users/${id}`);
-      if (!response.ok) throw new Error('خطا در دریافت اطلاعات کاربر');
+      if (!response.ok) throw new Error('Unable to load user');
       const data = await response.json();
       setUser(data.user);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'خطا در دریافت اطلاعات کاربر'
-      );
+      setError(error instanceof Error ? error.message : 'Unable to load user');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -74,7 +72,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const handleChangeRole = async (newRole: 'USER' | 'ADMIN') => {
     if (
       !confirm(
-        `آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`
+        `Change this user's role to ${newRole === 'ADMIN' ? 'Admin' : 'User'}?`
       )
     ) {
       return;
@@ -87,13 +85,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         body: JSON.stringify({ role: newRole }),
       });
 
-      if (!response.ok) throw new Error('خطا در تغییر نقش کاربر');
+      if (!response.ok) throw new Error('Unable to update user role');
 
-      setSuccessMessage('نقش کاربر با موفقیت تغییر کرد');
+      setSuccessMessage('User role updated.');
       fetchUser();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : 'خطا در تغییر نقش کاربر'
+        error instanceof Error ? error.message : 'Unable to update user role'
       );
     }
   };
@@ -102,9 +100,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     if (!user) return;
 
     if (
-      !confirm(
-        `آیا از حذف کاربر "${user.name}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`
-      )
+      !confirm(`Delete user "${user.name}"?\n\nThis action cannot be undone.`)
     ) {
       return;
     }
@@ -116,13 +112,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف کاربر');
+        throw new Error(errorData.error || 'Unable to delete user');
       }
 
-      setSuccessMessage('کاربر با موفقیت حذف شد');
+      setSuccessMessage('User deleted.');
       setTimeout(() => router.push('/admin/users'), 1500);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'خطا در حذف کاربر');
+      setError(
+        error instanceof Error ? error.message : 'Unable to delete user'
+      );
     }
   };
 
@@ -135,9 +133,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       FAILED: 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
     };
     const labels = {
-      COMPLETED: 'موفق',
-      PENDING: 'در انتظار',
-      FAILED: 'ناموفق',
+      COMPLETED: 'Completed',
+      PENDING: 'Pending',
+      FAILED: 'Failed',
     };
     return (
       <span
@@ -153,9 +151,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
@@ -165,11 +161,11 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       <div>
         <Breadcrumbs
           items={[
-            { label: 'مدیریت کاربران', href: '/admin/users' },
-            { label: 'جزئیات کاربر' },
+            { label: 'Users', href: '/admin/users' },
+            { label: 'User details' },
           ]}
         />
-        <Alert type="error">کاربر یافت نشد</Alert>
+        <Alert type="error">User not found</Alert>
       </div>
     );
   }
@@ -177,15 +173,12 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   return (
     <div>
       <Breadcrumbs
-        items={[
-          { label: 'مدیریت کاربران', href: '/admin/users' },
-          { label: user.name },
-        ]}
+        items={[{ label: 'Users', href: '/admin/users' }, { label: user.name }]}
       />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          جزئیات کاربر
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          User details
         </h1>
       </div>
 
@@ -209,13 +202,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* User Info Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              اطلاعات کاربر
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+              User profile
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-right">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  نام:
+                  Name:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
                   {user.name}
@@ -223,7 +216,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  ایمیل:
+                  Email:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
                   {user.email}
@@ -231,7 +224,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  نقش:
+                  Role:
                 </span>
                 <p>
                   <span
@@ -241,13 +234,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         : 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200'
                     }`}
                   >
-                    {user.role === 'ADMIN' ? 'مدیر' : 'کاربر'}
+                    {user.role === 'ADMIN' ? 'Admin' : 'User'}
                   </span>
                 </p>
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  تاریخ عضویت:
+                  Created:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
                   {formatDateTime(user.createdAt)}
@@ -255,7 +248,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  تعداد تراکنش‌ها:
+                  Quantity Transactions:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
                   {formatNumber(user._count.transactions)}
@@ -263,7 +256,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
               <div>
                 <span className="text-sm text-gray-600 dark:text-slate-400">
-                  تعداد کدهای تخفیف:
+                  Quantity codes Discount:
                 </span>
                 <p className="font-medium text-gray-900 dark:text-slate-100">
                   {formatNumber(user._count.promoCodes)}
@@ -272,12 +265,12 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             </div>
 
             {/* Actions */}
-            <div className="mt-6 flex gap-3 justify-end">
+            <div className="mt-6 flex gap-3 justify-start">
               <Button
                 variant="secondary"
                 onClick={() => router.push('/admin/users')}
               >
-                بازگشت
+                Back
               </Button>
               {!isOwnProfile && (
                 <>
@@ -286,14 +279,14 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                       variant="primary"
                       onClick={() => handleChangeRole('ADMIN')}
                     >
-                      ارتقا به مدیر
+                      Promote to admin
                     </Button>
                   ) : (
                     <Button
                       variant="secondary"
                       onClick={() => handleChangeRole('USER')}
                     >
-                      تنزل به کاربر
+                      Demote to user
                     </Button>
                   )}
                   <Button
@@ -301,13 +294,13 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                     onClick={handleDeleteUser}
                     disabled={user.role === 'ADMIN'}
                   >
-                    حذف کاربر
+                    Delete User
                   </Button>
                 </>
               )}
               {isOwnProfile && (
                 <div className="text-sm text-gray-500 dark:text-slate-400 px-4 py-2 bg-gray-50 dark:bg-slate-900/60 rounded">
-                  نمی‌توانید نقش خود را تغییر دهید یا حساب خود را حذف کنید
+                  You cannot change or delete your own admin account here.
                 </div>
               )}
             </div>
@@ -317,25 +310,25 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* Transactions Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              تراکنش‌های کاربر ({formatNumber(user.transactions.length)})
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+              User transactions ({formatNumber(user.transactions.length)})
             </h2>
             {user.transactions.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        وضعیت
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Status
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        تاریخ
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Date
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        مبلغ
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Amount
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        کد تراکنش
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Transaction code
                       </th>
                     </tr>
                   </thead>
@@ -345,16 +338,16 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         key={transaction.id}
                         className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
                       >
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-left">
                           {getStatusBadge(transaction.status)}
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
+                        <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400">
                           {formatDateTime(transaction.createdAt)}
                         </td>
-                        <td className="px-4 py-3 text-right font-medium">
+                        <td className="px-4 py-3 text-left font-medium">
                           {formatPrice(Number(transaction.amount))}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-left">
                           <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                             {transaction.transactionCode}
                           </code>
@@ -366,7 +359,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-                هیچ تراکنشی وجود ندارد
+                No transactions found.
               </div>
             )}
           </div>
@@ -375,22 +368,22 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         {/* Promo Codes Card */}
         <Card>
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              کدهای تخفیف ({formatNumber(user.promoCodes.length)})
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+              Promo codes ({formatNumber(user.promoCodes.length)})
             </h2>
             {user.promoCodes.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
                     <tr>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        وضعیت
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Status
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        انقضا
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Expires
                       </th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                        کد
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                        Code
                       </th>
                     </tr>
                   </thead>
@@ -400,7 +393,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                         key={promo.id}
                         className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
                       >
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-left">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-medium ${
                               promo.isUsed
@@ -411,16 +404,16 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                             }`}
                           >
                             {promo.isUsed
-                              ? 'استفاده شده'
+                              ? 'Already used'
                               : new Date(promo.expiresAt) < new Date()
-                                ? 'منقضی شده'
-                                : 'فعال'}
+                                ? 'Expired'
+                                : 'Active'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400">
+                        <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400">
                           {formatDateTime(promo.expiresAt)}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-left">
                           <code className="text-sm bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-bold">
                             {promo.code}
                           </code>
@@ -432,7 +425,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-                هیچ کد تخفیفی وجود ندارد
+                No promo codes found.
               </div>
             )}
           </div>

@@ -164,7 +164,7 @@ export async function getAllUsers(
 
     if (error) {
       log.error('Error fetching users', { error });
-      throw new Error('خطا در دریافت کاربران');
+      throw new Error('Unable to load users');
     }
 
     // Batch fetch counts for all users to avoid N+1 queries
@@ -238,7 +238,7 @@ export async function getUserById(id: string): Promise<UserWithDetails> {
 
     if (userError || !user) {
       log.error('User not found', { id, error: userError });
-      throw new Error('کاربر یافت نشد');
+      throw new Error('User not found');
     }
 
     // Get user's transactions with items and products
@@ -304,7 +304,7 @@ export async function updateUserRole(
 
     if (error || !data) {
       log.error('Error updating user role', { id, role, error });
-      throw new Error('خطا در بروزرسانی نقش کاربر');
+      throw new Error('Unable to update user role');
     }
 
     log.info('User role updated', { id, role });
@@ -327,12 +327,12 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
       .single();
 
     if (fetchError || !user) {
-      throw new Error('کاربر یافت نشد');
+      throw new Error('User not found');
     }
 
     // Don't allow deleting admin users (safety measure)
     if (user.role === 'ADMIN') {
-      throw new Error('امکان حذف کاربران مدیر وجود ندارد');
+      throw new Error('Admin users cannot be deleted');
     }
 
     // Delete user (cascade will handle related records)
@@ -343,7 +343,7 @@ export async function deleteUser(id: string): Promise<DeleteResult> {
 
     if (deleteError) {
       log.error('Error deleting user', { id, error: deleteError });
-      throw new Error('خطا در حذف کاربر');
+      throw new Error('Unable to delete user');
     }
 
     log.info('User deleted', { id });
@@ -372,7 +372,7 @@ export async function bulkDeleteUsers(
 
     if (fetchError) {
       log.error('Error fetching users for bulk delete', { error: fetchError });
-      throw new Error('خطا در بررسی کاربران');
+      throw new Error('Unable to load users');
     }
 
     if (!usersToDelete || usersToDelete.length === 0) {
@@ -389,7 +389,7 @@ export async function bulkDeleteUsers(
 
     if (deleteError) {
       log.error('Error in bulk delete users', { error: deleteError });
-      throw new Error('خطا در حذف کاربران');
+      throw new Error('Unable to delete users');
     }
 
     log.info('Users bulk deleted', { count });
@@ -418,7 +418,7 @@ export async function bulkUpdateUsers(
 
     if (error) {
       log.error('Error in bulk update users', { error });
-      throw new Error('خطا در بروزرسانی کاربران');
+      throw new Error('Unable to update users');
     }
 
     const count = data?.length || 0;
@@ -493,7 +493,7 @@ export async function getAllTransactions(
 
     if (error) {
       log.error('Error fetching transactions', { error });
-      throw new Error('خطا در دریافت تراکنش‌ها');
+      throw new Error('Unable to load transactions');
     }
 
     const total = count || 0;
@@ -547,7 +547,7 @@ export async function getTransactionById(
 
     if (error || !data) {
       log.error('Transaction not found', { id, error });
-      throw new Error('تراکنش یافت نشد');
+      throw new Error('Transaction not found');
     }
 
     // Supabase returns invoice as array, get first element
@@ -686,12 +686,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         recentTransactionsResult.data?.map((t) => {
           const userName: string = t.user
             ? (t.user as { name: string | null; email: string | null }).name ||
-              'بدون نام'
-            : t.fullName || 'مهمان';
+              'Unnamed user'
+            : t.fullName || 'Guest';
           const userEmail: string = t.user
             ? (t.user as { name: string | null; email: string | null }).email ||
               ''
-            : t.email || 'مهمان';
+            : t.email || 'Guest';
 
           return {
             id: t.id,
@@ -708,6 +708,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     };
   } catch (error) {
     log.error('Error in getDashboardStats', { error });
-    throw new Error('خطا در دریافت آمار داشبورد');
+    throw new Error('Unable to load dashboard stats');
   }
 }

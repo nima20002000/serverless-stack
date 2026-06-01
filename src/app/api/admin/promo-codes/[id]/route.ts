@@ -25,14 +25,17 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
     const promoCode = await getPromoCodeById(id);
 
     if (!promoCode) {
-      return NextResponse.json({ error: 'کد تخفیف یافت نشد' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Promo code not found' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ promoCode });
@@ -41,7 +44,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت کد تخفیف',
+          error instanceof Error ? error.message : 'Unable to load promo code',
       },
       { status: 500 }
     );
@@ -57,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -69,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       !['PERCENT', 'FIXED'].includes(body.discountType)
     ) {
       return NextResponse.json(
-        { error: 'نوع تخفیف نامعتبر است' },
+        { error: 'Discount type is invalid' },
         { status: 400 }
       );
     }
@@ -79,7 +82,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       const discountValue = parseFloat(body.discountValue);
       if (isNaN(discountValue) || discountValue <= 0) {
         return NextResponse.json(
-          { error: 'مقدار تخفیف باید عددی مثبت باشد' },
+          { error: 'Discount percent must be at least 1' },
           { status: 400 }
         );
       }
@@ -89,7 +92,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         body.discountType || (await getPromoCodeById(id))?.discountType;
       if (discountType === 'PERCENT' && discountValue > 100) {
         return NextResponse.json(
-          { error: 'درصد تخفیف نمی‌تواند بیش از ۱۰۰ باشد' },
+          { error: 'Discount percent cannot exceed 100' },
           { status: 400 }
         );
       }
@@ -129,7 +132,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در بروزرسانی کد تخفیف',
+          error instanceof Error
+            ? error.message
+            : 'Unable to update promo code',
       },
       { status: 500 }
     );
@@ -145,7 +150,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -153,13 +158,16 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      message: 'کد تخفیف با موفقیت حذف شد',
+      message: 'Promo code deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting promo code:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در حذف کد تخفیف',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete promo code',
       },
       { status: 500 }
     );
@@ -175,7 +183,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -183,7 +191,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (typeof body.isActive !== 'boolean') {
       return NextResponse.json(
-        { error: 'وضعیت باید true یا false باشد' },
+        { error: 'isActive must be true or false' },
         { status: 400 }
       );
     }
@@ -201,7 +209,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در تغییر وضعیت کد تخفیف',
+            : 'Unable to update promo code status',
       },
       { status: 500 }
     );

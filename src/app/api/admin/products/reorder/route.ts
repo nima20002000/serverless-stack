@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -24,14 +24,17 @@ export async function POST(req: NextRequest) {
 
     // Validate input
     if (!Array.isArray(productOrders) || productOrders.length === 0) {
-      return NextResponse.json({ error: 'داده‌های نامعتبر' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Product order payload is invalid' },
+        { status: 400 }
+      );
     }
 
     // Validate each order item
     for (const item of productOrders) {
       if (!item.id || typeof item.displayOrder !== 'number') {
         return NextResponse.json(
-          { error: 'فرمت داده‌های نامعتبر' },
+          { error: 'Product order payload is invalid' },
           { status: 400 }
         );
       }
@@ -47,14 +50,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'ترتیب محصولات با موفقیت به‌روزرسانی شد',
+      message: 'Products reordered successfully',
     });
   } catch (error) {
     log.error('Failed to reorder products', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     return NextResponse.json(
-      { error: 'خطا در به‌روزرسانی ترتیب محصولات' },
+      { error: 'Unable to update products' },
       { status: 500 }
     );
   }

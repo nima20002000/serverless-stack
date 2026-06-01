@@ -14,7 +14,7 @@ export async function GET(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const transaction = await getTransactionById(params.id);
@@ -22,7 +22,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching transaction:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت تراکنش';
+      error instanceof Error ? error.message : 'Unable to load transaction';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

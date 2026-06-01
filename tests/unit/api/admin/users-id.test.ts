@@ -173,7 +173,7 @@ describe('admin user detail API', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      error: 'Role is required',
+      error: 'You cannot change your own role',
     });
     expect(updateUserRoleMock).not.toHaveBeenCalled();
   });
@@ -243,7 +243,7 @@ describe('admin user detail API', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      error: 'details Account details Delete text',
+      error: 'You cannot delete your own account',
     });
     expect(deleteUserMock).not.toHaveBeenCalled();
   });

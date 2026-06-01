@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -37,15 +37,12 @@ export async function POST(req: NextRequest) {
       case 'update':
         return await handleBulkUpdate(body as BulkUpdateRequest);
       default:
-        return NextResponse.json(
-          { error: 'عملیات نامعتبر است' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid IDs' }, { status: 400 });
     }
   } catch (error) {
     console.error('Error in bulk operation:', error);
     return NextResponse.json(
-      { error: 'خطا در انجام عملیات گروهی' },
+      { error: 'Unable to complete bulk operation' },
       { status: 500 }
     );
   }
@@ -58,7 +55,7 @@ async function handleBulkDelete(
 
   if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
     return NextResponse.json(
-      { error: 'شناسه دسته‌بندی‌ها نامعتبر است' },
+      { error: 'Category IDs are required' },
       { status: 400 }
     );
   }
@@ -67,12 +64,12 @@ async function handleBulkDelete(
     const result = await bulkDeleteCategories(categoryIds);
 
     return NextResponse.json({
-      message: `${result.count} دسته‌بندی با موفقیت حذف شد`,
+      message: `${result.count} categories deleted successfully`,
       count: result.count,
     });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی‌ها';
+      error instanceof Error ? error.message : 'Unable to delete categories';
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
@@ -84,14 +81,14 @@ async function handleBulkUpdate(
 
   if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
     return NextResponse.json(
-      { error: 'شناسه دسته‌بندی‌ها نامعتبر است' },
+      { error: 'Category IDs are required' },
       { status: 400 }
     );
   }
 
   if (!updates || Object.keys(updates).length === 0) {
     return NextResponse.json(
-      { error: 'داده‌های به‌روزرسانی نامعتبر است' },
+      { error: 'Invalid update action' },
       { status: 400 }
     );
   }
@@ -100,12 +97,12 @@ async function handleBulkUpdate(
     const result = await bulkUpdateCategories(categoryIds, updates);
 
     return NextResponse.json({
-      message: `${result.count} دسته‌بندی با موفقیت به‌روزرسانی شد`,
+      message: `${result.count} Categories updated successfully`,
       count: result.count,
     });
   } catch (error) {
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در بروزرسانی دسته‌بندی‌ها';
+      error instanceof Error ? error.message : 'Unable to update categories';
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

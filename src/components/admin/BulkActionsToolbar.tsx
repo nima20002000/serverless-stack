@@ -34,7 +34,7 @@ export default function BulkActionsToolbar<T = unknown>({
     if (action.requiresConfirmation) {
       const message =
         action.confirmationMessage ||
-        `آیا از انجام این عملیات روی ${selectedCount} مورد انتخاب‌شده اطمینان دارید؟`;
+        `Apply this action to ${selectedCount} selected item(s)?`;
       if (!confirm(message)) {
         return;
       }
@@ -56,7 +56,7 @@ export default function BulkActionsToolbar<T = unknown>({
           <span className="font-semibold text-lg">
             {formatNumber(selectedCount)}
           </span>
-          <span className="text-sm">مورد انتخاب‌شده</span>
+          <span className="text-sm">selected</span>
         </div>
 
         {/* Divider */}
@@ -82,7 +82,7 @@ export default function BulkActionsToolbar<T = unknown>({
         <button
           onClick={onClearSelection}
           className="p-1 hover:bg-blue-500 dark:hover:bg-slate-800 rounded-full transition-colors"
-          aria-label="لغو انتخاب"
+          aria-label="Clear selection"
           disabled={isProcessing}
         >
           <XMarkIcon className="h-5 w-5" />

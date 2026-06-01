@@ -21,7 +21,7 @@ export default function StatsCard({
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between">
-        <div className="flex-1 text-right">
+        <div className="flex-1 text-left">
           <p className="text-sm font-medium text-gray-600 dark:text-slate-400 mb-1">
             {title}
           </p>
@@ -34,7 +34,7 @@ export default function StatsCard({
             </p>
           )}
           {trend && (
-            <div className="flex items-center justify-end gap-1 mt-2">
+            <div className="flex items-center justify-start gap-1 mt-2">
               <span
                 className={`text-sm font-medium ${
                   trend.isPositive
@@ -42,13 +42,13 @@ export default function StatsCard({
                     : 'text-red-600 dark:text-rose-300'
                 }`}
               >
-                {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+                {trend.isPositive ? '+' : '-'} {Math.abs(trend.value)}%
               </span>
             </div>
           )}
         </div>
         {icon && (
-          <div className="flex-shrink-0 mr-4">
+          <div className="flex-shrink-0 ml-4">
             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-200">
               {icon}
             </div>

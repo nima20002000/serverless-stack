@@ -196,7 +196,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(403);
     const body = await response.json();
-    expect(body.error).toContain('Role is required');
+    expect(body.error).toContain('You cannot change your own role');
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
 
@@ -227,7 +227,7 @@ describe('POST /api/admin/users/bulk', () => {
     expect(adminCheckQuery.eq).toHaveBeenCalledWith('role', 'ADMIN');
     expect(response.status).toBe(403);
     const body = await response.json();
-    expect(body.error).toContain('User not found');
+    expect(body.error).toContain('Admin roles cannot be changed in bulk');
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
 

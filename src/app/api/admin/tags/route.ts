@@ -9,7 +9,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const tags = await getAllTags();
@@ -17,7 +17,7 @@ export async function GET() {
   } catch (error) {
     console.error('Get tags error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت برچسب‌ها';
+      error instanceof Error ? error.message : 'Unable to load tags';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     if (!name || !slug) {
       return NextResponse.json(
-        { error: 'نام و نامک (slug) الزامی است' },
+        { error: 'Name and slug are required' },
         { status: 400 }
       );
     }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Create tag error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در ایجاد برچسب';
+      error instanceof Error ? error.message : 'Unable to create tag';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -26,7 +26,7 @@ export async function getAllSettings(): Promise<SiteSetting[]> {
 
     if (error) {
       log.error('Error fetching site settings', { error });
-      throw new Error('خطا در دریافت تنظیمات');
+      throw new Error('Unable to load settings');
     }
 
     return data || [];
@@ -52,7 +52,7 @@ export async function getSetting(key: string): Promise<SiteSetting | null> {
     if (error && error.code !== 'PGRST116') {
       // PGRST116 = no rows returned
       log.error('Error fetching setting', { key, error });
-      throw new Error('خطا در دریافت تنظیم');
+      throw new Error('Unable to load setting');
     }
 
     return data || null;
@@ -89,7 +89,7 @@ export async function updateSettings(
 
         if (error) {
           log.error('Error updating setting', { key, error });
-          throw new Error(`خطا در بروزرسانی تنظیم ${key}`);
+          throw new Error(`Unable to update setting ${key}`);
         }
       } else {
         // Insert new setting
@@ -99,7 +99,7 @@ export async function updateSettings(
 
         if (error) {
           log.error('Error inserting setting', { key, error });
-          throw new Error(`خطا در ایجاد تنظیم ${key}`);
+          throw new Error(`Unable to create setting ${key}`);
         }
       }
     });
@@ -127,7 +127,7 @@ export async function deleteSetting(key: string): Promise<void> {
 
     if (error) {
       log.error('Error deleting setting', { key, error });
-      throw new Error('خطا در حذف تنظیم');
+      throw new Error('Unable to delete setting');
     }
 
     log.info('Setting deleted', { key });

@@ -51,7 +51,7 @@ export default function CategorySelector({
       const response = await fetch('/api/categories?tree=true');
 
       if (!response.ok) {
-        throw new Error('خطا در دریافت دسته‌بندی‌ها');
+        throw new Error('Unable to load categories');
       }
 
       const data = await response.json();
@@ -60,7 +60,7 @@ export default function CategorySelector({
     } catch (err) {
       console.error('Error fetching categories:', err);
       setError(
-        err instanceof Error ? err.message : 'خطا در دریافت دسته‌بندی‌ها'
+        err instanceof Error ? err.message : 'Unable to load categories'
       );
     } finally {
       setLoading(false);
@@ -95,19 +95,18 @@ export default function CategorySelector({
   const selectedCategory = value ? findCategoryById(categories, value) : null;
 
   const generateSlug = (name: string): string => {
-    // Convert Persian/Arabic characters and spaces to URL-friendly format
     return name
       .trim()
       .toLowerCase()
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/[^\w\u0600-\u06FF-]/g, '') // Keep alphanumeric, Persian/Arabic chars, and hyphens
-      .replace(/--+/g, '-') // Replace multiple hyphens with single hyphen
-      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+      .replace(/\s+/g, '-')
+      .replace(/[^\p{Letter}\p{Number}_-]/gu, '')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '');
   };
 
   const handleCreateCategory = async () => {
     if (!createForm.name.trim()) {
-      alert('نام دسته‌بندی الزامی است');
+      alert('Category name is required');
       return;
     }
 
@@ -130,7 +129,7 @@ export default function CategorySelector({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'خطا در ایجاد دسته‌بندی');
+        throw new Error(error.error || 'Unable to create category');
       }
 
       const data = await response.json();
@@ -151,7 +150,7 @@ export default function CategorySelector({
       setIsOpen(false);
     } catch (err) {
       console.error('Error creating category:', err);
-      alert(err instanceof Error ? err.message : 'خطا در ایجاد دسته‌بندی');
+      alert(err instanceof Error ? err.message : 'Unable to create category');
     } finally {
       setIsCreating(false);
     }
@@ -172,7 +171,7 @@ export default function CategorySelector({
             onChange(category.id);
             setIsOpen(false);
           }}
-          className={`w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
+          className={`w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${
             value === category.id
               ? 'bg-blue-50 text-blue-700 font-medium dark:bg-blue-900/40 dark:text-blue-200'
               : 'dark:hover:bg-slate-800 dark:text-slate-200'
@@ -203,7 +202,7 @@ export default function CategorySelector({
     return (
       <div className="relative">
         <div className="w-full p-3 border border-gray-300 dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900 text-gray-500 dark:text-slate-400">
-          در حال بارگذاری دسته‌بندی‌ها...
+          Loading Categories...
         </div>
       </div>
     );
@@ -220,7 +219,7 @@ export default function CategorySelector({
           onClick={fetchCategories}
           className="mt-2 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
         >
-          تلاش مجدد
+          Try again
         </button>
       </div>
     );
@@ -246,7 +245,7 @@ export default function CategorySelector({
               : 'text-gray-500 dark:text-slate-400'
           }
         >
-          {selectedCategory ? selectedCategory.name : 'انتخاب دسته‌بندی'}
+          {selectedCategory ? selectedCategory.name : 'Select category'}
         </span>
         <ChevronDownIcon
           className={`h-5 w-5 text-gray-400 dark:text-slate-500 transition-transform ${
@@ -273,28 +272,28 @@ export default function CategorySelector({
             <button
               type="button"
               onClick={() => setShowCreateForm(!showCreateForm)}
-              className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-300 font-medium border-b border-gray-200 dark:border-slate-800 flex items-center gap-2"
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-300 font-medium border-b border-gray-200 dark:border-slate-800 flex items-center gap-2"
             >
               <PlusIcon className="h-4 w-4" />
-              ایجاد دسته‌بندی جدید
+              Create new category
             </button>
 
             {/* Create Form */}
             {showCreateForm && (
               <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-blue-50 dark:bg-slate-900/60 space-y-3">
                 <Input
-                  label="نام دسته‌بندی"
+                  label="Category name"
                   value={createForm.name}
                   onChange={(e) =>
                     setCreateForm({ ...createForm, name: e.target.value })
                   }
-                  placeholder="مثال: لپ‌تاپ"
+                  placeholder="Example: Apparel"
                   disabled={isCreating}
                 />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    توضیحات (اختیاری)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Description (optional)
                   </label>
                   <textarea
                     value={createForm.description}
@@ -304,16 +303,16 @@ export default function CategorySelector({
                         description: e.target.value,
                       })
                     }
-                    placeholder="توضیحات دسته‌بندی..."
+                    placeholder="Category description..."
                     disabled={isCreating}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    دسته‌بندی والد (اختیاری)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Parent category (optional)
                   </label>
                   <select
                     value={createForm.parentId || ''}
@@ -324,9 +323,9 @@ export default function CategorySelector({
                       })
                     }
                     disabled={isCreating}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-right text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-lg text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:text-slate-100"
                   >
-                    <option value="">بدون والد (دسته اصلی)</option>
+                    <option value="">No parent (top level)</option>
                     {getAllCategories(categories).map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -335,7 +334,7 @@ export default function CategorySelector({
                   </select>
                 </div>
 
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-start">
                   <Button
                     type="button"
                     variant="secondary"
@@ -349,7 +348,7 @@ export default function CategorySelector({
                     }}
                     disabled={isCreating}
                   >
-                    انصراف
+                    Cancel
                   </Button>
                   <Button
                     type="button"
@@ -357,7 +356,7 @@ export default function CategorySelector({
                     onClick={handleCreateCategory}
                     isLoading={isCreating}
                   >
-                    ایجاد دسته‌بندی
+                    Create Category
                   </Button>
                 </div>
               </div>
@@ -370,15 +369,15 @@ export default function CategorySelector({
                 onChange(null);
                 setIsOpen(false);
               }}
-              className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-800"
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-500 dark:text-slate-400 border-b border-gray-200 dark:border-slate-800"
             >
-              بدون دسته‌بندی
+              No category
             </button>
 
             {/* Categories */}
             {categories.length === 0 ? (
               <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
-                هیچ دسته‌بندی‌ای موجود نیست. یکی ایجاد کنید!
+                No categories yet. Create one to continue.
               </div>
             ) : (
               renderCategoryOptions(categories)

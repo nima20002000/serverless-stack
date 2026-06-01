@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (!isE2E) {
       const session = await getServerSession(authOptions);
       if (!session || session.user.role !== 'ADMIN') {
-        return NextResponse.json({ error: 'غیرمجاز' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
 
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     log.error('Error fetching site settings:', { error });
     return NextResponse.json(
-      { error: 'خطا در دریافت تنظیمات' },
+      { error: 'Unable to complete request' },
       { status: 500 }
     );
   }
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     if (!isE2E) {
       const session = await getServerSession(authOptions);
       if (!session || session.user.role !== 'ADMIN') {
-        return NextResponse.json({ error: 'غیرمجاز' }, { status: 403 });
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
       adminEmail = session.user.email || 'admin';
     }
@@ -55,7 +55,10 @@ export async function POST(req: NextRequest) {
     const { settings } = await req.json();
 
     if (!settings || typeof settings !== 'object') {
-      return NextResponse.json({ error: 'داده‌های نامعتبر' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid settings payload' },
+        { status: 400 }
+      );
     }
 
     await updateSettings(settings);
@@ -65,11 +68,11 @@ export async function POST(req: NextRequest) {
       keys: Object.keys(settings),
     });
 
-    return NextResponse.json({ message: 'تنظیمات با موفقیت ذخیره شد' });
+    return NextResponse.json({ message: 'Settings saved successfully' });
   } catch (error) {
     log.error('Error updating site settings:', { error });
     return NextResponse.json(
-      { error: 'خطا در ذخیره تنظیمات' },
+      { error: 'Unable to save settings' },
       { status: 500 }
     );
   }

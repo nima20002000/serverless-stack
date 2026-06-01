@@ -22,12 +22,12 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { name: 'داشبورد', href: '/admin', icon: HomeIcon },
-  { name: 'کاربران', href: '/admin/users', icon: UsersIcon },
-  { name: 'محصولات', href: '/admin/products', icon: ShoppingBagIcon },
-  { name: 'دسته‌بندی‌ها', href: '/admin/categories', icon: FolderIcon },
-  { name: 'تراکنش‌ها', href: '/admin/transactions', icon: CreditCardIcon },
-  { name: 'تنظیمات سایت', href: '/admin/settings', icon: Cog6ToothIcon },
+  { name: 'Dashboard', href: '/admin', icon: HomeIcon },
+  { name: 'Users', href: '/admin/users', icon: UsersIcon },
+  { name: 'Products', href: '/admin/products', icon: ShoppingBagIcon },
+  { name: 'Categories', href: '/admin/categories', icon: FolderIcon },
+  { name: 'Transactions', href: '/admin/transactions', icon: CreditCardIcon },
+  { name: 'Site settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
 export default function AdminSidebar() {
@@ -40,7 +40,7 @@ export default function AdminSidebar() {
       <button
         onClick={() => setIsMobileMenuOpen(true)}
         className="lg:hidden fixed bottom-4 left-4 z-40 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700"
-        aria-label="فهرست منو"
+        aria-label="Open admin menu"
       >
         <Bars3Icon className="w-6 h-6" />
       </button>
@@ -59,28 +59,28 @@ export default function AdminSidebar() {
           w-64 flex-shrink-0
           lg:block
           ${isMobileMenuOpen ? 'block' : 'hidden'}
-          lg:relative fixed inset-y-0 right-0 z-50
+          lg:relative fixed inset-y-0 left-0 z-50
           lg:z-auto
         `}
       >
-        <nav className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-md dark:shadow-none p-4 sticky top-4 lg:top-4 mt-4 lg:mt-0 mr-4 lg:mr-0">
+        <nav className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-md dark:shadow-none p-4 sticky top-4 lg:top-4 mt-4 lg:mt-0 ml-4 lg:ml-0">
           {/* Mobile Close Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 p-1"
-              aria-label="بستن منو"
+              aria-label="Close admin menu"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
             <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100">
-              پنل مدیریت کیتیا
+              Admin panel Commerce Starter
             </h2>
           </div>
 
           {/* Desktop Header */}
-          <h2 className="hidden lg:block text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-            پنل مدیریت کیتیا
+          <h2 className="hidden lg:block text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+            Admin panel Commerce Starter
           </h2>
 
           <ul className="space-y-2">
@@ -93,7 +93,7 @@ export default function AdminSidebar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-right transition-colors ${
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-blue-600 font-medium dark:bg-slate-800 dark:text-slate-100'
                         : item.disabled

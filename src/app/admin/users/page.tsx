@@ -53,11 +53,11 @@ export default function UsersManagementPage() {
       const response = await fetch(
         `/api/admin/users?page=${currentPage}&limit=20${searchParam}${roleParam}`
       );
-      if (!response.ok) throw new Error('خطا در دریافت کاربران');
+      if (!response.ok) throw new Error('Unable to load users');
       const result = await response.json();
       setData(result);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
       setData(null);
     } finally {
       setIsLoading(false);
@@ -86,7 +86,7 @@ export default function UsersManagementPage() {
   ) => {
     if (
       !confirm(
-        `آیا از تغییر نقش این کاربر به ${newRole === 'ADMIN' ? 'مدیر' : 'کاربر'} اطمینان دارید؟`
+        `Change this user's role to ${newRole === 'ADMIN' ? 'Admin' : 'User'}?`
       )
     ) {
       return;
@@ -99,20 +99,18 @@ export default function UsersManagementPage() {
         body: JSON.stringify({ role: newRole }),
       });
 
-      if (!response.ok) throw new Error('خطا در تغییر نقش کاربر');
+      if (!response.ok) throw new Error('Unable to update user role');
 
-      setSuccessMessage('نقش کاربر با موفقیت تغییر کرد');
+      setSuccessMessage('User role updated.');
       fetchUsers();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (
-      !confirm(
-        `آیا از حذف کاربر "${userName}" اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است و تمام اطلاعات کاربر حذف خواهد شد.`
-      )
+      !confirm(`Delete user "${userName}"?\n\nThis action cannot be undone.`)
     ) {
       return;
     }
@@ -124,13 +122,13 @@ export default function UsersManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف کاربر');
+        throw new Error(errorData.error || 'Unable to delete user');
       }
 
-      setSuccessMessage('کاربر با موفقیت حذف شد');
+      setSuccessMessage('User deleted.');
       fetchUsers();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -168,7 +166,7 @@ export default function UsersManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف کاربران');
+        throw new Error(errorData.error || 'Unable to delete users');
       }
 
       const result = await response.json();
@@ -176,7 +174,7 @@ export default function UsersManagementPage() {
       setSelectedUsers(new Set());
       fetchUsers();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -192,14 +190,14 @@ export default function UsersManagementPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در ارتقای کاربران');
+      if (!response.ok) throw new Error('Unable to update users');
 
       const result = await response.json();
       setSuccessMessage(result.message);
       setSelectedUsers(new Set());
       fetchUsers();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -215,32 +213,32 @@ export default function UsersManagementPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در تنزل کاربران');
+      if (!response.ok) throw new Error('Unable to update users');
 
       const result = await response.json();
       setSuccessMessage(result.message);
       setSelectedUsers(new Set());
       fetchUsers();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
   const bulkActions: BulkAction[] = [
     {
-      label: 'حذف',
+      label: 'Delete',
       variant: 'danger',
       onClick: handleBulkDelete,
       requiresConfirmation: true,
-      confirmationMessage: `آیا از حذف ${selectedUsers.size} کاربر انتخاب‌شده اطمینان دارید؟ (فقط کاربران عادی حذف خواهند شد)`,
+      confirmationMessage: `Delete ${selectedUsers.size} selected user(s)? Admin users are skipped.`,
     },
     {
-      label: 'ارتقا به مدیر',
+      label: 'Promote to admin',
       variant: 'primary',
       onClick: handleBulkPromoteToAdmin,
     },
     {
-      label: 'تنزل به کاربر',
+      label: 'Demote to user',
       variant: 'secondary',
       onClick: handleBulkDemoteToUser,
     },
@@ -250,13 +248,13 @@ export default function UsersManagementPage() {
     if (role === 'ADMIN') {
       return (
         <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">
-          مدیر
+          Admin
         </span>
       );
     }
     return (
       <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200">
-        کاربر
+        User
       </span>
     );
   };
@@ -264,23 +262,21 @@ export default function UsersManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'مدیریت کاربران' }]} />
+      <Breadcrumbs items={[{ label: 'Users' }]} />
 
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          مدیریت کاربران
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Users
         </h1>
-        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
-          مشاهده و مدیریت کاربران سیستم
+        <p className="text-gray-600 dark:text-slate-400 text-left mt-2">
+          Review customers, order counts, and admin access.
         </p>
       </div>
 
@@ -311,15 +307,15 @@ export default function UsersManagementPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو بر اساس نام یا ایمیل..."
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
+              placeholder="Search by name or email..."
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left order-2 sm:order-1 dark:bg-slate-900 dark:text-slate-100"
             />
             <Button
               type="submit"
               variant="primary"
               className="w-full sm:w-auto order-1 sm:order-2"
             >
-              جستجو
+              Search
             </Button>
           </form>
         </div>
@@ -336,14 +332,14 @@ export default function UsersManagementPage() {
                   setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-right dark:text-slate-100"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-left dark:text-slate-100"
               >
-                <option value="all">همه</option>
-                <option value="USER">کاربران</option>
-                <option value="ADMIN">مدیران</option>
+                <option value="all">All roles</option>
+                <option value="USER">Users</option>
+                <option value="ADMIN">Admins</option>
               </select>
               <label className="text-sm font-medium text-gray-700 dark:text-slate-300 whitespace-nowrap">
-                نقش:
+                Role:
               </label>
             </div>
 
@@ -353,7 +349,7 @@ export default function UsersManagementPage() {
               size="sm"
               className="w-full sm:w-auto"
             >
-              پاک کردن فیلترها
+              Clear filters
             </Button>
           </div>
         </div>
@@ -365,11 +361,11 @@ export default function UsersManagementPage() {
             <div className="p-4 border-b border-gray-200 dark:border-slate-800 bg-gray-50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  نمایش {formatNumber(data.data.length)} کاربر از{' '}
-                  {formatNumber(data.total)} کاربر
+                  Showing {formatNumber(data.data.length)} of{' '}
+                  {formatNumber(data.total)} users
                 </div>
                 <div className="text-sm text-gray-600 dark:text-slate-400">
-                  صفحه {formatNumber(data.page)} از{' '}
+                  Page {formatNumber(data.page)} of{' '}
                   {formatNumber(data.totalPages)}
                 </div>
               </div>
@@ -390,23 +386,23 @@ export default function UsersManagementPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                       />
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      عملیات
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Actions
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
-                      تراکنش‌ها
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
+                      Transactions
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      نقش
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Role
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
-                      ایمیل / شماره تلفن
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
+                      Email / Phone number
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                      نام کاربر
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Name User
                     </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
-                      شناسه
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden sm:table-cell">
+                      Id
                     </th>
                   </tr>
                 </thead>
@@ -424,15 +420,15 @@ export default function UsersManagementPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex gap-2 justify-end">
+                      <td className="px-4 py-3 text-left">
+                        <div className="flex gap-2 justify-start">
                           {user.role === 'USER' ? (
                             <Button
                               variant="secondary"
                               size="sm"
                               onClick={() => handleChangeRole(user.id, 'ADMIN')}
                             >
-                              ارتقا به مدیر
+                              Promote
                             </Button>
                           ) : (
                             <Button
@@ -440,7 +436,7 @@ export default function UsersManagementPage() {
                               size="sm"
                               onClick={() => handleChangeRole(user.id, 'USER')}
                             >
-                              تنزل به کاربر
+                              Demote
                             </Button>
                           )}
                           <Button
@@ -449,25 +445,25 @@ export default function UsersManagementPage() {
                             onClick={() => handleDeleteUser(user.id, user.name)}
                             disabled={user.role === 'ADMIN'}
                           >
-                            حذف
+                            Delete
                           </Button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right hidden lg:table-cell">
+                      <td className="px-4 py-3 text-left hidden lg:table-cell">
                         <Link
                           href={`/admin/users/${user.id}`}
                           className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline text-sm"
                         >
-                          {formatNumber(user._count.transactions)} تراکنش
+                          {formatNumber(user._count.transactions)} Transaction
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-left">
                         {getRoleBadge(user.role)}
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-900 dark:text-slate-100 hidden md:table-cell">
-                        {user.email || user.phone || 'ندارد'}
+                      <td className="px-4 py-3 text-left text-sm text-gray-900 dark:text-slate-100 hidden md:table-cell">
+                        {user.email || user.phone || 'Not provided'}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-slate-100">
+                      <td className="px-4 py-3 text-left font-medium text-gray-900 dark:text-slate-100">
                         <Link
                           href={`/admin/users/${user.id}`}
                           className="text-blue-600 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 hover:underline"
@@ -475,7 +471,7 @@ export default function UsersManagementPage() {
                           {user.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-right hidden sm:table-cell">
+                      <td className="px-4 py-3 text-left hidden sm:table-cell">
                         <code className="text-xs bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200 px-2 py-1 rounded font-medium">
                           {user.uid}
                         </code>
@@ -487,7 +483,7 @@ export default function UsersManagementPage() {
 
               {data.data.length === 0 && (
                 <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-                  هیچ کاربری یافت نشد
+                  No users found.
                 </div>
               )}
             </div>
@@ -501,10 +497,10 @@ export default function UsersManagementPage() {
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                قبلی
+                Previous
               </Button>
               <span className="text-sm text-gray-600 dark:text-slate-400">
-                صفحه {formatNumber(currentPage)} از{' '}
+                Page {formatNumber(currentPage)} of{' '}
                 {formatNumber(data.totalPages)}
               </span>
               <Button
@@ -514,7 +510,7 @@ export default function UsersManagementPage() {
                 }
                 disabled={currentPage === data.totalPages}
               >
-                بعدی
+                Next
               </Button>
             </div>
           )}

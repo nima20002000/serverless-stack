@@ -2,6 +2,7 @@ import Input from '@/components/ui/Input';
 import CategorySelector from '@/components/admin/CategorySelector';
 import TagInput from '@/components/admin/TagInput';
 import type { ProductFormData, Tag, Variant } from '@/types/product-admin';
+import { siteLocale } from '@/config/site';
 
 interface ProductFormFieldsProps {
   formData: ProductFormData;
@@ -31,18 +32,18 @@ export default function ProductFormFields({
   return (
     <div className="space-y-4 sm:space-y-6">
       <Input
-        label="نام محصول"
+        label="Product name"
         name="name"
         value={formData.name}
         onChange={onChange}
         error={errors.name}
         disabled={disabled}
-        placeholder="مثال: لپ‌تاپ ایسوس"
+        placeholder="Example: Everyday tote"
       />
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-          دسته‌بندی
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+          Category
         </label>
         <CategorySelector
           value={formData.categoryId}
@@ -61,8 +62,8 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-          برچسب‌ها
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+          Tags
         </label>
         <TagInput
           selectedTags={selectedTags}
@@ -72,8 +73,8 @@ export default function ProductFormFields({
       </div>
 
       <div>
-        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-          توضیحات محصول
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+          Product description
         </label>
         <textarea
           name="description"
@@ -81,11 +82,11 @@ export default function ProductFormFields({
           onChange={onChange}
           disabled={disabled}
           rows={4}
-          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg text-right focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
-          placeholder="توضیحات کامل محصول را وارد کنید"
+          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-lg text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 dark:bg-slate-900 dark:text-slate-100 dark:disabled:bg-slate-800"
+          placeholder="Describe the product, materials, and key details."
         />
         {errors.description && (
-          <p className="mt-1 text-xs sm:text-sm text-red-600 dark:text-rose-200 text-right">
+          <p className="mt-1 text-xs sm:text-sm text-red-600 dark:text-rose-200 text-left">
             {errors.description}
           </p>
         )}
@@ -93,7 +94,7 @@ export default function ProductFormFields({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
-          label="قیمت"
+          label={`Price (${siteLocale.currency})`}
           name="price"
           type="number"
           value={formData.price}
@@ -105,7 +106,7 @@ export default function ProductFormFields({
         />
 
         <Input
-          label="تخفیف (درصد)"
+          label="Discount (%)"
           name="discountPercent"
           type="number"
           value={formData.discountPercent}
@@ -133,18 +134,18 @@ export default function ProductFormFields({
           htmlFor="hasVariants"
           className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
         >
-          این محصول دارای انواع مختلف است (رنگ، سایز، جنس، ...)
+          This product has variants (color, size, material, etc.)
         </label>
       </div>
 
       {formData.hasVariants && (
         <div className="p-3 sm:p-4 border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
           <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
-            <strong>توجه:</strong> با فعال کردن این گزینه، موجودی کل محصول به
-            صورت خودکار از مجموع موجودی انواع محصول محاسبه می‌شود.
+            <strong>Note:</strong> product stock is calculated from active
+            variant inventory.
             {variants.length > 0
-              ? ` موجودی فعلی: ${variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)} عدد`
-              : ' حتماً حداقل یک نوع محصول با موجودی مشخص اضافه کنید.'}
+              ? ` Total variant stock: ${variants.reduce((sum, v) => sum + parseInt(v.stock || '0'), 0)} units.`
+              : ' Add at least one variant with stock.'}
           </p>
         </div>
       )}
@@ -152,7 +153,7 @@ export default function ProductFormFields({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <Input
           label={
-            formData.hasVariants ? 'موجودی (محاسبه خودکار از انواع)' : 'موجودی'
+            formData.hasVariants ? 'Stock (calculated from variants)' : 'Stock'
           }
           name="stock"
           type="number"
@@ -186,7 +187,7 @@ export default function ProductFormFields({
             htmlFor="isFeatured"
             className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
           >
-            محصول ویژه
+            Featured product
           </label>
         </div>
 
@@ -204,7 +205,7 @@ export default function ProductFormFields({
             htmlFor="isActive"
             className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
           >
-            محصول فعال باشد
+            Product is active
           </label>
         </div>
       </div>

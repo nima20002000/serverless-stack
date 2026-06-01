@@ -6,6 +6,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import { formatDateTime, formatPrice } from '@/lib/utils/format';
+import { siteLocale } from '@/config/site';
 
 interface PromoCode {
   id: string;
@@ -50,11 +51,11 @@ export default function PromoCodesManagementPage() {
     try {
       setIsLoading(true);
       const response = await fetch('/api/admin/promo-codes');
-      if (!response.ok) throw new Error('خطا در دریافت کدهای تخفیف');
+      if (!response.ok) throw new Error('Unable to load promo codes');
       const data = await response.json();
       setPromoCodes(data.data || []);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
       setPromoCodes([]);
     } finally {
       setIsLoading(false);
@@ -94,18 +95,16 @@ export default function PromoCodesManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در ذخیره کد تخفیف');
+        throw new Error(errorData.error || 'Unable to save promo code');
       }
 
       setSuccessMessage(
-        editingPromo
-          ? 'کد تخفیف با موفقیت ویرایش شد'
-          : 'کد تخفیف با موفقیت ایجاد شد'
+        editingPromo ? 'Promo code updated.' : 'Promo code created.'
       );
       handleCancelForm();
       fetchPromoCodes();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     } finally {
       setIsSaving(false);
     }
@@ -136,7 +135,7 @@ export default function PromoCodesManagementPage() {
   };
 
   const handleDelete = async (id: string, code: string) => {
-    if (!confirm(`آیا از حذف کد تخفیف "${code}" اطمینان دارید؟`)) {
+    if (!confirm(`Delete promo code "${code}"?`)) {
       return;
     }
 
@@ -147,13 +146,13 @@ export default function PromoCodesManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف کد تخفیف');
+        throw new Error(errorData.error || 'Unable to delete promo code');
       }
 
-      setSuccessMessage('کد تخفیف با موفقیت حذف شد');
+      setSuccessMessage('Promo code deleted.');
       fetchPromoCodes();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -181,12 +180,12 @@ export default function PromoCodesManagementPage() {
         body: JSON.stringify({ isActive: !currentStatus }),
       });
 
-      if (!response.ok) throw new Error('خطا در تغییر وضعیت');
+      if (!response.ok) throw new Error('Unable to update promo code status');
 
-      setSuccessMessage('وضعیت کد تخفیف تغییر یافت');
+      setSuccessMessage('Promo code status updated.');
       fetchPromoCodes();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -205,14 +204,14 @@ export default function PromoCodesManagementPage() {
 
     if (!promo.isActive) {
       return {
-        text: 'غیرفعال',
+        label: 'Inactive',
         className:
           'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-300',
       };
     }
     if (expiresAt < now) {
       return {
-        text: 'منقضی',
+        label: 'Expired',
         className:
           'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200',
       };
@@ -222,13 +221,13 @@ export default function PromoCodesManagementPage() {
       (promo.currentUsageCount ?? 0) >= promo.maxUsageCount
     ) {
       return {
-        text: 'تکمیل',
+        label: 'Usage limit reached',
         className:
           'bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200',
       };
     }
     return {
-      text: 'فعال',
+      label: 'Active',
       className:
         'bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200',
     };
@@ -237,16 +236,14 @@ export default function PromoCodesManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'مدیریت کدهای تخفیف' }]} />
+      <Breadcrumbs items={[{ label: 'Promo codes' }]} />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <Button
@@ -254,10 +251,10 @@ export default function PromoCodesManagementPage() {
           onClick={() => setShowForm(!showForm)}
           className="w-full sm:w-auto order-2 sm:order-1"
         >
-          {showForm ? 'انصراف' : 'افزودن کد تخفیف جدید'}
+          {showForm ? 'Cancel' : 'Add promo code'}
         </Button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 order-1 sm:order-2">
-          مدیریت کدهای تخفیف
+          Promo codes
         </h1>
       </div>
 
@@ -281,14 +278,14 @@ export default function PromoCodesManagementPage() {
       {showForm && (
         <Card className="mb-6">
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              {editingPromo ? 'ویرایش کد تخفیف' : 'افزودن کد تخفیف جدید'}
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+              {editingPromo ? 'Edit promo code' : 'Add promo code'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    کد تخفیف *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Promo code *
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -309,13 +306,13 @@ export default function PromoCodesManagementPage() {
                       variant="secondary"
                       onClick={generateRandomCode}
                     >
-                      تولید
+                      Generate
                     </Button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    نوع تخفیف *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Discount type *
                   </label>
                   <select
                     value={formData.discountType}
@@ -325,21 +322,21 @@ export default function PromoCodesManagementPage() {
                         discountType: e.target.value as 'PERCENT' | 'FIXED',
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left bg-white dark:bg-slate-900 dark:text-slate-100"
                     required
                   >
-                    <option value="PERCENT">درصدی</option>
-                    <option value="FIXED">مبلغ ثابت</option>
+                    <option value="PERCENT">Percent</option>
+                    <option value="FIXED">Fixed amount</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
                     {formData.discountType === 'PERCENT'
-                      ? 'درصد تخفیف *'
-                      : 'مبلغ تخفیف *'}
+                      ? 'Discount percent *'
+                      : `Amount Discount (${siteLocale.currency}) *`}
                   </label>
                   <input
                     type="number"
@@ -362,8 +359,8 @@ export default function PromoCodesManagementPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    تاریخ انقضا *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Expires at *
                   </label>
                   <input
                     type="datetime-local"
@@ -379,8 +376,8 @@ export default function PromoCodesManagementPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    حداکثر دفعات استفاده
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Maximum uses
                   </label>
                   <input
                     type="number"
@@ -392,13 +389,13 @@ export default function PromoCodesManagementPage() {
                       })
                     }
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
-                    placeholder="نامحدود"
+                    placeholder="No limit"
                     min="1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    حداقل مبلغ سفارش
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Minimum order amount ({siteLocale.currency})
                   </label>
                   <input
                     type="number"
@@ -410,14 +407,14 @@ export default function PromoCodesManagementPage() {
                       })
                     }
                     className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
-                    placeholder="بدون محدودیت"
+                    placeholder="No limit"
                     min="0"
                   />
                 </div>
                 {formData.discountType === 'PERCENT' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                      سقف تخفیف
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                      Maximum discount ({siteLocale.currency})
                     </label>
                     <input
                       type="number"
@@ -429,7 +426,7 @@ export default function PromoCodesManagementPage() {
                         })
                       }
                       className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
-                      placeholder="بدون سقف"
+                      placeholder="No cap"
                       min="0"
                     />
                   </div>
@@ -437,8 +434,8 @@ export default function PromoCodesManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                  توضیحات
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                  Description
                 </label>
                 <input
                   type="text"
@@ -446,13 +443,13 @@ export default function PromoCodesManagementPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
-                  placeholder="مثال: کد تخفیف شب یلدا"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
+                  placeholder="Example: Launch discount"
                 />
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-right cursor-pointer">
+                <label className="flex items-center gap-2 text-left cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isActive}
@@ -462,21 +459,21 @@ export default function PromoCodesManagementPage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
-                    فعال
+                    Active
                   </span>
                 </label>
               </div>
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-3 justify-start">
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={handleCancelForm}
                 >
-                  انصراف
+                  Cancel
                 </Button>
                 <Button type="submit" variant="primary" isLoading={isSaving}>
-                  {editingPromo ? 'ذخیره تغییرات' : 'ایجاد کد تخفیف'}
+                  {editingPromo ? 'Save changes' : 'Create promo code'}
                 </Button>
               </div>
             </form>
@@ -490,23 +487,23 @@ export default function PromoCodesManagementPage() {
           <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50 dark:bg-slate-900/60 border-b border-gray-200 dark:border-slate-800">
               <tr>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  عملیات
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Actions
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  وضعیت
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Status
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  استفاده
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Uses
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
-                  انقضا
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
+                  Expires
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  تخفیف
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Discount
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  کد
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Code
                 </th>
               </tr>
             </thead>
@@ -518,54 +515,54 @@ export default function PromoCodesManagementPage() {
                     key={promo.id}
                     className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
                   >
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-2 justify-end">
+                    <td className="px-4 py-3 text-left">
+                      <div className="flex gap-2 justify-start">
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={() => handleEdit(promo)}
                         >
-                          ویرایش
+                          Edit
                         </Button>
                         <Button
                           variant="danger"
                           size="sm"
                           onClick={() => handleDelete(promo.id, promo.code)}
                         >
-                          حذف
+                          Delete
                         </Button>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <button
                         onClick={() => toggleActive(promo.id, promo.isActive)}
                         className={`px-3 py-1 rounded-full text-xs font-medium ${status.className}`}
                       >
-                        {status.text}
+                        {status.label}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <span className="text-gray-900 dark:text-slate-100">
                         {promo.currentUsageCount ?? 0}
                         {promo.maxUsageCount && ` / ${promo.maxUsageCount}`}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
+                    <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
                       {formatDateTime(promo.expiresAt)}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <div className="text-gray-900 dark:text-slate-100 font-medium">
                         {promo.discountType === 'PERCENT'
-                          ? `${promo.discountValue}٪`
+                          ? `${promo.discountValue}%`
                           : formatPrice(promo.discountValue)}
                       </div>
                       {promo.minOrderAmount && (
                         <div className="text-xs text-gray-500 dark:text-slate-500">
-                          حداقل: {formatPrice(promo.minOrderAmount)}
+                          Minimum: {formatPrice(promo.minOrderAmount)}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <code className="text-sm font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded">
                         {promo.code}
                       </code>
@@ -583,7 +580,7 @@ export default function PromoCodesManagementPage() {
 
           {promoCodes.length === 0 && (
             <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-              هیچ کد تخفیفی وجود ندارد
+              No promo codes found.
             </div>
           )}
         </div>

@@ -3,7 +3,6 @@ import Input from '@/components/ui/Input';
 import GradientColorPicker from '@/components/ui/GradientColorPicker';
 import MediaManager from '@/components/admin/MediaManager';
 import { useState } from 'react';
-import { formatPrice } from '@/lib/utils/format';
 import type {
   Variant,
   VariantFormData,
@@ -26,6 +25,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { formatPrice } from '@/lib/utils/format';
+import { siteLocale } from '@/config/site';
 
 interface VariantManagerProps {
   variants: Variant[];
@@ -85,12 +86,12 @@ function SortableVariantCard({
             <span className="inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 text-[10px] sm:text-xs font-medium flex-shrink-0">
               {variant.order + 1}
             </span>
-            <h4 className="font-medium text-gray-900 dark:text-slate-100 text-right text-sm sm:text-base">
+            <h4 className="font-medium text-gray-900 dark:text-slate-100 text-left text-sm sm:text-base">
               {variant.name}
             </h4>
             {variant.media && variant.media.length > 0 && (
               <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-medium bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200 whitespace-nowrap">
-                {variant.media.length} تصویر
+                {variant.media.length} Image
               </span>
             )}
           </div>
@@ -98,22 +99,24 @@ function SortableVariantCard({
             {variant.sku && <p>SKU: {variant.sku}</p>}
             {variant.color && (
               <p className="flex items-center gap-2">
-                رنگ:
+                Color:
                 <span
                   className="inline-block w-3 h-3 sm:w-4 sm:h-4 rounded border"
                   style={{ background: variant.color }}
                 />
               </p>
             )}
-            {variant.size && <p>سایز: {variant.size}</p>}
-            {variant.material && <p>جنس: {variant.material}</p>}
-            <p>تغییر قیمت: {formatPrice(parseInt(variant.priceAdjust))}</p>
-            <p>موجودی: {variant.stock}</p>
+            {variant.size && <p>Size: {variant.size}</p>}
+            {variant.material && <p>Material: {variant.material}</p>}
+            <p>
+              Price adjustment: {formatPrice(parseInt(variant.priceAdjust))}
+            </p>
+            <p>Stock: {variant.stock}</p>
           </div>
         </div>
 
         {/* Actions and Drag handle wrapper */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
           {/* Actions */}
           <div className="flex gap-1.5 sm:gap-2 flex-1 sm:flex-none">
             <Button
@@ -123,7 +126,7 @@ function SortableVariantCard({
               onClick={() => onEdit(variant)}
               className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              ویرایش
+              Edit
             </Button>
             <Button
               type="button"
@@ -132,7 +135,7 @@ function SortableVariantCard({
               onClick={() => onDelete(variant.id)}
               className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3"
             >
-              حذف
+              Delete
             </Button>
           </div>
 
@@ -141,7 +144,7 @@ function SortableVariantCard({
             {...attributes}
             {...listeners}
             className="cursor-grab active:cursor-grabbing text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors p-1 flex-shrink-0"
-            aria-label="جابجایی واریانت"
+            aria-label="Reorder variant"
             type="button"
           >
             <svg
@@ -251,8 +254,8 @@ export default function VariantManager({
   return (
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 gap-2 sm:gap-0">
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 text-right order-1">
-          انواع محصول (رنگ، سایز، ...)
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 text-left order-1">
+          Product variants
         </h2>
         {!showVariantForm && (
           <Button
@@ -263,14 +266,14 @@ export default function VariantManager({
             disabled={disabled}
             className="w-full sm:w-auto order-2 text-sm"
           >
-            + افزودن نوع جدید
+            + Add variant
           </Button>
         )}
       </div>
 
       {hasVariantsError && (
         <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-50 dark:bg-rose-900/30 border border-red-200 dark:border-rose-700 rounded-lg">
-          <p className="text-xs sm:text-sm text-red-600 dark:text-rose-200 text-right">
+          <p className="text-xs sm:text-sm text-red-600 dark:text-rose-200 text-left">
             {hasVariantsError}
           </p>
         </div>
@@ -279,22 +282,22 @@ export default function VariantManager({
       {/* Variant Form */}
       {showVariantForm && (
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-slate-900/60 rounded-lg space-y-3 sm:space-y-4">
-          <h3 className="font-medium text-right text-sm sm:text-base">
+          <h3 className="font-medium text-left text-sm sm:text-base">
             {editingVariantId && !editingVariantId.startsWith('variant-')
-              ? 'ویرایش نوع محصول'
-              : 'افزودن نوع جدید'}
+              ? 'Edit variant'
+              : 'Add variant'}
           </h3>
 
           <Input
-            label="نام نوع (مثال: قرمز - بزرگ)"
+            label="Variant name"
             name="name"
             value={variantForm.name}
             onChange={onVariantFormChange}
-            placeholder="قرمز - بزرگ"
+            placeholder="Red - Large"
           />
 
           <Input
-            label="SKU (اختیاری)"
+            label="SKU (optional)"
             name="sku"
             value={variantForm.sku}
             onChange={onVariantFormChange}
@@ -303,7 +306,7 @@ export default function VariantManager({
 
           <div className="space-y-3 sm:space-y-4">
             <GradientColorPicker
-              label="رنگ"
+              label="Color"
               name="color"
               value={variantForm.color}
               onChange={onVariantFormChange}
@@ -312,7 +315,7 @@ export default function VariantManager({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <Input
-                label="سایز"
+                label="Size"
                 name="size"
                 value={variantForm.size}
                 onChange={onVariantFormChange}
@@ -320,18 +323,18 @@ export default function VariantManager({
               />
 
               <Input
-                label="جنس"
+                label="Material"
                 name="material"
                 value={variantForm.material}
                 onChange={onVariantFormChange}
-                placeholder="پنبه، پشم، ..."
+                placeholder="Cotton Wool ..."
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Input
-              label="تغییر قیمت"
+              label={`Price adjustment (${siteLocale.currency})`}
               name="priceAdjust"
               type="number"
               value={variantForm.priceAdjust}
@@ -341,7 +344,7 @@ export default function VariantManager({
             />
 
             <Input
-              label="موجودی"
+              label="Stock"
               name="stock"
               type="number"
               value={variantForm.stock}
@@ -364,18 +367,17 @@ export default function VariantManager({
               htmlFor="variantIsActive"
               className="text-xs sm:text-sm font-medium text-gray-700 dark:text-slate-300"
             >
-              فعال
+              Active
             </label>
           </div>
 
           {/* Variant Media */}
           <div className="border-t border-blue-200 dark:border-blue-900/50 pt-3 sm:pt-4">
-            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 mb-2 text-right">
-              تصاویر این نوع محصول (اختیاری)
+            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-slate-100 mb-2 text-left">
+              Variant media (optional)
             </h4>
-            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-slate-400 mb-2 sm:mb-3 text-right">
-              تصاویری که اینجا انتخاب می‌کنید فقط برای این نوع محصول نمایش داده
-              می‌شوند
+            <p className="text-[10px] sm:text-xs text-gray-600 dark:text-slate-400 mb-2 sm:mb-3 text-left">
+              Attach media that should appear when this variant is selected.
             </p>
 
             <MediaManager
@@ -390,7 +392,7 @@ export default function VariantManager({
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 justify-end">
+          <div className="flex flex-col sm:flex-row gap-2 justify-start">
             <Button
               type="button"
               variant="secondary"
@@ -398,7 +400,7 @@ export default function VariantManager({
               onClick={onCancel}
               className="w-full sm:w-auto order-2 sm:order-1 text-sm"
             >
-              انصراف
+              Cancel
             </Button>
             <Button
               type="button"
@@ -407,7 +409,7 @@ export default function VariantManager({
               onClick={onAddOrUpdate}
               className="w-full sm:w-auto order-1 sm:order-2 text-sm"
             >
-              {editingVariantId ? 'بروزرسانی' : 'افزودن'}
+              {editingVariantId ? 'Update' : 'Add'}
             </Button>
           </div>
         </div>
@@ -416,9 +418,8 @@ export default function VariantManager({
       {/* Variant List with Drag and Drop */}
       {variants.length > 0 ? (
         <div>
-          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-500 mb-2 sm:mb-3 text-right">
-            💡 برای تغییر ترتیب نمایش، واریانت‌ها را با نگه داشتن آیکن کشیده و
-            جابجا کنید
+          <p className="text-[10px] sm:text-xs text-gray-500 dark:text-slate-500 mb-2 sm:mb-3 text-left">
+            Drag variants to change their display order.
           </p>
           <DndContext
             sensors={sensors}
@@ -444,7 +445,7 @@ export default function VariantManager({
         </div>
       ) : (
         <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-500 text-center py-6 sm:py-8">
-          هیچ نوع محصولی اضافه نشده است
+          No variants added yet.
         </p>
       )}
     </div>

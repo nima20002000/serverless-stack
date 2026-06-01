@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get query parameters
@@ -57,8 +57,7 @@ export async function GET(req: NextRequest) {
     log.error('R2 browser API error', { error });
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'خطا در دریافت لیست فایل‌ها',
+        error: error instanceof Error ? error.message : 'Unable to load files',
       },
       { status: 500 }
     );
@@ -74,7 +73,7 @@ export async function DELETE(req: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get path from request body
@@ -82,7 +81,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!path) {
       return NextResponse.json(
-        { error: 'مسیر فایل الزامی است' },
+        { error: 'File key is required' },
         { status: 400 }
       );
     }
@@ -101,7 +100,9 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     log.error('R2 browser delete API error', { error });
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در حذف فایل' },
+      {
+        error: error instanceof Error ? error.message : 'Unable to delete file',
+      },
       { status: 500 }
     );
   }

@@ -17,14 +17,14 @@ export async function GET(
     const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const category = await getCategoryById(params.id);
 
     if (!category) {
       return NextResponse.json(
-        { error: 'دسته‌بندی یافت نشد' },
+        { error: 'Category not found' },
         { status: 404 }
       );
     }
@@ -33,7 +33,7 @@ export async function GET(
   } catch (error) {
     console.error('Get category error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی';
+      error instanceof Error ? error.message : 'Unable to load category';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -46,7 +46,7 @@ export async function PUT(
     const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -56,7 +56,7 @@ export async function PUT(
   } catch (error) {
     console.error('Update category error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در به‌روزرسانی دسته‌بندی';
+      error instanceof Error ? error.message : 'Unable to update category';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -69,7 +69,7 @@ export async function DELETE(
     const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await deleteCategory(params.id);
@@ -78,7 +78,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete category error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در حذف دسته‌بندی';
+      error instanceof Error ? error.message : 'Unable to delete category';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -50,7 +50,7 @@ export default function TagInput({
         );
 
         if (!response.ok) {
-          throw new Error('خطا در جستجوی برچسب‌ها');
+          throw new Error('Unable to search tags');
         }
 
         const data = await response.json();
@@ -102,7 +102,7 @@ export default function TagInput({
       .trim()
       .toLowerCase()
       .replace(/\s+/g, '-')
-      .replace(/[^\w\u0600-\u06FF-]/g, '')
+      .replace(/[^\p{Letter}\p{Number}_-]/gu, '')
       .replace(/--+/g, '-')
       .replace(/^-|-$/g, '');
   };
@@ -121,14 +121,14 @@ export default function TagInput({
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'خطا در ایجاد برچسب');
+        throw new Error(error.error || 'Unable to create tag');
       }
 
       const data = await response.json();
       addTag(data.tag);
     } catch (err) {
       console.error('Error creating tag:', err);
-      alert(err instanceof Error ? err.message : 'خطا در ایجاد برچسب');
+      alert(err instanceof Error ? err.message : 'Unable to create tag');
     } finally {
       setLoading(false);
     }
@@ -162,7 +162,7 @@ export default function TagInput({
                   type="button"
                   onClick={() => removeTag(tag.id)}
                   className="hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-full p-0.5 transition-colors"
-                  aria-label={`حذف ${tag.name}`}
+                  aria-label={`Delete ${tag.name}`}
                 >
                   <XMarkIcon className="h-4 w-4" />
                 </button>
@@ -174,7 +174,7 @@ export default function TagInput({
 
       {/* Input */}
       <div className="relative">
-        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
           <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
         </div>
 
@@ -189,8 +189,8 @@ export default function TagInput({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="جستجو یا ایجاد برچسب جدید..."
-          className={`w-full pr-10 pl-4 py-3 border rounded-lg transition-colors ${
+          placeholder="Search or create a tag..."
+          className={`w-full pl-10 pr-4 py-3 border rounded-lg transition-colors ${
             disabled
               ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500'
               : 'bg-white hover:border-gray-400 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-500'
@@ -209,19 +209,19 @@ export default function TagInput({
         <div className="absolute z-20 mt-2 w-full bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 rounded-lg shadow-lg dark:shadow-none max-h-60 overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
-              در حال جستجو...
+              Searching...
             </div>
           ) : suggestions.length > 0 ? (
             <>
               <div className="px-3 py-2 text-xs text-gray-500 dark:text-slate-500 border-b border-gray-200 dark:border-slate-800">
-                برچسب‌های موجود
+                Existing tags
               </div>
               {suggestions.map((tag) => (
                 <button
                   key={tag.id}
                   type="button"
                   onClick={() => addTag(tag)}
-                  className="w-full text-right px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-sm dark:text-slate-100">
@@ -237,16 +237,16 @@ export default function TagInput({
           ) : query.trim().length >= 2 ? (
             <>
               <div className="px-3 py-2 text-xs text-gray-500 dark:text-slate-500 border-b border-gray-200 dark:border-slate-800">
-                نتیجه‌ای یافت نشد
+                No matching tags
               </div>
               <button
                 type="button"
                 onClick={createNewTag}
-                className="w-full text-right px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-blue-600 dark:text-blue-300 font-medium">
-                    ایجاد برچسب جدید:
+                    Create tag:
                   </span>
                   <span className="text-sm text-gray-700 dark:text-slate-200">
                     &quot;{query}&quot;
@@ -256,7 +256,7 @@ export default function TagInput({
             </>
           ) : (
             <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">
-              حداقل 2 حرف تایپ کنید
+              Type at least 2 characters
             </div>
           )}
         </div>
@@ -265,7 +265,7 @@ export default function TagInput({
       {/* Helper Text */}
       {!disabled && (
         <p className="mt-2 text-xs text-gray-500 dark:text-slate-500">
-          برای جستجو تایپ کنید یا Enter بزنید تا برچسب جدید ایجاد شود
+          Search existing tags or press Enter to create a new one.
         </p>
       )}
     </div>

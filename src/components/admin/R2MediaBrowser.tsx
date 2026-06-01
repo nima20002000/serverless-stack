@@ -159,7 +159,7 @@ export default function R2MediaBrowser({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'خطا در دریافت فایل‌ها');
+        throw new Error(data.error || 'Unable to load files');
       }
 
       const incomingObjects = data.objects || [];
@@ -200,7 +200,7 @@ export default function R2MediaBrowser({
         setHasMore(Boolean(data.isTruncated && data.nextContinuationToken));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطای نامشخص');
+      setError(err instanceof Error ? err.message : 'Error Unknown');
       if (reset) {
         setObjects([]);
         setFolders([]);
@@ -237,7 +237,7 @@ export default function R2MediaBrowser({
   };
 
   const handleDelete = async (path: string) => {
-    if (!confirm('آیا از حذف این فایل اطمینان دارید؟')) {
+    if (!confirm('Delete this file from storage?')) {
       return;
     }
 
@@ -252,13 +252,13 @@ export default function R2MediaBrowser({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'خطا در حذف فایل');
+        throw new Error(data.error || 'Unable to delete file');
       }
 
       // Reload objects after delete
       await loadObjects(true, true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'خطای نامشخص');
+      setError(err instanceof Error ? err.message : 'Error Unknown');
     }
   };
 
@@ -282,13 +282,13 @@ export default function R2MediaBrowser({
         />
 
         {/* Modal */}
-        <div className="inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-right overflow-hidden shadow-xl dark:shadow-none transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-slate-900 rounded-lg text-left overflow-hidden shadow-xl dark:shadow-none transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
           {/* Header */}
           <div className="bg-white dark:bg-slate-900 px-4 pt-5 pb-4 sm:p-6 border-b border-gray-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 flex-1">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-slate-100">
-                  انتخاب رسانه از R2
+                  Media library
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-slate-300">
@@ -297,7 +297,7 @@ export default function R2MediaBrowser({
                     onClick={() => setCurrentPrefix('')}
                     className="font-medium hover:text-gray-900 dark:hover:text-white"
                   >
-                    ریشه
+                    Root
                   </button>
                   {folderParts.map((part, index) => {
                     const prefix = `${folderParts
@@ -348,13 +348,13 @@ export default function R2MediaBrowser({
             ) : objects.length === 0 && folders.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-slate-400">
                 <FolderIcon className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-slate-500" />
-                <p>هیچ فایلی در این پوشه وجود ندارد</p>
+                <p>No files or folders found.</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-sm font-medium text-gray-700 dark:text-slate-200">
-                    پوشه‌ها
+                    Folders
                   </div>
                   {currentPrefix && (
                     <button
@@ -364,13 +364,13 @@ export default function R2MediaBrowser({
                       }
                       className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200"
                     >
-                      بازگشت به پوشه والد
+                      Back to parent folder
                     </button>
                   )}
                 </div>
                 {folders.length === 0 ? (
                   <div className="text-sm text-gray-500 dark:text-slate-400 mb-6">
-                    زیرپوشه‌ای وجود ندارد
+                    No folders found.
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
@@ -383,7 +383,7 @@ export default function R2MediaBrowser({
                           key={prefix}
                           type="button"
                           onClick={() => setCurrentPrefix(prefix)}
-                          className="group border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-right bg-white dark:bg-slate-900 hover:border-gray-300 dark:hover:border-slate-600 transition"
+                          className="group border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-left bg-white dark:bg-slate-900 hover:border-gray-300 dark:hover:border-slate-600 transition"
                         >
                           <div className="flex items-center gap-2">
                             <FolderIcon className="h-5 w-5 text-gray-400 dark:text-slate-500" />
@@ -398,11 +398,11 @@ export default function R2MediaBrowser({
                 )}
 
                 <div className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">
-                  فایل‌ها
+                  Files
                 </div>
                 {objects.length === 0 ? (
                   <div className="text-sm text-gray-500 dark:text-slate-400">
-                    فایلی در این پوشه وجود ندارد
+                    No files found.
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -451,7 +451,7 @@ export default function R2MediaBrowser({
                                 handleDelete(obj.key);
                               }}
                               className="absolute top-2 right-2 bg-red-600 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="حذف"
+                              title="Delete"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
@@ -483,7 +483,7 @@ export default function R2MediaBrowser({
                       disabled={loadingMore}
                       className="text-sm px-4 py-2 border border-gray-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-50"
                     >
-                      {loadingMore ? 'در حال بارگذاری...' : 'نمایش بیشتر'}
+                      {loadingMore ? 'Loading...' : 'Show more'}
                     </button>
                   </div>
                 )}
@@ -499,14 +499,14 @@ export default function R2MediaBrowser({
               disabled={selectedUrls.size === 0}
               className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-400"
             >
-              انتخاب ({selectedUrls.size})
+              Select ({selectedUrls.size})
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-700 shadow-sm px-4 py-2 bg-white dark:bg-slate-900 text-base font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none sm:mt-0 sm:mr-3 sm:w-auto sm:text-sm"
+              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-slate-700 shadow-sm px-4 py-2 bg-white dark:bg-slate-900 text-base font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
-              انصراف
+              Cancel
             </button>
           </div>
         </div>

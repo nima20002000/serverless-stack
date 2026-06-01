@@ -70,34 +70,34 @@ export default function NewProductPage() {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'نام محصول الزامی است';
+      newErrors.name = 'Product name is required';
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'توضیحات محصول الزامی است';
+      newErrors.description = 'Product description is required';
     }
 
     if (!formData.price || parseFloat(formData.price) <= 0) {
-      newErrors.price = 'قیمت باید بیشتر از صفر باشد';
+      newErrors.price = 'Price must be greater than zero';
     }
 
     if (formData.discountPercent) {
       const discount = parseInt(formData.discountPercent);
       if (discount < 0 || discount > 100) {
-        newErrors.discountPercent = 'تخفیف باید بین 0 تا 100 درصد باشد';
+        newErrors.discountPercent = 'Discount must be between 0 and 100';
       }
     }
 
     // Stock validation - required only if hasVariants is false
     if (!formData.hasVariants) {
       if (!formData.stock || parseInt(formData.stock) < 0) {
-        newErrors.stock = 'موجودی نمی‌تواند منفی باشد';
+        newErrors.stock = 'Stock must be zero or greater';
       }
     }
 
     // Variant validation - if hasVariants is true, at least one variant is required
     if (formData.hasVariants && variantManager.variants.length === 0) {
-      newErrors.variants = 'حداقل یک نوع محصول باید اضافه شود';
+      newErrors.variants = 'Add at least one variant';
     }
 
     setErrors(newErrors);
@@ -139,15 +139,15 @@ export default function NewProductPage() {
       const productData = await readJsonResponse<{
         error?: string;
         product?: { id: string };
-      }>(productResponse, 'خطا در ایجاد محصول');
+      }>(productResponse, 'Unable to create product');
 
       if (!productResponse.ok) {
-        throw new Error(productData.error || 'خطا در ایجاد محصول');
+        throw new Error(productData.error || 'Unable to create product');
       }
 
       const productId = productData.product?.id;
       if (!productId) {
-        throw new Error('شناسه محصول دریافت نشد');
+        throw new Error('Created product ID was not returned');
       }
 
       // Step 2: Create variants in batch (single API call instead of N+1 requests)
@@ -179,10 +179,10 @@ export default function NewProductPage() {
         const variantData = await readJsonResponse<{
           error?: string;
           idMapping?: Record<string, string>;
-        }>(variantResponse, 'خطا در ایجاد واریانت‌ها');
+        }>(variantResponse, 'Unable to create variants');
 
         if (!variantResponse.ok) {
-          throw new Error(variantData.error || 'خطا در ایجاد واریانت‌ها');
+          throw new Error(variantData.error || 'Unable to create variants');
         }
 
         variantIdMapping = variantData.idMapping || {};
@@ -246,7 +246,7 @@ export default function NewProductPage() {
 
         if (!batchSyncResponse.ok) {
           throw new Error(
-            await readErrorMessage(batchSyncResponse, 'خطا در افزودن رسانه‌ها')
+            await readErrorMessage(batchSyncResponse, 'Unable to add media')
           );
         }
       }
@@ -254,7 +254,7 @@ export default function NewProductPage() {
       router.push('/admin/products');
     } catch (error) {
       const errorMsg =
-        error instanceof Error ? error.message : 'خطا در ایجاد محصول';
+        error instanceof Error ? error.message : 'Unable to create product';
       setErrorMessage(errorMsg);
       toast.error(errorMsg);
     } finally {
@@ -282,14 +282,14 @@ export default function NewProductPage() {
     <div>
       <Breadcrumbs
         items={[
-          { label: 'مدیریت محصولات', href: '/admin/products' },
-          { label: 'افزودن محصول جدید' },
+          { label: 'Products', href: '/admin/products' },
+          { label: 'Add product' },
         ]}
       />
 
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          افزودن محصول جدید
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Add product
         </h1>
       </div>
 
@@ -306,8 +306,8 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
         {/* Basic Information */}
         <Card padding="sm">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-right">
-            اطلاعات پایه
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Basic information
           </h2>
 
           <ProductFormFields
@@ -332,7 +332,7 @@ export default function NewProductPage() {
             onOpenBrowser={() => setShowMediaBrowser(true)}
             onCloseBrowser={() => setShowMediaBrowser(false)}
             disabled={isLoading}
-            title="تصاویر و ویدیو"
+            title="Media and Video"
           />
         </Card>
 
@@ -359,7 +359,7 @@ export default function NewProductPage() {
 
         {/* Submit Buttons */}
         <Card padding="sm">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-start">
             <Button
               type="button"
               variant="secondary"
@@ -368,7 +368,7 @@ export default function NewProductPage() {
               disabled={isLoading}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              انصراف
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -377,7 +377,7 @@ export default function NewProductPage() {
               isLoading={isLoading}
               className="w-full sm:w-auto order-1 sm:order-2"
             >
-              ایجاد محصول
+              Create Product
             </Button>
           </div>
         </Card>

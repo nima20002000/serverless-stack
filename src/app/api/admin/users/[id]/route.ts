@@ -18,7 +18,7 @@ export async function GET(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const userData = await getUserById(params.id);
@@ -49,7 +49,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching user:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت کاربر';
+      error instanceof Error ? error.message : 'Unable to load user';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -63,13 +63,13 @@ export async function PUT(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Prevent admin from changing their own role
     if (session.user.id === params.id) {
       return NextResponse.json(
-        { error: 'نمی‌توانید نقش خود را تغییر دهید' },
+        { error: 'You cannot change your own role' },
         { status: 403 }
       );
     }
@@ -79,17 +79,20 @@ export async function PUT(
 
     if (!role || !['USER', 'ADMIN'].includes(role)) {
       return NextResponse.json(
-        { error: 'نقش کاربری نامعتبر است' },
+        { error: 'User role is invalid' },
         { status: 400 }
       );
     }
 
-    const user = await updateUserRole(params.id, role as 'USER' | 'ADMIN');
+    const user = await updateUserRole(
+      params.id,
+      role as 'USER' | 'ADMIN'
+    );
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error updating user:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در به‌روزرسانی کاربر';
+      error instanceof Error ? error.message : 'Unable to update user';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -103,13 +106,13 @@ export async function DELETE(
     // Check authentication and admin role
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Prevent admin from deleting their own account
     if (session.user.id === params.id) {
       return NextResponse.json(
-        { error: 'نمی‌توانید حساب کاربری خود را حذف کنید' },
+        { error: 'You cannot delete your own account' },
         { status: 403 }
       );
     }
@@ -119,7 +122,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting user:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در حذف کاربر';
+      error instanceof Error ? error.message : 'Unable to delete user';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

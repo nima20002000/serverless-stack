@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const searchParams = req.nextUrl.searchParams;
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching products:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت محصولات';
+      error instanceof Error ? error.message : 'Unable to load products';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

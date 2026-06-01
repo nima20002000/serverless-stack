@@ -56,11 +56,11 @@ export default function CategoriesManagementPage() {
     try {
       setIsLoading(true);
       const response = await fetch('/api/admin/categories');
-      if (!response.ok) throw new Error('خطا در دریافت دسته‌بندی‌ها');
+      if (!response.ok) throw new Error('Unable to load categories');
       const data = await response.json();
       setCategories(data.categories || []);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
       setCategories([]);
     } finally {
       setIsLoading(false);
@@ -92,13 +92,11 @@ export default function CategoriesManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در ذخیره دسته‌بندی');
+        throw new Error(errorData.error || 'Unable to save category');
       }
 
       setSuccessMessage(
-        editingCategory
-          ? 'دسته‌بندی با موفقیت ویرایش شد'
-          : 'دسته‌بندی با موفقیت ایجاد شد'
+        editingCategory ? 'Category updated.' : 'Category created.'
       );
       setShowForm(false);
       setEditingCategory(null);
@@ -112,7 +110,7 @@ export default function CategoriesManagementPage() {
       });
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -130,7 +128,7 @@ export default function CategoriesManagementPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`آیا از حذف دسته‌بندی "${name}" اطمینان دارید؟`)) {
+    if (!confirm(`Delete category "${name}"?`)) {
       return;
     }
 
@@ -141,13 +139,13 @@ export default function CategoriesManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف دسته‌بندی');
+        throw new Error(errorData.error || 'Unable to delete category');
       }
 
-      setSuccessMessage('دسته‌بندی با موفقیت حذف شد');
+      setSuccessMessage('Category deleted.');
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -167,7 +165,7 @@ export default function CategoriesManagementPage() {
   const handleImageSelect = (urls: string[]) => {
     if (urls.length > 0) {
       setFormData({ ...formData, image: urls[0] });
-      setSuccessMessage('تصویر با موفقیت انتخاب شد');
+      setSuccessMessage('Image selected.');
     }
   };
 
@@ -179,12 +177,12 @@ export default function CategoriesManagementPage() {
         body: JSON.stringify({ isActive: !currentStatus }),
       });
 
-      if (!response.ok) throw new Error('خطا در به‌روزرسانی دسته‌بندی');
+      if (!response.ok) throw new Error('Unable to update category');
 
-      setSuccessMessage('وضعیت دسته‌بندی به‌روزرسانی شد');
+      setSuccessMessage('Category updated.');
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -221,7 +219,7 @@ export default function CategoriesManagementPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در حذف دسته‌بندی‌ها');
+        throw new Error(errorData.error || 'Unable to delete categories');
       }
 
       const data = await response.json();
@@ -229,7 +227,7 @@ export default function CategoriesManagementPage() {
       setSelectedCategories(new Set());
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -245,14 +243,14 @@ export default function CategoriesManagementPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در فعال‌سازی دسته‌بندی‌ها');
+      if (!response.ok) throw new Error('Unable to activate categories');
 
       const data = await response.json();
       setSuccessMessage(data.message);
       setSelectedCategories(new Set());
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
@@ -268,32 +266,32 @@ export default function CategoriesManagementPage() {
         }),
       });
 
-      if (!response.ok) throw new Error('خطا در غیرفعال‌سازی دسته‌بندی‌ها');
+      if (!response.ok) throw new Error('Unable to deactivate categories');
 
       const data = await response.json();
       setSuccessMessage(data.message);
       setSelectedCategories(new Set());
       fetchCategories();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
   const bulkActions: BulkAction[] = [
     {
-      label: 'حذف',
+      label: 'Delete',
       variant: 'danger',
       onClick: handleBulkDelete,
       requiresConfirmation: true,
-      confirmationMessage: `آیا از حذف ${selectedCategories.size} دسته‌بندی انتخاب‌شده اطمینان دارید؟`,
+      confirmationMessage: `Delete ${selectedCategories.size} selected category item(s)?`,
     },
     {
-      label: 'فعال‌سازی',
+      label: 'Activate',
       variant: 'primary',
       onClick: handleBulkActivate,
     },
     {
-      label: 'غیرفعال‌سازی',
+      label: 'Deactivate',
       variant: 'secondary',
       onClick: handleBulkDeactivate,
     },
@@ -310,16 +308,14 @@ export default function CategoriesManagementPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'مدیریت دسته‌بندی‌ها' }]} />
+      <Breadcrumbs items={[{ label: 'Categories' }]} />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <Button
@@ -327,10 +323,10 @@ export default function CategoriesManagementPage() {
           onClick={() => setShowForm(!showForm)}
           className="w-full sm:w-auto order-2 sm:order-1"
         >
-          {showForm ? 'انصراف' : 'افزودن دسته‌بندی جدید'}
+          {showForm ? 'Cancel' : 'Add category'}
         </Button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 order-1 sm:order-2">
-          مدیریت دسته‌بندی‌ها
+          Categories
         </h1>
       </div>
 
@@ -354,14 +350,14 @@ export default function CategoriesManagementPage() {
       {showForm && (
         <Card className="mb-6">
           <div className="p-6">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-right">
-              {editingCategory ? 'ویرایش دسته‌بندی' : 'افزودن دسته‌بندی جدید'}
+            <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+              {editingCategory ? 'Edit category' : 'Add category'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    نام دسته‌بندی *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Category name *
                   </label>
                   <input
                     type="text"
@@ -369,13 +365,13 @@ export default function CategoriesManagementPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    نامک (Slug) *
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Slug *
                   </label>
                   <input
                     type="text"
@@ -391,29 +387,29 @@ export default function CategoriesManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                  توضیحات
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                  Description
                 </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                  تصویر دسته‌بندی
+                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                  Image Category
                 </label>
                 <div className="space-y-2">
                   {formData.image && (
                     <div className="relative w-full aspect-[4/5] border border-gray-300 dark:border-slate-700 rounded-lg overflow-hidden">
                       <Image
                         src={formData.image}
-                        alt="پیش‌نمایش تصویر"
+                        alt="Category image"
                         fill
                         className="object-cover object-center"
                         sizes="(max-width: 768px) 100vw, 50vw"
@@ -423,7 +419,7 @@ export default function CategoriesManagementPage() {
                         onClick={() => setFormData({ ...formData, image: '' })}
                         className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-red-600"
                       >
-                        حذف تصویر
+                        Delete Image
                       </button>
                     </div>
                   )}
@@ -432,27 +428,27 @@ export default function CategoriesManagementPage() {
                     variant="secondary"
                     onClick={() => setShowMediaBrowser(true)}
                   >
-                    {formData.image ? 'تغییر تصویر' : 'انتخاب تصویر از R2'}
+                    {formData.image ? 'Change image' : 'Select image'}
                   </Button>
-                  <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
-                    تصویر از فضای ذخیره‌سازی R2 انتخاب می‌شود
+                  <p className="text-xs text-gray-500 dark:text-slate-500 text-left">
+                    Select an image from the configured media library.
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    دسته‌بندی والد
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Parent category
                   </label>
                   <select
                     value={formData.parentId}
                     onChange={(e) =>
                       setFormData({ ...formData, parentId: e.target.value })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left bg-white dark:bg-slate-900 dark:text-slate-100"
                   >
-                    <option value="">بدون والد (دسته اصلی)</option>
+                    <option value="">No parent (top level)</option>
                     {availableParents.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.parent ? `${cat.parent.name} > ` : ''}
@@ -463,8 +459,8 @@ export default function CategoriesManagementPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-                    وضعیت
+                  <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+                    Status
                   </label>
                   <select
                     value={formData.isActive ? 'active' : 'inactive'}
@@ -474,24 +470,24 @@ export default function CategoriesManagementPage() {
                         isActive: e.target.value === 'active',
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right bg-white dark:bg-slate-900 dark:text-slate-100"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left bg-white dark:bg-slate-900 dark:text-slate-100"
                   >
-                    <option value="active">فعال</option>
-                    <option value="inactive">غیرفعال</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                   </select>
                 </div>
               </div>
 
-              <div className="flex gap-3 justify-end">
+              <div className="flex gap-3 justify-start">
                 <Button
                   type="button"
                   variant="secondary"
                   onClick={handleCancelForm}
                 >
-                  انصراف
+                  Cancel
                 </Button>
                 <Button type="submit" variant="primary">
-                  {editingCategory ? 'ذخیره تغییرات' : 'ایجاد دسته‌بندی'}
+                  {editingCategory ? 'Save changes' : 'Create category'}
                 </Button>
               </div>
             </form>
@@ -516,20 +512,20 @@ export default function CategoriesManagementPage() {
                     className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  عملیات
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Actions
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  وضعیت
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Status
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
-                  تعداد محصولات
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden md:table-cell">
+                  Products
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
-                  توضیحات
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100 hidden lg:table-cell">
+                  Description
                 </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-slate-100">
-                  نام دسته‌بندی
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  Category name
                 </th>
               </tr>
             </thead>
@@ -548,14 +544,14 @@ export default function CategoriesManagementPage() {
                         className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                       />
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-2 justify-end">
+                    <td className="px-4 py-3 text-left">
+                      <div className="flex gap-2 justify-start">
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={() => handleEdit(category)}
                         >
-                          ویرایش
+                          Edit
                         </Button>
                         <Button
                           variant="danger"
@@ -564,11 +560,11 @@ export default function CategoriesManagementPage() {
                             handleDelete(category.id, category.name)
                           }
                         >
-                          حذف
+                          Delete
                         </Button>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <button
                         onClick={() =>
                           toggleActive(category.id, category.isActive)
@@ -579,18 +575,18 @@ export default function CategoriesManagementPage() {
                             : 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
                         }`}
                       >
-                        {category.isActive ? 'فعال' : 'غیرفعال'}
+                        {category.isActive ? 'Active' : 'Inactive'}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-right hidden md:table-cell">
+                    <td className="px-4 py-3 text-left hidden md:table-cell">
                       <span className="text-gray-900 dark:text-slate-100">
                         {formatNumber(category._count.products)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
+                    <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
                       {category.description || '-'}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">
+                    <td className="px-4 py-3 text-left font-medium">
                       <span className="text-gray-900 dark:text-slate-100">
                         {category.name}
                       </span>
@@ -613,25 +609,25 @@ export default function CategoriesManagementPage() {
                           className="w-4 h-4 text-blue-600 border-gray-300 dark:border-slate-700 rounded focus:ring-blue-500"
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex gap-2 justify-end">
+                      <td className="px-4 py-3 text-left">
+                        <div className="flex gap-2 justify-start">
                           <Button
                             variant="secondary"
                             size="sm"
                             onClick={() => handleEdit(child)}
                           >
-                            ویرایش
+                            Edit
                           </Button>
                           <Button
                             variant="danger"
                             size="sm"
                             onClick={() => handleDelete(child.id, child.name)}
                           >
-                            حذف
+                            Delete
                           </Button>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-left">
                         <button
                           onClick={() => toggleActive(child.id, child.isActive)}
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -640,25 +636,25 @@ export default function CategoriesManagementPage() {
                               : 'bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200'
                           }`}
                         >
-                          {child.isActive ? 'فعال' : 'غیرفعال'}
+                          {child.isActive ? 'Active' : 'Inactive'}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-right hidden md:table-cell">
+                      <td className="px-4 py-3 text-left hidden md:table-cell">
                         <span className="text-gray-900 dark:text-slate-100">
                           {formatNumber(child._count.products)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
+                      <td className="px-4 py-3 text-left text-sm text-gray-600 dark:text-slate-400 hidden lg:table-cell">
                         {child.description || '-'}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      <td className="px-4 py-3 text-left font-medium">
                         <span className="text-gray-500 dark:text-slate-500 ml-2">
-                          ↳
+                          Child
                         </span>
                         <span className="text-gray-900 dark:text-slate-100">
                           {child.name}
                         </span>
-                        <div className="text-xs text-gray-500 dark:text-slate-500 mr-4">
+                        <div className="text-xs text-gray-500 dark:text-slate-500 ml-4">
                           {child.slug}
                         </div>
                       </td>
@@ -671,7 +667,7 @@ export default function CategoriesManagementPage() {
 
           {categories.length === 0 && (
             <div className="text-center py-8 text-gray-500 dark:text-slate-500">
-              هیچ دسته‌بندی وجود ندارد
+              No categories found.
             </div>
           )}
         </div>

@@ -17,7 +17,7 @@ export default function SiteSettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({
     favicon: '',
     logo: '',
-    site_name: 'کیتیا',
+    site_name: 'Commerce Starter',
   });
   const [isLoading, setIsLoading] = useState(true);
   const isE2E =
@@ -38,14 +38,14 @@ export default function SiteSettingsPage() {
         setIsLoading(true);
       }
       const response = await fetch('/api/admin/settings');
-      if (!response.ok) throw new Error('خطا در دریافت تنظیمات');
+      if (!response.ok) throw new Error('Unable to load settings');
       const data = await response.json();
 
       // Convert array to object
       const settingsObj: Record<string, string> = {
         favicon: '',
         logo: '',
-        site_name: 'کیتیا',
+        site_name: 'Commerce Starter',
       };
 
       data.settings.forEach((setting: SiteSetting) => {
@@ -54,7 +54,7 @@ export default function SiteSettingsPage() {
 
       setSettings(settingsObj);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     } finally {
       setIsLoading(false);
     }
@@ -77,12 +77,12 @@ export default function SiteSettingsPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'خطا در ذخیره تنظیمات');
+        throw new Error(errorData.error || 'Unable to save settings');
       }
 
-      setSuccessMessage('تنظیمات با موفقیت ذخیره شد');
+      setSuccessMessage('Settings saved.');
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'خطای نامشخص');
+      setError(error instanceof Error ? error.message : 'Error Unknown');
     } finally {
       setIsSaving(false);
     }
@@ -92,7 +92,7 @@ export default function SiteSettingsPage() {
     if (urls.length > 0 && currentEditingKey) {
       setSettings({ ...settings, [currentEditingKey]: urls[0] });
       setSuccessMessage(
-        `${currentEditingKey === 'favicon' ? 'فاویکون' : 'لوگو'} با موفقیت انتخاب شد`
+        `${currentEditingKey === 'favicon' ? 'Favicon' : 'Logo'} selected.`
       );
     }
   };
@@ -105,23 +105,21 @@ export default function SiteSettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-600 dark:text-slate-400">
-          در حال بارگذاری...
-        </div>
+        <div className="text-gray-600 dark:text-slate-400">Loading...</div>
       </div>
     );
   }
 
   return (
     <div>
-      <Breadcrumbs items={[{ label: 'تنظیمات سایت' }]} />
+      <Breadcrumbs items={[{ label: 'Site settings' }]} />
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 text-right">
-          تنظیمات سایت
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100 text-left">
+          Site settings
         </h1>
-        <p className="text-gray-600 dark:text-slate-400 text-right mt-2">
-          مدیریت فاویکون، لوگو و سایر تنظیمات سایت
+        <p className="text-gray-600 dark:text-slate-400 text-left mt-2">
+          Manage basic public site identity assets.
         </p>
       </div>
 
@@ -145,8 +143,8 @@ export default function SiteSettingsPage() {
         <div className="p-6 space-y-6">
           {/* Site Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-              نام سایت
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+              Site name
             </label>
             <input
               type="text"
@@ -154,15 +152,15 @@ export default function SiteSettingsPage() {
               onChange={(e) =>
                 setSettings({ ...settings, site_name: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right dark:bg-slate-900 dark:text-slate-100"
-              placeholder="کیتیا"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
+              placeholder="Commerce Starter"
             />
           </div>
 
           {/* Favicon */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-              فاویکون (Favicon)
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+              Favicon
             </label>
             <div className="space-y-2">
               {settings.favicon && (
@@ -170,12 +168,12 @@ export default function SiteSettingsPage() {
                   <div className="relative w-16 h-16 border border-gray-300 dark:border-slate-700 rounded overflow-hidden bg-white dark:bg-slate-900">
                     <Image
                       src={settings.favicon}
-                      alt="فاویکون"
+                      alt="Favicon preview"
                       fill
                       className="object-contain"
                     />
                   </div>
-                  <div className="flex-1 text-right">
+                  <div className="flex-1 text-left">
                     <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
                       {settings.favicon}
                     </p>
@@ -185,7 +183,7 @@ export default function SiteSettingsPage() {
                     onClick={() => setSettings({ ...settings, favicon: '' })}
                     className="px-3 py-1 text-sm text-red-600 hover:text-red-800 dark:text-rose-300 dark:hover:text-rose-200"
                   >
-                    حذف
+                    Delete
                   </button>
                 </div>
               )}
@@ -194,19 +192,18 @@ export default function SiteSettingsPage() {
                 variant="secondary"
                 onClick={() => openMediaBrowser('favicon')}
               >
-                {settings.favicon ? 'تغییر فاویکون' : 'انتخاب فاویکون از R2'}
+                {settings.favicon ? 'Change favicon' : 'Select favicon'}
               </Button>
-              <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
-                فاویکون آیکون کوچکی است که در تب مرورگر نمایش داده می‌شود. ابعاد
-                توصیه شده: 32x32 یا 64x64 پیکسل
+              <p className="text-xs text-gray-500 dark:text-slate-500 text-left">
+                Recommended icon size: 32x32 or 64x64 pixels.
               </p>
             </div>
           </div>
 
           {/* Logo */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-right">
-              لوگو (Logo)
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
+              Logo
             </label>
             <div className="space-y-2">
               {settings.logo && (
@@ -214,12 +211,12 @@ export default function SiteSettingsPage() {
                   <div className="relative w-32 h-16 border border-gray-300 dark:border-slate-700 rounded overflow-hidden bg-white dark:bg-slate-900">
                     <Image
                       src={settings.logo}
-                      alt="لوگو"
+                      alt="Logo preview"
                       fill
                       className="object-contain"
                     />
                   </div>
-                  <div className="flex-1 text-right">
+                  <div className="flex-1 text-left">
                     <p className="text-sm text-gray-600 dark:text-slate-400 truncate">
                       {settings.logo}
                     </p>
@@ -229,7 +226,7 @@ export default function SiteSettingsPage() {
                     onClick={() => setSettings({ ...settings, logo: '' })}
                     className="px-3 py-1 text-sm text-red-600 hover:text-red-800 dark:text-rose-300 dark:hover:text-rose-200"
                   >
-                    حذف
+                    Delete
                   </button>
                 </div>
               )}
@@ -238,11 +235,10 @@ export default function SiteSettingsPage() {
                 variant="secondary"
                 onClick={() => openMediaBrowser('logo')}
               >
-                {settings.logo ? 'تغییر لوگو' : 'انتخاب لوگو از R2'}
+                {settings.logo ? 'Change logo' : 'Select logo'}
               </Button>
-              <p className="text-xs text-gray-500 dark:text-slate-500 text-right">
-                لوگو در هدر سایت نمایش داده می‌شود. ابعاد توصیه شده: عرض حداکثر
-                200 پیکسل
+              <p className="text-xs text-gray-500 dark:text-slate-500 text-left">
+                Use a transparent logo with a maximum width around 200 pixels.
               </p>
             </div>
           </div>
@@ -256,7 +252,7 @@ export default function SiteSettingsPage() {
               isLoading={isSaving}
               className="w-full md:w-auto"
             >
-              ذخیره تنظیمات
+              Save settings
             </Button>
           </div>
         </div>
