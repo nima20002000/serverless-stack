@@ -1,0 +1,21 @@
+Context: task001 Publication Security Scrub. Review target: commit 245c4ba only. Criteria: leaked credentials, private infrastructure, personal emails, private paths/domains, unsafe workflow defaults, and public-release blockers in this commit diff.
+
+OpenAI Codex v0.135.0
+--------
+workdir: /data/dexter/Desktop/supabase-vercel-stack
+model: gpt-5.5
+provider: openai
+approval: never
+sandbox: workspace-write [workdir, /tmp, $TMPDIR]
+reasoning effort: high
+reasoning summaries: none
+session id: 019e82ec-29fa-7741-a91f-d6ec21336494
+--------
+user
+commit 245c4ba: task001 publication security scrub
+warning: Codex's Linux sandbox uses bubblewrap and needs access to create user namespaces.
+mcp: codex/list_mcp_resources started
+mcp: codex/list_mcp_resources (completed)
+codex
+I could not inspect the commit because every filesystem command failed with the sandbox error `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`. No actionable findings can be produced from the available information.
+I could not inspect the commit because every filesystem command failed with the sandbox error `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`. No actionable findings can be produced from the available information.

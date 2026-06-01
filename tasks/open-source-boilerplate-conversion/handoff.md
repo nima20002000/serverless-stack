@@ -206,6 +206,27 @@ Review loop:
 
 Current task006/task007/task008 status: functionally complete with one valid review finding fixed by Worker L. Strict nested review-mode cleanliness remains blocked because the focused review attempts did not complete to a final findings/no-findings section on the large shared dirty worktree. No commit was made.
 
+## Task001 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task001 only, following the revised commit-based workflow.
+
+Final task001 code commit:
+- `05b4d3c` - `task001: scrub private publication artifacts`
+
+Review loop:
+- Rounds 1-15 reviewed earlier task001 commits and found valid task001 issues or review/tooling failures. Valid task001 findings were fixed into task001, the commit was amended, and the branch was replayed.
+- Round 16 reviewed final commit `05b4d3c`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task001-round16.txt`.
+- Round 16 result: no discrete introduced correctness issues were found in the reviewed commit.
+- Full task001 review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task001-round1.txt` through `task001-round16.txt`.
+
+Checks recorded:
+- `npm run verify` passed.
+- Publication/security scrub returned no task001 blocker matches.
+- `git diff --check` passed.
+- The final review log records that the task001 commit's CI test and production build commands completed successfully in a clean worktree for `05b4d3c`.
+
+Current task001 status: commit-reviewed clean. Task002 is next in the sequential commit-based review queue.
+
 ## Task003 Commit-Based Review Finalization - 2026-06-01
 
 Scope: task003 only, following the revised commit-based review workflow.

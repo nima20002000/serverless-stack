@@ -1,0 +1,14 @@
+Review target: commit 47953b7 only. Criteria: leaked credentials, private infrastructure, personal emails, private paths/domains, unsafe workflow defaults, public-release blockers, and prior findings about PM2 PORT, R2 helper help output, empty backup failures, optional DNS export failures, hard-coded R2 credentials, remaining private VPS deploy workflow, CI workflow placement, R2 IPv4 forcing, missing release-checklist link, and stale service-worker cache cleanup without private Kitia literals. Only evaluate this commit diff and task001 acceptance criteria; neutral CI is owned by task013, not task001.
+
+The commit removes all GitHub Actions automation and introduces setup documentation that can leave media images broken for fresh R2/non-Cloudflare configurations. These are actionable regressions despite the private-artifact scrubbing goal.
+
+Full review comments:
+
+- [P2] Restore a sanitized GitHub Actions workflow — /data/dexter/Desktop/supabase-vercel-stack/.github/workflows/deploy.yml:1-1
+  After deleting `deploy.yml`, `deploy-staging.yml`, and `rollback.yml`, this commit leaves `.github/workflows` empty, so pushes and PRs no longer get any GitHub Actions build/deployment validation. If the private deploy secrets need to be scrubbed, replace these with a neutral CI/build workflow rather than removing all automation.
+
+- [P2] Document the required Next image host — /data/dexter/Desktop/supabase-vercel-stack/docs/R2_SETUP.md:7-13
+  With the new `next.config.js` allowing remote images only when `NEXT_PUBLIC_IMAGE_REMOTE_HOSTNAME` is set, users who follow this R2 setup block and configure only `R2_PUBLIC_URL` will hit Next.js `Invalid src prop` errors for R2 product images. Add the matching hostname variable here or derive it from `R2_PUBLIC_URL`.
+
+- [P2] Do not say image resizing can be left unset — /data/dexter/Desktop/supabase-vercel-stack/docs/CLOUDFLARE_IMAGE_OPTIMIZATION.md:16-18
+  The client helper treats `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED` as enabled unless it is exactly `'false'`, so users on non-Cloudflare media hosts who leave this unset will still generate `/cdn-cgi/image/...` URLs that those hosts cannot serve. This doc should tell them to set it to `'false'`, or the code default should be changed.

@@ -1,0 +1,8 @@
+Review target: commit d0972d7 only. Criteria: task001 private publication artifact scrub plus prior task001 findings. Focus only on this commit diff and task001 acceptance criteria. Check that sanitized transitional CI is lockfile-strict and includes self-contained production compile validation for this commit, backup helpers do not silently create empty or incomplete payloads, R2 helper scripts remain env-driven and IPv4-safe, README/release/setup docs avoid linking to stale private docs, image host and Cloudflare Image Resizing docs are correct, and service-worker cleanup removes owned legacy caches without reintroducing private project literals or deleting unrelated caches. Do not review later task responsibilities such as legacy payment removal, full UI neutralization, or final CI expansion except where this commit directly changes those files.
+
+The CI workflow no longer performs a finalized production build, allowing build/type-check failures to pass. This undermines the main verification path introduced by the patch.
+
+Review comment:
+
+- [P1] Run a finalized production build in CI — /data/dexter/Desktop/supabase-vercel-stack/.github/workflows/deploy.yml:59-59
+  When a PR contains TypeScript or static-generation errors, this step can still exit successfully because Next's `compile` mode only compiles and explicitly says the build must be finalized with `generate`/`generate-env`; it skips the final production build/type-check phase. On this revision `npx next build --webpack` fails type checking for `src/app/admin/products/[id]/edit/page.tsx`, while the workflow command on this line passes, so CI can mark an undeployable app as green.

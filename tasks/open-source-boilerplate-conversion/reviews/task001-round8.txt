@@ -1,0 +1,11 @@
+Review target: commit 88235bb only. Criteria: leaked credentials, private infrastructure, personal emails, private paths/domains, unsafe workflow defaults, public-release blockers, and prior findings about PM2 PORT, R2 helper help output, empty backup failures, optional DNS export failures, hard-coded R2 credentials, remaining private VPS deploy workflow, CI test script availability, CI test failure, and stale service-worker cache cleanup without private Kitia literals. Only evaluate this commit diff and task001 acceptance criteria.
+
+The commit introduces a CI workflow with required steps that do not pass in the repository state. This would make PR/main checks fail rather than providing a usable validation pipeline.
+
+Full review comments:
+
+- [P1] Remove or fix the failing ESLint CI step — /data/dexter/Desktop/supabase-vercel-stack/.github/workflows/deploy.yml:55-56
+  When this workflow runs on a PR or `main` push, the new `npm run lint` gate fails before linting because this repo uses ESLint 9.39.4 but only has `.eslintrc.json`; ESLint 9 expects an `eslint.config.*` file and exits with “ESLint couldn't find an eslint.config.(js|mjs|cjs) file.” Migrate the config or avoid making this script a required CI step until it can pass.
+
+- [P1] Do not require the broken Storybook build in CI — /data/dexter/Desktop/supabase-vercel-stack/.github/workflows/deploy.yml:64-65
+  If the job reaches this newly added step, `npm run build-storybook` fails for the current tree with Vite/esbuild reporting `src/components/ui-v4/Modal.tsx:117:75: ERROR: Unterminated string literal`. Since Storybook was not previously part of the workflow, this addition keeps the new CI red unless the Storybook build is fixed or the step is removed.
