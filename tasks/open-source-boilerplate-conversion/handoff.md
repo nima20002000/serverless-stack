@@ -289,3 +289,32 @@ Review loop:
 - Process check after the attempts showed no tasks003-005 `codex review` / `run_codex_review` process left running. Unrelated review processes for other workspaces were left alone.
 
 Current task003/task004/task005 status: functionally complete with Worker K's focused fixes applied. Strict nested review-mode cleanliness and live DB/payment integration validation remain blocked by review/tooling/shared-worktree and missing-live-Supabase environment issues. No commit was made.
+
+## Task005 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task005 only, following the revised commit-based workflow.
+
+Final task005 code commit:
+- `712444f` - `task005: prepare Supabase schema and seed setup`
+
+Review loop:
+- Round 1 reviewed commit `7161d82`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task005-round1.txt`; valid findings were fixed into task005.
+- Round 2 reviewed commit `0859d81`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task005-round2.txt`; valid findings were fixed into task005.
+- Round 3 reviewed commit `7f1a371`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task005-round3.txt`; valid findings were fixed into task005.
+- Round 4 reviewed final commit `712444f`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task005-round4.txt`.
+- Round 4 result: no discrete correctness issues introduced by the commit were identified.
+
+Checks run after final amend:
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `npm run build` passed.
+- `git diff --check 712444f^ 712444f` passed.
+- Private-ref/key scan across task005 schema/docs/fixtures/types/test helper paths passed with no matches.
+- Live `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql` was skipped because `DATABASE_URL` is unset.
+- `npx supabase migration list --local` failed because local Supabase Postgres is not running on `127.0.0.1:54322`.
+
+Fixes folded into final task005:
+- Fresh migration service-role grants, null-variant wishlist uniqueness, deterministic/no-persistence OTP handling, higher-entropy E2E phone fixtures, fail-closed Supabase/Redis test guards, and local-vs-hosted Supabase key handling.
+
+Current task005 status: commit-reviewed clean. Task006 is now the next task in the sequential commit-based review queue.
