@@ -488,3 +488,27 @@ Checks run after final amend:
 - `timeout 90s bash -lc 'NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=sb_secret_placeholder npm run test:integration -- admin'` was attempted and failed because no reachable local/test Supabase instance is available: `Failed to connect to Supabase: Unknown error`.
 
 Current task011 status: commit-reviewed clean. Task012 is next in the sequential commit-based review queue.
+
+## Task012 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task012 only, following the revised commit-based workflow.
+
+Final task012 code commit:
+- `7405ef4` - `task012: neutralize email SEO assets and storage`
+
+Review loop:
+- Round 1 reviewed commit `4cc6b55`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task012-round1.txt`; it found a default OG image compatibility issue and an R2 missing-public-URL regression.
+- Those findings were fixed into task012 by adding `public/images/og-default.png`, using it for default OG and structured-data fallback images, making R2 public URL generation fail explicitly without `R2_PUBLIC_URL`, and adding storage adapter test coverage.
+- Round 2 reviewed final commit `7405ef4`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task012-round2.txt`.
+- Round 2 result: no valid findings.
+
+Checks run after final amend:
+- `git diff --check 7405ef4^ 7405ef4` passed.
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `npx tsc --noEmit --pretty false` passed after the production build regenerated `.next/types`.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret npm run test:unit -- email storage` passed: 4 files / 16 tests.
+- Required task012 scrub returned no matches.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal env passed.
+
+Current task012 status: commit-reviewed clean. Task013 is next in the sequential commit-based review queue.
