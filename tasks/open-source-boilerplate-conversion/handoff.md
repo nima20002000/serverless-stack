@@ -461,3 +461,30 @@ Fixes folded into final task010:
 - Guest checkout E2E payment-button locators now match the redesigned `Pay ...` button while retaining compatibility with legacy labels.
 
 Current task010 status: commit-reviewed clean. Task011 is next in the sequential commit-based review queue.
+
+## Task011 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task011 only, following the revised commit-based workflow.
+
+Final task011 code commit:
+- `79c547c` - `task011: neutralize admin dashboard`
+
+Review loop:
+- Round 1 reviewed commit `dc7ed9c`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task011-round1.txt`; it found valid Unicode slug regressions in inline category and tag creation.
+- Those findings were fixed into task011 by preserving Unicode letters and numbers in generated slugs for language-neutral LTR/RTL catalog data.
+- Round 2 reviewed commit `c84badf`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task011-round2.txt`; it found valid placeholder or misleading admin API messages.
+- Those findings were fixed into task011 by replacing self-role, self-delete, promo validation, and related bulk-user guard messages with actionable English responses and updating matching admin unit tests.
+- Round 3 reviewed final commit `79c547c`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task011-round3.txt`.
+- Round 3 result: no valid findings.
+
+Checks run after final amend:
+- `git diff --check 79c547c^ 79c547c` passed.
+- `npm run verify` passed.
+- `npm run lint -- --quiet` passed.
+- `npx tsc --noEmit --pretty false` passed after the production build regenerated `.next/types`.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret npm run test:unit -- admin` passed: 8 files / 90 tests.
+- Admin scrub returned no matches for Persian/Kitia/legacy provider/private placeholder patterns.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal env passed.
+- `timeout 90s bash -lc 'NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=sb_secret_placeholder npm run test:integration -- admin'` was attempted and failed because no reachable local/test Supabase instance is available: `Failed to connect to Supabase: Unknown error`.
+
+Current task011 status: commit-reviewed clean. Task012 is next in the sequential commit-based review queue.
