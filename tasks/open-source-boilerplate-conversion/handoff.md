@@ -412,3 +412,24 @@ Fixes folded into final task008:
 - Legacy build-version key migration, dark modal backdrop correction, and unique generated input IDs.
 
 Current task008 status: commit-reviewed clean. Task009 is next in the sequential commit-based review queue.
+
+## Task009 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task009 only, following the revised commit-based workflow.
+
+Final task009 code commit:
+- `65800fe` - `task009: redesign neutral public storefront`
+
+Review loop:
+- Round 1 reviewed final commit `65800fe`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task009-round1.txt`.
+- Round 1 result: no valid findings.
+
+Checks run after final review:
+- `git diff --check 65800fe^ 65800fe` passed.
+- `npm run verify` passed on the replayed branch.
+- `npm run lint -- --quiet` passed on the replayed branch.
+- Production build with placeholder Supabase/Auth/Stripe/PayPal env passed on the replayed branch.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY=US npm run test:unit -- cart` passed: 1 file / 6 tests.
+- Public storefront scrub `rg -n "Kitia|کیتیا|kitia\\.ir|cdn\\.kitia|telegram|instagram\\.com/kitia|fa-IR|تومان|[\\u0600-\\u06FF]" src/app src/components` returned no matches.
+
+Current task009 status: commit-reviewed clean. Task010 is next in the sequential commit-based review queue.
