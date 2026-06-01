@@ -352,3 +352,31 @@ Remaining note:
 - Current final-head broad unit run has one task007-owned phone fixture expectation mismatch in `tests/unit/services/user-service-queries.test.ts`; handle it in the task007 commit-based review loop.
 
 Current task006 status: commit-reviewed clean. Task007 is next in the sequential commit-based review queue.
+
+## Task007 Commit-Based Review Finalization - 2026-06-01
+
+Scope: task007 only, following the revised commit-based workflow.
+
+Final task007 code commit:
+- `b4c554f` - `task007: convert copy and validation to English defaults`
+
+Review loop:
+- Rounds 1-4 reviewed earlier task007 commits and produced valid findings. Each valid finding was fixed into task007, the commit was amended, and the branch was replayed.
+- Round 5 reviewed final commit `b4c554f06005209d1541d0dea44e7a1840041a9d`; output saved at `tasks/open-source-boilerplate-conversion/reviews/task007-round5.txt`.
+- Round 5 result: no valid findings.
+- Full task007 review log set is saved under `tasks/open-source-boilerplate-conversion/reviews/task007-round1.txt` through `task007-round5.txt`.
+
+Checks run after final amend:
+- `git diff --check b4c554f^ b4c554f` passed.
+- `npx tsc --noEmit --pretty false` passed.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run test:unit -- services/wishlist-service.test.ts middleware.test.ts services/user-service-queries.test.ts services/user-service-validation.test.ts services/user-service.test.ts services/auth-service.test.ts utils/text.test.ts` passed: 7 files / 106 tests.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 npm --prefix tests run test:e2e -- --list` passed and listed 309 tests.
+- `NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=test-publishable SUPABASE_SECRET_KEY=test-secret NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 NEXT_PUBLIC_APP_URL=http://localhost:3000 npm run build` passed.
+- `npm run lint -- --quiet` is not claimed as passing for task007: it failed before linting because this commit state has ESLint 9 with legacy `.eslintrc.json` and no flat config; forcing legacy config mode also failed inside ESLint config loading.
+
+Fixes folded into final task007:
+- English/default API and validation copy plus neutral phone/name validation from the original task007 implementation.
+- Formatted phone lookup normalization and focused unit coverage from the earlier finalization pass.
+- E2E selector cleanup from the commit-based review loop, replacing placeholder and literal-pipe selectors with real current-copy-compatible role/text selectors.
+
+Current task007 status: commit-reviewed clean. Task008 is next in the sequential commit-based review queue.
