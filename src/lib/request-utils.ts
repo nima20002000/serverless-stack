@@ -12,7 +12,7 @@ import { log } from '@/lib/logger';
  * 1. cf-connecting-ip (Cloudflare's verified client IP - most reliable when using Cloudflare)
  * 2. x-forwarded-for (proxy/load balancer)
  * 3. x-real-ip (nginx)
- * 4. req.ip (direct connection)
+ * 4. request adapter ip property, when present
  *
  * @param req Next.js request object
  * @returns IP address string or null if unavailable
@@ -42,8 +42,8 @@ export function getClientIp(req: NextRequest): string | null {
       return realIp;
     }
 
-    // Fallback: try to get from request context (may not exist in Next.js)
-    const ip = req.ip;
+    // Fallback: try adapter-specific request context when present.
+    const ip = (req as NextRequest & { ip?: string }).ip;
     if (ip && ip !== '') {
       return ip;
     }

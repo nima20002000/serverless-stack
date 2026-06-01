@@ -2,11 +2,19 @@ import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import https from 'https';
 
-// R2 credentials
-const accountId = 'dd63dacc73e373d4f298797c0400a419';
-const accessKeyId = 'afa45d7d809fce2bbc99fdfc4a41375e';
-const secretAccessKey = '9b8b7d4ceea1412a9c2183a9654c7db931510c4904ab355bedcedc1a37bce4de';
-const bucketName = 'kitia-products';
+function requireEnv(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} environment variable is required`);
+  }
+  return value;
+}
+
+const accountId = requireEnv('R2_ACCOUNT_ID');
+const accessKeyId = requireEnv('R2_ACCESS_KEY_ID');
+const secretAccessKey = requireEnv('R2_SECRET_ACCESS_KEY');
+const bucketName = requireEnv('R2_BUCKET_NAME');
+const publicUrl = process.env.R2_PUBLIC_URL;
 
 const client = new S3Client({
   region: 'auto',
@@ -27,59 +35,46 @@ const client = new S3Client({
 });
 
 async function listFiles(prefix = '') {
-  console.log('═══════════════════════════════════════════════════════');
-  console.log('  R2 BUCKET CONTENTS CHECK');
-  console.log('═══════════════════════════════════════════════════════\n');
+  console.log('R2 bucket contents check');
   console.log(`Bucket: ${bucketName}`);
   console.log(`Prefix: ${prefix || '(all files)'}\n`);
 
-  try {
-    const command = new ListObjectsV2Command({
-      Bucket: bucketName,
-      Prefix: prefix,
-      MaxKeys: 100,
-    });
+  const command = new ListObjectsV2Command({
+    Bucket: bucketName,
+    Prefix: prefix,
+    MaxKeys: 100,
+  });
 
-    const response = await client.send(command);
+  const response = await client.send(command);
 
-    if (!response.Contents || response.Contents.length === 0) {
-      console.log('❌ No files found in bucket');
-      console.log('\n💡 ROOT CAUSE IDENTIFIED:');
-      console.log('   The R2 bucket is EMPTY or files are not at expected paths!');
-      console.log('   This is why all images return 404.\n');
-      console.log('📋 SOLUTION:');
-      console.log('   1. Upload images to R2 bucket via admin panel');
-      console.log('   2. Or run migration script to upload existing images');
-      console.log('   3. Verify uploaded files appear at https://cdn.kitia.ir/{path}\n');
-      return;
-    }
-
-    console.log(`✅ Found ${response.Contents.length} files:\n`);
-
-    response.Contents.forEach((item, index) => {
-      const sizeKB = ((item.Size || 0) / 1024).toFixed(2);
-      const date = item.LastModified ? item.LastModified.toISOString() : 'N/A';
-      console.log(`${index + 1}. ${item.Key}`);
-      console.log(`   Size: ${sizeKB} KB | Modified: ${date}`);
-      console.log(`   URL: https://cdn.kitia.ir/${item.Key}\n`);
-    });
-
-    console.log(`📊 Total: ${response.Contents.length} files`);
-
-  } catch (error) {
-    console.error('❌ ERROR listing files:', error.message);
-    if (error.name === 'NoSuchBucket') {
-      console.log('\n💡 Bucket does not exist. Create it in Cloudflare dashboard.');
-    } else if (error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT')) {
-      console.log('\n💡 Cannot connect to R2. Check:');
-      console.log('   - Account ID is correct');
-      console.log('   - Access credentials are valid');
-      console.log('   - Network connectivity (IPv4/IPv6)');
-    }
+  if (!response.Contents || response.Contents.length === 0) {
+    console.log('No files found in bucket.');
+    console.log(
+      'Verify the bucket name, credentials, prefix, and upload flow.'
+    );
+    return;
   }
 
-  console.log('\n═══════════════════════════════════════════════════════\n');
+  console.log(`Found ${response.Contents.length} files:\n`);
+
+  response.Contents.forEach((item, index) => {
+    const sizeKB = ((item.Size || 0) / 1024).toFixed(2);
+    const date = item.LastModified ? item.LastModified.toISOString() : 'N/A';
+    const objectKey = item.Key || '';
+    const publicObjectUrl = publicUrl
+      ? `${publicUrl.replace(/\/$/, '')}/${objectKey.replace(/^\/+/, '')}`
+      : null;
+
+    console.log(`${index + 1}. ${objectKey}`);
+    console.log(`   Size: ${sizeKB} KB | Modified: ${date}`);
+    if (publicObjectUrl) {
+      console.log(`   URL: ${publicObjectUrl}`);
+    }
+    console.log('');
+  });
 }
 
-// List all files
-listFiles().catch(console.error);
+listFiles(process.argv[2] || '').catch((error) => {
+  console.error('Error listing R2 files:', error.message);
+  process.exit(1);
+});

@@ -1,46 +1,51 @@
-import { Ratelimit } from '@upstash/ratelimit';
+import { Ratelimit, type Duration } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { log } from '@/lib/logger';
 
-// Validate required environment variables
 const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
 const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-if (!redisUrl || !redisToken) {
-  throw new Error(
-    'UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN environment variables are required'
-  );
+const redis =
+  redisUrl && redisToken
+    ? new Redis({ url: redisUrl, token: redisToken })
+    : null;
+
+if (!redis) {
+  log.warn('Redis credentials not configured, rate limiting disabled');
 }
 
-// Initialize Redis client
-const redis = new Redis({
-  url: redisUrl,
-  token: redisToken,
-});
+const disabledLimiter = {
+  limit: async () => ({
+    success: true,
+    limit: 0,
+    remaining: 0,
+    reset: 0,
+  }),
+} as unknown as Ratelimit;
+
+function createLimiter(
+  requests: number,
+  window: Duration,
+  prefix: string
+): Ratelimit {
+  if (!redis) return disabledLimiter;
+
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(requests, window),
+    analytics: true,
+    prefix,
+  });
+}
 
 // Strict rate limiter for authentication endpoints (prevent brute force)
-export const strictLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(5, '2 m'), // 5 requests per 2 minutes
-  analytics: true,
-  prefix: 'ratelimit:strict',
-});
+export const strictLimiter = createLimiter(5, '2 m', 'ratelimit:strict');
 
 // Moderate rate limiter for general API endpoints
-export const apiLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute
-  analytics: true,
-  prefix: 'ratelimit:api',
-});
+export const apiLimiter = createLimiter(100, '1 m', 'ratelimit:api');
 
 // Generous rate limiter for public endpoints (product browsing)
-export const publicLimiter = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(1000, '1 m'), // 1000 requests per minute
-  analytics: true,
-  prefix: 'ratelimit:public',
-});
+export const publicLimiter = createLimiter(1000, '1 m', 'ratelimit:public');
 
 type RateLimitResult = {
   success: boolean;

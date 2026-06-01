@@ -10,9 +10,12 @@ export const dynamic = 'force-dynamic';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string; variantId: string } }
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; variantId: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
@@ -64,9 +67,12 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; variantId: string } }
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; variantId: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });

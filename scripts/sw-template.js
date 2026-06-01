@@ -15,10 +15,17 @@
 
 // This will be replaced at build time with the actual build ID
 const BUILD_VERSION = '__BUILD_VERSION__';
-const CACHE_NAME = `kitia-cache-${BUILD_VERSION}`;
+const CACHE_PREFIX = 'commerce-boilerplate-cache';
+const CACHE_NAME = `${CACHE_PREFIX}-${BUILD_VERSION}`;
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = ['/favicon.ico', '/favicon.svg'];
+const OWNED_CACHE_PATH_PATTERNS = [
+  /^\/$/,
+  /^\/_next\//,
+  /^\/favicon\.(ico|svg)$/,
+  /^\/build-version\.json$/,
+];
 
 // Patterns to never cache
 const NO_CACHE_PATTERNS = [
@@ -41,12 +48,34 @@ function shouldCache(url) {
     }
   }
 
-  // Only cache same-origin requests and CDN
+  // Only cache same-origin requests. External storage/CDN hosts should opt into
+  // their own cache policy instead of being hard-coded in this boilerplate.
   const urlObj = new URL(url);
   const isSameOrigin = urlObj.origin === self.location.origin;
-  const isCDN = urlObj.hostname === 'cdn.kitia.ir';
 
-  return isSameOrigin || isCDN;
+  return isSameOrigin;
+}
+
+async function isOwnedCache(cacheName) {
+  if (cacheName.startsWith(`${CACHE_PREFIX}-`)) {
+    return true;
+  }
+
+  try {
+    const cache = await caches.open(cacheName);
+    const requests = await cache.keys();
+
+    return requests.some((request) => {
+      const url = new URL(request.url);
+
+      return (
+        url.origin === self.location.origin &&
+        OWNED_CACHE_PATH_PATTERNS.some((pattern) => pattern.test(url.pathname))
+      );
+    });
+  } catch {
+    return false;
+  }
 }
 
 // Install event - pre-cache critical assets
@@ -76,12 +105,9 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((cacheNames) => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            // Delete any cache that doesn't match current version
-            if (
-              cacheName !== CACHE_NAME &&
-              cacheName.startsWith('kitia-cache-')
-            ) {
+          cacheNames.map(async (cacheName) => {
+            // Delete previous caches owned by this service worker.
+            if (cacheName !== CACHE_NAME && (await isOwnedCache(cacheName))) {
               console.log(`[SW] Deleting old cache: ${cacheName}`);
               return caches.delete(cacheName);
             }

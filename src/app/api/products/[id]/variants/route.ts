@@ -13,9 +13,10 @@ const MAX_ID_LENGTH = 64;
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },
@@ -45,9 +46,10 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },
@@ -170,9 +172,10 @@ export async function POST(
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },

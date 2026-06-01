@@ -1,3 +1,5 @@
+const imageRemoteHostname = process.env.NEXT_PUBLIC_IMAGE_REMOTE_HOSTNAME;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -24,21 +26,18 @@ const nextConfig = {
     return config;
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'cdn.kitia.ir',
-        pathname: '/**', // Allow all paths (products/*, media-library/*, cdn-cgi/image/*)
-      },
-    ],
-    // Disable Next.js image optimization - Cloudflare CDN already optimizes
-    // This avoids IPv6 timeout issues when fetching from cdn.kitia.ir
+    remotePatterns: imageRemoteHostname
+      ? [
+          {
+            protocol: 'https',
+            hostname: imageRemoteHostname,
+            pathname: '/**',
+          },
+        ]
+      : [],
+    // Disable Next.js image optimization when an external CDN handles images.
     unoptimized: true,
   },
-  // Optimize font loading
-  optimizeFonts: true,
-  // Enable SWC minification for smaller bundles
-  swcMinify: true,
   // Reduce chunk size for better caching
   productionBrowserSourceMaps: false,
   // Configure aggressive caching for static assets

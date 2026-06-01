@@ -1,182 +1,143 @@
-# Kitia - پلتفرم فروشگاه آنلاین
+# Supabase Vercel Stack
 
-## مراحل راه‌اندازی
+A neutral open-source commerce boilerplate built with Next.js, Supabase, Vercel, Tailwind CSS, Stripe, and PayPal.
 
-### 1. نصب وابستگی‌ها
+The project is intended as a starting point for storefronts that need product browsing, checkout, user accounts, admin workflows, media storage, and production-oriented deployment defaults. It keeps Stripe and PayPal as the built-in payment providers and documents optional integrations for Cloudflare R2, Resend, and Upstash.
 
-```bash
-npm install
-```
+## Stack
 
-### 2. تنظیم پایگاه داده
+- Next.js App Router with React and TypeScript
+- Supabase Postgres with the schema contract in `database/schema-contract.md`
+- NextAuth for application authentication
+- Stripe and PayPal payment flows
+- Tailwind CSS for UI styling
+- Cloudflare R2-compatible object storage for product media
+- Optional Resend email delivery
+- Optional Upstash Redis cache and rate limiting
+- Vercel-oriented deployment
 
-ابتدا یک پایگاه داده PostgreSQL ایجاد کنید، سپس فایل `.env` را ویرایش کرده و اطلاعات اتصال را وارد کنید:
+## Quick Start
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/kitia?schema=public"
-```
+1. Install dependencies:
 
-### 3. اجرای مایگریشن‌های Prisma
+   ```bash
+   npm install
+   npm --prefix tests install
+   ```
 
-```bash
-npx prisma migrate dev --name init
-npx prisma generate
-```
+2. Create local environment files:
 
-### 4. راه‌اندازی سرور توسعه
+   ```bash
+   cp .env.example .env
+   cp .env.example tests/.env
+   ```
 
-```bash
-npm run dev
-```
+3. Configure required variables in `.env`:
+   - `DATABASE_URL`
+   - `NEXTAUTH_URL`
+   - `NEXTAUTH_SECRET`
+   - `NEXT_PUBLIC_APP_URL`
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SECRET_KEY`
+   - Stripe and PayPal sandbox credentials if you want real checkout calls
 
-پروژه روی `http://localhost:3000` در دسترس خواهد بود.
+4. Validate the expected payment schema when a database is available:
 
-## معماری پروژه
+   ```bash
+   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+   ```
 
-برای مطالعه جزئیات کامل معماری، فایل `architecture.json` را مشاهده کنید.
+5. Start development:
 
-### ساختار پوشه‌ها
+   ```bash
+   npm run dev
+   ```
 
-```
-/src
-├── /app                 # Next.js App Router
-│   ├── /api            # API Routes
-│   ├── /(public)       # صفحات عمومی
-│   ├── /(auth)         # صفحات احراز هویت
-│   └── /admin          # پنل ادمین
-├── /components         # کامپوننت‌های React
-├── /lib                # ابزارها و کانفیگ‌ها
-├── /services           # لایه منطق کسب‌وکار
-├── /store              # مدیریت state با Zustand
-├── /types              # تعاریف TypeScript
-└── /config             # تنظیمات برنامه
-```
+6. Open `http://localhost:3000`.
 
-## تکنولوژی‌های استفاده شده
+## Environment Variables
 
-- **Framework**: Next.js 14 (App Router)
-- **Database**: PostgreSQL + Prisma ORM
-- **Authentication**: NextAuth.js
-- **State Management**: Zustand
-- **Styling**: Tailwind CSS (RTL)
-- **Icons**: Heroicons
-- **Payment**: Zarinpal SDK
-- **Language**: TypeScript
+`.env.example` lists all required and optional variables. Use local, preview, and production values that belong to your own Supabase, payment, storage, email, and cache accounts.
 
-## قابلیت‌های اصلی
+Required for the app:
 
-1. **سیستم کاربری**
-   - ثبت‌نام و ورود
-   - احراز هویت با NextAuth
-   - نقش‌های کاربری (USER, ADMIN)
+- `DATABASE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
 
-2. **سیستم تراکنش‌ها**
-   - ایجاد کد یکتا برای هر تراکنش
-   - پرداخت با زرین‌پال
-   - ردیابی وضعیت تراکنش
+Required for built-in payment providers:
 
-3. **سیستم فاکتور**
-   - ایجاد خودکار فاکتور پس از تراکنش موفق
-   - امکان دانلود فاکتور
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `PAYPAL_CLIENT_ID`
+- `PAYPAL_CLIENT_SECRET`
+- `PAYPAL_WEBHOOK_ID`
+- `PAYPAL_ENV`
 
-4. **کد تخفیف کاربران جدید**
-   - کد تخفیف یکتا برای هر کاربر جدید
-   - تایمر 24 ساعته
+Optional integrations:
 
-5. **پنل ادمین**
-   - مدیریت محصولات
-   - مدیریت کاربران
-   - نمایش تراکنش‌ها
+- Cloudflare R2-compatible storage: `R2_*`
+- Resend or SMTP email: `RESEND_API_KEY`, `RESEND_SMTP_*`, `EMAIL_SMTP_*`
+- Upstash Redis cache/rate limiting: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+- Cloudflare Image Resizing: `NEXT_PUBLIC_CLOUDFLARE_IMAGE_RESIZING_ENABLED`
 
-## دستورات مفید
-
-```bash
-# اجرای مود توسعه
-npm run dev
-
-# ساخت برای تولید
-npm build
-
-# اجرای نسخه تولید
-npm start
-
-# Lint
-npm run lint
-
-# Generate Prisma Client
-npx prisma generate
-
-# Prisma Studio (مشاهده دیتابیس)
-npx prisma studio
-```
-
-## پشتیبان‌گیری (Backup)
-
-سیستم پشتیبان‌گیری خودکار برای فایل‌های حیاتی سرور در Cloudflare R2.
-
-### اسکریپت‌ها
+## Useful Commands
 
 ```bash
-# پشتیبان‌گیری روزانه (فایل‌های env، nginx، PM2)
-node scripts/backup-to-r2.mjs daily
-
-# پشتیبان‌گیری هفتگی (+ تنظیمات مانیتورینگ، DNS)
-node scripts/backup-to-r2.mjs weekly
-
-# پشتیبان‌گیری ماهانه دیتابیس
-node scripts/backup-to-r2.mjs monthly
-
-# لیست پشتیبان‌ها
-node scripts/backup-to-r2.mjs list
-
-# بازیابی پشتیبان
-node scripts/restore-from-r2.mjs download <backup-key> ./restore
-
-# تأیید سلامت پشتیبان
-node scripts/restore-from-r2.mjs verify <backup-key>
+npm run dev              # Start local development
+npm run build            # Build for production
+npm start                # Start production build
+npm run lint             # Run ESLint
+npm run verify           # Run repository verification scripts
+npm run test:unit        # Run unit tests
+npm run test:integration # Run integration tests
+npm run test:e2e         # Run Playwright tests
 ```
 
-### رمزنگاری
+## Deployment
 
-```bash
-# پشتیبان‌گیری با رمزنگاری AES-256-GCM
-GPG_PASSPHRASE="your-secret" node scripts/backup-to-r2.mjs daily
+Vercel is the primary deployment target. Create a Vercel project, add the variables from `.env.example`, and register separate Stripe and PayPal webhooks for each deployed environment.
+
+Payment webhook endpoints:
+
+- Stripe: `/api/transactions/webhook-stripe`
+- PayPal: `/api/transactions/webhook-paypal`
+
+See `docs/PAYMENT_METHOD_DEPLOYMENT.md` and `docs/DEPLOYMENT.md` for deployment checklists.
+
+## Project Layout
+
+```text
+src/
+  app/          Next.js routes and route handlers
+  components/   Reusable React components
+  config/       Application configuration
+  hooks/        Client hooks
+  lib/          Provider clients and shared utilities
+  services/     Business logic
+  store/        Zustand state stores
+  types/        TypeScript types
+database/       Schema contract and schema validation helpers
+docs/           Public setup and operations documentation
+tests/          Unit, integration, and E2E tests
 ```
 
-### سیاست نگهداری
+## Documentation
 
-| نوع    | مدت نگهداری |
-| ------ | ----------- |
-| روزانه | ۱۴ روز      |
-| هفتگی  | ۸ هفته      |
-| ماهانه | ۶ ماه       |
+- `docs/SETUP_CHECKLIST.md`
+- `docs/ENVIRONMENT.md`
+- `docs/DEPLOYMENT.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/PAYMENT_METHOD_DEPLOYMENT.md`
+- `docs/R2_SETUP.md`
+- `tests/README.md`
 
-### Cron (VPS)
+## Contributing
 
-```bash
-# روزانه ساعت ۳ صبح
-0 3 * * * GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs daily
-
-# هفتگی یکشنبه ساعت ۴ صبح
-0 4 * * 0 GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs weekly
-
-# ماهانه اول هر ماه ساعت ۵ صبح
-0 5 1 * * GPG_PASSPHRASE="secret" node /home/dexter/kitia/scripts/backup-to-r2.mjs monthly
-```
-
-## متغیرهای محیطی
-
-فایل `.env.example` را به `.env` کپی کرده و مقادیر زیر را تنظیم کنید:
-
-- `DATABASE_URL`: آدرس اتصال به PostgreSQL
-- `NEXTAUTH_SECRET`: کلید رمزنگاری NextAuth
-- `ZARINPAL_MERCHANT_ID`: شناسه درگاه زرین‌پال
-
-## توسعه آینده
-
-این معماری برای توسعه آسان طراحی شده است:
-
-- افزودن قابلیت‌های جدید در `/services`
-- افزودن API endpoint‌های جدید در `/app/api`
-- افزودن صفحات جدید با استفاده از App Router
-- توسعه پنل ادمین با افزودن route‌های جدید
+Read `CONTRIBUTING.md` before opening a pull request. The repository is licensed under the MIT License.

@@ -17,9 +17,7 @@ import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 import { generateCategoryAltText } from '@/lib/seo/alt-text';
 
-// Use ISR (Incremental Static Regeneration) for optimal performance
-// Page will be statically generated and revalidated every 60 seconds
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 // Optimized hero image URL (640x640, WebP, 85% quality)
 // Using Cloudflare Image Resizing for automatic WebP conversion and size optimization

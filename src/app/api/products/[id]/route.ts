@@ -17,9 +17,10 @@ function isValidId(id: string): boolean {
 // GET /api/products/[id] - Get single product (public, or admin with inactive variants)
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },
@@ -72,9 +73,10 @@ export async function GET(
 // PUT /api/products/[id] - Update product (admin only)
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },
@@ -154,9 +156,10 @@ export async function PUT(
 // DELETE /api/products/[id] - Delete product (admin only)
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
         { error: 'شناسه محصول نامعتبر است' },

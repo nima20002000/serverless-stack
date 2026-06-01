@@ -25,7 +25,7 @@ interface CheckoutFormProps {
   }) => void;
   isProcessing: boolean;
   hideSubmitButton?: boolean;
-  formRef?: React.RefObject<HTMLFormElement>;
+  formRef?: React.RefObject<HTMLFormElement | null>;
   compact?: boolean;
 }
 

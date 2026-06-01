@@ -5,8 +5,7 @@ import { getActiveProducts } from '@/services/product-service';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 
-// Use ISR for better performance - revalidate every 60 seconds
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface ProductsPageProps {
   searchParams: Promise<{

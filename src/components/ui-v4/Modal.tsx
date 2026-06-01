@@ -147,7 +147,7 @@ export default function ModalV4({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="
+                className={`
                   flex-shrink-0
                   p-2 -mt-1 -ms-1
                   text-rose-400 hover:text-rose-600
@@ -156,7 +156,7 @@ export default function ModalV4({
                   dark:hover:bg-slate-800
                   rounded-2xl
                   transition-all duration-200
-                "
+                `}
                 aria-label="بستن"
               >
                 {closeIcon}

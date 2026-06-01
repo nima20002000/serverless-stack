@@ -11,9 +11,12 @@ const MAX_ID_LENGTH = 64;
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string; mediaId: string } }
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; mediaId: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (
       !params.id ||
       params.id.length > MAX_ID_LENGTH ||
@@ -55,9 +58,12 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string; mediaId: string } }
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; mediaId: string }> }
 ) {
   try {
+    const params = await paramsPromise;
     if (
       !params.id ||
       params.id.length > MAX_ID_LENGTH ||

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import type { ReactElement } from 'react';
 import {
   ChevronDownIcon,
   FolderIcon,
@@ -159,8 +160,8 @@ export default function CategorySelector({
   const renderCategoryOptions = (
     categories: Category[],
     level = 0
-  ): JSX.Element[] => {
-    const elements: JSX.Element[] = [];
+  ): ReactElement[] => {
+    const elements: ReactElement[] = [];
 
     for (const category of categories) {
       elements.push(

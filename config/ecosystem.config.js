@@ -1,19 +1,18 @@
 module.exports = {
   apps: [
     {
-      name: 'kitia',
+      name: process.env.PM2_APP_NAME || 'commerce-boilerplate',
       script: 'node_modules/next/dist/bin/next',
-      args: 'start -p 3001',
-      cwd: '/home/dexter/kitia',
-      instances: 2, // 2 instances for zero-downtime rolling reloads
+      args: 'start',
+      cwd: process.env.APP_DIR || process.cwd(),
+      instances: Number(process.env.PM2_INSTANCES || 2),
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001, // Different port - payment proxy uses 3000
       },
       env_file: '.env.production',
-      error_file: '/home/dexter/logs/kitia-error.log',
-      out_file: '/home/dexter/logs/kitia-out.log',
+      error_file: process.env.PM2_ERROR_LOG || './logs/app-error.log',
+      out_file: process.env.PM2_OUT_LOG || './logs/app-out.log',
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       max_memory_restart: '1G',

@@ -27,8 +27,8 @@ export type {
   ImageGravity,
 } from '../cloudflare-images-client';
 
-// Storage adapter instance
 const provider = process.env.STORAGE_PROVIDER || 'r2';
+let storageAdapter: StorageAdapter | null = null;
 
 function createStorageAdapter(): StorageAdapter {
   switch (provider) {
@@ -44,4 +44,15 @@ function createStorageAdapter(): StorageAdapter {
   }
 }
 
-export const storage: StorageAdapter = createStorageAdapter();
+function getStorageAdapter(): StorageAdapter {
+  storageAdapter ??= createStorageAdapter();
+  return storageAdapter;
+}
+
+export const storage: StorageAdapter = new Proxy({} as StorageAdapter, {
+  get(_target, property: keyof StorageAdapter) {
+    const adapter = getStorageAdapter();
+    const value = adapter[property];
+    return typeof value === 'function' ? value.bind(adapter) : value;
+  },
+});

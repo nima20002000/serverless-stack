@@ -17,8 +17,7 @@ type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
 import { cache } from 'react';
 
-// Use ISR for better performance - revalidate every 60 seconds
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
