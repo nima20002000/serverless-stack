@@ -18,7 +18,7 @@ async function getHandler() {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -31,9 +31,7 @@ async function getHandler() {
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : 'خطا در دریافت علاقه‌مندی‌ها',
+          error instanceof Error ? error.message : 'Unable to complete request',
       },
       { status: 500 }
     );
@@ -47,7 +45,7 @@ async function postHandler(req: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -57,7 +55,7 @@ async function postHandler(req: NextRequest) {
 
     if (!productId) {
       return NextResponse.json(
-        { error: 'شناسه محصول الزامی است' },
+        { error: 'Product ID is required' },
         { status: 400 }
       );
     }
@@ -76,7 +74,7 @@ async function postHandler(req: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در افزودن به علاقه‌مندی‌ها',
+            : 'Unable to add product to wishlist',
       },
       { status: 500 }
     );
@@ -91,7 +89,7 @@ async function deleteHandler(req: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -101,7 +99,7 @@ async function deleteHandler(req: NextRequest) {
 
     if (!productId) {
       return NextResponse.json(
-        { error: 'شناسه محصول الزامی است' },
+        { error: 'Product ID is required' },
         { status: 400 }
       );
     }
@@ -120,7 +118,7 @@ async function deleteHandler(req: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در حذف از علاقه‌مندی‌ها',
+            : 'Unable to remove product from wishlist',
       },
       { status: 500 }
     );

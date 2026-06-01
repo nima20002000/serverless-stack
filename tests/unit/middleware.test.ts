@@ -270,7 +270,7 @@ describe('middleware', () => {
       expect(response.status).toBe(429);
       const body = await response.json();
       expect(body.error).toBe(
-        'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.'
+        'Too many requests. Please wait before trying again.'
       );
       expect(body.retryAfter).toBe(resetTime);
     });

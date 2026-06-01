@@ -292,7 +292,7 @@ export async function getAllProducts(options?: {
 
   if (error) {
     log.error('Error fetching products', { error });
-    throw new Error('خطا در دریافت محصولات');
+    throw new Error('Unable to load products');
   }
 
   // If includeRelations is false, return products without fetching relations
@@ -375,12 +375,12 @@ export async function getAllProducts(options?: {
  * Sorting options for product listing
  */
 export type ProductSortOption =
-  | 'popular' // محبوب‌ترین‌ها (displayOrder)
-  | 'price-asc' // قیمت: کم به زیاد
-  | 'price-desc' // قیمت: زیاد به کم
-  | 'featured' // محصولات ویژه
-  | 'discount' // بیشترین تخفیف
-  | 'newest'; // جدیدترین
+  | 'popular' // display order
+  | 'price-asc' // price: low to high
+  | 'price-desc' // price: high to low
+  | 'featured' // featured products
+  | 'discount' // highest discount
+  | 'newest'; // newest products
 
 /**
  * Batch fetch all relations for multiple products (OPTIMIZED - eliminates N+1 queries)
@@ -631,7 +631,7 @@ export async function getActiveProducts(options?: {
 
   if (error) {
     log.error('Error fetching active products', { error, sortBy });
-    throw new Error('خطا در دریافت محصولات');
+    throw new Error('Unable to load products');
   }
 
   if (!products || products.length === 0) {
@@ -729,7 +729,7 @@ export async function getFeaturedProducts(options?: {
 
   if (error) {
     log.error('Error fetching featured products', { error });
-    throw new Error('خطا در دریافت محصولات ویژه');
+    throw new Error('Unable to load featured products');
   }
 
   if (!products || products.length === 0) {
@@ -802,7 +802,7 @@ export async function getDiscountedProducts(options?: {
 
   if (error) {
     log.error('Error fetching discounted products', { error });
-    throw new Error('خطا در دریافت محصولات تخفیف‌دار');
+    throw new Error('Unable to load discounted products');
   }
 
   if (!products || products.length === 0) {
@@ -873,12 +873,12 @@ export async function getProductById(
       .single();
 
     if (error || !product) {
-      throw new Error('محصول یافت نشد');
+      throw new Error('Product not found');
     }
 
     // Check if product is active (unless explicitly including inactive products)
     if (!includeInactive && !product.isActive) {
-      throw new Error('محصول یافت نشد');
+      throw new Error('Product not found');
     }
 
     return product;
@@ -889,12 +889,12 @@ export async function getProductById(
   const product = await fetchProductWithRelations(id, includeInactive);
 
   if (!product) {
-    throw new Error('محصول یافت نشد');
+    throw new Error('Product not found');
   }
 
   // Check if product is active (unless explicitly including inactive products)
   if (!includeInactive && !product.isActive) {
-    throw new Error('محصول یافت نشد');
+    throw new Error('Product not found');
   }
 
   return product;
@@ -930,7 +930,7 @@ export async function searchProducts(
 
   if (error) {
     log.error('Error searching products', { query, error });
-    throw new Error('خطا در جستجوی محصولات');
+    throw new Error('Unable to search products');
   }
 
   return {
@@ -1116,17 +1116,17 @@ export async function createProduct(data: {
     // Validate required fields
     if (!data.name || !data.description) {
       log.warn('Missing required product fields', { name: data.name });
-      throw new Error('نام و توضیحات محصول الزامی است');
+      throw new Error('Product name and description are required');
     }
 
     if (data.price <= 0) {
       log.warn('Invalid product price', { price: data.price });
-      throw new Error('قیمت باید بیشتر از صفر باشد');
+      throw new Error('Price must be greater than zero');
     }
 
     if (data.stock < 0) {
       log.warn('Invalid product stock', { stock: data.stock });
-      throw new Error('موجودی نمی‌تواند منفی باشد');
+      throw new Error('Stock cannot be negative');
     }
 
     const supabase = createClient();
@@ -1156,7 +1156,7 @@ export async function createProduct(data: {
 
     if (error || !product) {
       log.error('Failed to create product', { error });
-      throw new Error('خطا در ایجاد محصول');
+      throw new Error('Unable to create product');
     }
 
     // Add tags if provided
@@ -1187,7 +1187,7 @@ export async function createProduct(data: {
     // Fetch and return with relations
     const fullProduct = await fetchProductWithRelations(productId);
     if (!fullProduct) {
-      throw new Error('خطا در دریافت اطلاعات محصول ایجاد شده');
+      throw new Error('Unable to load the created product');
     }
     return fullProduct;
   } catch (error) {
@@ -1228,16 +1228,16 @@ export async function updateProduct(
     .single();
 
   if (!existingProduct) {
-    throw new Error('محصول یافت نشد');
+    throw new Error('Product not found');
   }
 
   // Validate data if provided
   if (data.price !== undefined && data.price <= 0) {
-    throw new Error('قیمت باید بیشتر از صفر باشد');
+    throw new Error('Price must be greater than zero');
   }
 
   if (data.stock !== undefined && data.stock < 0) {
-    throw new Error('موجودی نمی‌تواند منفی باشد');
+    throw new Error('Stock cannot be negative');
   }
 
   // Handle tag updates separately
@@ -1256,7 +1256,7 @@ export async function updateProduct(
 
   if (error) {
     log.error('Failed to update product', { id, error });
-    throw new Error('خطا در بروزرسانی محصول');
+    throw new Error('Unable to update product');
   }
 
   // If tagIds provided, update tag connections
@@ -1287,7 +1287,7 @@ export async function updateProduct(
   // Fetch and return with relations
   const fullProduct = await fetchProductWithRelations(id);
   if (!fullProduct) {
-    throw new Error('خطا در دریافت اطلاعات محصول بروزرسانی شده');
+    throw new Error('Unable to load the updated product');
   }
   return fullProduct;
 }
@@ -1308,7 +1308,7 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
     .single();
 
   if (!existingProduct) {
-    throw new Error('محصول یافت نشد');
+    throw new Error('Product not found');
   }
 
   // Check if product has been purchased (has transaction items)
@@ -1323,7 +1323,7 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
       transactionItemsCount,
     });
     throw new Error(
-      `این محصول قابل حذف نیست زیرا ${transactionItemsCount} سفارش ثبت شده دارد. برای مخفی کردن محصول، آن را غیرفعال کنید.`
+      `This product cannot be deleted because it has ${transactionItemsCount} order(s). Deactivate it instead.`
     );
   }
 
@@ -1331,7 +1331,7 @@ export async function deleteProduct(id: string): Promise<DeleteResult> {
 
   if (error) {
     log.error('Failed to delete product', { id, error });
-    throw new Error('خطا در حذف محصول');
+    throw new Error('Unable to delete product');
   }
 
   log.info('Product deleted successfully', { productId: id });
@@ -1359,7 +1359,7 @@ export async function bulkDeleteProducts(
 
     if (error) {
       log.error('Error in bulk delete products', { error });
-      throw new Error('خطا در حذف محصولات');
+      throw new Error('Unable to delete products');
     }
 
     // Invalidate product cache
@@ -1391,7 +1391,7 @@ export async function bulkUpdateProducts(
 
     if (error) {
       log.error('Error in bulk update products', { error });
-      throw new Error('خطا در بروزرسانی محصولات');
+      throw new Error('Unable to update products');
     }
 
     // Invalidate product cache
@@ -1426,7 +1426,7 @@ export async function updateStock(
 
     if (fetchError || !product) {
       log.warn('Product not found for stock update', { productId: id });
-      throw new Error('محصول یافت نشد');
+      throw new Error('Product not found');
     }
 
     const newStock = product.stock + quantity;
@@ -1437,7 +1437,7 @@ export async function updateStock(
         currentStock: product.stock,
         requestedChange: quantity,
       });
-      throw new Error('موجودی کافی نیست');
+      throw new Error('Not enough stock available');
     }
 
     const { data: updated, error } = await supabase
@@ -1451,7 +1451,7 @@ export async function updateStock(
       .single();
 
     if (error || !updated) {
-      throw new Error('خطا در بروزرسانی موجودی');
+      throw new Error('Unable to update stock');
     }
 
     log.info('Stock updated successfully', {
@@ -1474,7 +1474,7 @@ export async function updateStock(
 // ========== PRICE HELPER FUNCTIONS ==========
 
 /**
- * Format price to Persian/Toman format
+ * Format prices with the configured locale and currency defaults.
  * Re-exported from utils for server component compatibility
  */
 export { formatPrice, calculateDiscountedPrice } from '@/lib/utils/format';
@@ -1574,7 +1574,7 @@ export async function addProductMedia(data: {
 
   if (error || !media) {
     log.error('Failed to add product media', { error });
-    throw new Error('خطا در افزودن رسانه');
+    throw new Error('Unable to add product media');
   }
 
   return media;
@@ -1597,7 +1597,7 @@ export async function getProductMedia(
 
   if (error) {
     log.error('Failed to fetch product media', { productId, error });
-    throw new Error('خطا در دریافت رسانه‌ها');
+    throw new Error('Unable to load product media');
   }
 
   return media || [];
@@ -1620,7 +1620,7 @@ export async function updateProductMedia(
     .single();
 
   if (fetchError || !existingMedia) {
-    throw new Error('رسانه یافت نشد');
+    throw new Error('Product media not found');
   }
 
   // If setting as default, unset any existing default for the same product/variant
@@ -1650,7 +1650,7 @@ export async function updateProductMedia(
 
   if (error || !media) {
     log.error('Failed to update product media', { id, error });
-    throw new Error('خطا در بروزرسانی رسانه');
+    throw new Error('Unable to update product media');
   }
 
   return media;
@@ -1670,14 +1670,14 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
     .single();
 
   if (fetchError || !media) {
-    throw new Error('رسانه یافت نشد');
+    throw new Error('Product media not found');
   }
 
   const { error } = await supabase.from('product_media').delete().eq('id', id);
 
   if (error) {
     log.error('Failed to delete product media', { id, error });
-    throw new Error('خطا در حذف رسانه');
+    throw new Error('Unable to delete product media');
   }
 
   // If the deleted media was the default, set the first remaining media as default
@@ -1761,7 +1761,7 @@ export async function batchSyncProductMedia(
 
     if (error) {
       log.error('Failed to delete media in batch', { error });
-      throw new Error('خطا در حذف رسانه‌ها');
+      throw new Error('Unable to delete product media');
     }
     deleted = count || 0;
   }
@@ -1786,7 +1786,7 @@ export async function batchSyncProductMedia(
 
     if (error) {
       log.error('Failed to add media in batch', { error });
-      throw new Error('خطا در افزودن رسانه‌ها');
+      throw new Error('Unable to add product media');
     }
     added = count || mediaToInsert.length;
   }
@@ -1963,7 +1963,7 @@ export async function getProductVariants(
 
   if (error) {
     log.error('Failed to fetch product variants', { productId, error });
-    throw new Error('خطا در دریافت واریانت‌ها');
+    throw new Error('Unable to load product variants');
   }
 
   if (!variants || variants.length === 0) {
@@ -2048,7 +2048,7 @@ export async function batchCreateProductVariants(
 
     if (existingSkus && existingSkus.length > 0) {
       const duplicateSku = existingSkus[0].sku;
-      throw new Error(`SKU "${duplicateSku}" قبلاً ثبت شده است`);
+      throw new Error(`SKU "${duplicateSku}" already exists`);
     }
   }
 
@@ -2096,7 +2096,7 @@ export async function batchCreateProductVariants(
 
   if (error || !createdVariants) {
     log.error('Failed to batch create product variants', { error });
-    throw new Error('خطا در ایجاد واریانت‌ها');
+    throw new Error('Unable to create product variants');
   }
 
   // Update parent product stock
@@ -2160,7 +2160,7 @@ export async function batchUpdateProductVariants(
       for (const existing of existingSkus) {
         const matchingVariant = variants.find((v) => v.sku === existing.sku);
         if (matchingVariant && matchingVariant.id !== existing.id) {
-          throw new Error(`SKU "${existing.sku}" قبلاً ثبت شده است`);
+          throw new Error(`SKU "${existing.sku}" already exists`);
         }
       }
     }
@@ -2231,7 +2231,7 @@ export async function createProductVariant(data: {
       .single();
 
     if (existing) {
-      throw new Error('SKU قبلاً ثبت شده است');
+      throw new Error('SKU already exists');
     }
   }
 
@@ -2272,7 +2272,7 @@ export async function createProductVariant(data: {
 
   if (error || !variant) {
     log.error('Failed to create product variant', { error });
-    throw new Error('خطا در ایجاد واریانت');
+    throw new Error('Unable to create product variant');
   }
 
   // Update parent product stock
@@ -2327,7 +2327,7 @@ export async function updateProductVariant(
     .single();
 
   if (fetchError || !existingVariant) {
-    throw new Error('واریانت محصول یافت نشد');
+    throw new Error('Product variant not found');
   }
 
   // Validate SKU uniqueness if being updated
@@ -2339,7 +2339,7 @@ export async function updateProductVariant(
       .single();
 
     if (existing && existing.id !== id) {
-      throw new Error('SKU قبلاً ثبت شده است');
+      throw new Error('SKU already exists');
     }
   }
 
@@ -2355,7 +2355,7 @@ export async function updateProductVariant(
 
   if (error || !variant) {
     log.error('Failed to update product variant', { id, error });
-    throw new Error('خطا در بروزرسانی واریانت');
+    throw new Error('Unable to update product variant');
   }
 
   // Update parent product stock if variant stock was changed (unless skipped for batch ops)
@@ -2407,7 +2407,7 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
     .single();
 
   if (fetchError || !existingVariant) {
-    throw new Error('واریانت محصول یافت نشد');
+    throw new Error('Product variant not found');
   }
 
   // Delete the variant
@@ -2418,7 +2418,7 @@ export async function deleteProductVariant(id: string): Promise<DeleteResult> {
 
   if (error) {
     log.error('Failed to delete product variant', { id, error });
-    throw new Error('خطا در حذف واریانت');
+    throw new Error('Unable to delete product variant');
   }
 
   // Renumber remaining variants to fill the gap

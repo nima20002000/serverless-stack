@@ -31,8 +31,8 @@ test.describe('Wishlist Journey', () => {
     id: 'e2e-user-wishlist-test-fixed',
     uid: 'e2e-uid-wishlist-test-fixed',
     email: 'e2e-wishlist-test@example.com',
-    phone: '09398765432', // Unique phone number for wishlist tests
-    name: 'کاربر تست علاقه‌مندی',
+    phone: '+12025555432', // Unique phone number for wishlist tests
+    name: 'Test User text',
     password: 'Test1234!@#$',
   };
 
@@ -119,8 +119,8 @@ test.describe('Wishlist Journey', () => {
   function getTestUser(): E2ETestUser {
     return {
       ...testUserData,
-      firstName: 'کاربر',
-      lastName: 'تست',
+      firstName: 'User',
+      lastName: 'Test',
       isVerified: true,
       role: 'USER',
       updatedAt: new Date().toISOString(),
@@ -133,7 +133,7 @@ test.describe('Wishlist Journey', () => {
 
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in|ورود/i })).toBeVisible();
 
     await page.locator('input[name="identifier"]').fill(user.email);
     await page.locator('input[name="password"]').fill(user.password);
@@ -159,9 +159,9 @@ test.describe('Wishlist Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show empty wishlist message for new guest
-    await expect(
-      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should allow guests to add products to wishlist', async ({ page }) => {
@@ -200,9 +200,9 @@ test.describe('Wishlist Journey', () => {
     ).toBeVisible({ timeout: 10000 });
 
     // Should show guest info banner
-    await expect(
-      page.locator('text=لیست علاقه‌مندی‌ها روی این دستگاه ذخیره شده است')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Save for later')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Clean up - clear the wishlist storage
     await page.evaluate(() => {
@@ -218,12 +218,14 @@ test.describe('Wishlist Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Should show empty wishlist message
-    await expect(
-      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Should show "View Products" button
-    await expect(page.locator('a:has-text("مشاهده محصولات")')).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: /View Products|مشاهده محصولات/i })
+    ).toBeVisible();
   });
 
   test('should add product to wishlist from product page', async ({ page }) => {
@@ -306,8 +308,9 @@ test.describe('Wishlist Journey', () => {
     // Click the remove button (trash icon)
     const removeButton = page
       .locator(
-        '[data-testid="wishlist-item"] button[aria-label="حذف از علاقه‌مندی‌ها"]'
+        '[data-testid="wishlist-item"]'
       )
+      .getByRole('button', { name: /Remove from wishlist|حذف/i })
       .first();
     await removeButton.click();
 
@@ -317,9 +320,9 @@ test.describe('Wishlist Journey', () => {
     );
 
     // Should show empty wishlist message
-    await expect(
-      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should toggle wishlist button on product page', async ({ page }) => {
@@ -398,10 +401,10 @@ test.describe('Wishlist Journey', () => {
 
     // Only click if not out of stock
     const buttonText = await addToCartButton.textContent();
-    if (!buttonText?.includes('ناموجود')) {
+    if (!buttonText?.includes('Out of stock')) {
       await addToCartButton.click();
 
-      await expect(page.getByText('محصول به سبد خرید اضافه شد')).toBeVisible({
+      await expect(page.getByText(/Added to cart|به سبد/i)).toBeVisible({
         timeout: 10000,
       });
     }
@@ -409,8 +412,9 @@ test.describe('Wishlist Journey', () => {
     // Clean up wishlist for next tests
     const removeButton = page
       .locator(
-        '[data-testid="wishlist-item"] button[aria-label="حذف از علاقه‌مندی‌ها"]'
+        '[data-testid="wishlist-item"]'
       )
+      .getByRole('button', { name: /Remove from wishlist|حذف/i })
       .first();
     if (await removeButton.isVisible()) {
       await removeButton.click();
@@ -504,7 +508,9 @@ test.describe('Wishlist Journey', () => {
     page.on('dialog', (dialog) => dialog.accept());
 
     // Click "Delete All" button
-    const clearButton = page.locator('button:has-text("حذف همه")');
+    const clearButton = page.getByRole('button', {
+      name: /Delete all|Clear all|حذف همه/i,
+    });
     await expect(clearButton).toBeVisible();
     await clearButton.click();
 
@@ -514,9 +520,9 @@ test.describe('Wishlist Journey', () => {
     );
 
     // Should show empty wishlist message
-    await expect(
-      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should remove item from wishlist via product page toggle', async ({
@@ -556,9 +562,9 @@ test.describe('Wishlist Journey', () => {
     await page.goto('/wishlist');
     await page.waitForLoadState('networkidle');
 
-    await expect(
-      page.locator('h2:has-text("لیست علاقه‌مندی‌ها خالی است")')
-    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: /empty|خالی/i })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should show wishlist count correctly', async ({ page }) => {
@@ -592,15 +598,16 @@ test.describe('Wishlist Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // The title should show the count
-    await expect(page.locator('h1:has-text("علاقه‌مندی‌ها (1)")')).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(
+      page.getByRole('heading', { name: /Wishlist|علاقه‌مندی‌ها/i })
+    ).toContainText(/\(1\)/, { timeout: 10000 });
 
     // Clean up
     const removeButton = page
       .locator(
-        '[data-testid="wishlist-item"] button[aria-label="حذف از علاقه‌مندی‌ها"]'
+        '[data-testid="wishlist-item"]'
       )
+      .getByRole('button', { name: /Remove from wishlist|حذف/i })
       .first();
     if (await removeButton.isVisible()) {
       await removeButton.click();

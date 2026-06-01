@@ -114,7 +114,7 @@ describe('POST /api/products/[id]/media', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('returns 400 when required fields are missing', async () => {
@@ -130,7 +130,7 @@ describe('POST /api/products/[id]/media', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'نوع و آدرس رسانه الزامی است',
+      error: 'Product ID and media URL are required',
     });
   });
 
@@ -206,7 +206,7 @@ describe('PATCH /api/products/[id]/media/[mediaId]', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('updates media for admins', async () => {
@@ -270,7 +270,7 @@ describe('DELETE /api/products/[id]/media/[mediaId]', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('deletes media for admins', async () => {

@@ -15,7 +15,7 @@ async function postHandler(_req: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -31,7 +31,7 @@ async function postHandler(_req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در بررسی علاقه‌مندی‌ها',
+          error instanceof Error ? error.message : 'Unable to complete request',
       },
       { status: 500 }
     );
@@ -45,7 +45,7 @@ async function getHandler() {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -59,7 +59,7 @@ async function getHandler() {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در بررسی علاقه‌مندی‌ها',
+          error instanceof Error ? error.message : 'Unable to complete request',
       },
       { status: 500 }
     );

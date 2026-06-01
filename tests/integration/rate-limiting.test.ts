@@ -13,7 +13,7 @@ import {
 } from '../../src/lib/rate-limit';
 
 function buildRequest(headers: Record<string, string>) {
-  return new Request('https://kitia.test/api', { headers });
+  return new Request('https://commerce.test/api', { headers });
 }
 
 describe('Rate Limiting Integration Tests', () => {

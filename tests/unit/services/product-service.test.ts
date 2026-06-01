@@ -92,7 +92,7 @@ describe('product-service', () => {
         price: 100,
         stock: -5, // Negative stock should be rejected
       })
-    ).rejects.toThrow('موجودی نمی‌تواند منفی باشد');
+    ).rejects.toThrow('Stock cannot be negative');
   });
 
   it('rejects product creation with negative price', async () => {
@@ -104,7 +104,7 @@ describe('product-service', () => {
         price: -100, // Negative price should be rejected
         stock: 10,
       })
-    ).rejects.toThrow('قیمت باید بیشتر از صفر باشد');
+    ).rejects.toThrow('Price must be greater than zero');
   });
 
   it('rejects product creation with zero price', async () => {
@@ -116,7 +116,7 @@ describe('product-service', () => {
         price: 0, // Zero price should be rejected
         stock: 10,
       })
-    ).rejects.toThrow('قیمت باید بیشتر از صفر باشد');
+    ).rejects.toThrow('Price must be greater than zero');
   });
 
   it('creates a product and connects tags', async () => {
@@ -373,7 +373,9 @@ describe('product-service', () => {
     supabase.from.mockReturnValue(fetchQuery);
     createClientMock.mockReturnValue(supabase as unknown);
 
-    await expect(updateStock('p1', -5)).rejects.toThrow('موجودی کافی نیست');
+    await expect(updateStock('p1', -5)).rejects.toThrow(
+      'Not enough stock available'
+    );
   });
 
   it('calculates price display with discounts', () => {

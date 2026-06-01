@@ -22,7 +22,7 @@ import { cleanupTestUsers, cleanupTestTransactions } from '../utils/cleanup';
 import {
   expectValidUserObject,
   expectValidEmail,
-  expectValidIranianPhone,
+  expectValidInternationalPhone,
   expectValidBcryptHash,
 } from '../utils/assertions';
 import { generateUniqueTestUser } from '../fixtures';
@@ -346,7 +346,7 @@ describe('Auth Service Integration Tests', () => {
       // Validate
       expectValidUserObject(authenticatedUser);
       expect(authenticatedUser.phone).toBeDefined();
-      expectValidIranianPhone(authenticatedUser.phone as string);
+      expectValidInternationalPhone(authenticatedUser.phone as string);
       expect(authenticatedUser.id).toBe(createdUser.id);
     });
 
@@ -562,9 +562,9 @@ describe('Auth Service Integration Tests', () => {
           amount: 100000,
           status: 'PENDING',
           userId: null, // Guest transaction
-          fullName: 'مهمان تست',
+          fullName: 'Guest Test',
           phone: testUser.phone, // Same phone as user
-          shippingAddress: 'آدرس تست',
+          shippingAddress: 'Address Test',
           postalCode: '1234567890',
           updatedAt: now,
         })

@@ -40,7 +40,7 @@ describe('GET /api/promo/active', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'لطفاً وارد شوید',
+      error: 'Authentication is required',
     });
     expect(getActivePromoCodeMock).not.toHaveBeenCalled();
   });

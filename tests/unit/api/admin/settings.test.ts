@@ -35,7 +35,7 @@ describe('admin settings API', () => {
   const adminSession = {
     user: {
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -67,7 +67,7 @@ describe('admin settings API', () => {
     const response = await GET(createGetRequest());
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getAllSettingsMock).not.toHaveBeenCalled();
   });
 
@@ -80,15 +80,15 @@ describe('admin settings API', () => {
     const response = await GET(createGetRequest());
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getAllSettingsMock).not.toHaveBeenCalled();
   });
 
   it('GET returns settings for admin users', async () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     getAllSettingsMock.mockResolvedValue([
-      { key: 'siteName', value: 'Kitia' },
-      { key: 'supportEmail', value: 'help@kitia.ir' },
+      { key: 'siteName', value: 'Supabase Vercel Stack' },
+      { key: 'supportEmail', value: 'help@example.com' },
     ]);
     const { GET } = await loadHandlers();
 
@@ -97,8 +97,8 @@ describe('admin settings API', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       settings: [
-        { key: 'siteName', value: 'Kitia' },
-        { key: 'supportEmail', value: 'help@kitia.ir' },
+        { key: 'siteName', value: 'Supabase Vercel Stack' },
+        { key: 'supportEmail', value: 'help@example.com' },
       ],
     });
     expect(getAllSettingsMock).toHaveBeenCalledTimes(1);
@@ -113,7 +113,7 @@ describe('admin settings API', () => {
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
-      error: 'خطا در دریافت تنظیمات',
+      error: 'Unable to complete request',
     });
     expect(logMock.error).toHaveBeenCalledWith(
       'Error fetching site settings:',
@@ -128,7 +128,7 @@ describe('admin settings API', () => {
     const response = await POST(createPostRequest({ settings: {} }));
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(updateSettingsMock).not.toHaveBeenCalled();
   });
 
@@ -140,7 +140,7 @@ describe('admin settings API', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'داده‌های نامعتبر',
+      error: 'Invalid settings payload',
     });
     expect(updateSettingsMock).not.toHaveBeenCalled();
   });
@@ -153,24 +153,24 @@ describe('admin settings API', () => {
     const response = await POST(
       createPostRequest({
         settings: {
-          siteName: 'Kitia',
-          supportEmail: 'help@kitia.ir',
+          siteName: 'Supabase Vercel Stack',
+          supportEmail: 'help@example.com',
         },
       })
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: 'تنظیمات با موفقیت ذخیره شد',
+      message: 'Settings saved successfully',
     });
     expect(updateSettingsMock).toHaveBeenCalledWith({
-      siteName: 'Kitia',
-      supportEmail: 'help@kitia.ir',
+      siteName: 'Supabase Vercel Stack',
+      supportEmail: 'help@example.com',
     });
     expect(logMock.info).toHaveBeenCalledWith(
       'Site settings updated',
       expect.objectContaining({
-        admin: 'admin@kitia.ir',
+        admin: 'admin@example.com',
         keys: ['siteName', 'supportEmail'],
       })
     );
@@ -184,14 +184,14 @@ describe('admin settings API', () => {
     const response = await POST(
       createPostRequest({
         settings: {
-          siteName: 'Kitia',
+          siteName: 'Supabase Vercel Stack',
         },
       })
     );
 
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
-      error: 'خطا در ذخیره تنظیمات',
+      error: 'Unable to save settings',
     });
     expect(logMock.error).toHaveBeenCalledWith(
       'Error updating site settings:',

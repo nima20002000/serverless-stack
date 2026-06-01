@@ -26,8 +26,8 @@ test.describe('Admin Promo Codes', () => {
     id: 'e2e-user-admin-promo-codes',
     uid: 'e2e-uid-admin-promo-codes',
     email: 'e2e-admin-promo@example.com',
-    phone: '09185555555',
-    name: 'ادمین کد تخفیف',
+    phone: '+12025555555',
+    name: 'Promo code',
     password: 'Test1234!@#$',
   };
 
@@ -35,8 +35,8 @@ test.describe('Admin Promo Codes', () => {
     id: 'e2e-user-promo-profile',
     uid: 'e2e-uid-promo-profile',
     email: 'e2e-promo-profile@example.com',
-    phone: '09186666666',
-    name: 'کاربر کد تخفیف',
+    phone: '+12025556666',
+    name: 'User Promo code',
     password: 'Test1234!@#$',
   };
 
@@ -139,11 +139,11 @@ test.describe('Admin Promo Codes', () => {
 
     await expect(page.getByRole('table')).toBeVisible();
 
-    await page.getByRole('button', { name: 'افزودن کد تخفیف جدید' }).click();
+    await page.getByRole('button', { name: 'Add Promo code new' }).click();
 
     await page.getByPlaceholder('SUMMER2024').fill(promoCode);
     await page
-      .locator('label:has-text("نوع تخفیف")')
+      .locator('label:has-text("Discount type")')
       .locator('..')
       .locator('select')
       .selectOption('PERCENT');
@@ -154,12 +154,12 @@ test.describe('Admin Promo Codes', () => {
     );
     await page.locator('input[type="datetime-local"]').fill(expiresAt);
 
-    await page.getByPlaceholder('نامحدود').fill('2');
-    await page.getByPlaceholder('بدون محدودیت').fill('100000');
-    await page.getByPlaceholder('بدون سقف').fill('50000');
+    await page.getByPlaceholder('Namedetails').fill('2');
+    await page.getByPlaceholder(/No limit|بدون محدودیت/i).fill('100000');
+    await page.getByPlaceholder(/No limit|بدون سقف/i).fill('50000');
     await page
-      .getByPlaceholder('مثال: کد تخفیف شب یلدا')
-      .fill('ایجاد شده توسط تست E2E');
+      .getByPlaceholder(/Promo code description|مثال: کد تخفیف/i)
+      .fill('Create details Test E2E');
 
     const createResponsePromise = page.waitForResponse(
       (response) =>
@@ -167,7 +167,7 @@ test.describe('Admin Promo Codes', () => {
         response.request().method() === 'POST'
     );
 
-    await page.getByRole('button', { name: 'ایجاد کد تخفیف' }).click();
+    await page.getByRole('button', { name: 'Create Promo code' }).click();
     const createResponse = await createResponsePromise;
     if (!createResponse.ok()) {
       const payload = await createResponse.json().catch(() => null);
@@ -208,14 +208,14 @@ test.describe('Admin Promo Codes', () => {
     });
     await expect(promoRow).toBeVisible();
 
-    await promoRow.getByRole('button', { name: 'ویرایش' }).click();
+    await promoRow.getByRole('button', { name: 'Edit' }).click();
 
     const discountValueInput = page.locator('input[type="number"]').first();
     await discountValueInput.fill('25');
 
-    const updatedDescription = 'به روز شده توسط تست E2E';
+    const updatedDescription = 'to day details Test E2E';
     await page
-      .getByPlaceholder('مثال: کد تخفیف شب یلدا')
+      .getByPlaceholder(/Promo code description|مثال: کد تخفیف/i)
       .fill(updatedDescription);
 
     const updateResponsePromise = page.waitForResponse(
@@ -224,7 +224,7 @@ test.describe('Admin Promo Codes', () => {
         response.request().method() === 'PUT'
     );
 
-    await page.getByRole('button', { name: 'ذخیره تغییرات' }).click();
+    await page.getByRole('button', { name: 'Save changes' }).click();
     const updateResponse = await updateResponsePromise;
     if (!updateResponse.ok()) {
       const payload = await updateResponse.json().catch(() => null);

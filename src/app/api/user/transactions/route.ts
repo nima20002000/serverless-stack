@@ -13,7 +13,7 @@ async function getHandler(req: Request) {
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Sign in to continue.' },
         { status: 401 }
       );
     }
@@ -41,7 +41,9 @@ async function getHandler(req: Request) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در بارگذاری تراکنش‌ها',
+          error instanceof Error
+            ? error.message
+            : 'Unable to load transactions.',
       },
       { status: 500 }
     );

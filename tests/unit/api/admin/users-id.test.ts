@@ -31,7 +31,7 @@ describe('admin user detail API', () => {
     user: {
       id: 'admin-1',
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -61,7 +61,7 @@ describe('admin user detail API', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getUserByIdMock).not.toHaveBeenCalled();
   });
 
@@ -76,7 +76,7 @@ describe('admin user detail API', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getUserByIdMock).not.toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe('admin user detail API', () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     getUserByIdMock.mockResolvedValue({
       id: 'u1',
-      email: 'user@kitia.ir',
+      email: 'user@example.com',
       transactions: [
         {
           id: 't1',
@@ -113,7 +113,7 @@ describe('admin user detail API', () => {
     await expect(response.json()).resolves.toEqual({
       user: {
         id: 'u1',
-        email: 'user@kitia.ir',
+        email: 'user@example.com',
         _count: { transactions: 1, promoCodes: 1 },
         transactions: [
           {
@@ -159,7 +159,7 @@ describe('admin user detail API', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(updateUserRoleMock).not.toHaveBeenCalled();
   });
 
@@ -173,7 +173,7 @@ describe('admin user detail API', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      error: 'نمی‌توانید نقش خود را تغییر دهید',
+      error: 'Role is required',
     });
     expect(updateUserRoleMock).not.toHaveBeenCalled();
   });
@@ -188,7 +188,7 @@ describe('admin user detail API', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'نقش کاربری نامعتبر است',
+      error: 'User role is invalid',
     });
     expect(updateUserRoleMock).not.toHaveBeenCalled();
   });
@@ -229,7 +229,7 @@ describe('admin user detail API', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(deleteUserMock).not.toHaveBeenCalled();
   });
 
@@ -243,7 +243,7 @@ describe('admin user detail API', () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
-      error: 'نمی‌توانید حساب کاربری خود را حذف کنید',
+      error: 'details Account details Delete text',
     });
     expect(deleteUserMock).not.toHaveBeenCalled();
   });

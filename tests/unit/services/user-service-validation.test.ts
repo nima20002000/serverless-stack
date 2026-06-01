@@ -37,24 +37,24 @@ describe('user-service validation', () => {
   });
 
   it('rejects invalid or duplicate email', async () => {
-    await expect(
-      validateEmailUniqueness('bad-email')
-    ).rejects.toThrow('فرمت ایمیل نامعتبر است');
+    await expect(validateEmailUniqueness('bad-email')).rejects.toThrow(
+      'Invalid email format.'
+    );
 
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(true);
-    await expect(
-      validateEmailUniqueness('dup@example.com')
-    ).rejects.toThrow('این ایمیل قبلاً استفاده شده است');
+    await expect(validateEmailUniqueness('dup@example.com')).rejects.toThrow(
+      'This email is already in use.'
+    );
   });
 
   it('rejects invalid or duplicate phone', async () => {
-    await expect(
-      validatePhoneUniqueness('12345')
-    ).rejects.toThrow('فرمت شماره تلفن نامعتبر است');
+    await expect(validatePhoneUniqueness('12345')).rejects.toThrow(
+      'Invalid phone number format.'
+    );
 
     vi.spyOn(queries, 'checkUserExists').mockResolvedValue(true);
     await expect(validatePhoneUniqueness('+12125551234')).rejects.toThrow(
-      'این شماره تلفن قبلاً استفاده شده است'
+      'This phone number is already in use.'
     );
   });
 

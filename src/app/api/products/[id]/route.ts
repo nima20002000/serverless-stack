@@ -23,7 +23,7 @@ export async function GET(
     const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
@@ -64,7 +64,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching product:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'محصول یافت نشد' },
+      { error: error instanceof Error ? error.message : 'Product not found' },
       { status: 404 }
     );
   }
@@ -79,7 +79,7 @@ export async function PUT(
     const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
@@ -87,7 +87,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -138,7 +138,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: 'محصول با موفقیت به‌روزرسانی شد',
+      message: 'Product updated successfully',
       product,
     });
   } catch (error) {
@@ -146,7 +146,7 @@ export async function PUT(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در به‌روزرسانی محصول',
+          error instanceof Error ? error.message : 'Unable to update product',
       },
       { status: 400 }
     );
@@ -162,7 +162,7 @@ export async function DELETE(
     const params = await paramsPromise;
     if (!isValidId(params.id)) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
@@ -170,19 +170,22 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await deleteProduct(params.id);
 
     return NextResponse.json({
       success: true,
-      message: 'محصول با موفقیت حذف شد',
+      message: 'Product deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در حذف محصول' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to delete product',
+      },
       { status: 400 }
     );
   }

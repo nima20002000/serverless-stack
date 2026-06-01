@@ -93,7 +93,7 @@ describe('user-service password', () => {
 
   it('rejects invalid new password', async () => {
     await expect(updatePassword('user-1', 'short')).rejects.toThrow(
-      'رمز عبور باید حداقل ۸ کاراکتر باشد'
+      'Password must be at least 8 characters.'
     );
   });
 
@@ -108,7 +108,7 @@ describe('user-service password', () => {
     compareMock.mockResolvedValue(false);
 
     await expect(verifyCurrentPassword('user-1', 'wrong')).rejects.toThrow(
-      'رمز عبور فعلی نادرست است'
+      'Current password is incorrect.'
     );
   });
 
@@ -134,7 +134,7 @@ describe('user-service password', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(ensureNoPassword('user-1')).rejects.toThrow(
-      'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
+      'This account already has a password.'
     );
   });
 });

@@ -21,8 +21,10 @@ import { mockPaymentFailure, mockStripeSuccess } from './helpers/payment';
 
 // Generate unique test phone for each test run
 function generateTestPhone(): string {
-  const random = Math.floor(Math.random() * 9000000) + 1000000;
-  return `0919${random}`;
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
+  return `+1202555${random}`;
 }
 
 test.describe('Error Recovery Scenarios', () => {
@@ -48,7 +50,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -64,15 +66,15 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill form
-    await page.locator('#fullName').fill('تست خطا پرداخت');
+    await page.locator('#fullName').fill('Test Error Payment');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Setup payment FAILURE mock
     await mockPaymentFailure(page, 'stripe');
 
     // Click pay
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for failure page
@@ -80,12 +82,12 @@ test.describe('Error Recovery Scenarios', () => {
 
     // Verify failure page displayed
     const failureHeading = page.getByRole('heading', {
-      name: /پرداخت ناموفق/i,
+      name: /Payment Failed/i,
     });
     await expect(failureHeading).toBeVisible();
 
-    // Verify cart return option available (the page shows "بازگشت به سبد خرید" button)
-    const cartButton = page.getByRole('link', { name: /بازگشت به سبد خرید/i });
+    // Verify cart return option available (the page shows "Back to cart" button)
+    const cartButton = page.getByRole('link', { name: /Back to cart/i });
     await expect(cartButton).toBeVisible();
 
     console.log('Payment failure correctly handled with cart return option');
@@ -100,7 +102,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -116,15 +118,15 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill form
-    await page.locator('#fullName').fill('تست قطعی شبکه');
+    await page.locator('#fullName').fill('Test text Network');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Simulate network failure for the transaction creation API
     await page.route('**/api/transactions/**', (route) => route.abort());
 
     // Try to pay (will fail due to network)
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for error feedback
@@ -169,7 +171,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
     await addButton.click();
     await page.waitForTimeout(500);
@@ -185,15 +187,15 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill form
-    await page.locator('#fullName').fill('تست موجودی تمام');
+    await page.locator('#fullName').fill('Test Stock text');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Setup payment success mock
     await mockStripeSuccess(page);
 
     // Try to pay
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for response (should either fail or show error)
@@ -203,7 +205,7 @@ test.describe('Error Recovery Scenarios', () => {
     const currentUrl = page.url();
     const hasStockError =
       currentUrl.includes('/payment/failure') ||
-      (await page.getByText(/موجودی|ناموجود/i).isVisible());
+      (await page.getByText(/Stock|Out of stock/i).isVisible());
 
     console.log(`Stock unavailable handling: url=${currentUrl}`);
 
@@ -221,7 +223,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -237,7 +239,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Try to submit without filling any fields
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Should still be on checkout page (form validation prevents submission)
@@ -250,7 +252,7 @@ test.describe('Error Recovery Scenarios', () => {
     // Should still be on checkout (name required)
     await expect(page).toHaveURL('/checkout');
 
-    await page.locator('#fullName').fill('تست');
+    await page.locator('#fullName').fill('Test');
     await payButton.click();
 
     // Should still be on checkout (address required)
@@ -266,7 +268,7 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -282,12 +284,12 @@ test.describe('Error Recovery Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill form with invalid phone
-    await page.locator('#fullName').fill('تست شماره اشتباه');
-    await page.locator('#phone').fill('12345'); // Invalid Iranian phone
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#fullName').fill('Test Number Incorrect');
+    await page.locator('#phone').fill('12345'); // Invalid international phone
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Try to submit
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for validation
@@ -328,7 +330,7 @@ test.describe('Concurrent Access Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -348,7 +350,7 @@ test.describe('Concurrent Access Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Cart should have items but not necessarily 3 (depends on debouncing)
-    const cartItemsHeading = page.locator('h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     const hasItems = await cartItemsHeading.isVisible();
 
     console.log(`Rapid clicks handling: cart has items = ${hasItems}`);
@@ -363,7 +365,7 @@ test.describe('Concurrent Access Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -379,7 +381,7 @@ test.describe('Concurrent Access Scenarios', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill partial form
-    await page.locator('#fullName').fill('تست رفرش');
+    await page.locator('#fullName').fill('Test text');
     await page.locator('#phone').fill(testPhone);
 
     // Refresh the page
@@ -415,7 +417,7 @@ test.describe('API Error Responses', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -439,11 +441,11 @@ test.describe('API Error Responses', () => {
     );
 
     const testPhone = generateTestPhone();
-    await page.locator('#fullName').fill('تست خطای سرور');
+    await page.locator('#fullName').fill('Test Error');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for error handling

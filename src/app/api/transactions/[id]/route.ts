@@ -15,7 +15,7 @@ export async function GET(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه تراکنش نامعتبر است' },
+        { error: 'Invalid transaction id.' },
         { status: 400 }
       );
     }
@@ -24,7 +24,7 @@ export async function GET(
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Sign in to view this transaction.' },
         { status: 401 }
       );
     }
@@ -37,7 +37,7 @@ export async function GET(
       session.user.role !== 'ADMIN'
     ) {
       return NextResponse.json(
-        { error: 'شما دسترسی به این تراکنش ندارید' },
+        { error: 'You do not have access to this transaction.' },
         { status: 403 }
       );
     }
@@ -61,7 +61,10 @@ export async function GET(
     console.error('Error fetching transaction:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در دریافت تراکنش',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch transaction.',
       },
       { status: 404 }
     );

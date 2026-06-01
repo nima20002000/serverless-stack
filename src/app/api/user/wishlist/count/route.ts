@@ -14,7 +14,7 @@ async function getHandler() {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -29,7 +29,7 @@ async function getHandler() {
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در دریافت تعداد علاقه‌مندی‌ها',
+            : 'Unable to load wishlist count',
       },
       { status: 500 }
     );

@@ -18,7 +18,7 @@ export async function PUT(
     const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -27,14 +27,14 @@ export async function PUT(
 
     if (!name) {
       return NextResponse.json(
-        { error: 'نام نوع محصول الزامی است' },
+        { error: 'Variant name is required' },
         { status: 400 }
       );
     }
 
     if (stock === undefined || stock < 0) {
       return NextResponse.json(
-        { error: 'موجودی باید صفر یا بیشتر باشد' },
+        { error: 'Variant stock cannot be negative' },
         { status: 400 }
       );
     }
@@ -56,9 +56,7 @@ export async function PUT(
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : 'خطا در به‌روزرسانی نوع محصول',
+          error instanceof Error ? error.message : 'Unable to update product',
       },
       { status: 500 }
     );
@@ -75,7 +73,7 @@ export async function DELETE(
     const params = await paramsPromise;
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await deleteProductVariant(params.variantId);
@@ -84,7 +82,10 @@ export async function DELETE(
     console.error('Delete product variant error:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در حذف نوع محصول',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete product variant',
       },
       { status: 500 }
     );

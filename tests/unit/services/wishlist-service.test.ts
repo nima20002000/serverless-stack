@@ -154,13 +154,13 @@ describe('wishlist-service', () => {
   describe('addToWishlist', () => {
     it('throws error for empty userId', async () => {
       await expect(addToWishlist('', 'prod-1')).rejects.toThrow(
-        'کاربر یافت نشد'
+        'User not found'
       );
     });
 
     it('throws error for empty productId', async () => {
       await expect(addToWishlist('user-1', '')).rejects.toThrow(
-        'محصول یافت نشد'
+        'Product not found'
       );
     });
 
@@ -175,7 +175,7 @@ describe('wishlist-service', () => {
       createClientMock.mockReturnValue(supabase as any);
 
       await expect(addToWishlist('user-1', 'nonexistent')).rejects.toThrow(
-        'محصول یافت نشد'
+        'Product not found'
       );
     });
 
@@ -198,7 +198,7 @@ describe('wishlist-service', () => {
       createClientMock.mockReturnValue(supabase as any);
 
       await expect(addToWishlist('user-1', 'prod-1')).rejects.toThrow(
-        'محصول در دسترس نیست'
+        'Product is not available'
       );
     });
 
@@ -337,7 +337,7 @@ describe('wishlist-service', () => {
 
       await expect(
         addToWishlist('user-123', 'prod-1', 'var-1')
-      ).rejects.toThrow('واریانت محصول در دسترس نیست');
+      ).rejects.toThrow('Product variant not found');
     });
   });
 
@@ -360,7 +360,7 @@ describe('wishlist-service', () => {
 
       await expect(
         removeFromWishlist('user-123', 'wishlist-1')
-      ).rejects.toThrow('دسترسی غیرمجاز');
+      ).rejects.toThrow('Forbidden');
     });
 
     it('removes wishlist item successfully', async () => {

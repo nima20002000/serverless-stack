@@ -41,7 +41,7 @@ test.describe('User Registration Journey', () => {
 
     await page.goto('/register');
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('h2:has-text("ثبت‌نام")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Create account|ثبت‌نام|ثبت نام/i })).toBeVisible();
 
     await page.locator('input[name="name"]').fill(testUser.name);
     await page.locator('input[name="identifier"]').fill(testUser.email);
@@ -49,7 +49,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /ثبت‌نام|ارسال کد تایید/i })
+      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Wait for OTP page or error
@@ -83,14 +83,14 @@ test.describe('User Registration Journey', () => {
     // Submit
     await page
       .locator('form')
-      .getByRole('button', { name: /ارسال کد تایید/i })
+      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Wait for OTP page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
 
     // Verify phone is shown
-    await expect(page.locator('h2:has-text("تایید شماره تلفن")')).toBeVisible();
+    await expect(page.getByText(/Phone number|شماره تلفن/i)).toBeVisible();
     await expect(page.locator(`text=${testUser.phone}`)).toBeVisible();
 
     // Get OTP from database
@@ -131,7 +131,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /ارسال کد تایید/i })
+      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Complete registration
@@ -144,7 +144,7 @@ test.describe('User Registration Journey', () => {
     await page.goto('/profile');
     await page.waitForLoadState('networkidle');
     const logoutButton = page.getByRole('button', {
-      name: /خروج از حساب کاربری/i,
+      name: /Sign out of Account/i,
     });
     await expect(logoutButton).toBeVisible({ timeout: 10000 });
     await logoutButton.click();
@@ -162,7 +162,7 @@ test.describe('User Registration Journey', () => {
       .fill('DifferentPass123!');
     await page
       .locator('form')
-      .getByRole('button', { name: /ارسال کد تایید/i })
+      .getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Wait for response
@@ -175,9 +175,7 @@ test.describe('User Registration Journey', () => {
 
     if (await errorAlert.isVisible()) {
       const errorText = await errorAlert.textContent();
-      expect(
-        errorText?.match(/قبلاً ثبت|already|duplicate|موجود|وجود دارد/i)
-      ).toBeTruthy();
+      expect(errorText?.match(/already|duplicate|In stock/i)).toBeTruthy();
       console.log(
         'Duplicate registration correctly blocked with error message'
       );
@@ -207,11 +205,11 @@ test.describe('User Registration Journey', () => {
     // Try to submit
     await page
       .locator('form')
-      .getByRole('button', { name: /ثبت‌نام|ارسال کد تایید/i })
+      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Should show password error
-    await expect(page.locator('text=/۸ کاراکتر|حداقل ۸/i')).toBeVisible({
+    await expect(page.locator('text=/8|Minimum 8/i')).toBeVisible({
       timeout: 5000,
     });
 
@@ -232,11 +230,11 @@ test.describe('User Registration Journey', () => {
 
     await page
       .locator('form')
-      .getByRole('button', { name: /ثبت‌نام|ارسال کد تایید/i })
+      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Should show mismatch error
-    await expect(page.locator('text=/مطابقت ندارند|match/i')).toBeVisible({
+    await expect(page.locator('text=/match|مطابقت/i')).toBeVisible({
       timeout: 5000,
     });
 
@@ -262,7 +260,7 @@ test.describe('User Registration Journey', () => {
     await page.locator('input[name="confirmPassword"]').fill(testUser.password);
     await page
       .locator('form')
-      .getByRole('button', { name: /ثبت‌نام|ارسال کد تایید/i })
+      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Wait for OTP page
@@ -286,11 +284,13 @@ test.describe('User Registration Journey', () => {
     );
     if (await errorAlert.isVisible()) {
       const errorText = await errorAlert.textContent();
-      expect(errorText?.match(/منقضی|expired|invalid|نامعتبر/i)).toBeTruthy();
+      expect(errorText?.match(/Expired|expired|invalid|Invalid/i)).toBeTruthy();
     }
 
     // Verify "Resend OTP" button is visible
-    const resendButton = page.getByRole('button', { name: /ارسال مجدد کد/i });
+    const resendButton = page.getByRole('button', {
+      name: /Send code|ارسال کد|Shipping Code/i,
+    });
     await expect(resendButton).toBeVisible();
 
     // Cleanup
@@ -308,12 +308,12 @@ test.describe('User Registration Journey', () => {
 
     await page
       .locator('form')
-      .getByRole('button', { name: /ثبت‌نام|ارسال کد تایید/i })
+      .getByRole('button', { name: /Create account|Send code|ارسال کد|ثبت‌نام|ثبت نام/i })
       .click();
 
     // Should show format error
     await expect(
-      page.locator('text=/نامعتبر|invalid|فرمت/i').first()
+      page.locator('text=/Invalid|invalid/i').first()
     ).toBeVisible({
       timeout: 5000,
     });

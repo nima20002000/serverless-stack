@@ -18,11 +18,11 @@ describe('checkout-store', () => {
 
   it('merges form data updates', () => {
     useCheckoutStore.getState().setFormData({ fullName: 'User' });
-    useCheckoutStore.getState().setFormData({ phone: '0912' });
+    useCheckoutStore.getState().setFormData({ phone: '+1202555' });
 
     const formData = useCheckoutStore.getState().formData;
     expect(formData.fullName).toBe('User');
-    expect(formData.phone).toBe('0912');
+    expect(formData.phone).toBe('+1202555');
   });
 
   it('clears form data', () => {

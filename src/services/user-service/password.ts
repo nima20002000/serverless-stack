@@ -56,7 +56,7 @@ export async function updatePassword(
   // Validate new password
   if (!validatePassword(newPassword)) {
     log.warn('Invalid password length', { userId });
-    throw new Error('رمز عبور باید حداقل ۸ کاراکتر باشد');
+    throw new Error('Password must be at least 8 characters.');
   }
 
   // Hash password
@@ -72,7 +72,7 @@ export async function updatePassword(
 
   if (error) {
     log.error('Failed to update password', { userId, error });
-    throw new Error('خطا در بروزرسانی رمز عبور');
+    throw new Error('Unable to update password.');
   }
 }
 
@@ -88,20 +88,20 @@ export async function verifyCurrentPassword(
 
   if (!user) {
     log.warn('User not found', { userId });
-    throw new Error('کاربر یافت نشد');
+    throw new Error('User not found.');
   }
 
   // SECURITY: If user has a password, current password is REQUIRED
   if (user.password) {
     if (!currentPassword) {
       log.warn('Current password required but not provided', { userId });
-      throw new Error('رمز عبور فعلی الزامی است');
+      throw new Error('Current password is required.');
     }
 
     const isValid = await verifyPassword(currentPassword, user.password);
     if (!isValid) {
       log.warn('Invalid current password', { userId });
-      throw new Error('رمز عبور فعلی نادرست است');
+      throw new Error('Current password is incorrect.');
     }
   }
 
@@ -117,13 +117,11 @@ export async function ensureNoPassword(userId: string): Promise<void> {
 
   if (!user) {
     log.warn('User not found', { userId });
-    throw new Error('کاربر یافت نشد');
+    throw new Error('User not found.');
   }
 
   if (user.password) {
     log.warn('User already has a password', { userId });
-    throw new Error(
-      'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
-    );
+    throw new Error('This account already has a password.');
   }
 }

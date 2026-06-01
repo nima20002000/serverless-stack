@@ -13,7 +13,7 @@ const baseUser = {
   id: 'user-1',
   uid: 'UID-001',
   email: 'user@example.com',
-  phone: '09123456789',
+  phone: '+12025556789',
   name: 'Jane Doe',
   role: 'USER' as const,
   isVerified: true,
@@ -122,7 +122,7 @@ describe('user-service queries', () => {
       head: true,
     });
     expect(query.or).toHaveBeenCalledWith(
-      `email.eq.a@b.com,phone.eq.+989123456789,phone.eq.${baseUser.phone}`
+      `email.eq.a@b.com,phone.eq.${baseUser.phone},phone.eq.2025556789,phone.eq.12025556789`
     );
     expect(query.neq).toHaveBeenCalledWith('id', baseUser.id);
     expect(exists).toBe(true);

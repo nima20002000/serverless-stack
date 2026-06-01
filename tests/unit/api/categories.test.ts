@@ -106,7 +106,7 @@ describe('GET /api/categories/[slug]', () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
-      error: 'دسته‌بندی یافت نشد',
+      error: 'Category not found',
     });
   });
 

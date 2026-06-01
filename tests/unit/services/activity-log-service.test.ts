@@ -215,7 +215,7 @@ describe('activity-log-service', () => {
 
       const result = await activityLogService.logUserActivity({
         activityType: 'OTP_SENT',
-        metadata: { phone: '09123456789' },
+        metadata: { phone: '+12025556789' },
       });
 
       expect(result).toBe(true);
@@ -448,7 +448,7 @@ describe('activity-log-service', () => {
       expect(Object.keys(largeMetadata)).toHaveLength(60);
     });
 
-    it('handles special characters including unicode and Persian text', async () => {
+    it('handles special characters including unicode and international text', async () => {
       const supabase = createSupabaseMock();
       const insertQuery = createQueryMock({ data: null, error: null });
       supabase.from.mockReturnValue(insertQuery);
@@ -458,11 +458,10 @@ describe('activity-log-service', () => {
         activityType: 'LOGIN_SUCCESS',
         userId: 'user-123',
         userAgent:
-          'Mozilla/5.0 with emoji \u{1F600} and Persian \u0633\u0644\u0627\u0645',
-        errorMessage:
-          'Error: \u062E\u0637\u0627\u06CC \u0646\u0627\u0634\u0646\u0627\u062E\u062A\u0647',
+          'Mozilla/5.0 with emoji \u{1F600} and international \u4f60\u597d',
+        errorMessage: 'Error: unknown failure',
         metadata: {
-          name: '\u0639\u0644\u06CC \u0645\u062D\u0645\u062F\u06CC',
+          name: 'Alex Rivera',
           emoji: '\u{1F4BB}\u{1F310}',
           sqlInjection: "'; DROP TABLE users; --",
         },
@@ -472,9 +471,9 @@ describe('activity-log-service', () => {
       expect(insertQuery.insert).toHaveBeenCalledWith(
         expect.objectContaining({
           user_agent:
-            'Mozilla/5.0 with emoji \u{1F600} and Persian \u0633\u0644\u0627\u0645',
+            'Mozilla/5.0 with emoji \u{1F600} and international \u4f60\u597d',
           metadata: expect.objectContaining({
-            name: '\u0639\u0644\u06CC \u0645\u062D\u0645\u062F\u06CC',
+            name: 'Alex Rivera',
           }),
         })
       );

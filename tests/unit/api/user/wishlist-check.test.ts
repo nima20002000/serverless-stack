@@ -50,7 +50,7 @@ describe('/api/user/wishlist/check', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Authentication is required',
     });
   });
 

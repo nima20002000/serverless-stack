@@ -18,7 +18,7 @@ export async function DELETE(
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -26,10 +26,7 @@ export async function DELETE(
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'شناسه آیتم الزامی است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
     const result = await removeFromWishlist(session.user.id, id);
@@ -51,7 +48,7 @@ export async function DELETE(
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در حذف از علاقه‌مندی‌ها',
+            : 'Unable to remove product from wishlist',
       },
       { status: 500 }
     );

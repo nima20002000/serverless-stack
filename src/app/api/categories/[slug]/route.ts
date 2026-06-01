@@ -12,7 +12,7 @@ export async function GET(
     const slug = params.slug;
     if (!slug || slug.length > 120) {
       return NextResponse.json(
-        { error: 'شناسه دسته‌بندی نامعتبر است' },
+        { error: 'Invalid category ID' },
         { status: 400 }
       );
     }
@@ -21,7 +21,7 @@ export async function GET(
 
     if (!category) {
       return NextResponse.json(
-        { error: 'دسته‌بندی یافت نشد' },
+        { error: 'Category not found' },
         { status: 404 }
       );
     }
@@ -32,7 +32,7 @@ export async function GET(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی',
+          error instanceof Error ? error.message : 'Unable to load category',
       },
       { status: 500 }
     );

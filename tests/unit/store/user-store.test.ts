@@ -9,7 +9,7 @@ describe('user-store', () => {
   it('sets and clears user', () => {
     useUserStore.getState().setUser({
       id: 'user-1',
-      email: 'test@kitia.ir',
+      email: 'test@example.com',
       name: 'Test',
       role: 'USER',
     });

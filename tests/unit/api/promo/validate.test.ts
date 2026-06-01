@@ -47,7 +47,7 @@ describe('POST /api/promo/validate', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'کد تخفیف الزامی است',
+      error: 'Promo code is required',
     });
     expect(validatePromoCodeMock).not.toHaveBeenCalled();
   });
@@ -59,7 +59,7 @@ describe('POST /api/promo/validate', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'مبلغ سفارش نامعتبر است',
+      error: 'Invalid amount',
     });
     expect(validatePromoCodeMock).not.toHaveBeenCalled();
   });
@@ -71,7 +71,7 @@ describe('POST /api/promo/validate', () => {
     } as any);
     validatePromoCodeMock.mockResolvedValue({
       valid: false,
-      error: 'کد نامعتبر',
+      error: 'Code Invalid',
     });
 
     const response = await POST(
@@ -79,7 +79,7 @@ describe('POST /api/promo/validate', () => {
     );
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: 'کد نامعتبر' });
+    await expect(response.json()).resolves.toEqual({ error: 'Code Invalid' });
     expect(validatePromoCodeMock).toHaveBeenCalledWith(
       'SAVE10',
       50000,

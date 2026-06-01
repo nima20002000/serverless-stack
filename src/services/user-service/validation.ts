@@ -10,6 +10,9 @@ export function validateEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+/**
+ * Validate phone number with international defaults.
+ */
 export function validatePhone(phone: string): boolean {
   return isValidPhoneNumber(phone);
 }
@@ -38,7 +41,7 @@ export async function validateEmailUniqueness(
   // Validate format
   if (email && !validateEmail(email)) {
     log.warn('Invalid email format', { email });
-    throw new Error('فرمت ایمیل نامعتبر است');
+    throw new Error('Invalid email format.');
   }
 
   // Check uniqueness
@@ -46,7 +49,7 @@ export async function validateEmailUniqueness(
     const exists = await checkUserExists({ email }, excludeUserId);
     if (exists) {
       log.warn('Email already in use', { email });
-      throw new Error('این ایمیل قبلاً استفاده شده است');
+      throw new Error('This email is already in use.');
     }
   }
 }
@@ -61,21 +64,22 @@ export async function validatePhoneUniqueness(
 ): Promise<void> {
   if (phone === undefined) return;
 
-  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
-
+  // Validate format
   if (phone && !validatePhone(phone)) {
     log.warn('Invalid phone format', { phone });
-    throw new Error('فرمت شماره تلفن نامعتبر است');
+    throw new Error('Invalid phone number format.');
   }
 
-  if (normalizedPhone) {
+  // Check uniqueness
+  if (phone) {
+    const normalizedPhone = normalizePhoneNumber(phone);
     const exists = await checkUserExists(
       { phone: normalizedPhone },
       excludeUserId
     );
     if (exists) {
-      log.warn('Phone already in use', { phone: normalizedPhone });
-      throw new Error('این شماره تلفن قبلاً استفاده شده است');
+      log.warn('Phone already in use', { phone });
+      throw new Error('This phone number is already in use.');
     }
   }
 }

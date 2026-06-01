@@ -49,7 +49,7 @@ describe('GET /api/user/transactions', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Sign in to continue.',
     });
   });
 

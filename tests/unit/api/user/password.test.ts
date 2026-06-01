@@ -70,7 +70,7 @@ describe('POST /api/user/password', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Sign in to continue.',
     });
     expect(setUserPasswordMock).not.toHaveBeenCalled();
   });
@@ -83,7 +83,7 @@ describe('POST /api/user/password', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'رمز عبور جدید الزامی است',
+      error: 'New password is required.',
     });
   });
 
@@ -99,7 +99,7 @@ describe('POST /api/user/password', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: 'رمز عبور با موفقیت تنظیم شد',
+      message: 'Password set successfully.',
     });
     expect(setUserPasswordMock).toHaveBeenCalledWith('user-1', 'NewPass123');
     expect(logUserActivityMock).toHaveBeenCalledWith(
@@ -122,7 +122,7 @@ describe('POST /api/user/password', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'رمز عبور فعلی الزامی است',
+      error: 'Current password is required.',
     });
     expect(changeUserPasswordMock).not.toHaveBeenCalled();
   });
@@ -143,7 +143,7 @@ describe('POST /api/user/password', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: 'رمز عبور با موفقیت تغییر یافت',
+      message: 'Password changed successfully.',
     });
     expect(changeUserPasswordMock).toHaveBeenCalledWith(
       'user-1',

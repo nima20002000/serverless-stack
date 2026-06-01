@@ -140,7 +140,7 @@ describe('Admin Settings API Integration Tests', () => {
   const adminSession = {
     user: {
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -175,7 +175,7 @@ describe('Admin Settings API Integration Tests', () => {
     const response = await GET();
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'textof' });
   });
 
   it('POST returns 400 for invalid settings payload', async () => {
@@ -186,7 +186,7 @@ describe('Admin Settings API Integration Tests', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'داده‌های نامعتبر',
+      error: 'text Invalid',
     });
   });
 
@@ -206,7 +206,7 @@ describe('Admin Settings API Integration Tests', () => {
 
     expect(postResponse.status).toBe(200);
     await expect(postResponse.json()).resolves.toEqual({
-      message: 'تنظیمات با موفقیت ذخیره شد',
+      message: 'text with successfully Save text',
     });
 
     const { data: stored, error } = await supabase

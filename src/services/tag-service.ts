@@ -41,7 +41,7 @@ export async function getAllTags(): Promise<TagWithCount[]> {
 
   if (tagsError) {
     log.error('Error fetching tags', { error: tagsError });
-    throw new Error('خطا در دریافت برچسب‌ها');
+    throw new Error('Unable to load tags');
   }
 
   if (!tags || tags.length === 0) {
@@ -101,7 +101,7 @@ export async function searchTags(query: string): Promise<TagWithCount[]> {
 
   if (tagsError) {
     log.error('Error searching tags', { error: tagsError, query });
-    throw new Error('خطا در جستجوی برچسب‌ها');
+    throw new Error('Unable to search tags');
   }
 
   if (!tags || tags.length === 0) {
@@ -158,7 +158,7 @@ export async function getTagById(id: string): Promise<TagWithCount | null> {
       return null;
     }
     log.error('Error fetching tag by ID', { error: tagError, id });
-    throw new Error('خطا در دریافت برچسب');
+    throw new Error('Unable to load tag');
   }
 
   if (!tag) {
@@ -202,7 +202,7 @@ export async function getTagBySlug(slug: string): Promise<TagWithCount | null> {
       return null;
     }
     log.error('Error fetching tag by slug', { error: tagError, slug });
-    throw new Error('خطا در دریافت برچسب');
+    throw new Error('Unable to load tag');
   }
 
   if (!tag) {
@@ -242,11 +242,11 @@ export async function createTag(data: TagFormData): Promise<TagWithCount> {
 
   if (checkError) {
     log.error('Error checking existing tag', { error: checkError, data });
-    throw new Error('خطا در بررسی برچسب موجود');
+    throw new Error('Unable to update tag inventory state');
   }
 
   if (existing && existing.length > 0) {
-    throw new Error('برچسب با این نام یا نامک (slug) قبلاً ثبت شده است');
+    throw new Error('A tag with this name or slug already exists');
   }
 
   // Create the tag
@@ -263,7 +263,7 @@ export async function createTag(data: TagFormData): Promise<TagWithCount> {
 
   if (createError) {
     log.error('Error creating tag', { error: createError, data });
-    throw new Error('خطا در ایجاد برچسب');
+    throw new Error('Unable to create tag');
   }
 
   // Invalidate tag cache
@@ -294,7 +294,7 @@ export async function updateTag(
     .single();
 
   if (existError || !existing) {
-    throw new Error('برچسب یافت نشد');
+    throw new Error('Tag not found');
   }
 
   // If name or slug is being updated, check they're not taken by another tag
@@ -312,11 +312,11 @@ export async function updateTag(
 
     if (takenError) {
       log.error('Error checking duplicate tag', { error: takenError });
-      throw new Error('خطا در بررسی برچسب تکراری');
+      throw new Error('A tag with this slug already exists');
     }
 
     if (taken && taken.length > 0) {
-      throw new Error('برچسب با این نام یا نامک (slug) قبلاً ثبت شده است');
+      throw new Error('A tag with this name or slug already exists');
     }
   }
 
@@ -334,7 +334,7 @@ export async function updateTag(
 
   if (updateError || !updatedTag) {
     log.error('Error updating tag', { error: updateError, id, data });
-    throw new Error('خطا در به‌روزرسانی برچسب');
+    throw new Error('Unable to update tag');
   }
 
   // Get product count for this tag
@@ -372,7 +372,7 @@ export async function deleteTag(id: string): Promise<DeleteResult> {
     .single();
 
   if (tagError || !tag) {
-    throw new Error('برچسب یافت نشد');
+    throw new Error('Tag not found');
   }
 
   // Check if tag has products
@@ -383,11 +383,11 @@ export async function deleteTag(id: string): Promise<DeleteResult> {
 
   if (countError) {
     log.error('Error counting tag products', { error: countError, id });
-    throw new Error('خطا در بررسی محصولات برچسب');
+    throw new Error('Unable to load tag products');
   }
 
   if (count && count > 0) {
-    throw new Error('این برچسب دارای محصول است و نمی‌توان آن را حذف کرد');
+    throw new Error('Cannot delete a tag that is assigned to products');
   }
 
   // Delete the tag
@@ -398,7 +398,7 @@ export async function deleteTag(id: string): Promise<DeleteResult> {
 
   if (deleteError) {
     log.error('Error deleting tag', { error: deleteError, id });
-    throw new Error('خطا در حذف برچسب');
+    throw new Error('Unable to delete tag');
   }
 
   // Invalidate tag cache

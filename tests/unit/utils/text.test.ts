@@ -49,7 +49,7 @@ describe('text utils', () => {
     }
   });
 
-  it('uses a neutral phone default when no country override is configured', () => {
+  it('uses the neutral US default when no phone country is configured', () => {
     const previousCountry = process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY;
     delete process.env.NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY;
 

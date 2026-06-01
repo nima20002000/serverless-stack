@@ -31,10 +31,10 @@ test.describe('Authenticated User Checkout Journey', () => {
     id: 'e2e-user-checkout-test-fixed',
     uid: 'e2e-uid-checkout-test-fixed',
     email: 'e2e-checkout-test@example.com',
-    phone: '09191234567',
-    name: 'کاربر خرید تست',
+    phone: '+12025554567',
+    name: 'User Test User',
     password: 'Test1234!@#$',
-    shippingAddress: 'تهران، خیابان آزادی، پلاک ۱۰۰',
+    shippingAddress: 'Sample City 100',
     postalCode: '1234567890',
   };
 
@@ -79,7 +79,7 @@ test.describe('Authenticated User Checkout Journey', () => {
   async function loginAsTestUser(page: import('@playwright/test').Page) {
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in|ورود/i })).toBeVisible();
 
     await page.locator('input[name="identifier"]').fill(testUserData.email);
     await page.locator('input[name="password"]').fill(testUserData.password);
@@ -108,7 +108,7 @@ test.describe('Authenticated User Checkout Journey', () => {
       await phoneInput.fill(testUserData.phone);
     }
     if (!(await addressInput.isDisabled())) {
-      await addressInput.fill(testUserData.shippingAddress || 'تهران');
+      await addressInput.fill(testUserData.shippingAddress || 'Sample City');
     }
     if (
       (await postalCodeInput.isVisible()) &&
@@ -134,7 +134,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addToCartButton.isVisible())) {
@@ -152,11 +152,11 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify cart has items
-    const cartItems = page.locator('h2:has-text("لیست کالاها")');
+    const cartItems = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     await expect(cartItems).toBeVisible({ timeout: 10000 });
 
     // Proceed to checkout
-    await page.getByRole('button', { name: /ادامه فرآیند خرید/i }).click();
+    await page.getByRole('button', { name: /Checkout|ادامه فرآیند خرید/i }).click();
     await expect(page).toHaveURL('/checkout');
 
     // ============================================================
@@ -171,7 +171,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     // ============================================================
     await mockStripeSuccess(page);
 
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await expect(payButton).toBeEnabled();
     await payButton.click();
 
@@ -182,7 +182,9 @@ test.describe('Authenticated User Checkout Journey', () => {
     await expect(page).toHaveURL(/\/payment\/success/);
 
     // Verify success message
-    const successHeading = page.getByRole('heading', { name: /پرداخت موفق/i });
+    const successHeading = page.getByRole('heading', {
+      name: /Payment Completed/i,
+    });
     await expect(successHeading).toBeVisible();
 
     // Get transaction code
@@ -191,7 +193,7 @@ test.describe('Authenticated User Checkout Journey', () => {
       .first();
     await expect(transactionCodeElement).toBeVisible();
     const transactionCode = await transactionCodeElement.textContent();
-    expect(transactionCode).toMatch(/^KT-[A-Z0-9]{6}$/);
+    expect(transactionCode).toMatch(/^TX-[A-Z0-9]{6}$/);
     console.log(`Transaction code: ${transactionCode}`);
 
     // ============================================================
@@ -227,7 +229,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (
@@ -245,13 +247,13 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Check if cart has items
-    const cartHeader = page.locator('h2:has-text("لیست کالاها")');
+    const cartHeader = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     if (!(await cartHeader.isVisible())) {
       test.skip(true, 'Cart is empty');
       return;
     }
 
-    await page.getByRole('button', { name: /ادامه فرآیند خرید/i }).click();
+    await page.getByRole('button', { name: /Checkout|ادامه فرآیند خرید/i }).click();
     await expect(page).toHaveURL('/checkout');
 
     // Fill checkout form
@@ -260,7 +262,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     // Complete payment
     await mockStripeSuccess(page);
     await page
-      .getByRole('button', { name: /پرداخت/i })
+      .getByRole('button', { name: /Pay|پرداخت|Payment/i })
       .first()
       .click();
     await page.waitForURL(/\/payment\/success/, { timeout: 30000 });
@@ -272,12 +274,14 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Wait for profile to load
-    await expect(page.locator('h1:has-text("پروفایل کاربری")')).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
       timeout: 10000,
     });
 
     // Look for transaction history section
-    const transactionSection = page.locator('h2:has-text("تاریخچه تراکنش‌ها")');
+    const transactionSection = page.getByRole('heading', {
+      name: /Transactions|تراکنش/i,
+    });
     await expect(transactionSection).toBeVisible();
 
     // Verify at least one transaction is shown
@@ -289,9 +293,9 @@ test.describe('Authenticated User Checkout Journey', () => {
     const profileContent = await page.content();
     expect(
       profileContent.includes('COMPLETED') ||
-        profileContent.includes('موفق') ||
-        profileContent.includes('تکمیل شده') ||
-        profileContent.includes('KT-')
+        profileContent.includes('Completed') ||
+        profileContent.includes('تکمیل') ||
+        profileContent.includes('TX-')
     ).toBeTruthy();
   });
 
@@ -307,7 +311,7 @@ test.describe('Authenticated User Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addToCartButton.isVisible())) {
@@ -338,11 +342,13 @@ test.describe('Authenticated User Checkout Journey', () => {
     // The OTP section should NOT be required for authenticated users
     // They can proceed directly to payment
     const otpSection = page.locator('[data-testid="otp-section"]');
-    const sendOtpButton = page.getByRole('button', { name: /ارسال کد تایید/i });
+    const sendOtpButton = page.getByRole('button', {
+      name: /Send code|ارسال کد|Shipping Code/i,
+    });
 
     // For authenticated users, OTP should not be required
     // The pay button should be directly accessible
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await expect(payButton).toBeVisible();
 
     // Fill required checkout fields
@@ -367,11 +373,11 @@ test.describe('Authenticated User Checkout Journey', () => {
     await expect(page).toHaveURL('/profile');
 
     // Logout
-    await expect(page.locator('h1:has-text("پروفایل کاربری")')).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
       timeout: 10000,
     });
     const logoutButton = page.getByRole('button', {
-      name: /خروج از حساب کاربری/i,
+      name: /Sign out of Account/i,
     });
     await logoutButton.click();
     await page.waitForURL('/');

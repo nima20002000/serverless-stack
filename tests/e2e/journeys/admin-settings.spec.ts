@@ -18,8 +18,8 @@ test.describe('Admin Settings Journey', () => {
     id: 'e2e-user-admin-settings-test',
     uid: 'e2e-uid-admin-settings-test',
     email: 'e2e-admin-settings@example.com',
-    phone: '09185555555',
-    name: 'ادمین تنظیمات',
+    phone: '+12025555555',
+    name: 'text',
     password: 'Test1234!@#$',
   };
 
@@ -85,7 +85,7 @@ test.describe('Admin Settings Journey', () => {
     // Use UI-based login like admin-panel.spec.ts
     await page.goto('/login');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Sign in")')).toBeVisible();
 
     // Fill login form
     await page.locator('input[name="identifier"]').fill(adminUser.email);
@@ -112,10 +112,10 @@ test.describe('Admin Settings Journey', () => {
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/\/admin\/settings$/, { timeout: 10000 });
 
-    const pageHeading = page.getByRole('heading', { name: /تنظیمات سایت/i });
+    const pageHeading = page.getByRole('heading', { name: /Site settings/i });
     await expect(pageHeading).toBeVisible({ timeout: 30000 });
 
-    const siteNameInput = page.getByPlaceholder('کیتیا');
+    const siteNameInput = page.getByPlaceholder('Commerce Starter');
     await expect(siteNameInput).toBeVisible();
     if (hadSiteName && originalSiteName) {
       await expect(siteNameInput).toHaveValue(originalSiteName);
@@ -126,7 +126,7 @@ test.describe('Admin Settings Journey', () => {
     await siteNameInput.fill(newSiteName);
 
     const saveButton = page.getByRole('button', {
-      name: /ذخیره تنظیمات/i,
+      name: /Save changes/i,
     });
 
     const saveResponsePromise = page.waitForResponse(
@@ -145,7 +145,7 @@ test.describe('Admin Settings Journey', () => {
       );
     }
 
-    const successAlert = page.getByText(/تنظیمات با موفقیت ذخیره شد/i);
+    const successAlert = page.getByText(/Settings saved successfully/i);
     await expect(successAlert).toBeVisible({ timeout: 10000 });
 
     await page.reload();

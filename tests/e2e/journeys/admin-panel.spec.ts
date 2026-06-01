@@ -23,8 +23,8 @@ test.describe('Admin Panel Journey', () => {
     id: 'e2e-user-admin-panel-test',
     uid: 'e2e-uid-admin-panel-test',
     email: 'e2e-admin-panel@example.com',
-    phone: '09181111111',
-    name: 'ادمین تست',
+    phone: '+12025551111',
+    name: 'Test User',
     password: 'Test1234!@#$',
   };
 
@@ -32,8 +32,8 @@ test.describe('Admin Panel Journey', () => {
     id: 'e2e-user-regular-panel-test',
     uid: 'e2e-uid-regular-panel-test',
     email: 'e2e-regular-panel@example.com',
-    phone: '09182222222',
-    name: 'کاربر عادی',
+    phone: '+12025552222',
+    name: 'User text',
     password: 'Test1234!@#$',
   };
 
@@ -125,14 +125,14 @@ test.describe('Admin Panel Journey', () => {
 
     // Verify admin panel loaded - look for dashboard heading
     const dashboardHeading = page.getByRole('heading', {
-      name: /داشبورد مدیریت/i,
+      name: /Dashboard|داشبورد مدیریت/i,
     });
     await expect(dashboardHeading).toBeVisible({ timeout: 10000 });
 
     // Verify admin sidebar navigation items are present
     // Look for the admin sidebar specifically
     const adminSidebar = page.getByRole('complementary');
-    const productsLink = adminSidebar.getByRole('link', { name: /محصولات/i });
+    const productsLink = adminSidebar.getByRole('link', { name: /Products/i });
     await expect(productsLink).toBeVisible();
 
     console.log('Admin successfully accessed admin panel');
@@ -176,7 +176,7 @@ test.describe('Admin Panel Journey', () => {
     // Verify user is NOT in admin panel (either redirected or showing nothing)
     // The admin layout returns null for non-admin users
     const dashboardHeading = page.getByRole('heading', {
-      name: /داشبورد مدیریت/i,
+      name: /Dashboard|داشبورد مدیریت/i,
     });
     await expect(dashboardHeading).not.toBeVisible({ timeout: 3000 });
 
@@ -200,7 +200,7 @@ test.describe('Admin Panel Journey', () => {
     // Verify on login page
     await expect(page).toHaveURL(/\/login/);
 
-    const loginHeading = page.getByRole('heading', { name: /ورود/i });
+    const loginHeading = page.getByRole('heading', { name: /Sign in|ورود/i });
     await expect(loginHeading).toBeVisible();
 
     console.log('Unauthenticated user correctly redirected to login');
@@ -227,7 +227,7 @@ test.describe('Admin Panel Journey', () => {
     await expect(page).toHaveURL(/\/admin\/products/);
 
     // Verify products page content
-    const productsHeading = page.getByRole('heading', { name: /محصولات/i });
+    const productsHeading = page.getByRole('heading', { name: /Products/i });
     await expect(productsHeading).toBeVisible({ timeout: 10000 });
 
     console.log('Admin can access products management');
@@ -253,7 +253,7 @@ test.describe('Admin Panel Journey', () => {
 
     // Verify transactions page content
     const transactionsHeading = page.getByRole('heading', {
-      name: /تراکنش/i,
+      name: /Transaction/i,
     });
     await expect(transactionsHeading).toBeVisible({ timeout: 10000 });
 
@@ -281,7 +281,7 @@ test.describe('Admin Panel Journey', () => {
     await expect(page).toHaveURL(/\/admin\/users/);
 
     // Verify users page content
-    const usersHeading = page.getByRole('heading', { name: /کاربران/i });
+    const usersHeading = page.getByRole('heading', { name: /Users/i });
     await expect(usersHeading).toBeVisible({ timeout: 10000 });
 
     console.log('Admin can access users management');

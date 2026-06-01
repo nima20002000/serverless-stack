@@ -63,7 +63,7 @@ export async function bulkDeleteCategories(
 
     if (categoriesWithProductNames.length > 0) {
       throw new Error(
-        `امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: ${categoriesWithProductNames.join('، ')}`
+        `Cannot delete categories that contain products: ${categoriesWithProductNames.join(', ')}`
       );
     }
 
@@ -83,7 +83,7 @@ export async function bulkDeleteCategories(
 
     if (categoriesWithChildrenNames.length > 0) {
       throw new Error(
-        `امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: ${categoriesWithChildrenNames.join('، ')}`
+        `Cannot delete categories that contain subcategories: ${categoriesWithChildrenNames.join(', ')}`
       );
     }
 
@@ -95,7 +95,7 @@ export async function bulkDeleteCategories(
 
     if (error) {
       log.error('Error in bulk delete categories', { error });
-      throw new Error('خطا در حذف دسته‌بندی‌ها');
+      throw new Error('Unable to delete categories');
     }
 
     // Invalidate category cache
@@ -127,7 +127,7 @@ export async function bulkUpdateCategories(
 
     if (error) {
       log.error('Error in bulk update categories', { error });
-      throw new Error('خطا در بروزرسانی دسته‌بندی‌ها');
+      throw new Error('Unable to update categories');
     }
 
     // Invalidate category cache
@@ -155,7 +155,7 @@ export async function getAllCategories(): Promise<CategoryWithRelations[]> {
 
   if (error) {
     log.error('Error fetching all categories', { error });
-    throw new Error('خطا در دریافت دسته‌بندی‌ها');
+    throw new Error('Unable to load categories');
   }
 
   if (!data) {
@@ -209,7 +209,7 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
 
   if (error) {
     log.error('Error fetching active categories', { error });
-    throw new Error('خطا در دریافت دسته‌بندی‌های فعال');
+    throw new Error('Unable to load active categories');
   }
 
   // @ts-expect-error - Supabase join syntax returns children as object/null, not array
@@ -232,7 +232,7 @@ export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
 
   if (rootError) {
     log.error('Error fetching root categories', { error: rootError });
-    throw new Error('خطا در دریافت درخت دسته‌بندی‌ها');
+    throw new Error('Unable to load categories');
   }
 
   if (!rootCategories || rootCategories.length === 0) {
@@ -249,7 +249,7 @@ export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
 
   if (childError) {
     log.error('Error fetching child categories', { error: childError });
-    throw new Error('خطا در دریافت درخت دسته‌بندی‌ها');
+    throw new Error('Unable to load categories');
   }
 
   // Build tree structure manually
@@ -295,7 +295,7 @@ export async function getCategoryById(
 
   if (error || !data) {
     log.error('Category not found', { id, error });
-    throw new Error('دسته‌بندی یافت نشد');
+    throw new Error('Category not found');
   }
 
   // If parent relation is missing but parentId exists, fetch parent explicitly
@@ -391,9 +391,9 @@ export async function createCategory(input: {
   if (error || !data) {
     log.error('Error creating category', { error, input });
     if (error?.code === '23505') {
-      throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
+      throw new Error('A category with this slug already exists');
     }
-    throw new Error('خطا در ایجاد دسته‌بندی');
+    throw new Error('Unable to create category');
   }
 
   await invalidateCategoryCache();
@@ -429,9 +429,9 @@ export async function updateCategory(
   if (error || !data) {
     log.error('Error updating category', { id, error });
     if (error?.code === '23505') {
-      throw new Error('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
+      throw new Error('A category with this slug already exists');
     }
-    throw new Error('خطا در بروزرسانی دسته‌بندی');
+    throw new Error('Unable to update category');
   }
 
   await invalidateCategoryCache();
@@ -454,7 +454,7 @@ export async function deleteCategory(
     .eq('categoryId', id);
 
   if (productCount && productCount > 0) {
-    throw new Error('امکان حذف دسته‌بندی که محصول دارد وجود ندارد');
+    throw new Error('Cannot delete a category that contains products');
   }
 
   // Check if category has children
@@ -464,14 +464,14 @@ export async function deleteCategory(
     .eq('parentId', id);
 
   if (childrenCount && childrenCount > 0) {
-    throw new Error('امکان حذف دسته‌بندی که زیردسته دارد وجود ندارد');
+    throw new Error('Cannot delete a category that contains subcategories');
   }
 
   const { error } = await supabase.from('categories').delete().eq('id', id);
 
   if (error) {
     log.error('Error deleting category', { id, error });
-    throw new Error('خطا در حذف دسته‌بندی');
+    throw new Error('Unable to delete category');
   }
 
   await invalidateCategoryCache();

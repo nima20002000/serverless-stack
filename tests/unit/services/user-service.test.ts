@@ -43,7 +43,7 @@ describe('user-service', () => {
   it('rejects createUser when no identifier is provided', async () => {
     const userService = await loadUserService();
     await expect(userService.createUser({ name: 'Test User' })).rejects.toThrow(
-      'ایمیل یا شماره تلفن الزامی است'
+      'Email or phone number is required.'
     );
   });
 
@@ -58,7 +58,7 @@ describe('user-service', () => {
         password: 'password123',
       })
     ).rejects.toThrow(
-      'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+      'An account with this email or phone number already exists.'
     );
   });
 
@@ -173,6 +173,65 @@ describe('user-service', () => {
     });
   });
 
+  it('normalizes formatted phone numbers before updating profile', async () => {
+    const userService = await loadUserService();
+    const supabase = createSupabaseMock();
+    const updateQuery = createQueryMock({
+      data: {
+        id: 'user-1',
+        uid: 'U-000123',
+        email: null,
+        phone: '+12125551234',
+        name: 'New Name',
+        role: 'USER',
+        isVerified: true,
+        shippingAddress: null,
+        postalCode: null,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-02T00:00:00.000Z',
+      },
+      error: null,
+    });
+
+    supabase.from.mockReturnValue(updateQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    vi.spyOn(validation, 'validateEmailUniqueness').mockResolvedValue();
+    vi.spyOn(validation, 'validatePhoneUniqueness').mockResolvedValue();
+
+    await userService.updateUserProfile('user-1', {
+      name: 'New Name',
+      phone: '+1 (212) 555-1234',
+    });
+
+    expect(validation.validatePhoneUniqueness).toHaveBeenCalledWith(
+      '+12125551234',
+      'user-1'
+    );
+    expect(updateQuery.update).toHaveBeenCalledWith({
+      name: 'New Name',
+      phone: '+12125551234',
+    });
+  });
+
+  it('normalizes formatted phone numbers before querying by phone', async () => {
+    const userService = await loadUserService();
+    const querySpy = vi.spyOn(queries, 'queryUser').mockResolvedValue(null);
+
+    await userService.getUserByPhone('+1 (212) 555-1234');
+
+    expect(querySpy).toHaveBeenCalledWith({ phone: '+12125551234' });
+  });
+
+  it('normalizes formatted phone identifiers before querying by identifier', async () => {
+    const userService = await loadUserService();
+    const querySpy = vi.spyOn(queries, 'queryUser').mockResolvedValue(null);
+
+    await userService.getUserByIdentifier('+1 (212) 555-1234');
+
+    expect(querySpy).toHaveBeenCalledWith({ phone: '+12125551234' });
+  });
+
   it('does not throw when updating shipping info fails', async () => {
     const userService = await loadUserService();
     const supabase = createSupabaseMock();
@@ -210,7 +269,7 @@ describe('user-service', () => {
 
     await expect(
       userService.resetPasswordWithOTP('user-1', 'newpassword')
-    ).rejects.toThrow('کاربر یافت نشد');
+    ).rejects.toThrow('User not found.');
   });
 
   it('sets password after ensuring user has none', async () => {
@@ -263,17 +322,19 @@ describe('user-service', () => {
 
     const result = await userService.linkOrphanedTransactions(
       'user-1',
-      '09120000000'
+      '+12025550000'
     );
 
     expect(result).toBe(2);
     expect(fetchQuery.in).toHaveBeenCalledWith('phone', [
-      '+989120000000',
-      '09120000000',
+      '+12025550000',
+      '2025550000',
+      '12025550000',
     ]);
     expect(updateQuery.in).toHaveBeenCalledWith('phone', [
-      '+989120000000',
-      '09120000000',
+      '+12025550000',
+      '2025550000',
+      '12025550000',
     ]);
     expect(updateQuery.update).toHaveBeenCalledWith({ userId: 'user-1' });
   });

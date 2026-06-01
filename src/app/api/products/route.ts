@@ -61,7 +61,8 @@ async function getHandler(req: NextRequest) {
     console.error('Error fetching products:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در دریافت محصولات',
+        error:
+          error instanceof Error ? error.message : 'Unable to load products',
       },
       { status: 500 }
     );
@@ -74,7 +75,7 @@ async function postHandler(req: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -94,7 +95,7 @@ async function postHandler(req: NextRequest) {
 
     if (!name || !description || price === undefined || stock === undefined) {
       return NextResponse.json(
-        { error: 'تمام فیلدهای الزامی را وارد کنید' },
+        { error: 'Required fields are missing' },
         { status: 400 }
       );
     }
@@ -119,7 +120,7 @@ async function postHandler(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'محصول با موفقیت ایجاد شد',
+        message: 'Product created successfully',
         product,
       },
       { status: 201 }
@@ -127,7 +128,10 @@ async function postHandler(req: NextRequest) {
   } catch (error) {
     console.error('Error creating product:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در ایجاد محصول' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to create product',
+      },
       { status: 400 }
     );
   }

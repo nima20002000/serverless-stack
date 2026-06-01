@@ -16,16 +16,13 @@ export async function POST(request: NextRequest) {
 
     if (!code) {
       return NextResponse.json(
-        { error: 'کد تخفیف الزامی است' },
+        { error: 'Promo code is required' },
         { status: 400 }
       );
     }
 
     if (!subtotal || subtotal <= 0) {
-      return NextResponse.json(
-        { error: 'مبلغ سفارش نامعتبر است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
     // Get user session if available
@@ -52,7 +49,10 @@ export async function POST(request: NextRequest) {
     console.error('Error validating promo code:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'خطا در بررسی کد تخفیف',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to validate promo code',
       },
       { status: 500 }
     );

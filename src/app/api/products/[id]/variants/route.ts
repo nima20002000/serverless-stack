@@ -19,7 +19,7 @@ export async function GET(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
@@ -31,7 +31,9 @@ export async function GET(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت انواع محصول',
+          error instanceof Error
+            ? error.message
+            : 'Unable to load product variants',
       },
       { status: 500 }
     );
@@ -52,14 +54,14 @@ export async function POST(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -72,19 +74,19 @@ export async function POST(
       for (const variant of variantsToCreate) {
         if (!variant.name) {
           return NextResponse.json(
-            { error: 'نام نوع محصول الزامی است' },
+            { error: 'Variant name is required' },
             { status: 400 }
           );
         }
         if (variant.stock === undefined || variant.stock < 0) {
           return NextResponse.json(
-            { error: 'موجودی باید صفر یا بیشتر باشد' },
+            { error: 'Variant stock cannot be negative' },
             { status: 400 }
           );
         }
         if (!variant.tempId) {
           return NextResponse.json(
-            { error: 'شناسه موقت واریانت الزامی است' },
+            { error: 'Variant ID is required' },
             { status: 400 }
           );
         }
@@ -128,14 +130,14 @@ export async function POST(
 
     if (!name) {
       return NextResponse.json(
-        { error: 'نام نوع محصول الزامی است' },
+        { error: 'Variant name is required' },
         { status: 400 }
       );
     }
 
     if (stock === undefined || stock < 0) {
       return NextResponse.json(
-        { error: 'موجودی باید صفر یا بیشتر باشد' },
+        { error: 'Variant stock cannot be negative' },
         { status: 400 }
       );
     }
@@ -158,7 +160,9 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در ایجاد نوع محصول',
+          error instanceof Error
+            ? error.message
+            : 'Unable to create product variant',
       },
       { status: 500 }
     );
@@ -178,14 +182,14 @@ export async function PATCH(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -193,7 +197,7 @@ export async function PATCH(
 
     if (!Array.isArray(variants)) {
       return NextResponse.json(
-        { error: 'variants باید آرایه‌ای باشد' },
+        { error: 'Variants must be an array' },
         { status: 400 }
       );
     }
@@ -202,19 +206,19 @@ export async function PATCH(
     for (const variant of variants) {
       if (!variant.id) {
         return NextResponse.json(
-          { error: 'شناسه واریانت الزامی است' },
+          { error: 'Variant ID is required' },
           { status: 400 }
         );
       }
       if (!variant.name) {
         return NextResponse.json(
-          { error: 'نام نوع محصول الزامی است' },
+          { error: 'Variant name is required' },
           { status: 400 }
         );
       }
       if (variant.stock === undefined || variant.stock < 0) {
         return NextResponse.json(
-          { error: 'موجودی باید صفر یا بیشتر باشد' },
+          { error: 'Variant stock cannot be negative' },
           { status: 400 }
         );
       }
@@ -255,7 +259,7 @@ export async function PATCH(
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در به‌روزرسانی واریانت‌ها',
+            : 'Unable to update product variants',
       },
       { status: 500 }
     );

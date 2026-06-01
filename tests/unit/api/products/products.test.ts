@@ -156,7 +156,7 @@ describe('POST /api/products', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(createProductMock).not.toHaveBeenCalled();
   });
 
@@ -170,7 +170,7 @@ describe('POST /api/products', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'تمام فیلدهای الزامی را وارد کنید',
+      error: 'Required fields are missing',
     });
     expect(createProductMock).not.toHaveBeenCalled();
   });
@@ -321,7 +321,7 @@ describe('PUT /api/products/[id]', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(updateProductMock).not.toHaveBeenCalled();
   });
 
@@ -402,7 +402,7 @@ describe('DELETE /api/products/[id]', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(deleteProductMock).not.toHaveBeenCalled();
   });
 
@@ -418,7 +418,7 @@ describe('DELETE /api/products/[id]', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       success: true,
-      message: 'محصول با موفقیت حذف شد',
+      message: 'Product deleted successfully',
     });
   });
 

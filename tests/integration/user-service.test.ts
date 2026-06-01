@@ -22,7 +22,7 @@ import {
 } from '../utils/cleanup';
 import {
   expectValidEmail,
-  expectValidIranianPhone,
+  expectValidInternationalPhone,
   expectValidUUID,
   expectValidBcryptHash,
 } from '../utils/assertions';
@@ -47,8 +47,10 @@ function createTestEmail(label: string) {
 }
 
 function createTestPhone() {
-  const suffix = Math.floor(Math.random() * 90 + 10);
-  return `091200000${suffix}`;
+  const suffix = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
+  return `+1202555${suffix}`;
 }
 
 async function fetchUserPassword(userId: string) {
@@ -98,7 +100,7 @@ describe('User Service Integration Tests', () => {
 
   it('should create a user with email and password and issue promo code', async () => {
     const email = createTestEmail('email');
-    const name = 'کاربر ایمیل تست';
+    const name = 'User Email Test';
 
     const user = await createUser({
       email,
@@ -136,14 +138,14 @@ describe('User Service Integration Tests', () => {
 
     const user = await createUser({
       phone,
-      name: 'کاربر موبایل تست',
+      name: 'User textandquality Test',
     });
 
     expectValidUUID(user.id);
     expect(user.email).toBeNull();
     expect(user.phone).toBe(phone);
     expect(user.phone).toBeDefined();
-    expectValidIranianPhone(user.phone as string);
+    expectValidInternationalPhone(user.phone as string);
     expect(user.isVerified).toBe(true);
 
     const storedPassword = await fetchUserPassword(user.id);
@@ -161,7 +163,7 @@ describe('User Service Integration Tests', () => {
       email,
       phone,
       password: 'LookupPassword123!',
-      name: 'کاربر جستجو',
+      name: 'User Search',
     });
 
     const byEmail = await getUserByEmail(email);
@@ -172,7 +174,7 @@ describe('User Service Integration Tests', () => {
     const byPhone = await getUserByPhone(phone);
     expect(byPhone?.id).toBe(user.id);
     expect(byPhone?.phone).toBeDefined();
-    expectValidIranianPhone(byPhone?.phone as string);
+    expectValidInternationalPhone(byPhone?.phone as string);
 
     const byIdentifierEmail = await getUserByIdentifier(email);
     expect(byIdentifierEmail?.id).toBe(user.id);
@@ -190,17 +192,17 @@ describe('User Service Integration Tests', () => {
     await createUser({
       email,
       password: 'DuplicatePassword123!',
-      name: 'کاربر اول',
+      name: 'User details',
     });
 
     await expect(
       createUser({
         email,
         password: 'DuplicatePassword123!',
-        name: 'کاربر دوم',
+        name: 'User details',
       })
     ).rejects.toThrow(
-      'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+      'An account with this email or phone number already exists.'
     );
   });
 
@@ -212,24 +214,24 @@ describe('User Service Integration Tests', () => {
       email,
       phone,
       password: 'ProfilePassword123!',
-      name: 'کاربر اولیه',
+      name: 'User details',
     });
 
     const updated = await updateUserProfile(user.id, {
-      name: 'کاربر به‌روز',
+      name: 'User today',
       email: createTestEmail('updated'),
       phone: createTestPhone(),
-      shippingAddress: 'تهران، خیابان تست، پلاک ۱۲',
+      shippingAddress: 'Sample Citydetailsquality Testtext 12',
       postalCode: '1234567890',
     });
 
     expect(updated.id).toBe(user.id);
-    expect(updated.name).toBe('کاربر به‌روز');
+    expect(updated.name).toBe('User today');
     expect(updated.email).toBeDefined();
     expectValidEmail(updated.email as string);
     expect(updated.phone).toBeDefined();
-    expectValidIranianPhone(updated.phone as string);
-    expect(updated.shippingAddress).toContain('تهران');
+    expectValidInternationalPhone(updated.phone as string);
+    expect(updated.shippingAddress).toContain('Sample City');
     expect(updated.postalCode).toBe('1234567890');
     expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
       user.updatedAt.getTime()
@@ -243,13 +245,13 @@ describe('User Service Integration Tests', () => {
     const userA = await createUser({
       email: emailA,
       password: 'Password123!',
-      name: 'کاربر A',
+      name: 'User A',
     });
 
     const userB = await createUser({
       email: emailB,
       password: 'Password123!',
-      name: 'کاربر B',
+      name: 'User B',
     });
 
     expect(userA.email).toBeDefined();
@@ -257,7 +259,7 @@ describe('User Service Integration Tests', () => {
       updateUserProfile(userB.id, {
         email: userA.email as string,
       })
-    ).rejects.toThrow('این ایمیل قبلاً استفاده شده است');
+    ).rejects.toThrow('This email is already in use.');
   });
 
   it('should change password when current password is valid', async () => {
@@ -266,7 +268,7 @@ describe('User Service Integration Tests', () => {
     const user = await createUser({
       email,
       password: 'OldPassword123!',
-      name: 'کاربر رمز',
+      name: 'User text',
     });
 
     await changeUserPassword(user.id, 'OldPassword123!', 'NewPassword123!');
@@ -285,12 +287,12 @@ describe('User Service Integration Tests', () => {
     const user = await createUser({
       email,
       password: 'CorrectPassword123!',
-      name: 'کاربر رمز',
+      name: 'User text',
     });
 
     await expect(
       changeUserPassword(user.id, 'WrongPassword123!', 'NewPassword123!')
-    ).rejects.toThrow('رمز عبور فعلی نادرست است');
+    ).rejects.toThrow('Current password is incorrect.');
   });
 
   it('should set password for OTP-only users and prevent reuse', async () => {
@@ -298,7 +300,7 @@ describe('User Service Integration Tests', () => {
 
     const user = await createUser({
       phone,
-      name: 'کاربر OTP',
+      name: 'User OTP',
     });
 
     await setUserPassword(user.id, 'SetPassword123!');
@@ -312,9 +314,7 @@ describe('User Service Integration Tests', () => {
 
     await expect(
       setUserPassword(user.id, 'AnotherPassword123!')
-    ).rejects.toThrow(
-      'این کاربر قبلاً رمز عبور دارد. از گزینه تغییر رمز عبور استفاده کنید'
-    );
+    ).rejects.toThrow('This account already has a password.');
   });
 
   it('should reset password via OTP flow', async () => {
@@ -323,7 +323,7 @@ describe('User Service Integration Tests', () => {
     const user = await createUser({
       email,
       password: 'InitialPassword123!',
-      name: 'کاربر ریست',
+      name: 'User text',
     });
 
     await resetPasswordWithOTP(user.id, 'ResetPassword123!');
@@ -341,7 +341,7 @@ describe('User Service Integration Tests', () => {
 
     const user = await createUser({
       phone,
-      name: 'کاربر تراکنش',
+      name: 'User Transaction',
     });
 
     const transactionId = randomUUID();
@@ -355,9 +355,9 @@ describe('User Service Integration Tests', () => {
       transactionCode,
       paymentMethod: 'STRIPE',
       isGuest: true,
-      fullName: 'مهمان تست',
+      fullName: 'Guest Test',
       phone,
-      shippingAddress: 'آدرس تست',
+      shippingAddress: 'Address Test',
       postalCode: '1234567890',
       updatedAt: new Date().toISOString(),
     });

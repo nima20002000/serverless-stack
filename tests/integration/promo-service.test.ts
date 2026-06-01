@@ -7,11 +7,11 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { randomUUID } from 'crypto';
-import { createTestSupabaseClient, generateTestUID } from '../utils/test-client';
 import {
-  cleanupTestPromoCodes,
-  cleanupTestUsers,
-} from '../utils/cleanup';
+  createTestSupabaseClient,
+  generateTestUID,
+} from '../utils/test-client';
+import { cleanupTestPromoCodes, cleanupTestUsers } from '../utils/cleanup';
 import {
   generatePromoCode,
   createFirstTimePromoCode,
@@ -25,15 +25,17 @@ async function createTestUser() {
   const userId = randomUUID();
   const uid = await generateTestUID();
   const email = `test-promo-${Date.now()}-${Math.floor(Math.random() * 1000)}@example.com`;
-  const phoneSuffix = Math.floor(Math.random() * 90 + 10);
-  const phone = `091200000${phoneSuffix}`;
+  const phoneSuffix = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
+  const phone = `+1202555${phoneSuffix}`;
 
   const { error } = await supabase.from('users').insert({
     id: userId,
     uid,
     email,
     phone,
-    name: 'کاربر تست پرومو',
+    name: 'Test User detailsand',
     role: 'USER',
     updatedAt: new Date().toISOString(),
   });
@@ -113,7 +115,9 @@ describe('Promo Service Integration Tests', () => {
       .eq('id', latest.id);
 
     if (updateError) {
-      throw new Error(`Failed to mark promo code as used: ${updateError.message}`);
+      throw new Error(
+        `Failed to mark promo code as used: ${updateError.message}`
+      );
     }
 
     const afterUse = await getActivePromoCode(userId);
@@ -133,7 +137,9 @@ describe('Promo Service Integration Tests', () => {
     });
 
     if (insertError) {
-      throw new Error(`Failed to insert active promo code: ${insertError.message}`);
+      throw new Error(
+        `Failed to insert active promo code: ${insertError.message}`
+      );
     }
 
     const used = await usePromoCode(activeCode);
@@ -150,20 +156,26 @@ describe('Promo Service Integration Tests', () => {
     if (!reuseError) {
       throw new Error('Expected reuse of promo code to throw');
     }
-    expect(reuseError.message).toBe('این کد تخفیف قبلاً استفاده شده است');
+    expect(reuseError.message).toBe(
+      'text Promo code Already Already used text'
+    );
 
     const { userId: expiredUserId } = await createTestUser();
     const expiredCode = `TEST-EXPIRED-${Date.now()}`;
-    const { error: expiredInsertError } = await supabase.from('promo_codes').insert({
-      id: randomUUID(),
-      code: expiredCode,
-      userId: expiredUserId,
-      isUsed: false,
-      expiresAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    });
+    const { error: expiredInsertError } = await supabase
+      .from('promo_codes')
+      .insert({
+        id: randomUUID(),
+        code: expiredCode,
+        userId: expiredUserId,
+        isUsed: false,
+        expiresAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+      });
 
     if (expiredInsertError) {
-      throw new Error(`Failed to insert expired promo code: ${expiredInsertError.message}`);
+      throw new Error(
+        `Failed to insert expired promo code: ${expiredInsertError.message}`
+      );
     }
 
     let expiredError: Error | null = null;
@@ -176,6 +188,6 @@ describe('Promo Service Integration Tests', () => {
     if (!expiredError) {
       throw new Error('Expected expired promo code to throw');
     }
-    expect(expiredError.message).toBe('کد تخفیف منقضی شده است');
+    expect(expiredError.message).toBe('Promo code Expired text');
   });
 });

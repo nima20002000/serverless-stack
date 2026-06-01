@@ -44,9 +44,8 @@ async function createTestUser() {
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 1000);
   const email = `test-wishlist-${timestamp}-${random}@example.com`;
-  // Use timestamp for unique phone: 091217XXXXXXX where 17 comes from 2025 epoch
-  const phoneTimestamp = (timestamp % 10000000).toString().padStart(7, '0');
-  const phone = `0912${phoneTimestamp}`;
+  const phoneTimestamp = (timestamp % 10000).toString().padStart(4, '0');
+  const phone = `+1202555${phoneTimestamp}`;
 
   const { data: user, error } = await supabase
     .from('users')
@@ -55,7 +54,7 @@ async function createTestUser() {
       uid,
       email,
       phone,
-      name: 'کاربر تست علاقه‌مندی',
+      name: 'Test User text',
       role: 'USER',
       isVerified: true,
       updatedAt: new Date().toISOString(),
@@ -106,7 +105,7 @@ async function createTestVariant(
     .insert({
       id: variantId,
       productId,
-      name: 'تست واریانت',
+      name: 'Test detailsortext',
       sku: `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       priceAdjust: 5000,
       stock: 5,

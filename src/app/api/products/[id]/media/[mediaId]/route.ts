@@ -23,15 +23,12 @@ export async function PATCH(
       !params.mediaId ||
       params.mediaId.length > MAX_ID_LENGTH
     ) {
-      return NextResponse.json(
-        { error: 'شناسه رسانه نامعتبر است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -49,7 +46,9 @@ export async function PATCH(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در بروزرسانی رسانه',
+          error instanceof Error
+            ? error.message
+            : 'Unable to update product media',
       },
       { status: 500 }
     );
@@ -70,15 +69,12 @@ export async function DELETE(
       !params.mediaId ||
       params.mediaId.length > MAX_ID_LENGTH
     ) {
-      return NextResponse.json(
-        { error: 'شناسه رسانه نامعتبر است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     await deleteProductMedia(params.mediaId);
@@ -86,7 +82,12 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete product media error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در حذف رسانه' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete product media',
+      },
       { status: 500 }
     );
   }

@@ -92,41 +92,42 @@ export async function createUser(data: {
   password?: string;
   name: string;
 }): Promise<UserWithoutPassword> {
-  const { email, phone, password, name } = data;
-  const normalizedPhone = phone ? normalizePhoneNumber(phone) : undefined;
+  const { email, password, name } = data;
+  const rawPhone = data.phone;
+  const phone = rawPhone ? normalizePhoneNumber(rawPhone) : rawPhone;
 
-  log.info('Creating user', { email, phone: normalizedPhone, name });
+  log.info('Creating user', { email, phone, name });
 
   try {
     // Validate at least one identifier
     if (!email && !phone) {
-      throw new Error('ایمیل یا شماره تلفن الزامی است');
+      throw new Error('Email or phone number is required.');
     }
 
     // Validate email if provided
     if (email && !validateEmail(email)) {
       log.warn('Invalid email format', { email });
-      throw new Error('فرمت ایمیل نامعتبر است');
+      throw new Error('Invalid email format.');
     }
 
     // Validate phone if provided
     if (phone && !validatePhone(phone)) {
       log.warn('Invalid phone format', { phone });
-      throw new Error('فرمت شماره تلفن نامعتبر است');
+      throw new Error('Invalid phone number format.');
     }
 
     // Validate password (required for email, optional for phone)
     if (password && !validatePassword(password)) {
       log.warn('Invalid password length', { email, phone });
-      throw new Error('رمز عبور باید حداقل ۸ کاراکتر باشد');
+      throw new Error('Password must be at least 8 characters.');
     }
 
     // Check if user already exists
-    const exists = await checkUserExists({ email, phone: normalizedPhone });
+    const exists = await checkUserExists({ email, phone });
     if (exists) {
-      log.warn('User already exists', { email, phone: normalizedPhone });
+      log.warn('User already exists', { email, phone });
       throw new Error(
-        'کاربری با این ایمیل یا شماره تلفن قبلاً ثبت‌نام کرده است'
+        'An account with this email or phone number already exists.'
       );
     }
 
@@ -153,7 +154,7 @@ export async function createUser(data: {
             id: randomUUID(),
             uid,
             email: email || null,
-            phone: normalizedPhone || null,
+            phone: phone || null,
             password: hashedPassword,
             name,
             role: 'USER',
@@ -174,17 +175,15 @@ export async function createUser(data: {
             log.warn('UID conflict detected, retrying', {
               retries,
               email,
-              phone: normalizedPhone,
+              phone,
             });
 
             if (retries >= maxRetries) {
               log.error('Max retries reached for UID generation', {
                 email,
-                phone: normalizedPhone,
+                phone,
               });
-              throw new Error(
-                'خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید'
-              );
+              throw new Error('Unable to create user ID.');
             }
 
             // Wait a bit before retrying to reduce collision probability
@@ -211,7 +210,7 @@ export async function createUser(data: {
     }
 
     if (!user) {
-      throw new Error('خطا در ایجاد کاربر');
+      throw new Error('Unable to create user.');
     }
 
     log.info('User created successfully', {
@@ -222,16 +221,16 @@ export async function createUser(data: {
     });
 
     // Link any orphaned guest transactions with this phone number
-    if (normalizedPhone) {
+    if (phone) {
       try {
         const linkedCount = await linkOrphanedTransactions(
           user.id,
-          phone ?? normalizedPhone
+          rawPhone ?? phone
         );
         if (linkedCount > 0) {
           log.info('Linked orphaned transactions to new user', {
             userId: user.id,
-            phone: normalizedPhone,
+            phone,
             count: linkedCount,
           });
         }
@@ -376,18 +375,13 @@ export async function updateUserProfile(
   log.info('Updating user profile', { userId, fields: Object.keys(data) });
 
   try {
-    const normalizedPhone =
-      data.phone === undefined
-        ? undefined
-        : data.phone
-          ? normalizePhoneNumber(data.phone)
-          : '';
-
     // Validate email uniqueness
     await validateEmailUniqueness(data.email, userId);
 
+    const phone = data.phone ? normalizePhoneNumber(data.phone) : data.phone;
+
     // Validate phone uniqueness
-    await validatePhoneUniqueness(normalizedPhone, userId);
+    await validatePhoneUniqueness(phone, userId);
 
     const supabase = createClient();
 
@@ -395,7 +389,7 @@ export async function updateUserProfile(
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email || null;
-    if (data.phone !== undefined) updateData.phone = normalizedPhone || null;
+    if (data.phone !== undefined) updateData.phone = phone || null;
     if (data.shippingAddress !== undefined)
       updateData.shippingAddress = data.shippingAddress;
     if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
@@ -412,7 +406,7 @@ export async function updateUserProfile(
 
     if (error || !updatedUser) {
       log.error('Failed to update user profile', { userId, error });
-      throw new Error('خطا در بروزرسانی پروفایل کاربر');
+      throw new Error('Unable to update profile.');
     }
 
     log.info('User profile updated successfully', { userId });
@@ -475,7 +469,7 @@ export async function resetPasswordWithOTP(
     const user = await getUserWithPassword(userId);
     if (!user) {
       log.warn('User not found', { userId });
-      throw new Error('کاربر یافت نشد');
+      throw new Error('User not found.');
     }
 
     // Update password (validation happens inside)
@@ -582,7 +576,7 @@ export async function linkOrphanedTransactions(
 
     log.info('Orphaned transactions linked successfully', {
       userId,
-      phone,
+      phone: normalizedPhone,
       count: orphanedTransactions.length,
       transactionCodes: orphanedTransactions.map((t) => t.transactionCode),
     });
@@ -591,7 +585,7 @@ export async function linkOrphanedTransactions(
   } catch (error) {
     log.error('Failed to link orphaned transactions', {
       userId,
-      phone,
+      phone: normalizedPhone,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     // Don't throw - this is a best-effort operation
@@ -630,7 +624,7 @@ export async function getUserTransactions(
         userId,
         error: userError,
       });
-      throw new Error('خطا در دریافت اطلاعات کاربر');
+      throw new Error('Unable to load user');
     }
 
     // Build OR conditions for matching transactions:
@@ -705,7 +699,7 @@ export async function getUserTransactions(
 
     if (error) {
       log.error('Failed to fetch user transactions', { userId, error });
-      throw new Error('خطا در دریافت تراکنش‌های کاربر');
+      throw new Error('Unable to load user transactions');
     }
 
     // Process transactions to include only first image for each product

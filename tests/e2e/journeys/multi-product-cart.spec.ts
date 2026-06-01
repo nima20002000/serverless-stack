@@ -25,8 +25,10 @@ import { cleanupE2ETestData } from '../fixtures/cleanup';
 
 // Generate unique test phone for each test run
 function generateTestPhone(): string {
-  const random = Math.floor(Math.random() * 9000000) + 1000000;
-  return `0919${random}`;
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
+  return `+1202555${random}`;
 }
 
 test.describe('Multi-Product Cart Journey', () => {
@@ -67,7 +69,7 @@ test.describe('Multi-Product Cart Journey', () => {
 
     const productName1 = await page.locator('h1').first().textContent();
     const addButton1 = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if ((await addButton1.isVisible()) && (await addButton1.isEnabled())) {
@@ -87,7 +89,7 @@ test.describe('Multi-Product Cart Journey', () => {
 
     const productName2 = await page.locator('h1').first().textContent();
     const addButton2 = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if ((await addButton2.isVisible()) && (await addButton2.isEnabled())) {
@@ -101,7 +103,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify cart has items
-    const cartItemsHeading = page.locator('h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 10000 });
 
     // Verify multiple items in cart
@@ -116,7 +118,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -162,7 +164,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -178,13 +180,13 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify item exists
-    const cartItemsHeading = page.locator('h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 5000 });
 
-    // Find and click remove button (trash icon or "حذف" button)
+    // Find and click remove button (trash icon or "Delete" button)
     const removeButton = page
       .locator(
-        'button:has-text("حذف"), button[aria-label*="حذف"], button svg.trash, button:has(svg)'
+        'button:has-text("Delete"), button[aria-label*="Delete"], button svg.trash, button:has(svg)'
       )
       .first();
 
@@ -194,7 +196,7 @@ test.describe('Multi-Product Cart Journey', () => {
 
       // Either cart is empty or item count decreased
       // Check for empty cart message
-      const emptyCartMessage = page.getByText(/سبد خرید شما خالی است/i);
+      const emptyCartMessage = page.getByText(/empty|خالی/i);
       if (await emptyCartMessage.isVisible()) {
         console.log('Cart is now empty after removing item');
       } else {
@@ -216,7 +218,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton1 = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if ((await addButton1.isVisible()) && (await addButton1.isEnabled())) {
@@ -237,7 +239,7 @@ test.describe('Multi-Product Cart Journey', () => {
       await page.waitForLoadState('networkidle');
 
       const addButton2 = page
-        .getByRole('button', { name: /افزودن به سبد خرید/i })
+        .getByRole('button', { name: /Add to Cart/i })
         .first();
 
       if ((await addButton2.isVisible()) && (await addButton2.isEnabled())) {
@@ -251,7 +253,7 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const checkoutButton = page.getByRole('button', {
-      name: /ادامه فرآیند خرید/i,
+      name: /Checkout|ادامه فرآیند خرید/i,
     });
     await checkoutButton.click();
 
@@ -259,15 +261,15 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForURL('/checkout');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('#fullName').fill('تست چند محصول');
+    await page.locator('#fullName').fill('Test text Product');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، خیابان تست، پلاک ۱');
+    await page.locator('#shippingAddress').fill('Sample City Test 1');
 
     // Setup payment mock
     await mockStripeSuccess(page);
 
     // Click pay
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for payment flow
@@ -302,7 +304,7 @@ test.describe('Multi-Product Cart Journey', () => {
     console.log(`Product price text: ${priceText}`);
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -318,14 +320,14 @@ test.describe('Multi-Product Cart Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for total price element
-    const totalElement = page.getByText(/جمع کل|مجموع/i).first();
+    const totalElement = page.getByText(/Total|details/i).first();
     if (await totalElement.isVisible()) {
       const totalText = await totalElement.textContent();
       console.log(`Cart total: ${totalText}`);
     }
 
     // Verify cart has items
-    const cartItemsHeading = page.locator('h2:has-text("لیست کالاها")');
+    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
     await expect(cartItemsHeading).toBeVisible({ timeout: 5000 });
   });
 });
@@ -369,11 +371,13 @@ test.describe('Cart Stock Management', () => {
     await page.goto(`/products/${outOfStockProduct.id}`);
     await page.waitForLoadState('networkidle');
 
-    // Verify add to cart button is disabled or shows "ناموجود"
+    // Verify add to cart button is disabled or shows "Out of stock"
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
-    const outOfStockButton = page.getByRole('button', { name: /ناموجود/i });
+    const outOfStockButton = page.getByRole('button', {
+      name: /Out of stock/i,
+    });
 
     // Either button is disabled OR shows out of stock text
     if (await addButton.isVisible()) {
@@ -404,7 +408,7 @@ test.describe('Cart Stock Management', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -419,15 +423,15 @@ test.describe('Cart Stock Management', () => {
     await page.goto('/checkout');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('#fullName').fill('تست موجودی');
+    await page.locator('#fullName').fill('Test Stock');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، تست');
+    await page.locator('#shippingAddress').fill('Sample City Test');
 
     // Setup payment mock
     await mockStripeSuccess(page);
 
     // Pay
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     // Wait for success
@@ -494,7 +498,7 @@ test.describe('Product Variant Selection', () => {
     // The add to cart button should work only after selecting a variant
     // First, check if a variant is auto-selected (which is valid behavior)
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     // The button should be visible and either:
@@ -508,8 +512,10 @@ test.describe('Product Variant Selection', () => {
       await page.waitForTimeout(1000);
 
       // Check for error message or successful add
-      const errorMessage = page.getByText(/انتخاب کنید|نوع محصول/i);
-      const successFeedback = page.getByText(/محصول به سبد خرید اضافه شد/i);
+      const errorMessage = page.getByText(
+        /Select a product option|Please select|انتخاب/i
+      );
+      const successFeedback = page.getByText(/Added to cart|به سبد/i);
 
       const hasError = await errorMessage.isVisible();
       const hasSuccess = await successFeedback.isVisible();
@@ -555,7 +561,7 @@ test.describe('Product Variant Selection', () => {
     );
 
     // The backend verifyStockAvailability should return error like:
-    // "برای محصول X باید یک نوع (رنگ، سایز، ...) انتخاب کنید"
+    // "for Product X withdetails (Color Sizetext"
     // This is tested in unit/integration tests
 
     // For E2E, we just verify the product detail page shows variant selector
@@ -588,7 +594,7 @@ test.describe('Cart Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -608,8 +614,8 @@ test.describe('Cart Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify cart still has items (not empty)
-    const cartItemsHeading = page.locator('h2:has-text("لیست کالاها")');
-    const emptyCartMessage = page.getByText(/سبد خرید شما خالی است/i);
+    const cartItemsHeading = page.locator('h1:has-text("Cart"), h1:has-text("سبد خرید"), h2:has-text("لیست کالاها")');
+    const emptyCartMessage = page.getByText(/empty|خالی/i);
 
     const hasItems = await cartItemsHeading.isVisible();
     const isEmpty = await emptyCartMessage.isVisible();
@@ -627,7 +633,7 @@ test.describe('Cart Persistence', () => {
     await page.waitForLoadState('networkidle');
 
     const addButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (!(await addButton.isVisible()) || !(await addButton.isEnabled())) {
@@ -642,13 +648,13 @@ test.describe('Cart Persistence', () => {
     await page.goto('/checkout');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('#fullName').fill('تست پاک کردن سبد');
+    await page.locator('#fullName').fill('Test text');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، تست');
+    await page.locator('#shippingAddress').fill('Sample City Test');
 
     await mockStripeSuccess(page);
 
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page.getByRole('button', { name: /Pay|پرداخت|Payment/i }).first();
     await payButton.click();
 
     await page.waitForURL(/\/payment\/success/, { timeout: 30000 });
@@ -657,7 +663,7 @@ test.describe('Cart Persistence', () => {
     await page.goto('/cart');
     await page.waitForLoadState('networkidle');
 
-    const emptyCartMessage = page.getByText(/سبد خرید شما خالی است/i);
+    const emptyCartMessage = page.getByText(/empty|خالی/i);
     const hasEmptyMessage = await emptyCartMessage.isVisible();
 
     // Cart should be empty after successful checkout

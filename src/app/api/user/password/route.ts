@@ -19,7 +19,7 @@ async function postHandler(req: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Sign in to continue.' },
         { status: 401 }
       );
     }
@@ -30,7 +30,7 @@ async function postHandler(req: NextRequest) {
     // Validate required fields
     if (!newPassword) {
       return NextResponse.json(
-        { error: 'رمز عبور جدید الزامی است' },
+        { error: 'New password is required.' },
         { status: 400 }
       );
     }
@@ -58,13 +58,13 @@ async function postHandler(req: NextRequest) {
       });
 
       return NextResponse.json({
-        message: 'رمز عبور با موفقیت تنظیم شد',
+        message: 'Password set successfully.',
       });
     } else {
       // Change password - REQUIRES current password for security
       if (!currentPassword) {
         return NextResponse.json(
-          { error: 'رمز عبور فعلی الزامی است' },
+          { error: 'Current password is required.' },
           { status: 400 }
         );
       }
@@ -89,7 +89,7 @@ async function postHandler(req: NextRequest) {
       });
 
       return NextResponse.json({
-        message: 'رمز عبور با موفقیت تغییر یافت',
+        message: 'Password changed successfully.',
       });
     }
   } catch (error) {
@@ -114,7 +114,7 @@ async function postHandler(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در مدیریت رمز عبور',
+          error instanceof Error ? error.message : 'Unable to update password.',
       },
       { status: 500 }
     );

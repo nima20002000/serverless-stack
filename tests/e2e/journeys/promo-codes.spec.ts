@@ -29,8 +29,8 @@ test.describe('Promo Code Journey', () => {
     id: 'e2e-user-promo-test',
     uid: 'e2e-uid-promo-test',
     email: 'e2e-promo-user@example.com',
-    phone: '09183333333',
-    name: 'کاربر کد تخفیف',
+    phone: '+12025553333',
+    name: 'User Promo code',
     password: 'Test1234!@#$',
   };
 
@@ -105,7 +105,7 @@ test.describe('Promo Code Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     if (
@@ -122,16 +122,16 @@ test.describe('Promo Code Journey', () => {
     await page.goto('/checkout');
     await page.waitForLoadState('networkidle');
 
-    const promoInput = page.getByPlaceholder('کد تخفیف');
+    const promoInput = page.getByPlaceholder('Promo code');
     await expect(promoInput).toBeVisible({ timeout: 10000 });
     await promoInput.fill(testPromoCode);
 
-    await page.getByRole('button', { name: 'اعمال' }).click();
+    await page.getByRole('button', { name: /Apply|اعمال/i }).click();
 
     const appliedPromo = page.locator('code', { hasText: testPromoCode });
     await expect(appliedPromo).toBeVisible({ timeout: 10000 });
 
-    const discountApplied = page.getByText(/تخفیف اعمال شده/i);
+    const discountApplied = page.getByText(/Discount applied|تخفیف اعمال/i);
     await expect(discountApplied).toBeVisible({ timeout: 10000 });
 
     console.log(`Promo code ${testPromoCode} applied on checkout`);
@@ -203,8 +203,8 @@ test.describe('Promo Code Database Validation', () => {
     id: 'e2e-user-promo-db-test',
     uid: 'e2e-uid-promo-db-test',
     email: 'e2e-promo-db@example.com',
-    phone: '09184444444',
-    name: 'کاربر تست دیتابیس',
+    phone: '+12025554444',
+    name: 'Test User text',
     password: 'Test1234!@#$',
   };
 

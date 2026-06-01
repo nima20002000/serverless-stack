@@ -77,8 +77,7 @@ export async function middleware(req: NextRequest) {
 
         return NextResponse.json(
           {
-            error:
-              'تعداد درخواست‌های شما بیش از حد مجاز است. لطفاً کمی صبر کنید.',
+            error: 'Too many requests. Please wait before trying again.',
             retryAfter: reset,
           },
           {

@@ -62,7 +62,7 @@ describe('POST /api/auth/login', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'ایمیل و رمز عبور الزامی است',
+      error: 'Email and password are required.',
     });
   });
 

@@ -107,7 +107,9 @@ describe('GET /api/search', () => {
     const response = await GET(createSearchRequest('?q=kit'));
 
     expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({ error: 'خطا در جستجو' });
+    await expect(response.json()).resolves.toEqual({
+      error: 'Unable to search',
+    });
     expect(logMock.error).toHaveBeenCalledWith('Search API error', {
       error: expect.any(Error),
     });

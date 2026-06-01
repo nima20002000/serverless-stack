@@ -10,7 +10,10 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'لطفاً وارد شوید' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Authentication is required' },
+        { status: 401 }
+      );
     }
 
     const userId = session.user.id;
@@ -24,7 +27,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت کد تخفیف',
+          error instanceof Error ? error.message : 'Unable to load promo code',
       },
       { status: 500 }
     );

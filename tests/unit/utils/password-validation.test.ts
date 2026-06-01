@@ -11,22 +11,22 @@ describe('password validation utils', () => {
     });
     expect(validatePassword('secret', 'secret', 8)).toEqual({
       isValid: false,
-      error: 'رمز عبور باید حداقل 8 کاراکتر باشد',
+      error: 'Password must be at least 8 characters.',
     });
     expect(validatePassword('secret123', 'secret', 8)).toEqual({
       isValid: false,
-      error: 'رمز عبور جدید و تکرار آن مطابقت ندارند',
+      error: 'New password and confirmation do not match.',
     });
   });
 
   it('rejects empty passwords', () => {
     expect(validatePasswordNotEmpty('')).toEqual({
       isValid: false,
-      error: 'رمز عبور نمی‌تواند خالی باشد',
+      error: 'Password cannot be empty.',
     });
     expect(validatePasswordNotEmpty('  ')).toEqual({
       isValid: false,
-      error: 'رمز عبور نمی‌تواند خالی باشد',
+      error: 'Password cannot be empty.',
     });
     expect(validatePasswordNotEmpty('pass')).toEqual({ isValid: true });
   });

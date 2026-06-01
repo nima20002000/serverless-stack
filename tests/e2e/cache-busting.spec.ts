@@ -72,7 +72,7 @@ test.describe('Cache Busting E2E', () => {
 
       // Should have valid service worker content
       expect(content).toContain('BUILD_VERSION');
-      expect(content).toContain('kitia-cache-');
+      expect(content).toContain('commerce-boilerplate-cache');
       expect(content).toContain("self.addEventListener('install'");
       expect(content).toContain("self.addEventListener('activate'");
       expect(content).toContain("self.addEventListener('fetch'");
@@ -127,7 +127,7 @@ test.describe('Cache Busting E2E', () => {
 
       // Check localStorage for stored version
       const storedVersion = await page.evaluate(() => {
-        return localStorage.getItem('kitia_build_version');
+        return localStorage.getItem('commerce_boilerplate_build_version');
       });
 
       expect(storedVersion).not.toBeNull();
@@ -145,7 +145,9 @@ test.describe('Cache Busting E2E', () => {
       // Wait for version check to complete and poll for localStorage update
       await page.waitForFunction(
         (expectedVersion) => {
-          const stored = localStorage.getItem('kitia_build_version');
+          const stored = localStorage.getItem(
+            'commerce_boilerplate_build_version'
+          );
           return stored === expectedVersion;
         },
         apiData.buildId,
@@ -154,7 +156,7 @@ test.describe('Cache Busting E2E', () => {
 
       // Get stored version
       const storedVersion = await page.evaluate(() => {
-        return localStorage.getItem('kitia_build_version');
+        return localStorage.getItem('commerce_boilerplate_build_version');
       });
 
       expect(storedVersion).toBe(apiData.buildId);
@@ -226,7 +228,7 @@ test.describe('Cache Busting E2E', () => {
       await page.goto('/');
 
       // Verify page loaded correctly
-      await expect(page).toHaveTitle(/کیتیا|Kitia/);
+      await expect(page).toHaveTitle(/Commerce Starter|Supabase Vercel Stack/);
 
       // Verify header is visible (app rendered successfully)
       const header = page.locator('header');

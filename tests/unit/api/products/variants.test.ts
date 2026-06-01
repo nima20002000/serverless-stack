@@ -135,7 +135,7 @@ describe('POST /api/products/[id]/variants', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(createProductVariantMock).not.toHaveBeenCalled();
   });
 
@@ -149,7 +149,7 @@ describe('POST /api/products/[id]/variants', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'نام نوع محصول الزامی است',
+      error: 'Variant name is required',
     });
   });
 
@@ -164,7 +164,7 @@ describe('POST /api/products/[id]/variants', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'موجودی باید صفر یا بیشتر باشد',
+      error: 'Variant stock cannot be negative',
     });
   });
 
@@ -242,7 +242,7 @@ describe('PUT /api/products/[id]/variants/[variantId]', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('returns 400 when name is missing', async () => {
@@ -256,7 +256,7 @@ describe('PUT /api/products/[id]/variants/[variantId]', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'نام نوع محصول الزامی است',
+      error: 'Variant name is required',
     });
   });
 
@@ -271,7 +271,7 @@ describe('PUT /api/products/[id]/variants/[variantId]', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'موجودی باید صفر یا بیشتر باشد',
+      error: 'Variant stock cannot be negative',
     });
   });
 
@@ -347,7 +347,7 @@ describe('DELETE /api/products/[id]/variants/[variantId]', () => {
     });
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('deletes variant for admins', async () => {
@@ -407,7 +407,7 @@ describe('PATCH /api/products/[id]/variants/reorder', () => {
     );
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
   });
 
   it('returns 400 for invalid payload', async () => {
@@ -421,7 +421,7 @@ describe('PATCH /api/products/[id]/variants/reorder', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'variantOrders باید آرایه‌ای از {id, order} باشد',
+      error: 'variantOrders must be an array of { id, order } objects',
     });
   });
 
@@ -436,7 +436,7 @@ describe('PATCH /api/products/[id]/variants/reorder', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'هر آیتم باید شامل id و order باشد',
+      error: 'Variant ID and display order are required',
     });
   });
 
@@ -458,7 +458,7 @@ describe('PATCH /api/products/[id]/variants/reorder', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       success: true,
-      message: 'ترتیب واریانت‌ها با موفقیت به‌روز شد',
+      message: 'Product variants reordered successfully',
     });
     expect(reorderProductVariantsMock).toHaveBeenCalledWith('p1', [
       { id: 'v1', order: 1 },

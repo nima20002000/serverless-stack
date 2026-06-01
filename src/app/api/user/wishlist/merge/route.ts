@@ -14,7 +14,7 @@ async function postHandler(req: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Authentication is required' },
         { status: 401 }
       );
     }
@@ -24,7 +24,7 @@ async function postHandler(req: NextRequest) {
 
     if (!items || !Array.isArray(items)) {
       return NextResponse.json(
-        { error: 'لیست محصولات نامعتبر است' },
+        { error: 'Product IDs are required' },
         { status: 400 }
       );
     }
@@ -65,7 +65,7 @@ async function postHandler(req: NextRequest) {
   } catch (error) {
     log.error('Error merging wishlist', { error });
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در ادغام علاقه‌مندی‌ها';
+      error instanceof Error ? error.message : 'Unable to complete request';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -50,7 +50,7 @@ describe('DELETE /api/user/wishlist/[id]', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Authentication is required',
     });
   });
 
@@ -64,7 +64,7 @@ describe('DELETE /api/user/wishlist/[id]', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'شناسه آیتم الزامی است',
+      error: 'ID is required',
     });
   });
 

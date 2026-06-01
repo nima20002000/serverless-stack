@@ -22,9 +22,10 @@ import { mockStripeSuccess, mockPaymentFailure } from '../helpers/payment';
 
 // Generate unique test phone for each test run to ensure isolation
 function generateTestPhone(): string {
-  // Use 0919 prefix (valid Iranian mobile) + random 7 digits
-  const random = Math.floor(Math.random() * 9000000) + 1000000;
-  return `0919${random}`;
+  const random = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, '0');
+  return `+1202555${random}`;
 }
 
 test.describe('Guest Checkout Journey', () => {
@@ -85,9 +86,9 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // STEP 3: Add product to cart
     // ============================================================
-    // Find and click the "Add to Cart" button (use first() as there may be multiple)
+    // Find and click the rendered add-to-cart button (task009 translates this UI).
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /افزودن به سبد خرید|Add to Cart/i })
       .first();
     await expect(addToCartButton).toBeVisible();
     await expect(addToCartButton).toBeEnabled();
@@ -112,8 +113,10 @@ test.describe('Guest Checkout Journey', () => {
     // ============================================================
     // STEP 5: Proceed to checkout from cart page
     // ============================================================
-    // Click checkout button (text is "ادامه فرآیند خرید" - Continue Shopping Process)
-    await page.getByRole('button', { name: /ادامه فرآیند خرید/i }).click();
+    // Click checkout button.
+    await page
+      .getByRole('button', { name: /ادامه فرآیند خرید|Checkout/i })
+      .click();
 
     // Should be on checkout page
     await expect(page).toHaveURL('/checkout');
@@ -124,11 +127,9 @@ test.describe('Guest Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill required fields
-    await page.locator('#fullName').fill('تست کاربر');
+    await page.locator('#fullName').fill('Test User');
     await page.locator('#phone').fill(testPhone);
-    await page
-      .locator('#shippingAddress')
-      .fill('تهران، خیابان آزادی، پلاک ۱۲۳، واحد ۴');
+    await page.locator('#shippingAddress').fill('Sample City 123 details 4');
 
     // Optional: postal code
     await page.locator('#postalCode').fill('1234567890');
@@ -142,7 +143,9 @@ test.describe('Guest Checkout Journey', () => {
     // STEP 8: Submit payment
     // ============================================================
     // Click the pay button (there might be multiple, get the visible one)
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page
+      .getByRole('button', { name: /پرداخت|Payment/i })
+      .first();
     await expect(payButton).toBeEnabled();
     await payButton.click();
 
@@ -159,7 +162,9 @@ test.describe('Guest Checkout Journey', () => {
     await expect(page).toHaveURL(/\/payment\/success/);
 
     // Verify success message is shown
-    const successHeading = page.getByRole('heading', { name: /پرداخت موفق/i });
+    const successHeading = page.getByRole('heading', {
+      name: /Payment Completed/i,
+    });
     await expect(successHeading).toBeVisible();
 
     // Extract transaction code from the page
@@ -168,7 +173,7 @@ test.describe('Guest Checkout Journey', () => {
       .first();
     await expect(transactionCodeElement).toBeVisible();
     const transactionCode = await transactionCodeElement.textContent();
-    expect(transactionCode).toMatch(/^KT-[A-Z0-9]{6}$/);
+    expect(transactionCode).toMatch(/^TX-[A-Z0-9]{6}$/);
     console.log(`Transaction code: ${transactionCode}`);
 
     // ============================================================
@@ -218,7 +223,7 @@ test.describe('Guest Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
 
     // If button exists and is enabled, click it
@@ -239,15 +244,17 @@ test.describe('Guest Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill form
-    await page.locator('#fullName').fill('تست خرابی پرداخت');
+    await page.locator('#fullName').fill('Test text Payment');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، تست آدرس');
+    await page.locator('#shippingAddress').fill('Sample City Test Address');
 
     // Setup payment FAILURE mock
     await mockPaymentFailure(page, 'stripe');
 
     // Click pay
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page
+      .getByRole('button', { name: /پرداخت|Payment/i })
+      .first();
     await payButton.click();
 
     // Wait for failure page
@@ -255,7 +262,7 @@ test.describe('Guest Checkout Journey', () => {
 
     // Verify failure page
     const failureHeading = page.getByRole('heading', {
-      name: /پرداخت ناموفق/i,
+      name: /Payment Failed/i,
     });
     await expect(failureHeading).toBeVisible();
 
@@ -287,7 +294,7 @@ test.describe('Guest Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
     if (
       (await addToCartButton.isVisible()) &&
@@ -305,7 +312,9 @@ test.describe('Guest Checkout Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Try to submit without filling required fields
-    const payButton = page.getByRole('button', { name: /پرداخت/i }).first();
+    const payButton = page
+      .getByRole('button', { name: /پرداخت|Payment/i })
+      .first();
 
     // HTML5 validation should prevent submission
     // Or form validation should show error
@@ -318,7 +327,7 @@ test.describe('Guest Checkout Journey', () => {
     await expect(page).toHaveURL('/checkout');
 
     // Fill name but missing address
-    await page.locator('#fullName').fill('تست');
+    await page.locator('#fullName').fill('Test');
     await payButton.click();
 
     // Should still be on checkout page
@@ -352,8 +361,8 @@ test.describe('Guest Checkout Journey', () => {
     await page.goto('/products');
     await page.waitForLoadState('networkidle');
 
-    // Look for any "ناموجود" (out of stock) indicator
-    const outOfStockIndicator = page.getByText('ناموجود').first();
+    // Look for any "Out of stock" (out of stock) indicator
+    const outOfStockIndicator = page.getByText('Out of stock').first();
 
     // If there's an out of stock product, verify the add to cart button behavior
     if (await outOfStockIndicator.isVisible()) {
@@ -364,14 +373,14 @@ test.describe('Guest Checkout Journey', () => {
 
       // Find the add to cart button within this card
       const addButton = productCard.getByRole('button', {
-        name: /افزودن به سبد خرید|ناموجود/i,
+        name: /Add to Cart|Out of stock/i,
       });
 
-      // Button should be disabled or show "ناموجود" text
+      // Button should be disabled or show "Out of stock" text
       if (await addButton.isVisible()) {
         const buttonText = await addButton.textContent();
         const isDisabled = await addButton.isDisabled();
-        expect(isDisabled || buttonText?.includes('ناموجود')).toBeTruthy();
+        expect(isDisabled || buttonText?.includes('Out of stock')).toBeTruthy();
       }
     } else {
       // No out of stock products - test passes (all products available)
@@ -407,7 +416,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
     if (
       (await addToCartButton.isVisible()) &&
@@ -425,9 +434,9 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await page.waitForLoadState('networkidle');
 
     // Fill required fields
-    await page.locator('#fullName').fill('تست ساخت حساب');
+    await page.locator('#fullName').fill('Test text');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Check "Create Account" checkbox - may not be visible on mobile
     const createAccountCheckbox = page.locator('#createAccount');
@@ -445,7 +454,9 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await createAccountCheckbox.check({ force: true });
 
     // Click "Send OTP" button
-    const sendOtpButton = page.getByRole('button', { name: /ارسال کد تایید/i });
+    const sendOtpButton = page.getByRole('button', {
+      name: /Send code|ارسال کد|Shipping Code/i,
+    });
     await expect(sendOtpButton).toBeVisible();
     await sendOtpButton.click();
 
@@ -458,19 +469,19 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     console.log(`Retrieved OTP from database: ${otpCode}`);
 
     // Enter OTP in the form
-    const otpInput = page.getByPlaceholder('کد 6 رقمی را وارد کنید');
+    const otpInput = page.getByPlaceholder('Verification code');
     await expect(otpInput).toBeVisible({ timeout: 10000 });
     await otpInput.fill(otpCode);
 
     // Click verify button
-    const verifyButton = page.getByRole('button', { name: /تایید کد/i });
+    const verifyButton = page.getByRole('button', { name: /Verify code|تایید کد|Code/i });
     await verifyButton.click();
 
     // Wait for verification
     await page.waitForTimeout(2000);
 
     // Should see success message
-    const successMessage = page.getByText(/حساب کاربری با موفقیت ایجاد شد/i);
+    const successMessage = page.getByText(/Account created successfully/i);
     await expect(successMessage).toBeVisible({ timeout: 5000 });
   });
 
@@ -480,7 +491,7 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await page.waitForLoadState('networkidle');
 
     const addToCartButton = page
-      .getByRole('button', { name: /افزودن به سبد خرید/i })
+      .getByRole('button', { name: /Add to Cart/i })
       .first();
     if (
       (await addToCartButton.isVisible()) &&
@@ -496,9 +507,9 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await page.goto('/checkout');
     await page.waitForLoadState('networkidle');
 
-    await page.locator('#fullName').fill('تست کد اشتباه');
+    await page.locator('#fullName').fill('Test Code Incorrect');
     await page.locator('#phone').fill(testPhone);
-    await page.locator('#shippingAddress').fill('تهران، آدرس تست');
+    await page.locator('#shippingAddress').fill('Sample City Address Test');
 
     // Check "Create Account" checkbox - may not be visible on mobile
     const createAccountCheckbox = page.locator('#createAccount');
@@ -515,22 +526,24 @@ test.describe('Guest Checkout with OTP (Account Creation)', () => {
     await createAccountCheckbox.scrollIntoViewIfNeeded();
     await createAccountCheckbox.check({ force: true });
 
-    const sendOtpButton = page.getByRole('button', { name: /ارسال کد تایید/i });
+    const sendOtpButton = page.getByRole('button', {
+      name: /Send code|ارسال کد|Shipping Code/i,
+    });
     await sendOtpButton.click();
 
     // Wait for OTP input to appear
-    const otpInput = page.getByPlaceholder('کد 6 رقمی را وارد کنید');
+    const otpInput = page.getByPlaceholder('Verification code');
     await expect(otpInput).toBeVisible({ timeout: 10000 });
 
     // Enter WRONG OTP
     await otpInput.fill('000000');
 
-    const verifyButton = page.getByRole('button', { name: /تایید کد/i });
+    const verifyButton = page.getByRole('button', { name: /Verify code|تایید کد|Code/i });
     await verifyButton.click();
 
     // Should see error message
     await page.waitForTimeout(2000);
-    const errorMessage = page.getByText(/اشتباه|نامعتبر|خطا/i);
+    const errorMessage = page.getByText(/Incorrect|Invalid|Error/i);
     await expect(errorMessage).toBeVisible({ timeout: 5000 });
 
     // Should still be on checkout page

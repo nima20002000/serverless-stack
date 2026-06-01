@@ -35,7 +35,7 @@ describe('POST /api/admin/users/bulk', () => {
     user: {
       id: 'admin-1',
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -63,7 +63,7 @@ describe('POST /api/admin/users/bulk', () => {
     const response = await POST(createPostRequest({ action: 'delete' }));
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
   });
 
@@ -76,7 +76,7 @@ describe('POST /api/admin/users/bulk', () => {
     const response = await POST(createPostRequest({ action: 'delete' }));
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
   });
 
@@ -88,7 +88,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'عملیات نامعتبر است',
+      error: 'Invalid bulk action',
     });
   });
 
@@ -102,7 +102,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'شناسه کاربران نامعتبر است',
+      error: 'User IDs are required',
     });
     expect(bulkDeleteUsersMock).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'هیچ کاربری برای حذف یافت نشد (فقط کاربران عادی قابل حذف هستند)',
+      error: 'No users were found to delete',
     });
   });
 
@@ -133,7 +133,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: '2 کاربر با موفقیت حذف شد',
+      message: '2 users deleted successfully',
       count: 2,
     });
     expect(bulkDeleteUsersMock).toHaveBeenCalledWith(['u1', 'u2']);
@@ -162,7 +162,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'شناسه کاربران نامعتبر است',
+      error: 'User IDs are required',
     });
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
@@ -177,7 +177,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'داده\u200cهای به\u200cروزرسانی نامعتبر است',
+      error: 'Invalid update action',
     });
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
@@ -196,7 +196,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(403);
     const body = await response.json();
-    expect(body.error).toContain('نمی‌توانید نقش خود را تغییر دهید');
+    expect(body.error).toContain('Role is required');
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
 
@@ -227,7 +227,7 @@ describe('POST /api/admin/users/bulk', () => {
     expect(adminCheckQuery.eq).toHaveBeenCalledWith('role', 'ADMIN');
     expect(response.status).toBe(403);
     const body = await response.json();
-    expect(body.error).toContain('امکان تغییر نقش مدیران به کاربر وجود ندارد');
+    expect(body.error).toContain('User not found');
     expect(bulkUpdateUsersMock).not.toHaveBeenCalled();
   });
 
@@ -275,7 +275,7 @@ describe('POST /api/admin/users/bulk', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      message: '3 کاربر با موفقیت به\u200cروزرسانی شد',
+      message: '3 users updated successfully',
       count: 3,
     });
     expect(bulkUpdateUsersMock).toHaveBeenCalledWith(['u1', 'u2', 'u3'], {

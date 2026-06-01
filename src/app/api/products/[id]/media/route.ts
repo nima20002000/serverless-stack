@@ -18,7 +18,7 @@ export async function GET(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
@@ -30,7 +30,7 @@ export async function GET(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در دریافت رسانه‌ها',
+          error instanceof Error ? error.message : 'Unable to complete request',
       },
       { status: 500 }
     );
@@ -45,14 +45,14 @@ export async function POST(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -60,7 +60,7 @@ export async function POST(
 
     if (!type || !url) {
       return NextResponse.json(
-        { error: 'نوع و آدرس رسانه الزامی است' },
+        { error: 'Product ID and media URL are required' },
         { status: 400 }
       );
     }
@@ -79,7 +79,12 @@ export async function POST(
   } catch (error) {
     console.error('Add product media error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در افزودن رسانه' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to add product media',
+      },
       { status: 500 }
     );
   }
@@ -98,14 +103,14 @@ export async function PUT(
     const params = await paramsPromise;
     if (!params.id || params.id.length > MAX_ID_LENGTH) {
       return NextResponse.json(
-        { error: 'شناسه محصول نامعتبر است' },
+        { error: 'Invalid product ID' },
         { status: 400 }
       );
     }
 
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await req.json();
@@ -117,10 +122,7 @@ export async function PUT(
       !Array.isArray(add) ||
       !Array.isArray(update)
     ) {
-      return NextResponse.json(
-        { error: 'فرمت عملیات نامعتبر است' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid IDs' }, { status: 400 });
     }
 
     const result = await batchSyncProductMedia(params.id, {
@@ -135,7 +137,9 @@ export async function PUT(
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در همگام‌سازی رسانه‌ها',
+          error instanceof Error
+            ? error.message
+            : 'Unable to sync product media',
       },
       { status: 500 }
     );

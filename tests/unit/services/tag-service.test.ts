@@ -125,7 +125,7 @@ describe('tag-service', () => {
     supabase.from.mockReturnValueOnce(searchQuery);
     createClientMock.mockReturnValue(supabase as unknown);
 
-    await expect(searchTags('shoe')).rejects.toThrow('خطا در جستجوی برچسب‌ها');
+    await expect(searchTags('shoe')).rejects.toThrow('Unable to search tags');
   });
 
   it('returns zero counts when search count lookup fails', async () => {
@@ -250,7 +250,7 @@ describe('tag-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(createTag({ name: 'Tag 1', slug: 'tag-1' })).rejects.toThrow(
-      'برچسب با این نام یا نامک (slug) قبلاً ثبت شده است'
+      'A tag with this name or slug already exists'
     );
   });
 
@@ -295,7 +295,7 @@ describe('tag-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(updateTag('t1', { name: 'Updated' })).rejects.toThrow(
-      'برچسب یافت نشد'
+      'Tag not found'
     );
   });
 
@@ -313,7 +313,7 @@ describe('tag-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(updateTag('t1', { name: 'Taken' })).rejects.toThrow(
-      'برچسب با این نام یا نامک (slug) قبلاً ثبت شده است'
+      'A tag with this name or slug already exists'
     );
   });
 
@@ -330,7 +330,7 @@ describe('tag-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(deleteTag('t1')).rejects.toThrow(
-      'این برچسب دارای محصول است و نمی‌توان آن را حذف کرد'
+      'Cannot delete a tag that is assigned to products'
     );
   });
 

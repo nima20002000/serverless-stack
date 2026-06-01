@@ -11,7 +11,7 @@ import { storage } from '../../src/lib/storage';
 describe('Storage Service Integration Tests', () => {
   it('should upload, list, and delete files in R2', async () => {
     const fileKey = `test/integration/${randomUUID()}.txt`;
-    const payload = Buffer.from('kitia-storage-test');
+    const payload = Buffer.from('commerce-storage-test');
 
     const upload = await storage.upload({
       file: payload,

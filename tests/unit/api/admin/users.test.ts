@@ -23,7 +23,7 @@ describe('admin users API', () => {
     user: {
       id: 'admin-1',
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -52,7 +52,7 @@ describe('admin users API', () => {
     const response = await GET(createRequest());
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getAllUsersMock).not.toHaveBeenCalled();
   });
 
@@ -65,14 +65,14 @@ describe('admin users API', () => {
     const response = await GET(createRequest());
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getAllUsersMock).not.toHaveBeenCalled();
   });
 
   it('GET returns paginated users with parsed filters', async () => {
     getServerSessionMock.mockResolvedValue(adminSession as any);
     getAllUsersMock.mockResolvedValue({
-      data: [{ id: 'u1', email: 'user@kitia.ir' }],
+      data: [{ id: 'u1', email: 'user@example.com' }],
       total: 1,
       page: 2,
       perPage: 10,
@@ -91,7 +91,7 @@ describe('admin users API', () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      data: [{ id: 'u1', email: 'user@kitia.ir' }],
+      data: [{ id: 'u1', email: 'user@example.com' }],
       total: 1,
       page: 2,
       perPage: 10,

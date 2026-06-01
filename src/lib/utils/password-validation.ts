@@ -23,14 +23,14 @@ export function validatePassword(
   if (newPassword !== confirmPassword) {
     return {
       isValid: false,
-      error: 'رمز عبور جدید و تکرار آن مطابقت ندارند',
+      error: 'New password and confirmation do not match.',
     };
   }
 
   if (newPassword.length < minLength) {
     return {
       isValid: false,
-      error: `رمز عبور باید حداقل ${minLength} کاراکتر باشد`,
+      error: `Password must be at least ${minLength} characters.`,
     };
   }
 
@@ -48,7 +48,7 @@ export function validatePasswordNotEmpty(
   if (!password || password.trim().length === 0) {
     return {
       isValid: false,
-      error: 'رمز عبور نمی‌تواند خالی باشد',
+      error: 'Password cannot be empty.',
     };
   }
 

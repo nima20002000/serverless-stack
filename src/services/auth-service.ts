@@ -33,14 +33,14 @@ export async function authenticateUser(
   password: string
 ): Promise<AuthUser> {
   if (!identifier || !password) {
-    throw new Error('ایمیل/شماره تلفن و رمز عبور الزامی است');
+    throw new Error('Email/phone number and password are required.');
   }
 
   try {
     const identifierType = detectIdentifierType(identifier);
 
     if (identifierType === 'invalid') {
-      throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
+      throw new Error('Enter a valid email address or phone number.');
     }
 
     const supabase = createClient();
@@ -59,7 +59,7 @@ export async function authenticateUser(
         identifier,
         identifierType,
       });
-      throw new Error('کاربری با این مشخصات یافت نشد');
+      throw new Error('No account was found for those credentials.');
     }
 
     // Check if user has a password (phone-only users might not have password)
@@ -68,7 +68,9 @@ export async function authenticateUser(
         identifier,
         userId: user.id,
       });
-      throw new Error('این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید');
+      throw new Error(
+        'This account does not have a password. Use one-time sign-in or set a password first.'
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -78,7 +80,7 @@ export async function authenticateUser(
         identifier,
         userId: user.id,
       });
-      throw new Error('رمز عبور اشتباه است');
+      throw new Error('Password is incorrect.');
     }
 
     log.info('User authenticated successfully', {
@@ -98,7 +100,7 @@ export async function authenticateUser(
       throw error;
     }
     log.error('Authentication error', { identifier, error });
-    throw new Error('خطا در احراز هویت');
+    throw new Error('Unable to authenticate.');
   }
 }
 
@@ -113,7 +115,7 @@ export async function authenticateUserByPhone(
   phone: string
 ): Promise<AuthUser> {
   if (!phone) {
-    throw new Error('شماره تلفن الزامی است');
+    throw new Error('Phone number is required.');
   }
 
   try {
@@ -132,7 +134,7 @@ export async function authenticateUserByPhone(
       log.warn('Login attempt with non-existent phone', {
         phone: normalizedPhone,
       });
-      throw new Error('کاربری با این شماره تلفن یافت نشد');
+      throw new Error('No account was found for that phone number.');
     }
 
     log.info('User authenticated successfully via phone', {
@@ -171,7 +173,7 @@ export async function authenticateUserByPhone(
       throw error;
     }
     log.error('Phone authentication error', { phone, error });
-    throw new Error('خطا در احراز هویت');
+    throw new Error('Unable to authenticate by phone.');
   }
 }
 
@@ -186,7 +188,7 @@ export async function authenticateUserByEmail(
   email: string
 ): Promise<AuthUser> {
   if (!email) {
-    throw new Error('ایمیل الزامی است');
+    throw new Error('Email is required.');
   }
 
   try {
@@ -200,7 +202,7 @@ export async function authenticateUserByEmail(
 
     if (error || !user) {
       log.warn('Login attempt with non-existent email', { email });
-      throw new Error('کاربری با این ایمیل یافت نشد');
+      throw new Error('No account was found for that email address.');
     }
 
     log.info('User authenticated successfully via email', {
@@ -220,7 +222,7 @@ export async function authenticateUserByEmail(
       throw error;
     }
     log.error('Email authentication error', { email, error });
-    throw new Error('خطا در احراز هویت');
+    throw new Error('Unable to authenticate by email.');
   }
 }
 
@@ -238,7 +240,7 @@ export async function registerUser(
   password: string
 ): Promise<AuthUser> {
   if (!name || !email || !password) {
-    throw new Error('تمام فیلدها الزامی است');
+    throw new Error('Name, email, and password are required.');
   }
 
   try {
@@ -252,7 +254,7 @@ export async function registerUser(
       .single();
 
     if (existingUser) {
-      throw new Error('کاربری با این ایمیل قبلاً ثبت‌نام کرده است');
+      throw new Error('An account with this email already exists.');
     }
 
     // Hash password
@@ -302,9 +304,7 @@ export async function registerUser(
                 'Max retries reached for UID generation during registration',
                 { email }
               );
-              throw new Error(
-                'خطا در ایجاد شناسه کاربری. لطفا دوباره تلاش کنید'
-              );
+              throw new Error('Unable to create account ID.');
             }
 
             // Wait a bit before retrying to reduce collision probability
@@ -331,7 +331,7 @@ export async function registerUser(
     }
 
     if (!user) {
-      throw new Error('خطا در ثبت‌نام');
+      throw new Error('Unable to create account.');
     }
 
     log.info('User registered successfully', { email, userId: user.id });
@@ -348,6 +348,6 @@ export async function registerUser(
       throw error;
     }
     log.error('Registration error', { email, error });
-    throw new Error('خطا در ثبت‌نام');
+    throw new Error('Unable to create account.');
   }
 }

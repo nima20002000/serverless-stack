@@ -98,10 +98,11 @@ async function createTestTransaction(
     transactionCode: overrides.transactionCode ?? `TEST-ADMIN-TX-${Date.now()}`,
     amount: overrides.amount ?? 125000,
     status: overrides.status ?? 'PENDING',
-    fullName: overrides.fullName ?? 'کاربر تراکنش',
-    phone: overrides.phone ?? '09120000011',
+    fullName: overrides.fullName ?? 'User Transaction',
+    phone: overrides.phone ?? '+12025550011',
     email: overrides.email ?? 'tx-test@example.com',
-    shippingAddress: overrides.shippingAddress ?? 'تهران، خیابان تست',
+    shippingAddress:
+      overrides.shippingAddress ?? 'Sample Citydetailsquality Test',
     postalCode: overrides.postalCode ?? '1234567890',
     paymentMethod: overrides.paymentMethod ?? 'STRIPE',
     isGuest: overrides.isGuest ?? true,
@@ -177,7 +178,7 @@ describe('Admin Service Route Integration Tests', () => {
     const response = await GET(createRequest('/api/admin/users'));
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'textof' });
   });
 
   it('returns filtered and paginated users for admin session', async () => {
@@ -448,7 +449,7 @@ describe('Admin Service Route Integration Tests', () => {
     );
     expect(updateResponse.status).toBe(200);
     await expect(updateResponse.json()).resolves.toEqual({
-      message: 'تنظیمات با موفقیت ذخیره شد',
+      message: 'text with successfully Save text',
     });
 
     const { data: updated } = await supabase
@@ -468,7 +469,7 @@ describe('Admin Service Route Integration Tests', () => {
     );
     expect(invalidResponse.status).toBe(400);
     await expect(invalidResponse.json()).resolves.toEqual({
-      error: 'داده‌های نامعتبر',
+      error: 'text Invalid',
     });
 
     const nonAdmin = await createTestUser({

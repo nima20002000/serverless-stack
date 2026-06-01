@@ -99,13 +99,15 @@ test.describe('Search UX', () => {
     isMobile: boolean
   ) {
     if (isMobile) {
-      const mobileMenuButton = page.locator('button[aria-label="منوی موبایل"]');
+      const mobileMenuButton = page.locator(
+        'button[aria-label="Toggle navigation menu"]'
+      );
       await expect(mobileMenuButton).toBeVisible();
       await mobileMenuButton.click();
     }
 
     const searchInput = page.locator(
-      'input[placeholder="جستجوی محصولات و دسته‌بندی‌ها..."]:visible'
+      'input[placeholder="Search products and categories..."]:visible'
     );
     await expect(searchInput).toBeVisible({ timeout: 10000 });
     return searchInput;

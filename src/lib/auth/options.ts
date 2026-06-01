@@ -47,19 +47,19 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        identifier: { label: 'ایمیل یا شماره تلفن', type: 'text' },
-        password: { label: 'رمز عبور', type: 'password' },
+        identifier: { label: 'Email or phone number', type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.identifier || !credentials.password) {
-          throw new Error('ایمیل یا شماره تلفن و رمز عبور الزامی است');
+          throw new Error('Email or phone number and password are required.');
         }
 
         // Detect if identifier is email or phone
         const identifierType = detectIdentifierType(credentials.identifier);
 
         if (identifierType === 'invalid') {
-          throw new Error('فرمت ایمیل یا شماره تلفن نامعتبر است');
+          throw new Error('Enter a valid email address or phone number.');
         }
 
         const normalizedIdentifier =
@@ -79,12 +79,12 @@ export const authOptions: NextAuthOptions = {
                 .maybeSingle();
 
         if (error || !user) {
-          throw new Error('کاربری با این مشخصات یافت نشد');
+          throw new Error('No account was found for these credentials.');
         }
 
         if (!user.password) {
           throw new Error(
-            'این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید'
+            'This account does not have a password. Contact support for help.'
           );
         }
 
@@ -94,7 +94,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
-          throw new Error('رمز عبور اشتباه است');
+          throw new Error('Incorrect password.');
         }
 
         return {

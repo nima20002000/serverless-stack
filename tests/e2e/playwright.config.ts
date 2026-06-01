@@ -20,7 +20,7 @@ process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET =
   e2ePayPalWebhookBypassSecret;
 
 /**
- * Playwright E2E Test Configuration for Kitia e-commerce platform
+ * Playwright E2E test configuration for the commerce boilerplate.
  *
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -60,8 +60,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    locale: 'fa-IR',
-    timezoneId: 'Asia/Tehran',
+    locale: process.env.E2E_LOCALE || 'en-US',
+    timezoneId: process.env.E2E_TIMEZONE || 'UTC',
     extraHTTPHeaders: {
       'x-e2e-test': 'true',
     },

@@ -149,7 +149,7 @@ describe('Cache Busting', () => {
 
     it('should define cache name with version prefix', () => {
       const templateContent = fs.readFileSync(templatePath, 'utf8');
-      expect(templateContent).toContain('kitia-cache-');
+      expect(templateContent).toContain('commerce-boilerplate-cache');
     });
 
     it('should have install event handler', () => {
@@ -230,7 +230,7 @@ describe('Cache Busting', () => {
     it('should store version in localStorage', () => {
       const hookContent = fs.readFileSync(hookPath, 'utf8');
       expect(hookContent).toContain('localStorage');
-      expect(hookContent).toContain('kitia_build_version');
+      expect(hookContent).toContain('commerce_boilerplate_build_version');
     });
 
     it('should register service worker', () => {

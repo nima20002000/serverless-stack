@@ -52,7 +52,7 @@ describe('category-service', () => {
     createClientMock.mockReturnValue(supabase as any);
 
     await expect(bulkDeleteCategories(['c1', 'c2'])).rejects.toThrow(
-      'امکان حذف دسته‌بندی‌هایی که محصول دارند وجود ندارد: Cat 2'
+      'Cannot delete categories that contain products: Cat 2'
     );
   });
 
@@ -80,7 +80,7 @@ describe('category-service', () => {
     createClientMock.mockReturnValue(supabase as any);
 
     await expect(bulkDeleteCategories(['c1', 'c2'])).rejects.toThrow(
-      'امکان حذف دسته‌بندی‌هایی که زیردسته دارند وجود ندارد: Cat 1'
+      'Cannot delete categories that contain subcategories: Cat 1'
     );
   });
 
@@ -119,7 +119,9 @@ describe('category-service', () => {
     supabase.from.mockReturnValue(updateQuery);
     createClientMock.mockReturnValue(supabase as any);
 
-    const result = await bulkUpdateCategories(['c1', 'c2'], { isActive: false });
+    const result = await bulkUpdateCategories(['c1', 'c2'], {
+      isActive: false,
+    });
 
     expect(result).toEqual({ count: 2 });
     expect(updateQuery.update).toHaveBeenCalledWith({ isActive: false });

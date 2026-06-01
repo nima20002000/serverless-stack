@@ -56,7 +56,10 @@ describe('settings-service', () => {
   it('updates existing settings and inserts new ones', async () => {
     const supabase = createSupabaseMock();
 
-    const selectExisting = createQueryMock({ data: { key: 'siteName' }, error: null });
+    const selectExisting = createQueryMock({
+      data: { key: 'siteName' },
+      error: null,
+    });
     const updateExisting = createQueryMock({ data: null, error: null });
     const selectMissing = createQueryMock({ data: null, error: null });
     const insertNew = createQueryMock({ data: null, error: null });
@@ -69,12 +72,17 @@ describe('settings-service', () => {
 
     createClientMock.mockReturnValue(supabase as any);
 
-    await updateSettings({ siteName: 'Kitia', supportEmail: 'help@kitia.ir' });
+    await updateSettings({
+      siteName: 'Supabase Vercel Stack',
+      supportEmail: 'help@example.com',
+    });
 
-    expect(updateExisting.update).toHaveBeenCalledWith({ value: 'Kitia' });
+    expect(updateExisting.update).toHaveBeenCalledWith({
+      value: 'Supabase Vercel Stack',
+    });
     expect(insertNew.insert).toHaveBeenCalledWith({
       key: 'supportEmail',
-      value: 'help@kitia.ir',
+      value: 'help@example.com',
     });
   });
 

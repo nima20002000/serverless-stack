@@ -187,7 +187,7 @@ export async function getUserWishlist(
 
     if (error) {
       log.error('Error fetching user wishlist', { userId, error });
-      throw new Error('خطا در دریافت لیست علاقه‌مندی‌ها');
+      throw new Error('Unable to load wishlist');
     }
 
     if (!wishlistItems || wishlistItems.length === 0) {
@@ -287,11 +287,11 @@ export async function addToWishlist(
   log.info('Adding to wishlist', { userId, productId, variantId });
 
   if (!userId) {
-    throw new Error('کاربر یافت نشد');
+    throw new Error('User not found');
   }
 
   if (!productId) {
-    throw new Error('محصول یافت نشد');
+    throw new Error('Product not found');
   }
 
   const supabase = createClient();
@@ -306,12 +306,12 @@ export async function addToWishlist(
 
     if (productError || !product) {
       log.warn('Product not found for wishlist', { productId });
-      throw new Error('محصول یافت نشد');
+      throw new Error('Product not found');
     }
 
     if (!product.isActive) {
       log.warn('Attempted to add inactive product to wishlist', { productId });
-      throw new Error('محصول در دسترس نیست');
+      throw new Error('Product is not available');
     }
 
     // Validate variant if provided
@@ -326,14 +326,14 @@ export async function addToWishlist(
 
       if (variantError || !variantData) {
         log.warn('Variant not found for wishlist', { productId, variantId });
-        throw new Error('واریانت محصول یافت نشد');
+        throw new Error('Product variant not found');
       }
 
       if (!variantData.isActive) {
         log.warn('Attempted to add inactive variant to wishlist', {
           variantId,
         });
-        throw new Error('واریانت محصول در دسترس نیست');
+        throw new Error('Product variant not found');
       }
 
       variant = variantData;
@@ -403,7 +403,7 @@ export async function addToWishlist(
 
     if (insertError) {
       log.error('Error inserting wishlist item', { insertError });
-      throw new Error('خطا در افزودن به علاقه‌مندی‌ها');
+      throw new Error('Unable to add product to wishlist');
     }
 
     log.info('Item added to wishlist', { userId, productId, variantId });
@@ -474,7 +474,7 @@ export async function removeFromWishlist(
         userId,
         wishlistItemId,
       });
-      throw new Error('دسترسی غیرمجاز');
+      throw new Error('Forbidden');
     }
 
     const { error } = await supabase
@@ -485,7 +485,7 @@ export async function removeFromWishlist(
 
     if (error) {
       log.error('Error removing from wishlist', { error });
-      throw new Error('خطا در حذف از علاقه‌مندی‌ها');
+      throw new Error('Unable to remove product from wishlist');
     }
 
     log.info('Item removed from wishlist', { userId, wishlistItemId });
@@ -540,7 +540,7 @@ export async function removeFromWishlistByProduct(
 
     if (error) {
       log.error('Error removing from wishlist by product', { error });
-      throw new Error('خطا در حذف از علاقه‌مندی‌ها');
+      throw new Error('Unable to clear wishlist');
     }
 
     log.info('Item removed from wishlist by product', {
@@ -707,7 +707,7 @@ export async function clearWishlist(
 
     if (error) {
       log.error('Error clearing wishlist', { error });
-      throw new Error('خطا در پاک کردن علاقه‌مندی‌ها');
+      throw new Error('Unable to check wishlist');
     }
 
     const count = data?.length || 0;
@@ -932,13 +932,13 @@ export async function prepareWishlistItemForCart(
       .single();
 
     if (error || !wishlistItem) {
-      throw new Error('آیتم علاقه‌مندی یافت نشد');
+      throw new Error('Wishlist item not found');
     }
 
     const product = wishlistItem.products as unknown as Product;
 
     if (!product || !product.isActive) {
-      throw new Error('محصول در دسترس نیست');
+      throw new Error('Product is already in the wishlist');
     }
 
     // Get variant if applicable
@@ -957,7 +957,7 @@ export async function prepareWishlistItemForCart(
 
     const stock = variant ? variant.stock : product.stock;
     if (stock <= 0) {
-      throw new Error('محصول ناموجود است');
+      throw new Error('Product is out of stock');
     }
 
     // Calculate effective price

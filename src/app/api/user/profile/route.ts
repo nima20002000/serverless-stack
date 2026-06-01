@@ -17,7 +17,7 @@ async function getHandler() {
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Sign in to continue.' },
         { status: 401 }
       );
     }
@@ -33,7 +33,7 @@ async function getHandler() {
       .single();
 
     if (error || !user) {
-      return NextResponse.json({ error: 'کاربر یافت نشد' }, { status: 404 });
+      return NextResponse.json({ error: 'User not found.' }, { status: 404 });
     }
 
     // Return user info with hasPassword flag (don't send actual password)
@@ -47,7 +47,7 @@ async function getHandler() {
   } catch (error) {
     console.error('Error fetching user profile:', error);
     return NextResponse.json(
-      { error: 'خطا در بارگذاری اطلاعات کاربر' },
+      { error: 'Unable to load user profile.' },
       { status: 500 }
     );
   }
@@ -63,7 +63,7 @@ async function patchHandler(req: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: 'برای دسترسی به این صفحه باید وارد شوید' },
+        { error: 'Sign in to continue.' },
         { status: 401 }
       );
     }
@@ -100,7 +100,7 @@ async function patchHandler(req: NextRequest) {
     });
 
     return NextResponse.json({
-      message: 'پروفایل با موفقیت به‌روزرسانی شد',
+      message: 'Profile updated successfully.',
       user: updatedUser,
     });
   } catch (error) {
@@ -108,7 +108,9 @@ async function patchHandler(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : 'خطا در به‌روزرسانی پروفایل',
+          error instanceof Error
+            ? error.message
+            : 'Unable to update your profile.',
       },
       { status: 500 }
     );

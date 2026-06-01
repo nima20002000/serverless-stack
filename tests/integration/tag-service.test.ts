@@ -102,7 +102,7 @@ describe('Tag Service Integration Tests', () => {
         name: 'TEST-Tag-Unique-2',
         slug,
       })
-    ).rejects.toThrow('برچسب با این نام یا نامک (slug) قبلاً ثبت شده است');
+    ).rejects.toThrow('Tag with text Name or Nametext (slug) Already text');
   });
 
   it('should update tag fields and prevent duplicate slugs', async () => {
@@ -136,7 +136,7 @@ describe('Tag Service Integration Tests', () => {
     expect(fetched.slug).toBe(updatedSlug);
 
     await expect(updateTag(tag.id, { slug: otherTag.slug })).rejects.toThrow(
-      'برچسب با این نام یا نامک (slug) قبلاً ثبت شده است'
+      'Tag with text Name or Nametext (slug) Already text'
     );
   });
 
@@ -198,7 +198,7 @@ describe('Tag Service Integration Tests', () => {
     }
 
     await expect(deleteTag(tag.id)).rejects.toThrow(
-      'این برچسب دارای محصول است و نمی‌توان آن را حذف کرد'
+      'text Tag text Product text and details Delete text'
     );
 
     const { error: unlinkError } = await supabase

@@ -20,8 +20,8 @@ test.describe('Admin Categories + Products CRUD', () => {
     id: 'e2e-user-admin-categories-products',
     uid: 'e2e-uid-admin-categories-products',
     email: 'e2e-admin-categories-products@example.com',
-    phone: '09183333333',
-    name: 'ادمین تست',
+    phone: '+12025553333',
+    name: 'Test User',
     password: 'Test1234!@#$',
   };
 
@@ -101,9 +101,9 @@ test.describe('Admin Categories + Products CRUD', () => {
     );
 
     await page
-      .locator('input[placeholder="جستجو بر اساس نام محصول..."]')
+      .locator('input[placeholder="Search products by name..."]')
       .fill(productName);
-    await page.getByRole('button', { name: /جستجو/ }).click();
+    await page.getByRole('button', { name: /Search/ }).click();
 
     const searchResponse = await searchResponsePromise;
     if (!searchResponse.ok()) {
@@ -149,30 +149,30 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(
-      page.getByRole('heading', { name: /مدیریت دسته‌بندی‌ها/i })
+      page.getByRole('heading', { name: /Categories|مدیریت دسته‌بندی‌ها/i })
     ).toBeVisible();
 
-    await page.getByRole('button', { name: /افزودن دسته‌بندی جدید/i }).click();
+    await page.getByRole('button', { name: /Add category/i }).click();
 
     await page
-      .locator('label:has-text("نام دسته‌بندی")')
+      .locator('label:has-text("Category name")')
       .locator('..')
       .locator('input')
       .fill(categoryName);
     await page
-      .locator('label:has-text("نامک")')
+      .locator('label:has-text("Slug")')
       .locator('..')
       .locator('input')
       .fill(categorySlug);
     await page
-      .locator('label:has-text("توضیحات")')
+      .locator('label:has-text("Description")')
       .locator('..')
       .locator('textarea')
       .fill(categoryDescription);
 
-    await page.getByRole('button', { name: /ایجاد دسته‌بندی/i }).click();
+    await page.getByRole('button', { name: /Create category/i }).click();
 
-    await expect(page.getByText('دسته‌بندی با موفقیت ایجاد شد')).toBeVisible();
+    await expect(page.getByText('Category created.')).toBeVisible();
 
     const categoryRow = page.locator('tr', { hasText: categoryName });
     await expect(categoryRow).toBeVisible();
@@ -197,7 +197,7 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(
-      page.getByRole('heading', { name: /افزودن محصول جدید/i })
+      page.getByRole('heading', { name: /Add product/i })
     ).toBeVisible();
 
     await page.locator('input[name="name"]').fill(productName);
@@ -206,7 +206,7 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.locator('input[name="discountPercent"]').fill(productDiscount);
     await page.locator('input[name="stock"]').fill(productStock);
 
-    await page.getByRole('button', { name: /انتخاب دسته‌بندی/i }).click();
+    await page.getByRole('button', { name: /Select category/i }).click();
     const categoryOption = page.getByRole('button', { name: categoryName });
     await expect(categoryOption).toBeVisible();
     await categoryOption.click();
@@ -219,7 +219,7 @@ test.describe('Admin Categories + Products CRUD', () => {
         response.request().method() === 'POST'
     );
 
-    await page.getByRole('button', { name: /ایجاد محصول/i }).click();
+    await page.getByRole('button', { name: /Create product/i }).click();
     const createProductResponse = await createProductResponsePromise;
     if (!createProductResponse.ok()) {
       const payload = await createProductResponse.json().catch(() => null);
@@ -258,8 +258,8 @@ test.describe('Admin Categories + Products CRUD', () => {
     expect(product!.isFeatured).toBe(true);
     expect(product!.categoryId).toBe(categoryId);
 
-    await expect(productRow.getByText(/10% تخفیف/)).toBeVisible();
-    await expect(productRow.getByText('ویژه')).toBeVisible();
+    await expect(productRow.getByText(/10% Discount/)).toBeVisible();
+    await expect(productRow.getByText('Featured')).toBeVisible();
 
     // ============================================================
     // STEP 3: Edit product and verify updates
@@ -268,7 +268,7 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await expect(
-      page.getByRole('heading', { name: /ویرایش محصول/i })
+      page.getByRole('heading', { name: /Edit product/i })
     ).toBeVisible();
 
     await page.locator('input[name="name"]').fill(updatedName);
@@ -277,11 +277,11 @@ test.describe('Admin Categories + Products CRUD', () => {
     await page.locator('input[name="discountPercent"]').fill(updatedDiscount);
     await page.locator('input[name="stock"]').fill(updatedStock);
 
-    await page.getByRole('button', { name: /ذخیره تغییرات/i }).click();
+    await page.getByRole('button', { name: /Save changes/i }).click();
     await page.waitForURL('/admin/products', { timeout: 20000 });
 
     const updatedRow = await findProductRow(page, updatedName);
-    await expect(updatedRow.getByText(/5% تخفیف/)).toBeVisible();
+    await expect(updatedRow.getByText(/5% Discount/)).toBeVisible();
 
     const { data: updatedProduct, error: updatedError } = await supabase
       .from('products')

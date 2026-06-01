@@ -20,7 +20,7 @@ async function getHandler(req: NextRequest) {
   } catch (error) {
     console.error('Get categories error:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'خطا در دریافت دسته‌بندی‌ها';
+      error instanceof Error ? error.message : 'Unable to load categories';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

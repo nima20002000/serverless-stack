@@ -101,9 +101,9 @@ describe('Admin Dashboard Integration Tests', () => {
           amount: 100000,
           status: 'COMPLETED',
           createdAt: '2024-05-14',
-          fullName: 'کاربر تست',
+          fullName: 'Test User',
           email: 'test@test.com',
-          user: { name: 'کاربر تست', email: 'test@test.com' },
+          user: { name: 'Test User', email: 'test@test.com' },
         },
       ],
       error: null,
@@ -152,7 +152,7 @@ describe('Admin Dashboard Integration Tests', () => {
           uid: 'UID-1',
           email: 'ali@example.com',
           phone: null,
-          name: 'علی محمدی',
+          name: 'Alex Morgan',
           role: 'USER',
           createdAt: '2024-01-01',
         },
@@ -160,8 +160,8 @@ describe('Admin Dashboard Integration Tests', () => {
           id: 'u2',
           uid: 'UID-2',
           email: 'test@test.com',
-          phone: '09121111111',
-          name: 'علی رضایی',
+          phone: '+12025551111',
+          name: 'Alex Taylor',
           role: 'USER',
           createdAt: '2024-01-02',
         },
@@ -178,14 +178,14 @@ describe('Admin Dashboard Integration Tests', () => {
       .mockReturnValueOnce(promoQuery);
     createClientMock.mockReturnValue(supabase as unknown);
 
-    const result = await adminService.getAllUsers(1, 20, 'علی');
+    const result = await adminService.getAllUsers(1, 20, 'Alex');
 
     expect(usersQuery.or).toHaveBeenCalledWith(
-      'name.ilike.%علی%,email.ilike.%علی%'
+      'name.ilike.%Alex%,email.ilike.%Alex%'
     );
     expect(result.data).toHaveLength(2);
-    expect(result.data[0].name).toContain('علی');
-    expect(result.data[1].name).toContain('علی');
+    expect(result.data[0].name).toContain('Alex');
+    expect(result.data[1].name).toContain('Alex');
   });
 
   // ============ Transaction Filtering Combined ============
@@ -200,9 +200,9 @@ describe('Admin Dashboard Integration Tests', () => {
           amount: 250000,
           status: 'COMPLETED',
           createdAt: '2024-05-10',
-          fullName: 'کاربر تست',
+          fullName: 'Test User',
           email: 'test@test.com',
-          phone: '09121234567',
+          phone: '+12025554567',
           user: null,
           items: [],
           invoice: null,

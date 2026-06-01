@@ -19,7 +19,7 @@ async function postHandler(req: NextRequest) {
     // Validate required fields (name is optional)
     if (!providedIdentifier || !password) {
       return NextResponse.json(
-        { error: 'ایمیل یا شماره تلفن به همراه رمز عبور الزامی هستند' },
+        { error: 'Email or phone number and password are required.' },
         { status: 400 }
       );
     }
@@ -29,7 +29,7 @@ async function postHandler(req: NextRequest) {
 
     if (identifierType === 'invalid') {
       return NextResponse.json(
-        { error: 'فرمت ایمیل یا شماره تلفن نامعتبر است' },
+        { error: 'Enter a valid email address or phone number.' },
         { status: 400 }
       );
     }
@@ -63,7 +63,7 @@ async function postHandler(req: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: 'ثبت‌نام با موفقیت انجام شد',
+        message: 'Account created successfully.',
         user: {
           id: user.id,
           email: user.email,
@@ -92,7 +92,10 @@ async function postHandler(req: NextRequest) {
 
     // Return user-friendly error message
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در ثبت‌نام' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to create account.',
+      },
       { status: 400 }
     );
   }

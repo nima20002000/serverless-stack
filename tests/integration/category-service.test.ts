@@ -13,10 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { randomUUID } from 'crypto';
 import { createTestSupabaseClient } from '../utils/test-client';
-import {
-  cleanupTestCategories,
-  cleanupTestProducts,
-} from '../utils/cleanup';
+import { cleanupTestCategories, cleanupTestProducts } from '../utils/cleanup';
 import {
   expectValidCategoryObject,
   expectValidSlug,
@@ -50,9 +47,9 @@ describe('Category Service Integration Tests', () => {
     const slug = createTestSlug('test-root');
 
     const category = await createCategory({
-      name: 'TEST-دسته‌بندی ریشه',
+      name: 'TEST-Category Root',
       slug,
-      description: 'دسته‌بندی تستی',
+      description: 'Category Testtext',
     });
 
     expectValidCategoryObject(category);
@@ -74,12 +71,12 @@ describe('Category Service Integration Tests', () => {
     const childSlug = createTestSlug('test-child');
 
     const parent = await createCategory({
-      name: 'TEST-والد',
+      name: 'TEST-Parent',
       slug: parentSlug,
     });
 
     const child = await createCategory({
-      name: 'TEST-فرزند',
+      name: 'TEST-text',
       slug: childSlug,
       parentId: parent.id,
     });
@@ -116,16 +113,16 @@ describe('Category Service Integration Tests', () => {
     const slug = createTestSlug('test-unique');
 
     await createCategory({
-      name: 'TEST-اول',
+      name: 'TEST-details',
       slug,
     });
 
     await expect(
       createCategory({
-        name: 'TEST-دوم',
+        name: 'TEST-details',
         slug,
       })
-    ).rejects.toThrow('دسته‌بندی با این نامک (slug) قبلاً ثبت شده است');
+    ).rejects.toThrow('Category with text Nametext (slug) Already text');
   });
 
   it('should update category fields and persist changes', async () => {
@@ -133,24 +130,24 @@ describe('Category Service Integration Tests', () => {
     const updatedSlug = createTestSlug('test-updated');
 
     const category = await createCategory({
-      name: 'TEST-قبل',
+      name: 'TEST-text',
       slug,
     });
 
     const updated = await updateCategory(category.id, {
-      name: 'TEST-بعد',
+      name: 'TEST-text',
       slug: updatedSlug,
       isActive: false,
     });
 
     expect(updated.id).toBe(category.id);
-    expect(updated.name).toBe('TEST-بعد');
+    expect(updated.name).toBe('TEST-text');
     expect(updated.slug).toBe(updatedSlug);
     expectValidSlug(updated.slug);
     expect(updated.isActive).toBe(false);
 
     const fetched = await getCategoryById(category.id);
-    expect(fetched.name).toBe('TEST-بعد');
+    expect(fetched.name).toBe('TEST-text');
     expect(fetched.slug).toBe(updatedSlug);
     expect(fetched.isActive).toBe(false);
   });
@@ -160,13 +157,13 @@ describe('Category Service Integration Tests', () => {
     const inactiveSlug = createTestSlug('test-inactive');
 
     const active = await createCategory({
-      name: 'TEST-فعال',
+      name: 'TEST-Active',
       slug: activeSlug,
       isActive: true,
     });
 
     await createCategory({
-      name: 'TEST-غیرفعال',
+      name: 'TEST-Inactive',
       slug: inactiveSlug,
       isActive: false,
     });
@@ -185,25 +182,25 @@ describe('Category Service Integration Tests', () => {
     const slug = createTestSlug('test-product');
 
     const category = await createCategory({
-      name: 'TEST-دارای-محصول',
+      name: 'TEST-text-Product',
       slug,
     });
 
     const productId = randomUUID();
-    const { error: productError } = await supabase
-      .from('products')
-      .insert({
-        id: productId,
-        name: `TEST-Product-${Date.now()}`,
-        description: 'محصول تستی',
-        price: 150000,
-        stock: 5,
-        isActive: true,
-        categoryId: category.id,
-        updatedAt: new Date().toISOString(),
-      });
+    const { error: productError } = await supabase.from('products').insert({
+      id: productId,
+      name: `TEST-Product-${Date.now()}`,
+      description: 'Test products',
+      price: 150000,
+      stock: 5,
+      isActive: true,
+      categoryId: category.id,
+      updatedAt: new Date().toISOString(),
+    });
     if (productError) {
-      throw new Error(`Failed to seed product for test: ${productError.message}`);
+      throw new Error(
+        `Failed to seed product for test: ${productError.message}`
+      );
     }
 
     const { count: productCount, error: productCountError } = await supabase
@@ -212,13 +209,15 @@ describe('Category Service Integration Tests', () => {
       .eq('id', productId);
 
     if (productCountError) {
-      throw new Error(`Failed to verify seeded product: ${productCountError.message}`);
+      throw new Error(
+        `Failed to verify seeded product: ${productCountError.message}`
+      );
     }
 
     expect(productCount).toBe(1);
 
     await expect(deleteCategory(category.id)).rejects.toThrow(
-      'امکان حذف دسته‌بندی که محصول دارد وجود ندارد'
+      'text Delete Category text Product text Not found'
     );
   });
 
@@ -227,18 +226,18 @@ describe('Category Service Integration Tests', () => {
     const childSlug = createTestSlug('test-child-delete');
 
     const parent = await createCategory({
-      name: 'TEST-والد-حذف',
+      name: 'TEST-Parent-Delete',
       slug: parentSlug,
     });
 
     await createCategory({
-      name: 'TEST-فرزند-حذف',
+      name: 'TEST-text-Delete',
       slug: childSlug,
       parentId: parent.id,
     });
 
     await expect(deleteCategory(parent.id)).rejects.toThrow(
-      'امکان حذف دسته‌بندی که زیردسته دارد وجود ندارد'
+      'text Delete Category text Not found'
     );
   });
 
@@ -246,7 +245,7 @@ describe('Category Service Integration Tests', () => {
     const slug = createTestSlug('test-delete');
 
     const category = await createCategory({
-      name: 'TEST-حذف',
+      name: 'TEST-Delete',
       slug,
     });
 

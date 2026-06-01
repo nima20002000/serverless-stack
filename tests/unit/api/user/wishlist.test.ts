@@ -68,7 +68,7 @@ describe('/api/user/wishlist', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Authentication is required',
     });
   });
 
@@ -92,7 +92,7 @@ describe('/api/user/wishlist', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'شناسه محصول الزامی است',
+      error: 'Product ID is required',
     });
   });
 
@@ -118,7 +118,7 @@ describe('/api/user/wishlist', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'شناسه محصول الزامی است',
+      error: 'Product ID is required',
     });
   });
 

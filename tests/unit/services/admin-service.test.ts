@@ -47,7 +47,7 @@ describe('admin-service', () => {
           id: 'u2',
           uid: 'UID-1',
           email: 'b@example.com',
-          phone: '0912',
+          phone: '+1202555',
           name: 'Sara',
           role: 'USER',
           createdAt: '2024-01-01',
@@ -101,7 +101,7 @@ describe('admin-service', () => {
           id: 'u2',
           uid: 'UID-1',
           email: 'b@example.com',
-          phone: '0912',
+          phone: '+1202555',
           name: 'Sara',
           role: 'USER',
           createdAt: '2024-01-01',
@@ -126,7 +126,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.getAllUsers()).rejects.toThrow(
-      'خطا در دریافت کاربران'
+      'Unable to load users'
     );
   });
 
@@ -425,7 +425,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.getUserById('u1')).rejects.toThrow(
-      'کاربر یافت نشد'
+      'User not found'
     );
   });
 
@@ -530,7 +530,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.deleteUser('u1')).rejects.toThrow(
-      'امکان حذف کاربران مدیر وجود ندارد'
+      'Admin users cannot be deleted'
     );
   });
 
@@ -567,7 +567,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.deleteUser('nonexistent')).rejects.toThrow(
-      'کاربر یافت نشد'
+      'User not found'
     );
   });
 
@@ -776,7 +776,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.getTransactionById('t1')).rejects.toThrow(
-      'تراکنش یافت نشد'
+      'Transaction not found'
     );
   });
 
@@ -951,7 +951,7 @@ describe('admin-service', () => {
           uid: 'UID-1',
           name: 'Ali',
           email: 'ali@test.com',
-          phone: '09121234567',
+          phone: '+12025554567',
         },
         items: [
           {
@@ -987,7 +987,7 @@ describe('admin-service', () => {
       uid: 'UID-1',
       name: 'Ali',
       email: 'ali@test.com',
-      phone: '09121234567',
+      phone: '+12025554567',
     });
     expect(result.items).toHaveLength(1);
     expect(result.invoice).toEqual({
@@ -1009,7 +1009,7 @@ describe('admin-service', () => {
         createdAt: '2024-05-01',
         fullName: 'Guest User',
         email: 'guest@test.com',
-        phone: '09121234567',
+        phone: '+12025554567',
         user: null,
         items: [],
         invoice: null,
@@ -1153,7 +1153,7 @@ describe('admin-service', () => {
           amount: 1000,
           status: 'COMPLETED',
           createdAt: '2024-05-14',
-          user: { name: 'Guest Name', email: 'مهمان' },
+          user: { name: 'Guest Name', email: 'Guest' },
         },
         {
           id: 't2',
@@ -1161,7 +1161,7 @@ describe('admin-service', () => {
           amount: 200,
           status: 'PENDING',
           createdAt: '2024-05-13',
-          user: { name: 'بدون نام', email: '' },
+          user: { name: 'Unnamed user', email: '' },
         },
       ],
     });
@@ -1176,7 +1176,7 @@ describe('admin-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(adminService.getDashboardStats()).rejects.toThrow(
-      'خطا در دریافت آمار داشبورد'
+      'Unable to load dashboard stats'
     );
   });
 
@@ -1301,10 +1301,10 @@ describe('admin-service', () => {
       name: 'Guest Ali',
       email: 'guest@test.com',
     });
-    // When user is null and both fullName and email are null, use 'مهمان' for both
+    // When user is null and both fullName and email are null, use 'Guest' for both
     expect(result.recentTransactions[1].user).toEqual({
-      name: 'مهمان',
-      email: 'مهمان',
+      name: 'Guest',
+      email: 'Guest',
     });
   });
 
@@ -1349,7 +1349,7 @@ describe('admin-service', () => {
     const result = await adminService.getDashboardStats();
 
     expect(result.recentTransactions[0].user).toEqual({
-      name: 'بدون نام',
+      name: 'Unnamed user',
       email: 'user@test.com',
     });
   });

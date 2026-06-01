@@ -67,7 +67,7 @@ describe('POST /api/auth/register', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: 'ایمیل یا شماره تلفن به همراه رمز عبور الزامی هستند',
+      error: 'Email or phone number and password are required.',
     });
   });
 
@@ -91,7 +91,7 @@ describe('POST /api/auth/register', () => {
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toEqual({
       success: true,
-      message: 'ثبت‌نام با موفقیت انجام شد',
+      message: 'Account created successfully.',
       user: {
         id: 'user-1',
         email: 'test@example.com',

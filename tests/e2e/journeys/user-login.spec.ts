@@ -29,8 +29,8 @@ test.describe('User Login Journey', () => {
     id: 'e2e-user-login-test-fixed',
     uid: 'e2e-uid-login-test-fixed',
     email: 'e2e-login-test@example.com',
-    phone: '09187654321',
-    name: 'کاربر ورود تست',
+    phone: '+12025554321',
+    name: 'User Sign in Test',
     password: 'Test1234!@#$',
   };
 
@@ -68,8 +68,8 @@ test.describe('User Login Journey', () => {
   function getTestUser(): E2ETestUser {
     return {
       ...testUserData,
-      firstName: 'کاربر',
-      lastName: 'تست',
+      firstName: 'User',
+      lastName: 'Test',
       isVerified: true,
       role: 'USER',
       updatedAt: new Date().toISOString(),
@@ -83,7 +83,7 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify login form loaded
-    await expect(page.locator('h2:has-text("ورود")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Sign in|ورود/i })).toBeVisible();
 
     // Fill login form
     await page.locator('input[name="identifier"]').fill(registeredUser.email);
@@ -105,7 +105,7 @@ test.describe('User Login Journey', () => {
     await expect(page).toHaveURL('/profile');
 
     // Verify profile page content
-    await expect(page.locator('h1:has-text("پروفایل کاربری")')).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
       timeout: 10000,
     });
 
@@ -144,7 +144,9 @@ test.describe('User Login Journey', () => {
     await page.locator('input[name="identifier"]').fill(registeredUser.phone);
 
     // Click "Login with OTP" link
-    const otpLoginLink = page.locator('button:has-text("ورود با کد تایید")');
+    const otpLoginLink = page.locator(
+      'button:has-text("Sign in with code"), button:has-text("کد")'
+    );
     await expect(otpLoginLink).toBeVisible();
     await otpLoginLink.click();
 
@@ -152,7 +154,7 @@ test.describe('User Login Journey', () => {
     await expect(page.locator('input[name="password"]')).not.toBeVisible();
 
     // Submit to send OTP
-    await page.getByRole('button', { name: /ارسال کد تایید/i }).click();
+    await page.getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ورود/i }).click();
 
     // Wait for redirect to OTP verification page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
@@ -186,12 +188,14 @@ test.describe('User Login Journey', () => {
     await page.locator('input[name="identifier"]').fill(registeredUser.email);
 
     // Click "Login with OTP" link
-    const otpLoginLink = page.locator('button:has-text("ورود با کد تایید")');
+    const otpLoginLink = page.locator(
+      'button:has-text("Sign in with code"), button:has-text("کد")'
+    );
     await expect(otpLoginLink).toBeVisible();
     await otpLoginLink.click();
 
     // Submit to send OTP
-    await page.getByRole('button', { name: /ارسال کد تایید/i }).click();
+    await page.getByRole('button', { name: /Send code|ارسال کد|Shipping Code|ورود/i }).click();
 
     // Wait for redirect to OTP verification page
     await page.waitForURL(/\/verify-otp/, { timeout: 15000 });
@@ -230,9 +234,9 @@ test.describe('User Login Journey', () => {
 
     // Should show error
     const errorAlert = page.locator('[role="alert"]', {
-      hasText: 'رمز عبور اشتباه است',
+      hasText: 'Invalid email/phone or password.',
     });
-    await expect(errorAlert).toContainText('رمز عبور اشتباه است', {
+    await expect(errorAlert).toContainText('Invalid email/phone or password.', {
       timeout: 5000,
     });
 
@@ -262,9 +266,9 @@ test.describe('User Login Journey', () => {
     await page.waitForTimeout(2000);
 
     const errorAlert = page.locator('[role="alert"]', {
-      hasText: 'کاربری با این مشخصات یافت نشد',
+      hasText: 'User not found',
     });
-    await expect(errorAlert).toContainText('کاربری با این مشخصات یافت نشد', {
+    await expect(errorAlert).toContainText('User not found', {
       timeout: 5000,
     });
 
@@ -293,7 +297,7 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page).toHaveURL('/profile');
-    await expect(page.locator('h1:has-text("پروفایل کاربری")')).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
       timeout: 10000,
     });
   });
@@ -314,13 +318,13 @@ test.describe('User Login Journey', () => {
     // Go to profile
     await page.goto('/profile');
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1:has-text("پروفایل کاربری")')).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Profile|پروفایل/i })).toBeVisible({
       timeout: 10000,
     });
 
     // Click logout button
     const logoutButton = page.getByRole('button', {
-      name: /خروج از حساب کاربری/i,
+      name: /Sign out of Account/i,
     });
     await expect(logoutButton).toBeVisible();
     await logoutButton.click();
@@ -343,18 +347,22 @@ test.describe('User Login Journey', () => {
     await page.locator('button[type="submit"]').click();
 
     // Should show validation error
-    await expect(page.locator('text=/الزامی|required/i').first()).toBeVisible({
-      timeout: 5000,
-    });
+    await expect(page.locator('text=/required|required/i').first()).toBeVisible(
+      {
+        timeout: 5000,
+      }
+    );
 
     // Fill identifier but not password (use a valid email format)
     await page.locator('input[name="identifier"]').fill('test@example.com');
     await page.locator('button[type="submit"]').click();
 
     // Should show password error
-    await expect(page.locator('text=/الزامی|required/i').first()).toBeVisible({
-      timeout: 5000,
-    });
+    await expect(page.locator('text=/required|required/i').first()).toBeVisible(
+      {
+        timeout: 5000,
+      }
+    );
 
     // Still on login page
     await expect(page).toHaveURL('/login');
@@ -370,7 +378,7 @@ test.describe('User Login Journey', () => {
 
     // Should show format error
     await expect(
-      page.locator('text=/نامعتبر|invalid|فرمت/i').first()
+      page.locator('text=/Invalid|invalid/i').first()
     ).toBeVisible({
       timeout: 5000,
     });
@@ -383,9 +391,9 @@ test.describe('User Login Journey', () => {
     await page.waitForLoadState('networkidle');
 
     // Click register link
-    await page.getByRole('link', { name: /ثبت‌نام کنید/i }).click();
+    await page.getByRole('link', { name: /Create account|ثبت‌نام|ثبت نام/i }).click();
 
     await expect(page).toHaveURL('/register');
-    await expect(page.locator('h2:has-text("ثبت‌نام")')).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Create account|ثبت‌نام|ثبت نام/i })).toBeVisible();
   });
 });

@@ -22,7 +22,7 @@ describe('admin stats API', () => {
     user: {
       id: 'admin-1',
       role: 'ADMIN',
-      email: 'admin@kitia.ir',
+      email: 'admin@example.com',
     },
   };
 
@@ -43,7 +43,7 @@ describe('admin stats API', () => {
     const response = await GET();
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getDashboardStatsMock).not.toHaveBeenCalled();
   });
 
@@ -56,7 +56,7 @@ describe('admin stats API', () => {
     const response = await GET();
 
     expect(response.status).toBe(403);
-    await expect(response.json()).resolves.toEqual({ error: 'دسترسی غیرمجاز' });
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getDashboardStatsMock).not.toHaveBeenCalled();
   });
 

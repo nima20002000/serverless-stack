@@ -71,7 +71,7 @@ describe('GET /api/user/profile', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Sign in to continue.',
     });
   });
 
@@ -85,8 +85,8 @@ describe('GET /api/user/profile', () => {
         id: 'user-1',
         uid: 'U1',
         name: 'Test',
-        email: 'test@kitia.ir',
-        phone: '09123456789',
+        email: 'test@example.com',
+        phone: '+12025556789',
         shippingAddress: 'Addr',
         postalCode: '12345',
         isVerified: true,
@@ -121,7 +121,9 @@ describe('GET /api/user/profile', () => {
     const response = await GET();
 
     expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toEqual({ error: 'کاربر یافت نشد' });
+    await expect(response.json()).resolves.toEqual({
+      error: 'User not found.',
+    });
   });
 });
 
@@ -157,7 +159,7 @@ describe('PATCH /api/user/profile', () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({
-      error: 'برای دسترسی به این صفحه باید وارد شوید',
+      error: 'Sign in to continue.',
     });
     expect(updateUserProfileMock).not.toHaveBeenCalled();
   });
@@ -177,7 +179,7 @@ describe('PATCH /api/user/profile', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.message).toBe('پروفایل با موفقیت به‌روزرسانی شد');
+    expect(body.message).toBe('Profile updated successfully.');
     expect(updateUserProfileMock).toHaveBeenCalledWith('user-1', {
       name: 'New',
       email: undefined,

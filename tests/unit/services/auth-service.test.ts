@@ -47,16 +47,16 @@ describe('auth-service', () => {
 
   it('rejects missing identifier or password', async () => {
     await expect(authenticateUser('', 'pass')).rejects.toThrow(
-      'ایمیل/شماره تلفن و رمز عبور الزامی است'
+      'Email/phone number and password are required.'
     );
     await expect(authenticateUser('user@example.com', '')).rejects.toThrow(
-      'ایمیل/شماره تلفن و رمز عبور الزامی است'
+      'Email/phone number and password are required.'
     );
   });
 
   it('rejects invalid identifier format', async () => {
     await expect(authenticateUser('not-an-id', 'password123')).rejects.toThrow(
-      'فرمت ایمیل یا شماره تلفن نامعتبر است'
+      'Enter a valid email address or phone number.'
     );
   });
 
@@ -79,7 +79,9 @@ describe('auth-service', () => {
 
     await expect(
       authenticateUser('user@example.com', 'password123')
-    ).rejects.toThrow('این حساب رمز عبور ندارد. لطفاً با پشتیبانی تماس بگیرید');
+    ).rejects.toThrow(
+      'This account does not have a password. Use one-time sign-in or set a password first.'
+    );
     expect(supabase.from).toHaveBeenCalledWith('users');
     expect(query.eq).toHaveBeenCalledWith('email', 'user@example.com');
   });
@@ -103,7 +105,7 @@ describe('auth-service', () => {
 
     await expect(
       authenticateUser('user@example.com', 'password123')
-    ).rejects.toThrow('رمز عبور اشتباه است');
+    ).rejects.toThrow('Password is incorrect.');
   });
 
   it('authenticates with email and returns normalized user', async () => {
@@ -134,13 +136,46 @@ describe('auth-service', () => {
     });
   });
 
+  it('normalizes formatted phone identifiers before password lookup', async () => {
+    const supabase = createSupabaseMock();
+    const query = createQueryMock({
+      data: {
+        id: 'user-phone',
+        email: null,
+        phone: '+12125551234',
+        name: 'Phone User',
+        role: 'USER',
+        password: 'hashed',
+      },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+    createClientMock.mockReturnValue(supabase as unknown);
+    compareMock.mockResolvedValue(true);
+
+    const result = await authenticateUser('+1 (212) 555-1234', 'password123');
+
+    expect(query.in).toHaveBeenCalledWith('phone', [
+      '+12125551234',
+      '2125551234',
+      '12125551234',
+    ]);
+    expect(result).toEqual({
+      id: 'user-phone',
+      email: null,
+      phone: '+12125551234',
+      name: 'Phone User',
+      role: 'USER',
+    });
+  });
+
   it('authenticates user by phone and links orphaned transactions', async () => {
     const supabase = createSupabaseMock();
     const query = createQueryMock({
       data: {
         id: 'user-2',
         email: null,
-        phone: '09120000000',
+        phone: '+12125551234',
         name: 'Phone User',
         role: 'USER',
       },
@@ -153,20 +188,21 @@ describe('auth-service', () => {
       .spyOn(userService, 'linkOrphanedTransactions')
       .mockResolvedValue(2);
 
-    const result = await authenticateUserByPhone('09120000000');
+    const result = await authenticateUserByPhone('+1 (212) 555-1234');
 
     expect(result).toEqual({
       id: 'user-2',
       email: null,
-      phone: '09120000000',
+      phone: '+12125551234',
       name: 'Phone User',
       role: 'USER',
     });
     expect(query.in).toHaveBeenCalledWith('phone', [
-      '+989120000000',
-      '09120000000',
+      '+12125551234',
+      '2125551234',
+      '12125551234',
     ]);
-    expect(linkSpy).toHaveBeenCalledWith('user-2', '09120000000');
+    expect(linkSpy).toHaveBeenCalledWith('user-2', '+1 (212) 555-1234');
   });
 
   it('authenticates user by email without password', async () => {

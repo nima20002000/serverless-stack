@@ -20,7 +20,7 @@ export async function PATCH(
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const productId = params.id;
@@ -30,7 +30,7 @@ export async function PATCH(
     // Validate input
     if (!Array.isArray(variantOrders)) {
       return NextResponse.json(
-        { error: 'variantOrders باید آرایه‌ای از {id, order} باشد' },
+        { error: 'variantOrders must be an array of { id, order } objects' },
         { status: 400 }
       );
     }
@@ -38,7 +38,7 @@ export async function PATCH(
     for (const item of variantOrders) {
       if (!item.id || typeof item.order !== 'number') {
         return NextResponse.json(
-          { error: 'هر آیتم باید شامل id و order باشد' },
+          { error: 'Variant ID and display order are required' },
           { status: 400 }
         );
       }
@@ -55,7 +55,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      message: 'ترتیب واریانت‌ها با موفقیت به‌روز شد',
+      message: 'Product variants reordered successfully',
     });
   } catch (error) {
     log.error('Failed to reorder variants', {
@@ -68,7 +68,7 @@ export async function PATCH(
         error:
           error instanceof Error
             ? error.message
-            : 'خطا در به‌روزرسانی ترتیب واریانت‌ها',
+            : 'Unable to update product variants',
       },
       { status: 500 }
     );

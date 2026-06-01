@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Validate input
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'ایمیل و رمز عبور الزامی است' },
+        { error: 'Email and password are required.' },
         { status: 400 }
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     log.error('Unexpected login error', { error });
     return NextResponse.json(
-      { error: 'خطا در ورود. لطفاً دوباره تلاش کنید.' },
+      { error: 'Unable to sign in. Please try again.' },
       { status: 500 }
     );
   }

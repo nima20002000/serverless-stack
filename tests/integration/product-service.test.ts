@@ -102,7 +102,7 @@ describe('Product Service Integration Tests', () => {
       const categoryId = randomUUID();
       await supabase.from('categories').insert({
         id: categoryId,
-        name: 'TEST-دسته‌بندی',
+        name: 'TEST-Category',
         slug: `test-category-${Date.now()}`,
         isActive: true,
       });
@@ -111,7 +111,7 @@ describe('Product Service Integration Tests', () => {
       const tagId = randomUUID();
       await supabase.from('tags').insert({
         id: tagId,
-        name: 'TEST-برچسب',
+        name: 'TEST-Tag',
         slug: `test-tag-${Date.now()}`,
       });
 
@@ -157,7 +157,7 @@ describe('Product Service Integration Tests', () => {
       }
       expect(product.id).toBe(productId);
       expect(product.category.id).toBe(categoryId);
-      expect(product.category.name).toBe('TEST-دسته‌بندی');
+      expect(product.category.name).toBe('TEST-Category');
 
       // Retrieve tags via junction table
       const { data: productToTags } = await supabase
@@ -330,8 +330,8 @@ describe('Product Service Integration Tests', () => {
       const activeProductId = randomUUID();
       await supabase.from('products').insert({
         id: activeProductId,
-        name: 'TEST-محصول-فعال',
-        description: 'محصول فعال',
+        name: 'TEST-Product-Active',
+        description: 'Product Active',
         price: 100000,
         stock: 10,
         isActive: true,
@@ -342,8 +342,8 @@ describe('Product Service Integration Tests', () => {
       const inactiveProductId = randomUUID();
       await supabase.from('products').insert({
         id: inactiveProductId,
-        name: 'TEST-محصول-غیرفعال',
-        description: 'محصول غیرفعال',
+        name: 'TEST-Product-Inactive',
+        description: 'Product Inactive',
         price: 100000,
         stock: 10,
         isActive: false,
@@ -378,8 +378,8 @@ describe('Product Service Integration Tests', () => {
       const featuredProductId = randomUUID();
       await supabase.from('products').insert({
         id: featuredProductId,
-        name: 'TEST-محصول-ویژه',
-        description: 'محصول ویژه',
+        name: 'TEST-Product-Featured',
+        description: 'Product Featured',
         price: 200000,
         stock: 5,
         isActive: true,
@@ -391,8 +391,8 @@ describe('Product Service Integration Tests', () => {
       const normalProductId = randomUUID();
       await supabase.from('products').insert({
         id: normalProductId,
-        name: 'TEST-محصول-عادی',
-        description: 'محصول عادی',
+        name: 'TEST-Product-text',
+        description: 'Product text',
         price: 100000,
         stock: 10,
         isActive: true,
@@ -429,8 +429,8 @@ describe('Product Service Integration Tests', () => {
       const discountedProductId = randomUUID();
       await supabase.from('products').insert({
         id: discountedProductId,
-        name: 'TEST-محصول-تخفیف‌دار',
-        description: 'محصول با تخفیف',
+        name: 'TEST-Product-Discounttext',
+        description: 'Product with Discount',
         price: 300000,
         stock: 20,
         isActive: true,
@@ -442,8 +442,8 @@ describe('Product Service Integration Tests', () => {
       const normalProductId = randomUUID();
       await supabase.from('products').insert({
         id: normalProductId,
-        name: 'TEST-محصول-بدون-تخفیف',
-        description: 'محصول بدون تخفیف',
+        name: 'TEST-Product-without-Discount',
+        description: 'Product without Discount',
         price: 100000,
         stock: 10,
         isActive: true,
@@ -482,8 +482,8 @@ describe('Product Service Integration Tests', () => {
       const product1Id = randomUUID();
       await supabase.from('products').insert({
         id: product1Id,
-        name: `TEST-${searchTerm}-اول`,
-        description: 'محصول جستجو اول',
+        name: `TEST-${searchTerm}-details`,
+        description: 'Product Search details',
         price: 100000,
         stock: 10,
         isActive: true,
@@ -493,8 +493,8 @@ describe('Product Service Integration Tests', () => {
       const product2Id = randomUUID();
       await supabase.from('products').insert({
         id: product2Id,
-        name: `TEST-${searchTerm}-دوم`,
-        description: 'محصول جستجو دوم',
+        name: `TEST-${searchTerm}-details`,
+        description: 'Product Search details',
         price: 150000,
         stock: 5,
         isActive: true,
@@ -523,8 +523,8 @@ describe('Product Service Integration Tests', () => {
       const inStockId = randomUUID();
       await supabase.from('products').insert({
         id: inStockId,
-        name: 'TEST-موجود',
-        description: 'محصول موجود',
+        name: 'TEST-In stock',
+        description: 'Product In stock',
         price: 100000,
         stock: 15,
         isActive: true,
@@ -535,8 +535,8 @@ describe('Product Service Integration Tests', () => {
       const outOfStockId = randomUUID();
       await supabase.from('products').insert({
         id: outOfStockId,
-        name: 'TEST-ناموجود',
-        description: 'محصول ناموجود',
+        name: 'TEST-Out of stock',
+        description: 'Product Out of stock',
         price: 100000,
         stock: 0,
         isActive: true,
@@ -584,8 +584,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-محصول-با-واریانت',
-        description: 'محصول با واریانت',
+        name: 'TEST-Product-with-detailsortext',
+        description: 'Product with detailsortext',
         price: 200000,
         stock: 0, // Will be calculated from variants
         hasVariants: true,
@@ -601,7 +601,7 @@ describe('Product Service Integration Tests', () => {
         .insert({
           id: variantId,
           productId: productId,
-          name: 'سایز بزرگ',
+          name: 'Size Large',
           size: 'L',
           stock: variantStock,
           priceAdjust: 10000,
@@ -638,8 +638,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-محصول-چند-واریانت',
-        description: 'محصول با چند واریانت',
+        name: 'TEST-Product-text-detailsortext',
+        description: 'Product with text detailsortext',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -656,7 +656,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'کوچک',
+          name: 'Small',
           size: 'S',
           stock: variant1Stock,
           priceAdjust: -5000,
@@ -667,7 +667,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'متوسط',
+          name: 'details',
           size: 'M',
           stock: variant2Stock,
           priceAdjust: 0,
@@ -678,7 +678,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'بزرگ',
+          name: 'Large',
           size: 'L',
           stock: variant3Stock,
           priceAdjust: 10000,
@@ -718,8 +718,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-محصول-حذف-واریانت',
-        description: 'تست حذف واریانت',
+        name: 'TEST-Product-Delete-detailsortext',
+        description: 'Test Delete detailsortext',
         price: 200000,
         stock: 50,
         hasVariants: true,
@@ -734,7 +734,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: variant1Id,
           productId: productId,
-          name: 'واریانت 1',
+          name: 'detailsortext 1',
           stock: 20,
           priceAdjust: 0,
           order: 0,
@@ -744,7 +744,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: variant2Id,
           productId: productId,
-          name: 'واریانت 2',
+          name: 'detailsortext 2',
           stock: 30,
           priceAdjust: 0,
           order: 1,
@@ -787,8 +787,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-بروزرسانی-واریانت',
-        description: 'تست بروزرسانی موجودی واریانت',
+        name: 'TEST-Update-detailsortext',
+        description: 'Test Update Stock detailsortext',
         price: 200000,
         stock: 10,
         hasVariants: true,
@@ -800,7 +800,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId: productId,
-        name: 'واریانت تست',
+        name: 'detailsortext Test',
         stock: 10,
         priceAdjust: 0,
         order: 0,
@@ -843,7 +843,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: 'TEST-auto-hasVariants',
-        description: 'تست تنظیم خودکار hasVariants',
+        description: 'Test details hasVariants',
         price: 200000,
         stock: 10,
         hasVariants: false, // Initially false
@@ -865,7 +865,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId: productId,
-        name: 'واریانت اول',
+        name: 'detailsordetails',
         stock: 5,
         priceAdjust: 0,
         order: 0,
@@ -909,7 +909,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('products').insert({
         id: productId,
         name: 'TEST-remove-hasVariants',
-        description: 'تست حذف همه واریانت‌ها',
+        description: 'Test Delete text detailsortext',
         price: 200000,
         stock: 10,
         hasVariants: true,
@@ -922,7 +922,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId: productId,
-        name: 'واریانت تست',
+        name: 'detailsortext Test',
         stock: 10,
         priceAdjust: 0,
         order: 0,
@@ -964,8 +964,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-ترتیب-واریانت',
-        description: 'تست ترتیب واریانت‌ها',
+        name: 'TEST-text-detailsortext',
+        description: 'Test text detailsortext',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -978,7 +978,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'اول',
+          name: 'details',
           stock: 10,
           priceAdjust: 0,
           order: 0,
@@ -988,7 +988,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'دوم',
+          name: 'details',
           stock: 10,
           priceAdjust: 0,
           order: 1,
@@ -998,7 +998,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'سوم',
+          name: 'details',
           stock: 10,
           priceAdjust: 0,
           order: 2,
@@ -1016,9 +1016,9 @@ describe('Product Service Integration Tests', () => {
 
       expect(orderedVariants).not.toBeNull();
       expect(orderedVariants?.length).toBe(3);
-      expect(orderedVariants?.[0].name).toBe('اول');
-      expect(orderedVariants?.[1].name).toBe('دوم');
-      expect(orderedVariants?.[2].name).toBe('سوم');
+      expect(orderedVariants?.[0].name).toBe('details');
+      expect(orderedVariants?.[1].name).toBe('details');
+      expect(orderedVariants?.[2].name).toBe('details');
       expect(orderedVariants?.[0].order).toBe(0);
       expect(orderedVariants?.[1].order).toBe(1);
       expect(orderedVariants?.[2].order).toBe(2);
@@ -1031,8 +1031,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-محصول-رسانه',
-        description: 'محصول با رسانه',
+        name: 'TEST-Product-text',
+        description: 'Product with text',
         price: 200000,
         stock: 10,
         isActive: true,
@@ -1097,8 +1097,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-تغییر-پیش‌فرض',
-        description: 'تست تغییر رسانه پیش‌فرض',
+        name: 'TEST-text-Default',
+        description: 'Test text Default',
         price: 200000,
         stock: 10,
         isActive: true,
@@ -1112,7 +1112,7 @@ describe('Product Service Integration Tests', () => {
           id: media1Id,
           productId: productId,
           type: 'IMAGE',
-          url: 'https://cdn.kitia.ir/test/img1.jpg',
+          url: 'https://cdn.example.com/test/img1.jpg',
           order: 0,
           isDefault: true,
         },
@@ -1120,7 +1120,7 @@ describe('Product Service Integration Tests', () => {
           id: media2Id,
           productId: productId,
           type: 'IMAGE',
-          url: 'https://cdn.kitia.ir/test/img2.jpg',
+          url: 'https://cdn.example.com/test/img2.jpg',
           order: 1,
           isDefault: false,
         },
@@ -1156,8 +1156,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-رسانه-واریانت',
-        description: 'محصول با رسانه واریانت',
+        name: 'TEST-text-detailsortext',
+        description: 'Product with text detailsortext',
         price: 200000,
         stock: 10,
         hasVariants: true,
@@ -1169,7 +1169,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId: productId,
-        name: 'قرمز',
+        name: 'Red',
         color: 'red',
         stock: 10,
         priceAdjust: 0,
@@ -1187,8 +1187,8 @@ describe('Product Service Integration Tests', () => {
           productId: productId,
           variantId: variantId,
           type: 'IMAGE',
-          url: 'https://cdn.kitia.ir/test/red-variant.jpg',
-          alt: 'رنگ قرمز',
+          url: 'https://cdn.example.com/test/red-variant.jpg',
+          alt: 'Color Red',
           order: 0,
           isDefault: true,
         })
@@ -1216,8 +1216,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-حذف-رسانه',
-        description: 'تست حذف رسانه',
+        name: 'TEST-Delete-text',
+        description: 'Test Delete text',
         price: 200000,
         stock: 10,
         isActive: true,
@@ -1231,7 +1231,7 @@ describe('Product Service Integration Tests', () => {
           id: media1Id,
           productId: productId,
           type: 'IMAGE',
-          url: 'https://cdn.kitia.ir/test/img1.jpg',
+          url: 'https://cdn.example.com/test/img1.jpg',
           order: 0,
           isDefault: true,
         },
@@ -1239,7 +1239,7 @@ describe('Product Service Integration Tests', () => {
           id: media2Id,
           productId: productId,
           type: 'IMAGE',
-          url: 'https://cdn.kitia.ir/test/img2.jpg',
+          url: 'https://cdn.example.com/test/img2.jpg',
           order: 1,
           isDefault: false,
         },
@@ -1379,8 +1379,8 @@ describe('Product Service Integration Tests', () => {
 
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-بدون-واریانت',
-        description: 'محصول بدون واریانت',
+        name: 'TEST-without-detailsortext',
+        description: 'Product No limitortext',
         price: 200000,
         stock: directStock,
         hasVariants: false,
@@ -1411,8 +1411,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-جستجو-خالی',
-        description: 'تست جستجوی خالی',
+        name: 'TEST-Search-Empty',
+        description: 'Test Searchtext Empty',
         price: 100000,
         stock: 10,
         isActive: true,
@@ -1435,8 +1435,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-بدون-تخفیف',
-        description: 'محصول بدون تخفیف',
+        name: 'TEST-without-Discount',
+        description: 'Product without Discount',
         price: 100000,
         stock: 10,
         discountPercent: 0,
@@ -1473,8 +1473,8 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('products').insert([
         {
           id: product1Id,
-          name: 'TEST-ترتیب-3',
-          description: 'سومین محصول',
+          name: 'TEST-text-3',
+          description: 'details Product',
           price: 100000,
           stock: 10,
           displayOrder: 2,
@@ -1483,8 +1483,8 @@ describe('Product Service Integration Tests', () => {
         },
         {
           id: product2Id,
-          name: 'TEST-ترتیب-1',
-          description: 'اولین محصول',
+          name: 'TEST-text-1',
+          description: 'details Product',
           price: 100000,
           stock: 10,
           displayOrder: 0,
@@ -1493,8 +1493,8 @@ describe('Product Service Integration Tests', () => {
         },
         {
           id: product3Id,
-          name: 'TEST-ترتیب-2',
-          description: 'دومین محصول',
+          name: 'TEST-text-2',
+          description: 'details Product',
           price: 100000,
           stock: 10,
           displayOrder: 1,
@@ -1507,7 +1507,7 @@ describe('Product Service Integration Tests', () => {
       const { data: orderedProducts } = await supabase
         .from('products')
         .select('*')
-        .like('name', 'TEST-ترتیب-%')
+        .like('name', 'TEST-text-%')
         .order('displayOrder', { ascending: true });
 
       expect(orderedProducts).not.toBeNull();
@@ -1525,8 +1525,8 @@ describe('Product Service Integration Tests', () => {
         productIds.push(id);
         await supabase.from('products').insert({
           id: id,
-          name: `TEST-صفحه‌بندی-${i}`,
-          description: `محصول ${i + 1}`,
+          name: `TEST-Pagetext-${i}`,
+          description: `Product ${i + 1}`,
           price: 100000 + i * 10000,
           stock: 10,
           isActive: true,
@@ -1538,7 +1538,7 @@ describe('Product Service Integration Tests', () => {
       const { data: page1, count: total } = await supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .like('name', 'TEST-صفحه‌بندی-%')
+        .like('name', 'TEST-Pagetext-%')
         .range(0, 1); // 0-indexed: items 0 and 1
 
       expect(page1).not.toBeNull();
@@ -1549,7 +1549,7 @@ describe('Product Service Integration Tests', () => {
       const { data: page2 } = await supabase
         .from('products')
         .select('*')
-        .like('name', 'TEST-صفحه‌بندی-%')
+        .like('name', 'TEST-Pagetext-%')
         .range(2, 3); // Items 2 and 3
 
       expect(page2).not.toBeNull();
@@ -1578,8 +1578,8 @@ describe('Product Service Integration Tests', () => {
       const outOfStockProductId = randomUUID();
       await supabase.from('products').insert({
         id: outOfStockProductId,
-        name: 'TEST-ناموجود-صفر',
-        description: 'محصول با موجودی صفر',
+        name: 'TEST-Out of stock-text',
+        description: 'Product with Stock text',
         price: 100000,
         stock: 0,
         hasVariants: false,
@@ -1591,8 +1591,8 @@ describe('Product Service Integration Tests', () => {
       const inStockProductId = randomUUID();
       await supabase.from('products').insert({
         id: inStockProductId,
-        name: 'TEST-موجود-دارای-موجودی',
-        description: 'محصول با موجودی مثبت',
+        name: 'TEST-In stock-text-Stock',
+        description: 'Product with Stock text',
         price: 100000,
         stock: 10,
         hasVariants: false,
@@ -1628,8 +1628,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-واریانت-ناموجود',
-        description: 'محصول با واریانت‌های ناموجود',
+        name: 'TEST-detailsortext-Out of stock',
+        description: 'Product with detailsortext Out of stock',
         price: 200000,
         stock: 0, // This will be recalculated from variants
         hasVariants: true,
@@ -1642,7 +1642,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'سایز S',
+          name: 'Size S',
           size: 'S',
           stock: 0, // Zero stock
           priceAdjust: 0,
@@ -1653,7 +1653,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'سایز M',
+          name: 'Size M',
           size: 'M',
           stock: 0, // Zero stock
           priceAdjust: 0,
@@ -1682,8 +1682,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-همه-واریانت-غیرفعال',
-        description: 'محصول با همه واریانت‌های غیرفعال',
+        name: 'TEST-text-detailsortext-Inactive',
+        description: 'Product with text detailsortext Inactive',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -1696,7 +1696,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'غیرفعال با موجودی',
+          name: 'Inactive with Stock',
           size: 'S',
           stock: 50, // Has stock but is inactive
           priceAdjust: 0,
@@ -1723,8 +1723,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-مخلوط-واریانت',
-        description: 'محصول با واریانت‌های مخلوط',
+        name: 'TEST-details-detailsortext',
+        description: 'Product with detailsordetails',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -1737,7 +1737,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'فعال با موجودی',
+          name: 'Active with Stock',
           size: 'S',
           stock: 10, // Active with stock - product should be shown
           priceAdjust: 0,
@@ -1748,7 +1748,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'فعال بدون موجودی',
+          name: 'Active without Stock',
           size: 'M',
           stock: 0, // Active but no stock
           priceAdjust: 0,
@@ -1759,7 +1759,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'غیرفعال با موجودی',
+          name: 'Inactive with Stock',
           size: 'L',
           stock: 100, // Inactive with stock - should not count
           priceAdjust: 0,
@@ -1801,8 +1801,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-واریانت-فیلتر',
-        description: 'محصول برای تست فیلتر واریانت',
+        name: 'TEST-detailsortext',
+        description: 'Product for Test text detailsortext',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -1819,7 +1819,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: activeVariant1Id,
           productId: productId,
-          name: 'واریانت فعال ۱',
+          name: 'detailsortext Active 1',
           size: 'S',
           stock: 10,
           priceAdjust: 0,
@@ -1830,7 +1830,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: inactiveVariantId,
           productId: productId,
-          name: 'واریانت غیرفعال',
+          name: 'detailsortext Inactive',
           size: 'M',
           stock: 5,
           priceAdjust: 0,
@@ -1841,7 +1841,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: activeVariant2Id,
           productId: productId,
-          name: 'واریانت فعال ۲',
+          name: 'detailsortext Active 2',
           size: 'L',
           stock: 15,
           priceAdjust: 10000,
@@ -1890,8 +1890,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-واریانت-ادمین',
-        description: 'محصول برای تست دسترسی ادمین',
+        name: 'TEST-detailsortext',
+        description: 'Product for Test text',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -1904,7 +1904,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'واریانت فعال ۱',
+          name: 'detailsortext Active 1',
           size: 'S',
           stock: 10,
           priceAdjust: 0,
@@ -1915,7 +1915,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'واریانت غیرفعال',
+          name: 'detailsortext Inactive',
           size: 'M',
           stock: 5,
           priceAdjust: 0,
@@ -1926,7 +1926,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'واریانت فعال ۲',
+          name: 'detailsortext Active 2',
           size: 'L',
           stock: 15,
           priceAdjust: 10000,
@@ -1959,8 +1959,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-موجودی-واریانت',
-        description: 'محصول برای تست محاسبه موجودی',
+        name: 'TEST-Stock-detailsortext',
+        description: 'Product for Test textto Stock',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -1977,7 +1977,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'فعال کوچک',
+          name: 'Active Small',
           size: 'S',
           stock: activeStock1,
           priceAdjust: 0,
@@ -1988,7 +1988,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'غیرفعال متوسط',
+          name: 'Inactive details',
           size: 'M',
           stock: inactiveStock,
           priceAdjust: 0,
@@ -1999,7 +1999,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'فعال بزرگ',
+          name: 'Active Large',
           size: 'L',
           stock: activeStock2,
           priceAdjust: 10000,
@@ -2040,8 +2040,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-همه-غیرفعال',
-        description: 'محصول با همه واریانت‌های غیرفعال',
+        name: 'TEST-text-Inactive',
+        description: 'Product with text detailsortext Inactive',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -2054,7 +2054,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'غیرفعال ۱',
+          name: 'Inactive 1',
           size: 'S',
           stock: 10,
           priceAdjust: 0,
@@ -2065,7 +2065,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'غیرفعال ۲',
+          name: 'Inactive 2',
           size: 'M',
           stock: 20,
           priceAdjust: 0,
@@ -2097,8 +2097,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-تغییر-وضعیت',
-        description: 'محصول برای تست تغییر وضعیت واریانت',
+        name: 'TEST-text-details',
+        description: 'Product for Test text details detailsortext',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -2110,7 +2110,7 @@ describe('Product Service Integration Tests', () => {
       await supabase.from('product_variants').insert({
         id: variantId,
         productId: productId,
-        name: 'واریانت تست',
+        name: 'detailsortext Test',
         size: 'M',
         stock: 15,
         priceAdjust: 0,
@@ -2164,8 +2164,8 @@ describe('Product Service Integration Tests', () => {
       const productId = randomUUID();
       await supabase.from('products').insert({
         id: productId,
-        name: 'TEST-ترتیب-واریانت-فعال',
-        description: 'محصول برای تست ترتیب واریانت‌های فعال',
+        name: 'TEST-text-detailsortext-Active',
+        description: 'Product for Test text detailsortext Active',
         price: 200000,
         stock: 0,
         hasVariants: true,
@@ -2179,7 +2179,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'اول',
+          name: 'details',
           size: 'XS',
           stock: 5,
           priceAdjust: 0,
@@ -2190,7 +2190,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'دوم (غیرفعال)',
+          name: 'details (Inactive)',
           size: 'S',
           stock: 10,
           priceAdjust: 0,
@@ -2201,7 +2201,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'سوم',
+          name: 'details',
           size: 'M',
           stock: 15,
           priceAdjust: 0,
@@ -2212,7 +2212,7 @@ describe('Product Service Integration Tests', () => {
         {
           id: randomUUID(),
           productId: productId,
-          name: 'چهارم',
+          name: 'text',
           size: 'L',
           stock: 20,
           priceAdjust: 10000,
@@ -2234,11 +2234,11 @@ describe('Product Service Integration Tests', () => {
       expect(orderedActiveVariants?.length).toBe(3);
 
       // Verify order is maintained (skipping inactive variant at order 1)
-      expect(orderedActiveVariants?.[0].name).toBe('اول');
+      expect(orderedActiveVariants?.[0].name).toBe('details');
       expect(orderedActiveVariants?.[0].order).toBe(0);
-      expect(orderedActiveVariants?.[1].name).toBe('سوم');
+      expect(orderedActiveVariants?.[1].name).toBe('details');
       expect(orderedActiveVariants?.[1].order).toBe(2);
-      expect(orderedActiveVariants?.[2].name).toBe('چهارم');
+      expect(orderedActiveVariants?.[2].name).toBe('text');
       expect(orderedActiveVariants?.[2].order).toBe(3);
     });
   });
