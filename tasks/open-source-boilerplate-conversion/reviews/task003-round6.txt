@@ -1,0 +1,8 @@
+Review target: commit 08a8be1 only. Criteria: task003 legacy Iranian payment provider removal plus prior task003 findings. Focus only on this commit diff and task003 acceptance criteria. Confirm deleted legacy provider references are not left as broken imports/callers, confirm Stripe/PayPal E2E success mocks exercise the real webhook/finalization path before redirecting, confirm clearPaymentMocks lets capture route reinstall on the same page, confirm the middleware rate-limit test remains in sync with middleware at this commit, confirm PayPal E2E mocks match normal PayPal approval subdomains, and confirm deleted legacy callback paths are no longer exempted from rate limiting. Do not review later UI redesign, later English-copy conversion, or final CI expansion except where this commit directly changes those files.
+
+The patch introduces a scenario where PayPal webhook signature verification is skipped based on an environment flag, allowing unsigned payment completion requests in any environment running with that flag.
+
+Review comment:
+
+- [P2] Don't trust unsigned PayPal webhooks in E2E mode — /data/dexter/Desktop/supabase-vercel-stack/src/app/api/transactions/webhook-paypal/route.ts:251-252
+  If any deployed or shared test server is started with `E2E_TEST=true`, this bypasses PayPal signature verification on the public webhook endpoint, so a client can post fake PayPal headers plus a matching `CHECKOUT.ORDER.COMPLETED` payload for an order and mark it paid without PayPal approval. Keep the signature check in the route, or isolate the bypass behind a non-public test-only mechanism.
