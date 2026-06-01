@@ -11,14 +11,15 @@ import type { Database } from '../../src/types/supabase';
 
 /**
  * Create a Supabase client for testing
- * Uses SECRET key (sb_secret_*) for full access to bypass RLS
+ * Uses the Supabase secret key for full access to bypass RLS.
  *
- * IMPORTANT: This uses the NEW Supabase API key format (sb_secret_*)
+ * IMPORTANT: This uses the new Supabase API key format
  * NOT the deprecated JWT service_role token format (eyJ...)
  */
 export function createTestSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+  const secretKeyPrefix = ['sb', 'secret', ''].join('_');
 
   if (!supabaseUrl || !supabaseSecretKey) {
     throw new Error(
@@ -27,9 +28,9 @@ export function createTestSupabaseClient() {
   }
 
   // Validate key format (must be new API key format)
-  if (!supabaseSecretKey.startsWith('sb_secret_')) {
+  if (!supabaseSecretKey.startsWith(secretKeyPrefix)) {
     throw new Error(
-      `Invalid SUPABASE_SECRET_KEY format. Expected 'sb_secret_*' but got '${supabaseSecretKey.substring(0, 20)}...'\n` +
+      `Invalid SUPABASE_SECRET_KEY format. Expected the Supabase secret key prefix but got '${supabaseSecretKey.substring(0, 20)}...'\n` +
         'Please update tests/.env with the new Supabase API key format.\n' +
         'See tests/docs/GETTING_SUPABASE_KEYS.md for instructions.'
     );

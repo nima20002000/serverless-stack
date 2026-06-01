@@ -60,6 +60,44 @@ function amountMatchesTransaction(
   );
 }
 
+function stripeReferencesMatch(
+  transaction: {
+    paymentProviderRef?: string | null;
+    stripeCheckoutSessionId?: string | null;
+    stripePaymentIntentId?: string | null;
+  },
+  refs: {
+    stripeCheckoutSessionId?: string;
+    stripePaymentIntentId?: string;
+  }
+): boolean {
+  if (
+    refs.stripeCheckoutSessionId &&
+    transaction.paymentProviderRef &&
+    transaction.paymentProviderRef !== refs.stripeCheckoutSessionId
+  ) {
+    return false;
+  }
+
+  if (
+    refs.stripeCheckoutSessionId &&
+    transaction.stripeCheckoutSessionId &&
+    transaction.stripeCheckoutSessionId !== refs.stripeCheckoutSessionId
+  ) {
+    return false;
+  }
+
+  if (
+    refs.stripePaymentIntentId &&
+    transaction.stripePaymentIntentId &&
+    transaction.stripePaymentIntentId !== refs.stripePaymentIntentId
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 async function handleSuccessfulEvent(options: {
   transactionId: string;
   providerRef: string;
@@ -76,6 +114,30 @@ async function handleSuccessfulEvent(options: {
     return {
       handled: false,
       reason: 'unknown_transaction',
+    };
+  }
+
+  if (
+    !stripeReferencesMatch(transaction, {
+      stripeCheckoutSessionId: options.stripeCheckoutSessionId,
+      stripePaymentIntentId: options.stripePaymentIntentId,
+    })
+  ) {
+    log.error('Stripe webhook provider reference mismatch', {
+      eventId: options.eventId,
+      eventType: options.eventType,
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      paymentProviderRef: transaction.paymentProviderRef,
+      stripeCheckoutSessionId: transaction.stripeCheckoutSessionId,
+      stripePaymentIntentId: transaction.stripePaymentIntentId,
+      receivedCheckoutSessionId: options.stripeCheckoutSessionId,
+      receivedPaymentIntentId: options.stripePaymentIntentId,
+    });
+
+    return {
+      handled: false,
+      reason: 'provider_reference_mismatch',
     };
   }
 
@@ -132,6 +194,30 @@ async function handleFailedEvent(options: {
     return {
       handled: false,
       reason: 'unknown_transaction',
+    };
+  }
+
+  if (
+    !stripeReferencesMatch(transaction, {
+      stripeCheckoutSessionId: options.stripeCheckoutSessionId,
+      stripePaymentIntentId: options.stripePaymentIntentId,
+    })
+  ) {
+    log.error('Stripe failed event provider reference mismatch', {
+      eventId: options.eventId,
+      eventType: options.eventType,
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      paymentProviderRef: transaction.paymentProviderRef,
+      stripeCheckoutSessionId: transaction.stripeCheckoutSessionId,
+      stripePaymentIntentId: transaction.stripePaymentIntentId,
+      receivedCheckoutSessionId: options.stripeCheckoutSessionId,
+      receivedPaymentIntentId: options.stripePaymentIntentId,
+    });
+
+    return {
+      handled: false,
+      reason: 'provider_reference_mismatch',
     };
   }
 

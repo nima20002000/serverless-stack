@@ -4,6 +4,7 @@ import {
   getPayPalCurrency,
   parsePayPalAmountValue,
   PayPalCaptureResponse,
+  toPayPalAmountValue,
 } from '@/lib/paypal/client';
 import { withLogging } from '@/lib/api/with-logging';
 import { log } from '@/lib/logger';
@@ -35,8 +36,11 @@ function amountMatchesTransaction(
   }
 
   const expectedCurrency = getPayPalCurrency();
-  const expectedAmount = Number(
-    (Number(transactionAmount) + Number(gatewayFee || 0)).toFixed(2)
+  const expectedAmount = parsePayPalAmountValue(
+    toPayPalAmountValue(
+      Number(transactionAmount) + Number(gatewayFee || 0),
+      expectedCurrency
+    )
   );
   const receivedAmount = parsePayPalAmountValue(amountValue);
 
@@ -73,10 +77,11 @@ async function processCapture(options: {
   const transaction = await findTransaction(options);
 
   if (
-    transaction.paymentProviderRef &&
-    transaction.paymentProviderRef !== options.orderId
+    (transaction.paymentProviderRef &&
+      transaction.paymentProviderRef !== options.orderId) ||
+    (transaction.paypalOrderId && transaction.paypalOrderId !== options.orderId)
   ) {
-    throw new Error('شناسه سفارش پی‌پال با تراکنش مطابقت ندارد');
+    throw new Error('PayPal order does not match the transaction');
   }
 
   if (transaction.status === 'COMPLETED') {
@@ -93,22 +98,22 @@ async function processCapture(options: {
   const capture = getPrimaryCapture(captureResponse);
 
   if (!purchaseUnit || !capture) {
-    throw new Error('پاسخ نامعتبر از پی‌پال دریافت شد');
+    throw new Error('Invalid PayPal capture details');
   }
 
   if (capture.status !== 'COMPLETED') {
-    throw new Error('پرداخت پی‌پال تکمیل نشده است');
+    throw new Error('PayPal payment is not completed');
   }
 
   if (purchaseUnit.custom_id && purchaseUnit.custom_id !== transaction.id) {
-    throw new Error('شناسه متادیتای پی‌پال با تراکنش مطابقت ندارد');
+    throw new Error('PayPal order does not match the transaction');
   }
 
   if (
     purchaseUnit.invoice_id &&
     purchaseUnit.invoice_id !== transaction.transactionCode
   ) {
-    throw new Error('کد سفارش پی‌پال با تراکنش مطابقت ندارد');
+    throw new Error('PayPal invoice does not match the transaction');
   }
 
   const amountSource = capture.amount || purchaseUnit.amount;
@@ -120,7 +125,7 @@ async function processCapture(options: {
   );
 
   if (!isAmountValid) {
-    throw new Error('مبلغ یا ارز پرداخت پی‌پال با تراکنش مطابقت ندارد');
+    throw new Error('PayPal amount or currency does not match the transaction');
   }
 
   const statusUpdate = await updateTransactionStatus(

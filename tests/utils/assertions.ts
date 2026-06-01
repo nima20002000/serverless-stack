@@ -1,29 +1,22 @@
 /**
  * Custom Test Assertions
  *
- * Provides custom assertion utilities for common patterns in Kitia tests.
+ * Provides custom assertion utilities for common boilerplate test patterns.
  */
 
 import { expect } from 'vitest';
 
-/**
- * Assert that a string is valid Persian text
- * Persian Unicode range: U+0600 to U+06FF (Arabic/Persian block)
- */
-export function expectValidPersianText(text: string, minLength = 1) {
+export function expectValidText(text: string, minLength = 1) {
   expect(text).toBeDefined();
-  expect(text.length).toBeGreaterThanOrEqual(minLength);
-
-  // Persian text should contain at least some Persian characters
-  const persianRegex = /[\u0600-\u06FF]/;
-  expect(persianRegex.test(text)).toBe(true);
+  expect(text.trim().length).toBeGreaterThanOrEqual(minLength);
 }
 
 /**
  * Assert that a value is a valid UUID v4
  */
 export function expectValidUUID(value: string) {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   expect(value).toMatch(uuidRegex);
 }
 
@@ -72,20 +65,16 @@ export function expectValidEmail(email: string) {
   expect(email).toMatch(emailRegex);
 }
 
-/**
- * Assert that a phone number is a valid Iranian mobile number
- * Format: 09xxxxxxxxx (11 digits starting with 09)
- */
-export function expectValidIranianPhone(phone: string) {
-  const phoneRegex = /^09\d{9}$/;
+export function expectValidInternationalPhone(phone: string) {
+  const phoneRegex = /^\+[1-9]\d{7,14}$/;
   expect(phone).toMatch(phoneRegex);
 }
 
 /**
- * Assert that a transaction code follows the KT-XXXXXX format
+ * Assert that a transaction code follows the TX-XXXXXX format
  */
 export function expectValidTransactionCode(code: string) {
-  const codeRegex = /^KT-[A-Z0-9]{8}$/;
+  const codeRegex = /^TX-[A-Z0-9]{6}$/;
   expect(code).toMatch(codeRegex);
 }
 
@@ -118,7 +107,7 @@ export function expectValidUserObject(user: any) {
   }
 
   if (user.phone) {
-    expectValidIranianPhone(user.phone);
+    expectValidInternationalPhone(user.phone);
   }
 
   if (user.createdAt) {
@@ -264,7 +253,10 @@ export function expectValidURL(url: string) {
 /**
  * Assert that a paginated response has the correct shape
  */
-export function expectValidPaginatedResponse(response: any, expectedMinItems = 0) {
+export function expectValidPaginatedResponse(
+  response: any,
+  expectedMinItems = 0
+) {
   expect(response).toBeDefined();
   expect(response).toHaveProperty('data');
   expect(response).toHaveProperty('total');

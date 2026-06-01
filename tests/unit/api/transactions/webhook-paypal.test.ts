@@ -18,6 +18,9 @@ vi.mock('@/lib/paypal/client', () => ({
   getPayPalOrder: vi.fn(),
   getPayPalCurrency: vi.fn(() => 'USD'),
   parsePayPalAmountValue: vi.fn((value: string) => Number(value)),
+  toPayPalAmountValue: vi.fn((amount: number, currency: string) =>
+    currency === 'JPY' ? String(Math.round(amount)) : amount.toFixed(2)
+  ),
   verifyPayPalWebhookSignature: vi.fn(),
 }));
 
@@ -96,7 +99,7 @@ describe('POST /api/transactions/webhook-paypal', () => {
     vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
     vi.mocked(getTransactionByProviderRef).mockResolvedValue({
       id: 'tx_1',
-      transactionCode: 'KT-ABC123',
+      transactionCode: 'TX-ABC123',
       amount: 10,
       gateway_fee: 0,
       paymentProviderRef: 'ORDER-1',
@@ -106,7 +109,7 @@ describe('POST /api/transactions/webhook-paypal', () => {
       purchase_units: [
         {
           custom_id: 'tx_1',
-          invoice_id: 'KT-ABC123',
+          invoice_id: 'TX-ABC123',
           amount: { currency_code: 'USD', value: '10.00' },
         },
       ],
@@ -160,7 +163,7 @@ describe('POST /api/transactions/webhook-paypal', () => {
     vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
     vi.mocked(getTransactionByProviderRef).mockResolvedValue({
       id: 'tx_2',
-      transactionCode: 'KT-DEF456',
+      transactionCode: 'TX-DEF456',
       amount: 20,
       gateway_fee: 0,
       paymentProviderRef: 'ORDER-2',
@@ -170,7 +173,7 @@ describe('POST /api/transactions/webhook-paypal', () => {
       purchase_units: [
         {
           custom_id: 'tx_2',
-          invoice_id: 'KT-DEF456',
+          invoice_id: 'TX-DEF456',
           amount: { currency_code: 'USD', value: '20.00' },
         },
       ],
@@ -203,6 +206,180 @@ describe('POST /api/transactions/webhook-paypal', () => {
       expect.objectContaining({
         handled: true,
         reason: 'already_completed',
+      })
+    );
+  });
+
+  it('rejects webhook when PayPal signature verification fails', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-paypal/route');
+
+    vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(false);
+
+    const response = await POST(
+      createPayPalRequest({
+        id: 'WH-BAD-SIG',
+        event_type: 'PAYMENT.CAPTURE.COMPLETED',
+        resource: {},
+      })
+    );
+
+    expect(response.status).toBe(400);
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid PayPal webhook signature',
+      })
+    );
+  });
+
+  it('does not complete transaction when PayPal amount does not match', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-paypal/route');
+
+    vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
+    vi.mocked(getTransactionByProviderRef).mockResolvedValue({
+      id: 'tx_amount_mismatch',
+      transactionCode: 'TX-PPAMT',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'ORDER-AMOUNT',
+    } as any);
+    vi.mocked(getPayPalOrder).mockResolvedValue({
+      id: 'ORDER-AMOUNT',
+      purchase_units: [
+        {
+          custom_id: 'tx_amount_mismatch',
+          invoice_id: 'TX-PPAMT',
+          amount: { currency_code: 'USD', value: '10.00' },
+        },
+      ],
+    } as any);
+
+    const response = await POST(
+      createPayPalRequest({
+        id: 'WH-AMOUNT',
+        event_type: 'PAYMENT.CAPTURE.COMPLETED',
+        resource: {
+          id: 'CAP-AMOUNT',
+          amount: { currency_code: 'USD', value: '9.99' },
+          supplementary_data: {
+            related_ids: {
+              order_id: 'ORDER-AMOUNT',
+            },
+          },
+        },
+      })
+    );
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'amount_or_currency_mismatch',
+      })
+    );
+  });
+
+  it('does not complete transaction when PayPal currency does not match', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-paypal/route');
+
+    vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
+    vi.mocked(getTransactionByProviderRef).mockResolvedValue({
+      id: 'tx_currency_mismatch',
+      transactionCode: 'TX-PPCUR',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'ORDER-CURRENCY',
+    } as any);
+    vi.mocked(getPayPalOrder).mockResolvedValue({
+      id: 'ORDER-CURRENCY',
+      purchase_units: [
+        {
+          custom_id: 'tx_currency_mismatch',
+          invoice_id: 'TX-PPCUR',
+          amount: { currency_code: 'USD', value: '10.00' },
+        },
+      ],
+    } as any);
+
+    const response = await POST(
+      createPayPalRequest({
+        id: 'WH-CURRENCY',
+        event_type: 'PAYMENT.CAPTURE.COMPLETED',
+        resource: {
+          id: 'CAP-CURRENCY',
+          amount: { currency_code: 'EUR', value: '10.00' },
+          supplementary_data: {
+            related_ids: {
+              order_id: 'ORDER-CURRENCY',
+            },
+          },
+        },
+      })
+    );
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'amount_or_currency_mismatch',
+      })
+    );
+  });
+
+  it('does not complete transaction when PayPal order metadata mismatches', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-paypal/route');
+
+    vi.mocked(verifyPayPalWebhookSignature).mockResolvedValue(true);
+    vi.mocked(getTransactionByProviderRef).mockResolvedValue({
+      id: 'tx_expected',
+      transactionCode: 'TX-EXPECTED',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'ORDER-METADATA',
+    } as any);
+    vi.mocked(getPayPalOrder).mockResolvedValue({
+      id: 'ORDER-METADATA',
+      purchase_units: [
+        {
+          custom_id: 'tx_other',
+          invoice_id: 'TX-EXPECTED',
+          amount: { currency_code: 'USD', value: '10.00' },
+        },
+      ],
+    } as any);
+
+    const response = await POST(
+      createPayPalRequest({
+        id: 'WH-METADATA',
+        event_type: 'PAYMENT.CAPTURE.COMPLETED',
+        resource: {
+          id: 'CAP-METADATA',
+          amount: { currency_code: 'USD', value: '10.00' },
+          supplementary_data: {
+            related_ids: {
+              order_id: 'ORDER-METADATA',
+            },
+          },
+        },
+      })
+    );
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'custom_id_mismatch',
       })
     );
   });

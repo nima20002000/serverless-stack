@@ -161,7 +161,7 @@ export async function finalizeSuccessfulTransaction(
         const newUser = await createUser({
           phone: transaction.phone,
           email: transaction.email || undefined,
-          name: transaction.fullName || 'کاربر',
+          name: transaction.fullName || 'User',
         });
 
         await linkTransactionToUser(transaction.id, newUser.id);

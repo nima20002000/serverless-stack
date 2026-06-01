@@ -11,7 +11,7 @@ async function getHandler(req: NextRequest) {
 
   if (!code || code.length > MAX_CODE_LENGTH) {
     return NextResponse.json(
-      { error: 'کد تراکنش نامعتبر است' },
+      { error: 'Invalid transaction code.' },
       { status: 400 }
     );
   }
@@ -32,7 +32,7 @@ async function getHandler(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : 'تراکنش یافت نشد',
+        error: error instanceof Error ? error.message : 'Transaction not found',
       },
       { status: 404 }
     );

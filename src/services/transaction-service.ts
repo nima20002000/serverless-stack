@@ -3,14 +3,15 @@ import { randomUUID } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { PaginatedResponse, StockVerificationResult } from '@/types/api';
 import { log } from '@/lib/logger';
+import type { PaymentProvider } from '@/lib/payments/providers';
 
 /**
  * Generate a unique transaction code
- * Format: KT-XXXXXX (e.g., KT-A1B2C3)
+ * Format: TX-XXXXXX (e.g., TX-A1B2C3)
  */
 export function generateTransactionCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = 'KT-';
+  let code = 'TX-';
 
   for (let i = 0; i < 6; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -31,8 +32,8 @@ export async function createTransaction(data: {
     price: number;
   }>;
   amount: number;
-  gatewayFee?: number; // Payment gateway fee (e.g., Digipay 12% surcharge)
-  paymentMethod?: 'STRIPE' | 'PAYPAL';
+  gatewayFee?: number; // Optional provider fee recorded separately from item totals.
+  paymentMethod?: PaymentProvider;
   shippingInfo: {
     fullName: string;
     phone: string;
@@ -98,7 +99,7 @@ export async function createTransaction(data: {
 
     if (txError || !newTransaction) {
       log.error('Failed to create transaction', { error: txError });
-      throw new Error('خطا در ایجاد تراکنش');
+      throw new Error('Failed to create transaction');
     }
 
     // Step 2: Create transaction items
@@ -121,7 +122,7 @@ export async function createTransaction(data: {
         error: itemsError,
       });
       await supabase.from('transactions').delete().eq('id', newTransaction.id);
-      throw new Error('خطا در ایجاد آیتم‌های تراکنش');
+      throw new Error('Failed to create transaction items');
     }
 
     // Step 3: Fetch complete transaction with relations
@@ -141,7 +142,7 @@ export async function createTransaction(data: {
 
     if (fetchError || !fullTransaction) {
       log.error('Failed to fetch created transaction', { error: fetchError });
-      throw new Error('خطا در دریافت تراکنش');
+      throw new Error('Failed to fetch created transaction');
     }
 
     log.info('Transaction created successfully', {
@@ -195,47 +196,75 @@ export async function updateTransactionStatus(
   });
 
   try {
+    const { data: currentMetadataRow, error: metadataError } = await supabase
+      .from('transactions')
+      .select('paymentMetadata')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (metadataError) {
+      log.warn('Could not load current transaction payment metadata', {
+        transactionId: id,
+        error: metadataError,
+      });
+    }
+
+    const existingMetadata =
+      typeof currentMetadataRow?.paymentMetadata === 'object' &&
+      currentMetadataRow.paymentMetadata !== null
+        ? (currentMetadataRow.paymentMetadata as Record<string, unknown>)
+        : {};
+
     const updateData: Record<string, unknown> = {
       status,
       updatedAt: now,
     };
+    const paymentMetadata: Record<string, unknown> = { ...existingMetadata };
 
     if (paymentProviderRef) {
       updateData.paymentProviderRef = paymentProviderRef;
+      paymentMetadata.paymentProviderRef = paymentProviderRef;
     }
 
     if (providerReferenceId) {
-      updateData.paymentMetadata = {
-        providerReferenceId,
-      };
+      paymentMetadata.providerReferenceId = providerReferenceId;
     }
 
     if (providerFields?.stripePaymentIntentId) {
       updateData.stripePaymentIntentId = providerFields.stripePaymentIntentId;
+      paymentMetadata.provider = 'STRIPE';
+      paymentMetadata.stripePaymentIntentId =
+        providerFields.stripePaymentIntentId;
     }
 
     if (providerFields?.stripeCheckoutSessionId) {
       updateData.stripeCheckoutSessionId =
         providerFields.stripeCheckoutSessionId;
+      paymentMetadata.provider = 'STRIPE';
+      paymentMetadata.stripeCheckoutSessionId =
+        providerFields.stripeCheckoutSessionId;
     }
 
     if (providerFields?.stripeChargeId) {
       updateData.stripeChargeId = providerFields.stripeChargeId;
+      paymentMetadata.provider = 'STRIPE';
+      paymentMetadata.stripeChargeId = providerFields.stripeChargeId;
     }
 
     if (providerFields?.paypalOrderId) {
       updateData.paypalOrderId = providerFields.paypalOrderId;
+      paymentMetadata.provider = 'PAYPAL';
+      paymentMetadata.paypalOrderId = providerFields.paypalOrderId;
     }
 
     if (providerFields?.paypalCaptureId) {
       updateData.paypalCaptureId = providerFields.paypalCaptureId;
-      updateData.paymentMetadata = {
-        ...(typeof updateData.paymentMetadata === 'object' &&
-        updateData.paymentMetadata !== null
-          ? (updateData.paymentMetadata as Record<string, unknown>)
-          : {}),
-        paypalCaptureId: providerFields.paypalCaptureId,
-      };
+      paymentMetadata.provider = 'PAYPAL';
+      paymentMetadata.paypalCaptureId = providerFields.paypalCaptureId;
+    }
+
+    if (Object.keys(paymentMetadata).length > 0) {
+      updateData.paymentMetadata = paymentMetadata;
     }
 
     let updateQuery = supabase
@@ -277,7 +306,7 @@ export async function updateTransactionStatus(
 
     if (currentError || !currentTransaction) {
       log.error('Failed to update transaction status', { id, error });
-      throw new Error('خطا در بروزرسانی وضعیت تراکنش');
+      throw new Error('Failed to update transaction status');
     }
 
     log.info('Transaction status update skipped (idempotent no-op)', {
@@ -327,7 +356,7 @@ export async function getTransactionById(id: string) {
 
   if (error || !transaction) {
     log.error('Transaction not found', { id, error });
-    throw new Error('تراکنش یافت نشد');
+    throw new Error('Transaction not found');
   }
 
   // Supabase returns invoice as array, get first element
@@ -368,7 +397,7 @@ export async function getTransactionByCode(code: string) {
 
   if (error || !transaction) {
     log.error('Transaction not found', { code, error });
-    throw new Error('تراکنش یافت نشد');
+    throw new Error('Transaction not found');
   }
 
   // Supabase returns invoice as array, get first element
@@ -416,7 +445,7 @@ export async function getTransactionByProviderRef(providerRef: string) {
       providerRef,
       error,
     });
-    throw new Error('تراکنش یافت نشد');
+    throw new Error('Transaction not found');
   }
 
   const userData = Array.isArray(transaction.user)
@@ -458,7 +487,7 @@ export async function getTransactionWithVariants(id: string) {
 
   if (error || !transaction) {
     log.error('Transaction not found', { id, error });
-    throw new Error('تراکنش یافت نشد');
+    throw new Error('Transaction not found');
   }
 
   // Flatten user array if returned
@@ -495,7 +524,7 @@ export async function linkTransactionToUser(
 
     if (error) {
       log.error('Failed to link transaction to user', { error });
-      throw new Error('خطا در ارتباط تراکنش با کاربر');
+      throw new Error('Failed to link transaction to user');
     }
 
     log.info('Transaction linked to user successfully', {
@@ -555,7 +584,7 @@ export async function getUserTransactions(
 
   if (error) {
     log.error('Failed to fetch user transactions', { userId, error });
-    throw new Error('خطا در دریافت تراکنش‌های کاربر');
+    throw new Error('Failed to fetch user transactions');
   }
 
   // Process invoices (convert array to single object)
@@ -597,7 +626,7 @@ export async function reduceProductStock(transactionId: string): Promise<void> {
         transactionId,
         status: transaction.status,
       });
-      throw new Error('فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد');
+      throw new Error('Stock can only be reduced for completed transactions');
     }
 
     // Separate items by whether they have variants
@@ -774,21 +803,19 @@ export async function verifyStockAvailability(
     const product = productMap.get(item.productId);
 
     if (!product) {
-      errors.push('محصول یافت نشد');
+      errors.push('Product not found');
       unavailableProductIds.push(item.productId);
       continue;
     }
 
     if (!product.isActive) {
-      errors.push(`محصول ${product.name} غیرفعال است`);
+      errors.push(`Product ${product.name} is inactive`);
       unavailableProductIds.push(item.productId);
       continue;
     }
 
     if (product.hasVariants && !item.variantId) {
-      errors.push(
-        `برای محصول ${product.name} باید یک نوع (رنگ، سایز، ...) انتخاب کنید`
-      );
+      errors.push(`Select a variant for product ${product.name}`);
       unavailableProductIds.push(item.productId);
       continue;
     }
@@ -797,20 +824,20 @@ export async function verifyStockAvailability(
       const variant = variantMap.get(item.variantId);
 
       if (!variant) {
-        errors.push(`واریانت محصول ${product.name} یافت نشد`);
+        errors.push(`Variant for product ${product.name} not found`);
         unavailableProductIds.push(item.productId);
         continue;
       }
 
       if (variant.productId !== item.productId) {
-        errors.push(`واریانت محصول ${product.name} نامعتبر است`);
+        errors.push(`Variant does not belong to product ${product.name}`);
         unavailableProductIds.push(item.productId);
         continue;
       }
 
       if (!variant.isActive) {
         errors.push(
-          `واریانت ${variant.name} از محصول ${product.name} غیرفعال است`
+          `Variant ${variant.name} for product ${product.name} is inactive`
         );
         unavailableProductIds.push(item.productId);
         continue;
@@ -818,14 +845,14 @@ export async function verifyStockAvailability(
 
       if (variant.stock < item.quantity) {
         errors.push(
-          `موجودی کافی برای ${variant.name} (${product.name}) وجود ندارد (موجودی: ${variant.stock}، درخواستی: ${item.quantity})`
+          `Insufficient stock for ${variant.name} (${product.name}). Available: ${variant.stock}, requested: ${item.quantity}`
         );
         unavailableProductIds.push(item.productId);
       }
     } else {
       if (!product.hasVariants && product.stock < item.quantity) {
         errors.push(
-          `موجودی کافی برای ${product.name} وجود ندارد (موجودی: ${product.stock}، درخواستی: ${item.quantity})`
+          `Insufficient stock for ${product.name}. Available: ${product.stock}, requested: ${item.quantity}`
         );
         unavailableProductIds.push(item.productId);
       }

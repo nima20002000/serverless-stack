@@ -19,6 +19,9 @@ import { apiLimiter } from '@/lib/rate-limit';
 import { getClientInfo } from '@/lib/request-utils';
 import { log } from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/utils/url';
+import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
+import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
+import { normalizePaymentProvider } from '@/lib/payments/providers';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,13 +48,16 @@ async function postHandler(req: NextRequest) {
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'سبد خرید خالی است' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Your cart is empty.' },
+        { status: 400 }
+      );
     }
 
     for (const item of items) {
       if (!item || typeof item.productId !== 'string' || !item.productId) {
         return NextResponse.json(
-          { error: 'آیتم‌های سبد خرید نامعتبر است' },
+          { error: 'Cart items are invalid.' },
           { status: 400 }
         );
       }
@@ -62,7 +68,7 @@ async function postHandler(req: NextRequest) {
         typeof item.variantId !== 'string'
       ) {
         return NextResponse.json(
-          { error: 'شناسه نوع محصول نامعتبر است' },
+          { error: 'Variant id is invalid.' },
           { status: 400 }
         );
       }
@@ -70,7 +76,7 @@ async function postHandler(req: NextRequest) {
       const quantity = Number(item.quantity);
       if (!Number.isInteger(quantity) || quantity <= 0) {
         return NextResponse.json(
-          { error: 'تعداد باید عدد صحیح بزرگتر از صفر باشد' },
+          { error: 'Quantity must be a positive whole number.' },
           { status: 400 }
         );
       }
@@ -81,7 +87,7 @@ async function postHandler(req: NextRequest) {
     // Validate shipping info
     if (!shippingInfo) {
       return NextResponse.json(
-        { error: 'اطلاعات ارسال الزامی است' },
+        { error: 'Shipping information is required.' },
         { status: 400 }
       );
     }
@@ -106,14 +112,14 @@ async function postHandler(req: NextRequest) {
       // Validate required fields
       if (!finalFullName) {
         return NextResponse.json(
-          { error: 'لطفاً نام و نام خانوادگی خود را وارد کنید' },
+          { error: 'Please enter your full name.' },
           { status: 400 }
         );
       }
 
       if (!finalPhone) {
         return NextResponse.json(
-          { error: 'لطفاً شماره تلفن خود را وارد کنید' },
+          { error: 'Please enter your phone number.' },
           { status: 400 }
         );
       }
@@ -151,13 +157,13 @@ async function postHandler(req: NextRequest) {
 
       if (!fullName || !phone) {
         return NextResponse.json(
-          { error: 'لطفاً تمام فیلدهای الزامی را پر کنید' },
+          { error: 'Please complete all required fields.' },
           { status: 400 }
         );
       }
 
       finalFullName = fullName;
-      finalPhone = phone;
+      finalPhone = normalizePhoneNumber(phone);
       finalEmail = email || undefined;
     }
 
@@ -166,15 +172,16 @@ async function postHandler(req: NextRequest) {
 
     if (!shippingAddress) {
       return NextResponse.json(
-        { error: 'لطفاً آدرس ارسال را وارد کنید' },
+        { error: 'Please enter a shipping address.' },
         { status: 400 }
       );
     }
 
     // Validate phone format
-    if (!finalPhone.match(/^09\d{9}$/)) {
+    finalPhone = normalizePhoneNumber(finalPhone);
+    if (!isValidPhoneNumber(finalPhone)) {
       return NextResponse.json(
-        { error: 'فرمت شماره تلفن نامعتبر است' },
+        { error: 'Invalid phone number format.' },
         { status: 400 }
       );
     }
@@ -194,7 +201,7 @@ async function postHandler(req: NextRequest) {
       });
       return NextResponse.json(
         {
-          error: 'موجودی کافی نیست',
+          error: 'Insufficient stock.',
           details: stockCheck.errors,
           unavailableProductIds: stockCheck.unavailableProductIds,
         },
@@ -234,7 +241,7 @@ async function postHandler(req: NextRequest) {
         error: productsError,
       });
       return NextResponse.json(
-        { error: 'خطا در دریافت اطلاعات محصولات' },
+        { error: 'Failed to load products.' },
         { status: 500 }
       );
     }
@@ -261,7 +268,7 @@ async function postHandler(req: NextRequest) {
           error: variantsError,
         });
         return NextResponse.json(
-          { error: 'خطا در دریافت اطلاعات واریانت‌ها' },
+          { error: 'Failed to load product variants.' },
           { status: 500 }
         );
       }
@@ -282,7 +289,10 @@ async function postHandler(req: NextRequest) {
       const product = productMap.get(item.productId);
 
       if (!product) {
-        return NextResponse.json({ error: 'محصول یافت نشد' }, { status: 400 });
+        return NextResponse.json(
+          { error: 'Product not found.' },
+          { status: 400 }
+        );
       }
 
       log.debug('Product fetched for transaction', {
@@ -295,7 +305,7 @@ async function postHandler(req: NextRequest) {
 
       if (!product.isActive) {
         return NextResponse.json(
-          { error: `محصول ${product.name} غیرفعال است` },
+          { error: `Product ${product.name} is inactive.` },
           { status: 400 }
         );
       }
@@ -318,7 +328,7 @@ async function postHandler(req: NextRequest) {
             productId: product.id,
           });
           return NextResponse.json(
-            { error: `واریانت محصول ${product.name} یافت نشد` },
+            { error: `Variant for product ${product.name} was not found.` },
             { status: 400 }
           );
         }
@@ -329,7 +339,7 @@ async function postHandler(req: NextRequest) {
             productId: product.id,
           });
           return NextResponse.json(
-            { error: `واریانت محصول ${product.name} غیرفعال است` },
+            { error: `Variant for product ${product.name} is inactive.` },
             { status: 400 }
           );
         }
@@ -341,7 +351,7 @@ async function postHandler(req: NextRequest) {
             variantProductId: variant.productId,
           });
           return NextResponse.json(
-            { error: `واریانت محصول ${product.name} نامعتبر است` },
+            { error: `Variant does not belong to product ${product.name}.` },
             { status: 400 }
           );
         }
@@ -377,7 +387,7 @@ async function postHandler(req: NextRequest) {
 
       if (!promoResult.valid) {
         return NextResponse.json(
-          { error: promoResult.error || 'کد تخفیف نامعتبر است' },
+          { error: promoResult.error || 'Invalid promo code.' },
           { status: 400 }
         );
       }
@@ -400,16 +410,11 @@ async function postHandler(req: NextRequest) {
     }
 
     // Enforce strict payment contract for active providers only.
-    const requestedGateway =
-      typeof paymentMethod === 'string'
-        ? paymentMethod.trim().toUpperCase()
-        : 'STRIPE';
-    const validPaymentMethod =
-      requestedGateway === 'PAYPAL' ? 'PAYPAL' : 'STRIPE';
+    const validPaymentMethod = normalizePaymentProvider(paymentMethod);
 
-    if (requestedGateway !== 'STRIPE' && requestedGateway !== 'PAYPAL') {
+    if (!validPaymentMethod) {
       return NextResponse.json(
-        { error: 'روش پرداخت نامعتبر است' },
+        { error: 'Invalid payment method.' },
         { status: 400 }
       );
     }
@@ -472,7 +477,7 @@ async function postHandler(req: NextRequest) {
           updateData.name = fullName;
         }
         if (!session.user.phone && phone) {
-          updateData.phone = phone;
+          updateData.phone = finalPhone;
         }
         if (!session.user.email && email) {
           updateData.email = email;
@@ -508,7 +513,7 @@ async function postHandler(req: NextRequest) {
     let paymentUrl: string;
     let paymentIdentifier: string; // checkout session ID or PayPal order ID
 
-    if (requestedGateway === 'STRIPE') {
+    if (validPaymentMethod === 'STRIPE') {
       const stripeCurrency = getStripeCurrency();
       const stripeSession = await createStripeCheckoutSession({
         transactionId: transaction.id,
@@ -524,7 +529,7 @@ async function postHandler(req: NextRequest) {
           transactionCode: transaction.transactionCode,
           sessionId: stripeSession.id,
         });
-        throw new Error('خطا در ایجاد لینک پرداخت استرایپ');
+        throw new Error('Failed to create Stripe payment session');
       }
 
       const stripePaymentIntentId =
@@ -555,7 +560,7 @@ async function postHandler(req: NextRequest) {
           sessionId: stripeSession.id,
           error: stripeUpdateError,
         });
-        throw new Error('خطا در ثبت اطلاعات پرداخت استرایپ');
+        throw new Error('Failed to persist Stripe payment identifiers');
       }
 
       paymentUrl = stripeSession.url;
@@ -571,7 +576,7 @@ async function postHandler(req: NextRequest) {
         userId: session?.user?.id || 'guest',
         elapsedMs: Date.now() - startTime,
       });
-    } else if (requestedGateway === 'PAYPAL') {
+    } else if (validPaymentMethod === 'PAYPAL') {
       const paypalCurrency = getPayPalCurrency();
       const appBaseUrl = getAppBaseUrl().replace(/\/$/, '');
       const returnUrl = `${appBaseUrl}/api/transactions/paypal/capture?transactionId=${encodeURIComponent(transaction.id)}`;
@@ -584,7 +589,7 @@ async function postHandler(req: NextRequest) {
         currency: paypalCurrency,
         returnUrl,
         cancelUrl,
-        description: `Kitia order ${transaction.transactionCode}`,
+        description: getPaymentOrderLabel(transaction.transactionCode),
       });
 
       const supabaseTx = createClient();
@@ -608,7 +613,7 @@ async function postHandler(req: NextRequest) {
           orderId: paypalOrder.id,
           error: paypalUpdateError,
         });
-        throw new Error('خطا در ثبت اطلاعات پرداخت پی‌پال');
+        throw new Error('Failed to persist PayPal payment identifiers');
       }
 
       paymentUrl = paypalOrder.approvalUrl;
@@ -626,7 +631,7 @@ async function postHandler(req: NextRequest) {
       });
     } else {
       return NextResponse.json(
-        { error: 'روش پرداخت نامعتبر است' },
+        { error: 'Invalid payment method.' },
         { status: 400 }
       );
     }
@@ -639,8 +644,8 @@ async function postHandler(req: NextRequest) {
       paymentMethod: validPaymentMethod,
       paymentUrl,
       checkoutSessionId:
-        requestedGateway === 'STRIPE' ? paymentIdentifier : undefined,
-      orderId: requestedGateway === 'PAYPAL' ? paymentIdentifier : undefined,
+        validPaymentMethod === 'STRIPE' ? paymentIdentifier : undefined,
+      orderId: validPaymentMethod === 'PAYPAL' ? paymentIdentifier : undefined,
     });
   } catch (error) {
     log.error('Error creating transaction', {
@@ -651,7 +656,12 @@ async function postHandler(req: NextRequest) {
 
     console.error('Error creating transaction:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'خطا در ایجاد تراکنش' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create transaction.',
+      },
       { status: 500 }
     );
   }

@@ -4,6 +4,7 @@ import {
   getPayPalOrder,
   getPayPalCurrency,
   parsePayPalAmountValue,
+  toPayPalAmountValue,
   verifyPayPalWebhookSignature,
 } from '@/lib/paypal/client';
 import { withLogging } from '@/lib/api/with-logging';
@@ -62,8 +63,11 @@ function amountMatchesTransaction(
   }
 
   const expectedCurrency = getPayPalCurrency();
-  const expectedAmount = Number(
-    (Number(transactionAmount) + Number(gatewayFee || 0)).toFixed(2)
+  const expectedAmount = parsePayPalAmountValue(
+    toPayPalAmountValue(
+      Number(transactionAmount) + Number(gatewayFee || 0),
+      expectedCurrency
+    )
   );
   const receivedAmount = parsePayPalAmountValue(amount.value);
 
@@ -111,19 +115,21 @@ async function safelyGetTransaction(orderId: string) {
   }
 }
 
-function validateMetadata(options: {
+function getMetadataMismatchReason(options: {
   transactionId: string;
   transactionCode: string;
   customId?: string | null;
   invoiceId?: string | null;
-}) {
+}): string | null {
   if (options.customId && options.customId !== options.transactionId) {
-    throw new Error('PayPal custom metadata does not match transaction id');
+    return 'custom_id_mismatch';
   }
 
   if (options.invoiceId && options.invoiceId !== options.transactionCode) {
-    throw new Error('PayPal invoice metadata does not match transaction code');
+    return 'invoice_id_mismatch';
   }
+
+  return null;
 }
 
 async function completePayPalTransaction(options: {
@@ -144,12 +150,30 @@ async function completePayPalTransaction(options: {
     };
   }
 
-  validateMetadata({
+  const metadataMismatchReason = getMetadataMismatchReason({
     transactionId: transaction.id,
     transactionCode: transaction.transactionCode,
     customId: options.customId,
     invoiceId: options.invoiceId,
   });
+
+  if (metadataMismatchReason) {
+    log.error('PayPal webhook metadata mismatch', {
+      eventId: options.eventId,
+      eventType: options.eventType,
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      orderId: options.orderId,
+      customId: options.customId,
+      invoiceId: options.invoiceId,
+      reason: metadataMismatchReason,
+    });
+
+    return {
+      handled: false,
+      reason: metadataMismatchReason,
+    };
+  }
 
   if (
     !amountMatchesTransaction(
@@ -158,7 +182,21 @@ async function completePayPalTransaction(options: {
       options.amount
     )
   ) {
-    throw new Error('PayPal amount or currency mismatch');
+    log.error('PayPal webhook amount/currency mismatch', {
+      eventId: options.eventId,
+      eventType: options.eventType,
+      transactionId: transaction.id,
+      transactionCode: transaction.transactionCode,
+      orderId: options.orderId,
+      expectedCurrency: getPayPalCurrency(),
+      receivedCurrency: options.amount?.currency_code,
+      receivedAmount: options.amount?.value,
+    });
+
+    return {
+      handled: false,
+      reason: 'amount_or_currency_mismatch',
+    };
   }
 
   const statusUpdate = await updateTransactionStatus(

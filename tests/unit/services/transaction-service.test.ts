@@ -23,9 +23,9 @@ describe('transaction-service', () => {
     vi.clearAllMocks();
   });
 
-  it('generates transaction code in KT-XXXXXX format', () => {
+  it('generates transaction code in TX-XXXXXX format', () => {
     const code = transactionService.generateTransactionCode();
-    expect(code).toMatch(/^KT-[A-Z0-9]{6}$/);
+    expect(code).toMatch(/^TX-[A-Z0-9]{6}$/);
   });
 
   it('throws when transaction creation fails', async () => {
@@ -43,18 +43,18 @@ describe('transaction-service', () => {
         amount: 1000,
         shippingInfo: {
           fullName: 'Test',
-          phone: '09123456789',
+          phone: '+12025556789',
           shippingAddress: 'Addr',
         },
       })
-    ).rejects.toThrow('خطا در ایجاد تراکنش');
+    ).rejects.toThrow('Failed to create transaction');
   });
 
   it('rolls back transaction when items insert fails', async () => {
     const supabase = createSupabaseMock();
 
     const insertTransaction = createQueryMock({
-      data: { id: 'tx-1', transactionCode: 'KT-ABC123' },
+      data: { id: 'tx-1', transactionCode: 'TX-ABC123' },
       error: null,
     });
     const insertItems = createQueryMock({
@@ -78,11 +78,11 @@ describe('transaction-service', () => {
         amount: 10,
         shippingInfo: {
           fullName: 'Test',
-          phone: '09123456789',
+          phone: '+12025556789',
           shippingAddress: 'Addr',
         },
       })
-    ).rejects.toThrow('خطا در ایجاد آیتم‌های تراکنش');
+    ).rejects.toThrow('Failed to create transaction items');
 
     expect(deleteTx.delete).toHaveBeenCalled();
   });
@@ -91,7 +91,7 @@ describe('transaction-service', () => {
     const supabase = createSupabaseMock();
 
     const insertTransaction = createQueryMock({
-      data: { id: 'tx-1', transactionCode: 'KT-ABC123' },
+      data: { id: 'tx-1', transactionCode: 'TX-ABC123' },
       error: null,
     });
     const insertItems = createQueryMock({
@@ -103,7 +103,7 @@ describe('transaction-service', () => {
     const fetchTransaction = createQueryMock({
       data: {
         id: 'tx-1',
-        transactionCode: 'KT-ABC123',
+        transactionCode: 'TX-ABC123',
         items: [{ id: 'item-1', productId: 'p1' }],
       },
       error: null,
@@ -121,7 +121,7 @@ describe('transaction-service', () => {
       amount: 50,
       shippingInfo: {
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Addr',
       },
     });
@@ -201,6 +201,10 @@ describe('transaction-service', () => {
 
   it('returns statusChanged=false when completed transition is idempotent no-op', async () => {
     const supabase = createSupabaseMock();
+    const metadataQuery = createQueryMock({
+      data: { paymentMetadata: null },
+      error: null,
+    });
     const guardedUpdateQuery = createQueryMock({
       data: null,
       error: null,
@@ -211,6 +215,7 @@ describe('transaction-service', () => {
     });
 
     supabase.from
+      .mockReturnValueOnce(metadataQuery)
       .mockReturnValueOnce(guardedUpdateQuery)
       .mockReturnValueOnce(currentTransactionQuery);
     createClientMock.mockReturnValue(supabase as unknown);
@@ -345,9 +350,7 @@ describe('transaction-service', () => {
     ]);
 
     expect(result.available).toBe(false);
-    expect(result.errors).toEqual([
-      'برای محصول Product باید یک نوع (رنگ، سایز، ...) انتخاب کنید',
-    ]);
+    expect(result.errors).toEqual(['Select a variant for product Product']);
   });
 
   it('refuses to reduce stock for non-completed transactions', async () => {
@@ -365,7 +368,7 @@ describe('transaction-service', () => {
     createClientMock.mockReturnValue(supabase as unknown);
 
     await expect(transactionService.reduceProductStock('tx-1')).rejects.toThrow(
-      'فقط برای تراکنش‌های موفق امکان کاهش موجودی وجود دارد'
+      'Stock can only be reduced for completed transactions'
     );
   });
 
@@ -375,7 +378,7 @@ describe('transaction-service', () => {
       const supabase = createSupabaseMock();
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-1', transactionCode: 'KT-ABC123' },
+        data: { id: 'tx-1', transactionCode: 'TX-ABC123' },
         error: null,
       });
       const insertItems = createQueryMock({
@@ -385,7 +388,7 @@ describe('transaction-service', () => {
       const fetchTransaction = createQueryMock({
         data: {
           id: 'tx-1',
-          transactionCode: 'KT-ABC123',
+          transactionCode: 'TX-ABC123',
           ip_address: '203.0.113.50',
           user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
           items: [],
@@ -405,7 +408,7 @@ describe('transaction-service', () => {
         amount: 100,
         shippingInfo: {
           fullName: 'Test User',
-          phone: '09123456789',
+          phone: '+12025556789',
           shippingAddress: 'Test Address',
         },
         ipAddress: '203.0.113.50',
@@ -424,12 +427,12 @@ describe('transaction-service', () => {
       const supabase = createSupabaseMock();
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-2', transactionCode: 'KT-DEF456' },
+        data: { id: 'tx-2', transactionCode: 'TX-DEF456' },
         error: null,
       });
       const insertItems = createQueryMock({ data: null, error: null });
       const fetchTransaction = createQueryMock({
-        data: { id: 'tx-2', transactionCode: 'KT-DEF456', items: [] },
+        data: { id: 'tx-2', transactionCode: 'TX-DEF456', items: [] },
         error: null,
       });
 
@@ -445,7 +448,7 @@ describe('transaction-service', () => {
         amount: 200,
         shippingInfo: {
           fullName: 'User Two',
-          phone: '09123456780',
+          phone: '+12025556780',
           shippingAddress: 'Address Two',
         },
         ipAddress: '8.8.8.8',
@@ -463,12 +466,12 @@ describe('transaction-service', () => {
       const supabase = createSupabaseMock();
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-3', transactionCode: 'KT-GHI789' },
+        data: { id: 'tx-3', transactionCode: 'TX-GHI789' },
         error: null,
       });
       const insertItems = createQueryMock({ data: null, error: null });
       const fetchTransaction = createQueryMock({
-        data: { id: 'tx-3', transactionCode: 'KT-GHI789', items: [] },
+        data: { id: 'tx-3', transactionCode: 'TX-GHI789', items: [] },
         error: null,
       });
 
@@ -484,7 +487,7 @@ describe('transaction-service', () => {
         amount: 300,
         shippingInfo: {
           fullName: 'User Three',
-          phone: '09123456781',
+          phone: '+12025556781',
           shippingAddress: 'Address Three',
         },
       });
@@ -502,12 +505,12 @@ describe('transaction-service', () => {
       const longUserAgent = 'Mozilla/5.0 ' + 'X'.repeat(2000);
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-4', transactionCode: 'KT-JKL012' },
+        data: { id: 'tx-4', transactionCode: 'TX-JKL012' },
         error: null,
       });
       const insertItems = createQueryMock({ data: null, error: null });
       const fetchTransaction = createQueryMock({
-        data: { id: 'tx-4', transactionCode: 'KT-JKL012', items: [] },
+        data: { id: 'tx-4', transactionCode: 'TX-JKL012', items: [] },
         error: null,
       });
 
@@ -523,7 +526,7 @@ describe('transaction-service', () => {
         amount: 400,
         shippingInfo: {
           fullName: 'User Four',
-          phone: '09123456782',
+          phone: '+12025556782',
           shippingAddress: 'Address Four',
         },
         userAgent: longUserAgent,
@@ -541,12 +544,12 @@ describe('transaction-service', () => {
       const ipv6Address = '2001:0db8:85a3:0000:0000:8a2e:0370:7334';
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-5', transactionCode: 'KT-MNO345' },
+        data: { id: 'tx-5', transactionCode: 'TX-MNO345' },
         error: null,
       });
       const insertItems = createQueryMock({ data: null, error: null });
       const fetchTransaction = createQueryMock({
-        data: { id: 'tx-5', transactionCode: 'KT-MNO345', items: [] },
+        data: { id: 'tx-5', transactionCode: 'TX-MNO345', items: [] },
         error: null,
       });
 
@@ -562,7 +565,7 @@ describe('transaction-service', () => {
         amount: 500,
         shippingInfo: {
           fullName: 'User Five',
-          phone: '09123456783',
+          phone: '+12025556783',
           shippingAddress: 'Address Five',
         },
         ipAddress: ipv6Address,
@@ -581,12 +584,12 @@ describe('transaction-service', () => {
       const supabase = createSupabaseMock();
 
       const insertTransaction = createQueryMock({
-        data: { id: 'tx-6', transactionCode: 'KT-PQR678' },
+        data: { id: 'tx-6', transactionCode: 'TX-PQR678' },
         error: null,
       });
       const insertItems = createQueryMock({ data: null, error: null });
       const fetchTransaction = createQueryMock({
-        data: { id: 'tx-6', transactionCode: 'KT-PQR678', items: [] },
+        data: { id: 'tx-6', transactionCode: 'TX-PQR678', items: [] },
         error: null,
       });
 
@@ -602,7 +605,7 @@ describe('transaction-service', () => {
         amount: 600,
         shippingInfo: {
           fullName: 'User Six',
-          phone: '09123456784',
+          phone: '+12025556784',
           shippingAddress: 'Address Six',
         },
         ipAddress: null,

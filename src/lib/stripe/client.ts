@@ -2,6 +2,7 @@ import 'server-only';
 import Stripe from 'stripe';
 import { log } from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/utils/url';
+import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
 
 const ZERO_DECIMAL_CURRENCIES = new Set([
   'bif',
@@ -117,7 +118,7 @@ export async function createStripeCheckoutSession(
             currency,
             unit_amount: amountMinorUnits,
             product_data: {
-              name: `Kitia Order ${request.transactionCode}`,
+              name: getPaymentOrderLabel(request.transactionCode),
               description: 'Online checkout payment',
             },
           },
@@ -159,7 +160,7 @@ export async function createStripeCheckoutSession(
       elapsedMs: Date.now() - startTime,
     });
     throw new Error(
-      error instanceof Error ? error.message : 'خطا در اتصال به درگاه استرایپ'
+      error instanceof Error ? error.message : 'Failed to create Stripe session'
     );
   }
 }

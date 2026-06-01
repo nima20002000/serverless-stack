@@ -38,6 +38,9 @@ vi.mock('@/lib/paypal/client', () => ({
   getPayPalOrder: vi.fn(),
   getPayPalCurrency: vi.fn(() => 'USD'),
   parsePayPalAmountValue: vi.fn((value: string) => Number(value)),
+  toPayPalAmountValue: vi.fn((amount: number, currency: string) =>
+    currency === 'JPY' ? String(Math.round(amount)) : amount.toFixed(2)
+  ),
   verifyPayPalWebhookSignature: vi.fn(),
 }));
 
@@ -103,7 +106,7 @@ describe('Payment Webhook Integration', () => {
     vi.mocked(getTransactionById).mockImplementation(async (id: string) => {
       const transaction = transactionStore.get(id);
       if (!transaction) {
-        throw new Error('تراکنش یافت نشد');
+        throw new Error('Transaction not found');
       }
       return { ...transaction } as any;
     });
@@ -114,7 +117,7 @@ describe('Payment Webhook Integration', () => {
           (tx) => tx.paymentProviderRef === providerRef
         );
         if (!transaction) {
-          throw new Error('تراکنش یافت نشد');
+          throw new Error('Transaction not found');
         }
         return { ...transaction } as any;
       }
@@ -136,7 +139,7 @@ describe('Payment Webhook Integration', () => {
       ) => {
         const transaction = transactionStore.get(id);
         if (!transaction) {
-          throw new Error('تراکنش یافت نشد');
+          throw new Error('Transaction not found');
         }
 
         let statusChanged = true;
@@ -182,7 +185,7 @@ describe('Payment Webhook Integration', () => {
 
     transactionStore.set('tx-stripe-1', {
       id: 'tx-stripe-1',
-      transactionCode: 'KT-STRIPE1',
+      transactionCode: 'TX-STRIPE1',
       status: 'PENDING',
       amount: 10,
       gateway_fee: 0,
@@ -236,7 +239,7 @@ describe('Payment Webhook Integration', () => {
 
     transactionStore.set('tx-paypal-1', {
       id: 'tx-paypal-1',
-      transactionCode: 'KT-PAYPAL1',
+      transactionCode: 'TX-PAYPAL1',
       status: 'PENDING',
       amount: 15,
       gateway_fee: 0,
@@ -249,7 +252,7 @@ describe('Payment Webhook Integration', () => {
       purchase_units: [
         {
           custom_id: 'tx-paypal-1',
-          invoice_id: 'KT-PAYPAL1',
+          invoice_id: 'TX-PAYPAL1',
           amount: {
             currency_code: 'USD',
             value: '15.00',

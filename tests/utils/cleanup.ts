@@ -13,7 +13,7 @@ const INTEGRATION_PREFIX = 'INTEGRATION-';
 
 /**
  * Delete all test users
- * Matches users with email starting with "test-" or phone starting with "091200000"
+ * Matches users with email starting with "test-" or generic test phone prefixes.
  * Also matches common test prefixes: register-, duplicate-, sequential-, race-, etc.
  */
 export async function cleanupTestUsers() {
@@ -21,12 +21,11 @@ export async function cleanupTestUsers() {
 
   // Delete users created during tests
   // Match various test patterns used in generateUniqueTestUser
-  // Note: We match phones with timestamp pattern (091217xxxxxxx where 17 is from 2025 epoch)
   const { error } = await supabase
     .from('users')
     .delete()
     .or(
-      `email.like.%-%-%@example.com,email.like.test-%@%,phone.like.091200000%,phone.like.091217%`
+      `email.like.%-%-%@example.com,email.like.test-%@%,phone.like.+1202555%`
     );
 
   if (error && error.code !== 'PGRST116') {
@@ -85,7 +84,7 @@ export async function cleanupTestProducts() {
 
 /**
  * Delete all test transactions
- * Matches transactions with code starting with TEST- or KT-TEST
+ * Matches transactions with code starting with TEST- or TX-TEST
  */
 export async function cleanupTestTransactions() {
   const supabase = createTestSupabaseClient();
@@ -94,7 +93,7 @@ export async function cleanupTestTransactions() {
   const { data: testTransactions } = await supabase
     .from('transactions')
     .select('id')
-    .or(`transactionCode.like.TEST-%,transactionCode.like.KT-TEST%`);
+    .or(`transactionCode.like.TEST-%,transactionCode.like.TX-TEST%`);
 
   if (!testTransactions || testTransactions.length === 0) {
     return; // No test transactions to clean up
@@ -169,21 +168,8 @@ export async function cleanupTestTags() {
   }
 }
 
-/**
- * Delete all test OTP verifications
- * Matches identifiers starting with test- or 091200000
- */
 export async function cleanupTestOTPs() {
-  const supabase = createTestSupabaseClient();
-
-  const { error } = await supabase
-    .from('otp_verifications')
-    .delete()
-    .or(`identifier.like.test-%,identifier.like.091200000%`);
-
-  if (error && error.code !== 'PGRST116') {
-    console.warn('Failed to cleanup test OTPs:', error);
-  }
+  return;
 }
 
 /**
@@ -206,7 +192,7 @@ export async function cleanupTestPromoCodes() {
   const { data: testUsers, error: userFetchError } = await supabase
     .from('users')
     .select('id')
-    .or(`email.like.test-%@%,phone.like.091200000%`);
+    .or(`email.like.test-%@%,phone.like.+1202555%`);
 
   if (userFetchError && userFetchError.code !== 'PGRST116') {
     console.warn(

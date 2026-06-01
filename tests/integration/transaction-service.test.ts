@@ -73,10 +73,10 @@ describe('Transaction Service Integration Tests', () => {
           transactionCode,
           paymentMethod: 'STRIPE',
           isGuest: true,
-          fullName: 'مهمان تستی',
-          phone: '09123456789',
+          fullName: 'Guest Testtext',
+          phone: '+12025556789',
           email: 'test@example.com',
-          shippingAddress: 'تهران، خیابان تست',
+          shippingAddress: 'Sample Citydetailsquality Test',
           postalCode: '1234567890',
           createAccount: false,
           updatedAt: new Date().toISOString(),
@@ -94,8 +94,8 @@ describe('Transaction Service Integration Tests', () => {
       expect(transaction.status).toBe('PENDING');
       expect(transaction.isGuest).toBe(true);
       expect(transaction.userId).toBeNull();
-      expect(transaction.fullName).toBe('مهمان تستی');
-      expect(transaction.phone).toBe('09123456789');
+      expect(transaction.fullName).toBe('Guest Testtext');
+      expect(transaction.phone).toBe('+12025556789');
       expect(transaction.amount).toBe(productData.price);
 
       // Create transaction item
@@ -134,7 +134,7 @@ describe('Transaction Service Integration Tests', () => {
         id: userId,
         uid: `U-${Date.now()}`,
         email: `test-${Date.now()}@example.com`,
-        name: 'کاربر تستی',
+        name: 'Test user',
         role: 'USER',
         updatedAt: new Date().toISOString(),
       });
@@ -164,9 +164,9 @@ describe('Transaction Service Integration Tests', () => {
           transactionCode: `TEST-${Date.now()}`,
           paymentMethod: 'STRIPE',
           isGuest: false,
-          fullName: 'کاربر تستی',
-          phone: '09123456789',
-          shippingAddress: 'آدرس تست',
+          fullName: 'Test user',
+          phone: '+12025556789',
+          shippingAddress: 'Address Test',
           updatedAt: new Date().toISOString(),
         })
         .select()
@@ -197,7 +197,7 @@ describe('Transaction Service Integration Tests', () => {
           status: 'PENDING',
           transactionCode: code,
           fullName: 'Test',
-          phone: '09123456789',
+          phone: '+12025556789',
           shippingAddress: 'Address',
           updatedAt: new Date().toISOString(),
         });
@@ -250,7 +250,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test User',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Test Address',
         updatedAt: new Date().toISOString(),
       });
@@ -313,7 +313,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -343,7 +343,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -383,7 +383,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -421,7 +421,7 @@ describe('Transaction Service Integration Tests', () => {
         transactionCode: `TEST-${Date.now()}`,
         paymentProviderRef: providerRef,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -465,7 +465,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'COMPLETED',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -520,7 +520,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -600,7 +600,7 @@ describe('Transaction Service Integration Tests', () => {
           productId,
           name: 'Variant M',
           size: 'M',
-          color: 'قرمز',
+          color: 'Red',
           stock: 10,
           order: 1,
           updatedAt: new Date().toISOString(),
@@ -610,7 +610,7 @@ describe('Transaction Service Integration Tests', () => {
           productId,
           name: 'Variant L',
           size: 'L',
-          color: 'آبی',
+          color: 'text',
           stock: 10,
           order: 2,
           updatedAt: new Date().toISOString(),
@@ -625,7 +625,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'COMPLETED',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -710,7 +710,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'COMPLETED',
         transactionCode,
         fullName: 'Test User',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Test Address',
         updatedAt: new Date().toISOString(),
       });
@@ -758,7 +758,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -789,7 +789,7 @@ describe('Transaction Service Integration Tests', () => {
         transactionCode: `TEST-${Date.now()}`,
         paymentProviderRef: providerRef,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -834,7 +834,7 @@ describe('Transaction Service Integration Tests', () => {
           status: 'COMPLETED',
           transactionCode: `TEST-${Date.now()}-${i}`,
           fullName: 'Test',
-          phone: '09123456789',
+          phone: '+12025556789',
           shippingAddress: 'Address',
           updatedAt: new Date().toISOString(),
         });
@@ -882,7 +882,7 @@ describe('Transaction Service Integration Tests', () => {
 
   describe('Guest Transaction Linking', () => {
     it('should link guest transaction to registered user', async () => {
-      const phone = '09910258259';
+      const phone = '+12025558259';
       const transactionId = randomUUID();
       let userId: string | null = null;
 
@@ -972,7 +972,7 @@ describe('Transaction Service Integration Tests', () => {
 
     it('should handle guest checkout with createAccount flag', async () => {
       const transactionId = randomUUID();
-      const phone = '09987654321';
+      const phone = '+12025554321';
       const email = `test-${Date.now()}@example.com`;
 
       await supabase.from('transactions').insert({
@@ -1025,7 +1025,7 @@ describe('Transaction Service Integration Tests', () => {
         productId,
         name: 'Variant L',
         size: 'L',
-        color: 'سفید',
+        color: 'text',
         stock: 5,
         order: 1,
         updatedAt: new Date().toISOString(),
@@ -1039,7 +1039,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -1085,7 +1085,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: `TEST-${Date.now()}`,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -1123,7 +1123,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: code,
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -1135,7 +1135,7 @@ describe('Transaction Service Integration Tests', () => {
         status: 'PENDING',
         transactionCode: code, // Duplicate code
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -1159,7 +1159,7 @@ describe('Transaction Service Integration Tests', () => {
         transactionCode: `TEST-${Date.now()}-Z`,
         paymentMethod: 'STRIPE',
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });
@@ -1172,7 +1172,7 @@ describe('Transaction Service Integration Tests', () => {
         transactionCode: `TEST-${Date.now()}-P`,
         paymentMethod: 'PAYPAL',
         fullName: 'Test',
-        phone: '09123456789',
+        phone: '+12025556789',
         shippingAddress: 'Address',
         updatedAt: new Date().toISOString(),
       });

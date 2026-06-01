@@ -79,6 +79,26 @@ describe('POST /api/transactions/webhook-stripe', () => {
     );
   });
 
+  it('rejects webhook when Stripe signature verification fails', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-stripe/route');
+
+    vi.mocked(verifyStripeWebhookEvent).mockImplementation(() => {
+      throw new Error('bad signature');
+    });
+
+    const response = await POST(createStripeRequest({ bad: 'payload' }));
+
+    expect(response.status).toBe(400);
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid Stripe webhook signature',
+      })
+    );
+  });
+
   it('completes transaction on checkout.session.completed and finalizes once', async () => {
     const { POST } =
       await import('@/app/api/transactions/webhook-stripe/route');
@@ -100,7 +120,7 @@ describe('POST /api/transactions/webhook-stripe', () => {
 
     vi.mocked(getTransactionById).mockResolvedValue({
       id: 'tx_1',
-      transactionCode: 'KT-ABC123',
+      transactionCode: 'TX-ABC123',
       amount: 10,
       gateway_fee: 0,
       paymentProviderRef: null,
@@ -155,7 +175,7 @@ describe('POST /api/transactions/webhook-stripe', () => {
 
     vi.mocked(getTransactionById).mockResolvedValue({
       id: 'tx_2',
-      transactionCode: 'KT-XYZ789',
+      transactionCode: 'TX-XYZ789',
       amount: 25,
       gateway_fee: 0,
       paymentProviderRef: 'pi_2',
@@ -175,6 +195,129 @@ describe('POST /api/transactions/webhook-stripe', () => {
       expect.objectContaining({
         handled: true,
         reason: 'already_completed',
+      })
+    );
+  });
+
+  it('does not complete transaction when Stripe amount does not match', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-stripe/route');
+
+    vi.mocked(verifyStripeWebhookEvent).mockReturnValue({
+      id: 'evt_amount_mismatch',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_amount_mismatch',
+          metadata: { transactionId: 'tx_amount_mismatch' },
+          amount_total: 999,
+          currency: 'usd',
+          payment_status: 'paid',
+          payment_intent: 'pi_amount_mismatch',
+        },
+      },
+    } as any);
+
+    vi.mocked(getTransactionById).mockResolvedValue({
+      id: 'tx_amount_mismatch',
+      transactionCode: 'TX-AMOUNT',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'cs_amount_mismatch',
+      stripeCheckoutSessionId: 'cs_amount_mismatch',
+    } as any);
+
+    const response = await POST(createStripeRequest({ amount: 'mismatch' }));
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'amount_or_currency_mismatch',
+      })
+    );
+  });
+
+  it('does not complete transaction when Stripe currency does not match', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-stripe/route');
+
+    vi.mocked(verifyStripeWebhookEvent).mockReturnValue({
+      id: 'evt_currency_mismatch',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_currency_mismatch',
+          metadata: { transactionId: 'tx_currency_mismatch' },
+          amount_total: 1000,
+          currency: 'eur',
+          payment_status: 'paid',
+          payment_intent: 'pi_currency_mismatch',
+        },
+      },
+    } as any);
+
+    vi.mocked(getTransactionById).mockResolvedValue({
+      id: 'tx_currency_mismatch',
+      transactionCode: 'TX-CURRENCY',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'cs_currency_mismatch',
+      stripeCheckoutSessionId: 'cs_currency_mismatch',
+    } as any);
+
+    const response = await POST(createStripeRequest({ currency: 'mismatch' }));
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'amount_or_currency_mismatch',
+      })
+    );
+  });
+
+  it('does not complete transaction when Stripe provider reference mismatches', async () => {
+    const { POST } =
+      await import('@/app/api/transactions/webhook-stripe/route');
+
+    vi.mocked(verifyStripeWebhookEvent).mockReturnValue({
+      id: 'evt_ref_mismatch',
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_wrong',
+          metadata: { transactionId: 'tx_ref_mismatch' },
+          amount_total: 1000,
+          currency: 'usd',
+          payment_status: 'paid',
+          payment_intent: 'pi_ref_mismatch',
+        },
+      },
+    } as any);
+
+    vi.mocked(getTransactionById).mockResolvedValue({
+      id: 'tx_ref_mismatch',
+      transactionCode: 'TX-REFMIS',
+      amount: 10,
+      gateway_fee: 0,
+      paymentProviderRef: 'cs_expected',
+      stripeCheckoutSessionId: 'cs_expected',
+    } as any);
+
+    const response = await POST(createStripeRequest({ ref: 'mismatch' }));
+
+    expect(updateTransactionStatus).not.toHaveBeenCalled();
+    expect(finalizeSuccessfulTransaction).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        handled: false,
+        reason: 'provider_reference_mismatch',
       })
     );
   });

@@ -1,6 +1,7 @@
 import 'server-only';
 import axios, { AxiosError } from 'axios';
 import { log } from '@/lib/logger';
+import { getPaymentOrderDescription } from '@/lib/payments/provider-labels';
 
 type PayPalEnvironment = 'sandbox' | 'live';
 
@@ -246,7 +247,7 @@ export async function createPayPalOrder(
           reference_id: request.transactionCode,
           description:
             request.description ||
-            `Kitia order ${request.transactionCode} payment`,
+            getPaymentOrderDescription(request.transactionCode),
           amount: {
             currency_code: currency,
             value: amountValue,
