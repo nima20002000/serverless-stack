@@ -4,19 +4,19 @@
 
 export const testCategories = {
   rootCategory: {
-    name: 'دسته‌بندی ریشه تست',
+    name: 'Test Root Category',
     slug: 'test-root-category',
-    description: 'دسته‌بندی اصلی برای تست',
+    description: 'Primary category for test data',
   },
   childCategory: {
-    name: 'دسته‌بندی فرعی تست',
+    name: 'Test Child Category',
     slug: 'test-child-category',
-    description: 'دسته‌بندی فرعی برای تست',
+    description: 'Child category for test data',
   },
   anotherRootCategory: {
-    name: 'دسته‌بندی ریشه دیگر',
+    name: 'Another Test Root',
     slug: 'test-another-root',
-    description: 'دسته‌بندی اصلی دیگر',
+    description: 'Another primary test category',
   },
 } as const;
 
@@ -25,9 +25,9 @@ export function generateUniqueTestCategory(prefix = 'test') {
   const random = Math.floor(Math.random() * 1000);
 
   return {
-    name: `دسته‌بندی ${prefix} ${random}`,
+    name: `Category ${prefix} ${random}`,
     slug: `${prefix}-category-${timestamp}-${random}`,
-    description: `توضیحات دسته‌بندی ${prefix} ${random}`,
+    description: `Description for category ${prefix} ${random}`,
   };
 }
 
@@ -36,20 +36,20 @@ export function generateTestCategoryHierarchy() {
 
   return {
     parent: {
-      name: `دسته‌بندی والد ${timestamp}`,
+      name: `Parent Category ${timestamp}`,
       slug: `test-parent-${timestamp}`,
-      description: 'دسته‌بندی والد',
+      description: 'Parent category',
     },
     children: [
       {
-        name: `دسته‌بندی فرزند ۱ ${timestamp}`,
+        name: `Child Category 1 ${timestamp}`,
         slug: `test-child-1-${timestamp}`,
-        description: 'دسته‌بندی فرزند اول',
+        description: 'First child category',
       },
       {
-        name: `دسته‌بندی فرزند ۲ ${timestamp}`,
+        name: `Child Category 2 ${timestamp}`,
         slug: `test-child-2-${timestamp}`,
-        description: 'دسته‌بندی فرزند دوم',
+        description: 'Second child category',
       },
     ],
   };

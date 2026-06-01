@@ -16,13 +16,34 @@ BEGIN
     FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'transactions'
-      AND column_name IN (
-        'zarinpalAuthority',
-        'zarinpalRefId',
-        'digipayTicket',
-        'digipayTrackingCode',
-        'zibalTrackId',
-        'zibalRefNumber'
+      AND column_name NOT IN (
+        'id',
+        'userId',
+        'status',
+        'totalAmount',
+        'shippingCost',
+        'discountAmount',
+        'promoCode',
+        'shippingAddress',
+        'paymentMethod',
+        'stripePaymentIntentId',
+        'stripeCheckoutSessionId',
+        'stripeChargeId',
+        'paypalOrderId',
+        'paypalCaptureId',
+        'paymentProviderRef',
+        'paymentMetadata',
+        'isGuest',
+        'createdAt',
+        'updatedAt'
+      )
+      AND (
+        lower(column_name) LIKE '%authority%'
+        OR lower(column_name) LIKE '%ticket%'
+        OR lower(column_name) LIKE '%trackingcode%'
+        OR lower(column_name) LIKE '%trackid%'
+        OR lower(column_name) LIKE '%refnumber%'
+        OR lower(column_name) LIKE '%refid%'
       )
   ) THEN
     RAISE EXCEPTION 'Legacy payment columns still exist on public.transactions';

@@ -5,10 +5,10 @@
 -- This migration adds minimal, essential user activity tracking
 -- to monitor authentication, profile changes, and transaction contexts.
 --
--- Apply to all databases in order:
--- 1. Development (local/gozxjxtnrbuurmstjydo)
--- 2. Preview (gozxjxtnrbuurmstjydo) - if different from dev
--- 3. Production (tanqgnztclrucfldxhuk) - ONLY after testing in dev/preview
+-- Historical note: new boilerplate projects should use the Supabase CLI
+-- migration chain in supabase/migrations. If this archived migration is needed
+-- for an existing project, test it locally before applying it to a hosted
+-- project.
 --
 -- IMPORTANT: This migration is idempotent (safe to re-run)
 

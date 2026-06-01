@@ -16,17 +16,9 @@ export interface E2ETestUser {
   postalCode?: string;
 }
 
-/**
- * Generate a random Iranian phone number
- * Format: 09XX-XXX-XXXX
- */
 function generateRandomPhone(): string {
-  const operators = ['912', '919', '913', '935', '936', '937', '938', '939'];
-  const operator = operators[Math.floor(Math.random() * operators.length)];
-  const number = Math.floor(Math.random() * 10000000)
-    .toString()
-    .padStart(7, '0');
-  return `0${operator}${number}`;
+  const subscriberNumber = 2_000_000 + Math.floor(Math.random() * 8_000_000);
+  return `+1202${subscriberNumber}`;
 }
 
 /**
@@ -43,9 +35,9 @@ export function createTestUser(overrides?: Partial<E2ETestUser>): E2ETestUser {
     uid: `e2e-uid-${uuid}`,
     email: `e2e-test-${randomSuffix}@example.com`,
     phone: generateRandomPhone(),
-    name: 'کاربر تست',
-    firstName: 'کاربر',
-    lastName: 'تست',
+    name: 'Test User',
+    firstName: 'Test',
+    lastName: 'User',
     password: 'Test1234!@#$',
     isVerified: false,
     role: 'USER',
@@ -61,22 +53,22 @@ export function createTestUser(overrides?: Partial<E2ETestUser>): E2ETestUser {
 export function getTestUsers() {
   return {
     REGISTERED_USER: createTestUser({
-      name: 'کاربر ثبت‌نام شده',
+      name: 'Registered User',
       isVerified: true,
     }),
 
     UNVERIFIED_USER: createTestUser({
-      name: 'کاربر تایید نشده',
+      name: 'Unverified User',
       isVerified: false,
     }),
 
     GUEST_USER: createTestUser({
-      name: 'کاربر مهمان',
+      name: 'Guest User',
       isVerified: false,
     }),
 
     ADMIN_USER: createTestUser({
-      name: 'مدیر سایت',
+      name: 'Site Admin',
       role: 'ADMIN',
       isVerified: true,
     }),
@@ -101,9 +93,9 @@ export function createGuestInfo(
 
   return {
     phone: generateRandomPhone(),
-    fullName: 'مهمان تست',
+    fullName: 'Guest Customer',
     email: `e2e-guest-${randomSuffix}@example.com`,
-    shippingAddress: 'تهران، خیابان آزادی، پلاک ۱۲۳',
+    shippingAddress: '123 Demo Street',
     postalCode: '1234567890',
     ...overrides,
   };

@@ -1,8 +1,8 @@
--- Migration: Fix Production Database Default Values
+-- Migration: Normalize Database Default Values
 -- Created: 2025-12-18
--- Database: PostgreSQL (Production - tanqgnztclrucfldxhuk)
+-- Database: PostgreSQL
 --
--- This migration synchronizes default values between production and preview databases
+-- This archived migration normalizes default values between environments.
 -- Fixes:
 -- 1. categories.id - Add gen_random_uuid() default
 -- 2. categories.updatedAt - Add CURRENT_TIMESTAMP default

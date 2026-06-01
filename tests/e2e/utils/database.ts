@@ -1,14 +1,51 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../../src/types/supabase';
 
-// Production Supabase project identifier - MUST be blocked in E2E tests
-// Production: tanqgnztclrucfldxhuk (kitia production)
-// Preview:    gozxjxtnrbuurmstjydo (Kitia-preview) - OK for E2E tests
-const PRODUCTION_PROJECT_ID = 'tanqgnztclrucfldxhuk';
+const BLOCKED_PROJECT_REFS = (process.env.E2E_BLOCKED_SUPABASE_REFS || '')
+  .split(',')
+  .map((projectRef) => projectRef.trim())
+  .filter(Boolean);
+
+const LOCAL_SUPABASE_HOSTS = new Set(['127.0.0.1', 'localhost']);
+const DESTRUCTIVE_DB_CONFIRMATION = 'I_UNDERSTAND_E2E_DATABASE_IS_DESTRUCTIVE';
+const E2E_STATIC_OTP_CODE =
+  process.env.E2E_STATIC_OTP_CODE || process.env.E2E_TEST_OTP_CODE;
+
+function isLocalSupabaseUrl(url: string): boolean {
+  try {
+    return LOCAL_SUPABASE_HOSTS.has(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function assertSafeE2EDatabaseUrl(url: string): void {
+  const blockedProjectRef = BLOCKED_PROJECT_REFS.find((projectRef) =>
+    url.includes(projectRef)
+  );
+
+  if (blockedProjectRef) {
+    throw new Error(
+      `FATAL: Blocked Supabase URL detected in E2E tests. ` +
+        `URL contains blocked project ref: ${blockedProjectRef}. ` +
+        `E2E tests MUST use a separate test database.`
+    );
+  }
+
+  if (
+    !isLocalSupabaseUrl(url) &&
+    process.env.E2E_ALLOW_DESTRUCTIVE_DB !== DESTRUCTIVE_DB_CONFIRMATION
+  ) {
+    throw new Error(
+      'FATAL: Refusing to run destructive E2E database helpers against a remote Supabase URL. ' +
+        `Use a local Supabase URL, or set E2E_ALLOW_DESTRUCTIVE_DB="${DESTRUCTIVE_DB_CONFIRMATION}" for a dedicated disposable test project.`
+    );
+  }
+}
 
 /**
  * Create E2E test Supabase client
- * Uses environment variables for connection, with safety checks to prevent production access
+ * Uses environment variables for connection, with safety checks to prevent live-data access
  */
 export function createE2ESupabaseClient(): SupabaseClient<Database> {
   // Try E2E-specific env vars first, fall back to main app env vars
@@ -24,44 +61,26 @@ export function createE2ESupabaseClient(): SupabaseClient<Database> {
     );
   }
 
-  // CRITICAL SAFETY CHECK: Prevent accidental production access
-  if (url.includes(PRODUCTION_PROJECT_ID)) {
-    throw new Error(
-      `FATAL: Production Supabase URL detected in E2E tests! ` +
-        `URL contains production project ID: ${PRODUCTION_PROJECT_ID}. ` +
-        `E2E tests MUST use a separate test database.`
-    );
-  }
+  assertSafeE2EDatabaseUrl(url);
 
   return createClient<Database>(url, key);
 }
 
-/**
- * Get last OTP code for a phone/email identifier
- * Used to retrieve real OTP codes from the database during E2E tests
- */
 export async function getLastOTP(identifier: string): Promise<string> {
-  const supabase = createE2ESupabaseClient();
+  if (E2E_STATIC_OTP_CODE) {
+    if (!/^\d{6}$/.test(E2E_STATIC_OTP_CODE)) {
+      throw new Error(
+        'E2E_STATIC_OTP_CODE/E2E_TEST_OTP_CODE must be 6 digits.'
+      );
+    }
 
-  const { data, error } = await supabase
-    .from('otp_verifications')
-    .select('code')
-    .eq('identifier', identifier)
-    .order('createdAt', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error) {
-    throw new Error(
-      `Failed to get OTP for identifier "${identifier}": ${error.message}`
-    );
+    return E2E_STATIC_OTP_CODE;
   }
 
-  if (!data) {
-    throw new Error(`No OTP found for identifier "${identifier}"`);
-  }
-
-  return data.code;
+  throw new Error(
+    `OTP lookup is not available for "${identifier}" because the public boilerplate schema does not include OTP persistence. ` +
+      'Set E2E_STATIC_OTP_CODE to the deterministic OTP accepted by the test app, or skip OTP journeys for this boilerplate setup.'
+  );
 }
 
 /**
@@ -282,11 +301,7 @@ export async function deleteTestTransactionsByPhone(
 export async function deleteTestOTPsByIdentifier(
   identifier: string
 ): Promise<void> {
-  const supabase = createE2ESupabaseClient();
-  await supabase
-    .from('otp_verifications')
-    .delete()
-    .eq('identifier', identifier);
+  void identifier;
 }
 
 /**
@@ -327,28 +342,16 @@ export async function getTestProduct(): Promise<{
 }
 
 /**
- * Wait for OTP to appear in database (with retry)
+ * Resolve the configured OTP source for E2E tests.
  */
 export async function waitForOTP(
   identifier: string,
   maxWaitMs: number = 10000,
   pollIntervalMs: number = 500
 ): Promise<string> {
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWaitMs) {
-    try {
-      const code = await getLastOTP(identifier);
-      return code;
-    } catch {
-      // OTP not found yet, wait and retry
-      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
-    }
-  }
-
-  throw new Error(
-    `OTP not found for identifier "${identifier}" after ${maxWaitMs}ms`
-  );
+  void maxWaitMs;
+  void pollIntervalMs;
+  return getLastOTP(identifier);
 }
 
 /**
@@ -516,18 +519,9 @@ export async function waitForUserByPhone(
  * Expire an OTP code in the database (for testing expired OTP scenarios)
  */
 export async function expireOTP(identifier: string): Promise<void> {
-  const supabase = createE2ESupabaseClient();
+  void identifier;
+}
 
-  const { error } = await supabase
-    .from('otp_verifications')
-    .update({
-      expiresAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
-    })
-    .eq('identifier', identifier);
-
-  if (error) {
-    throw new Error(
-      `Failed to expire OTP for "${identifier}": ${error.message}`
-    );
-  }
+export function canExpireOTP(): boolean {
+  return false;
 }

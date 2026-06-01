@@ -4,15 +4,15 @@
 
 export const testTags = {
   popularTag: {
-    name: 'برچسب محبوب',
+    name: 'Popular',
     slug: 'test-popular-tag',
   },
   newTag: {
-    name: 'برچسب جدید',
+    name: 'New',
     slug: 'test-new-tag',
   },
   saleTag: {
-    name: 'برچسب فروش',
+    name: 'Sale',
     slug: 'test-sale-tag',
   },
 } as const;
@@ -22,14 +22,14 @@ export function generateUniqueTestTag(prefix = 'test') {
   const random = Math.floor(Math.random() * 1000);
 
   return {
-    name: `برچسب ${prefix} ${random}`,
+    name: `Tag ${prefix} ${random}`,
     slug: `${prefix}-tag-${timestamp}-${random}`,
   };
 }
 
 export function generateTestTagBatch(count: number) {
   return Array.from({ length: count }, (_, i) => ({
-    name: `برچسب دسته‌ای ${i + 1}`,
+    name: `Batch Tag ${i + 1}`,
     slug: `test-batch-tag-${i}-${Date.now()}`,
   }));
 }

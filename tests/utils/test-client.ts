@@ -13,8 +13,9 @@ import type { Database } from '../../src/types/supabase';
  * Create a Supabase client for testing
  * Uses the Supabase secret key for full access to bypass RLS.
  *
- * IMPORTANT: This uses the new Supabase API key format
- * NOT the deprecated JWT service_role token format (eyJ...)
+ * Hosted Supabase projects should use the new Supabase API key format.
+ * Local Supabase still prints JWT service_role keys, which are accepted for
+ * local URLs only.
  */
 export function createTestSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,11 +28,14 @@ export function createTestSupabaseClient() {
     );
   }
 
-  // Validate key format (must be new API key format)
-  if (!supabaseSecretKey.startsWith(secretKeyPrefix)) {
+  const isLocalSupabase =
+    new URL(supabaseUrl).hostname === '127.0.0.1' ||
+    new URL(supabaseUrl).hostname === 'localhost';
+
+  if (!isLocalSupabase && !supabaseSecretKey.startsWith(secretKeyPrefix)) {
     throw new Error(
       `Invalid SUPABASE_SECRET_KEY format. Expected the Supabase secret key prefix but got '${supabaseSecretKey.substring(0, 20)}...'\n` +
-        'Please update tests/.env with the new Supabase API key format.\n' +
+        'Please update tests/.env with the new Supabase API key format for hosted test projects.\n' +
         'See tests/docs/GETTING_SUPABASE_KEYS.md for instructions.'
     );
   }
@@ -110,12 +114,12 @@ export async function verifyRedisConnection() {
 
 /**
  * Generate a random UID for test user creation
- * Uses random numbers in range 900000-999999 to avoid conflicts with production UIDs
+ * Uses random numbers in range 900000-999999 to avoid common fixture UIDs
  * Format: U-{6-digit number}
  */
 export async function generateTestUID(): Promise<string> {
   // Use random UID in test range (900000-999999) to avoid conflicts with parallel tests
-  // and production data which typically uses lower numbers
+  // and seeded data which typically uses lower numbers
   const randomNumber = 900000 + Math.floor(Math.random() * 99999);
   return `U-${randomNumber.toString().padStart(6, '0')}`;
 }

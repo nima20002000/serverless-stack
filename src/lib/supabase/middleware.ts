@@ -25,7 +25,7 @@ export const updateSession = async (request: NextRequest) => {
   import { createServerClient } from "@supabase/ssr";
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY!;
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
   let supabaseResponse = NextResponse.next({
     request: {
@@ -33,7 +33,7 @@ export const updateSession = async (request: NextRequest) => {
     },
   });
 
-  const supabase = createServerClient(supabaseUrl, supabaseSecretKey, {
+  const supabase = createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

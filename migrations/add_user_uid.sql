@@ -5,10 +5,10 @@
 -- This migration adds a human-readable UID (User ID) field to the users table
 -- Format: U-000001, U-000002, etc.
 --
--- Apply to all databases:
--- 1. Local development
--- 2. Preview (gozxjxtnrbuurmstjydo)
--- 3. Production (tanqgnztclrucfldxhuk) - when ready
+-- Historical note: new boilerplate projects should use the Supabase CLI
+-- migration chain in supabase/migrations. If this archived migration is needed
+-- for an existing project, test it locally before applying it to a hosted
+-- project.
 
 -- Step 1: Add uid column (nullable first for backfill)
 ALTER TABLE users

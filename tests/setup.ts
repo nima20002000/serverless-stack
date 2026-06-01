@@ -27,28 +27,60 @@ for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     throw new Error(
       `Missing required environment variable: ${envVar}\n` +
-      'Please copy .env.example to .env and configure test credentials.'
+        'Please copy .env.example to .env and configure test credentials.'
     );
   }
 }
 
-// Warning for production credentials
+const blockedSupabaseRefs = (process.env.TEST_BLOCKED_SUPABASE_REFS || '')
+  .split(',')
+  .map((projectRef) => projectRef.trim())
+  .filter(Boolean);
+const REMOTE_TEST_DB_CONFIRMATION = 'I_UNDERSTAND_TEST_DATABASE_IS_DESTRUCTIVE';
+const TEST_REDIS_CONFIRMATION = 'I_UNDERSTAND_TEST_REDIS_IS_DESTRUCTIVE';
+
+const blockedSupabaseRef = blockedSupabaseRefs.find((projectRef) =>
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.includes(projectRef)
+);
+
+function isLocalSupabaseUrl(url: string | undefined): boolean {
+  if (!url) return false;
+
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === '127.0.0.1' || hostname === 'localhost';
+  } catch {
+    return false;
+  }
+}
+
+// Guard against unsafe shared-service credentials.
 if (
-  process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('tanqgnztclrucfldxhuk') ||
-  process.env.UPSTASH_REDIS_REST_URL?.includes('production')
+  blockedSupabaseRef ||
+  (!isLocalSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+    process.env.TEST_ALLOW_DESTRUCTIVE_DB !== REMOTE_TEST_DB_CONFIRMATION) ||
+  (process.env.UPSTASH_REDIS_REST_URL &&
+    process.env.TEST_ALLOW_SHARED_REDIS !== TEST_REDIS_CONFIRMATION)
 ) {
   throw new Error(
-    '⛔ FATAL: Production credentials detected in test environment!\n' +
-    'Tests must NEVER run against production services.\n' +
-    'Use preview/staging/test instances only.'
+    'FATAL: unsafe shared-service credentials detected in the test environment.\n' +
+      'Tests must run against local Supabase and no Redis by default.\n' +
+      `For a dedicated disposable hosted test project, set TEST_ALLOW_DESTRUCTIVE_DB="${REMOTE_TEST_DB_CONFIRMATION}".\n` +
+      `For a dedicated disposable Redis instance, set TEST_ALLOW_SHARED_REDIS="${TEST_REDIS_CONFIRMATION}".`
   );
 }
 
 // Global setup logging
 console.log('🧪 Test Environment Configuration:');
 console.log('  - Supabase:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-console.log('  - Redis:', process.env.UPSTASH_REDIS_REST_URL ? 'Configured' : 'Not configured');
-console.log('  - Record Mode:', process.env.RECORD_CONTRACTS === 'true' ? 'ENABLED' : 'Disabled');
+console.log(
+  '  - Redis:',
+  process.env.UPSTASH_REDIS_REST_URL ? 'Configured' : 'Not configured'
+);
+console.log(
+  '  - Record Mode:',
+  process.env.RECORD_CONTRACTS === 'true' ? 'ENABLED' : 'Disabled'
+);
 console.log('  - Timeout:', DEFAULT_TIMEOUT, 'ms');
 console.log('');
 

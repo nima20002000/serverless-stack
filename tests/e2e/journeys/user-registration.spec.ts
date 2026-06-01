@@ -7,6 +7,7 @@ import {
   waitForUserByPhone,
   deleteTestOTPsByIdentifier,
   expireOTP,
+  canExpireOTP,
   getUserByEmail,
   getUserByPhone,
 } from '../utils/database';
@@ -243,6 +244,11 @@ test.describe('User Registration Journey', () => {
   });
 
   test('should handle expired OTP', async ({ page }) => {
+    test.skip(
+      !canExpireOTP(),
+      'Expired OTP checks require an OTP persistence store.'
+    );
+
     const testUser = createTestUser({
       email: `expired-otp-test-${Date.now()}@example.com`,
     });

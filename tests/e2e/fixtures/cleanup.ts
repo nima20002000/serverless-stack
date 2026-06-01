@@ -28,7 +28,7 @@ export async function cleanupE2ETestData(): Promise<void> {
   const { error: txError } = await supabase
     .from('transactions')
     .delete()
-    .or('transactionCode.like.KT-E2E%,phone.like.%e2e%');
+    .or('transactionCode.like.TX-E2E%,phone.like.%e2e%');
 
   if (txError) {
     console.warn(`Warning: Could not cleanup transactions: ${txError.message}`);
@@ -77,18 +77,6 @@ export async function cleanupE2ETestData(): Promise<void> {
   if (promoError) {
     console.warn(
       `Warning: Could not cleanup promo codes: ${promoError.message}`
-    );
-  }
-
-  // Delete test OTP verifications
-  const { error: otpError } = await supabase
-    .from('otp_verifications')
-    .delete()
-    .like('identifier', 'e2e-%');
-
-  if (otpError) {
-    console.warn(
-      `Warning: Could not cleanup OTP verifications: ${otpError.message}`
     );
   }
 

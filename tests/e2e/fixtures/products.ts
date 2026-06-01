@@ -25,9 +25,9 @@ export function createTestProduct(
 
   return {
     id: `e2e-product-${randomUUID()}`,
-    name: `محصول تست ${randomSuffix}`,
-    description: 'توضیحات محصول تست برای آزمون E2E',
-    price: 100000,
+    name: `E2E Test Product ${randomSuffix}`,
+    description: 'Test product description for E2E journeys',
+    price: 100,
     stock: 10,
     isActive: true,
     isFeatured: false,
@@ -45,34 +45,34 @@ export function createTestProduct(
 export function getTestProducts() {
   return {
     SIMPLE_PRODUCT: createTestProduct({
-      name: 'محصول ساده تست',
-      price: 50000,
+      name: 'Simple Test Product',
+      price: 50,
       stock: 5,
     }),
 
     DISCOUNTED_PRODUCT: createTestProduct({
-      name: 'محصول تخفیف‌دار',
-      price: 100000,
+      name: 'Discounted Product',
+      price: 100,
       discountPercent: 20,
       stock: 3,
     }),
 
     OUT_OF_STOCK: createTestProduct({
-      name: 'محصول ناموجود',
-      price: 75000,
+      name: 'Out Of Stock Product',
+      price: 75,
       stock: 0,
     }),
 
     FEATURED_PRODUCT: createTestProduct({
-      name: 'محصول ویژه',
-      price: 200000,
+      name: 'Featured Product',
+      price: 200,
       stock: 15,
       isFeatured: true,
     }),
 
     EXPENSIVE_PRODUCT: createTestProduct({
-      name: 'محصول گران‌قیمت',
-      price: 5000000,
+      name: 'Premium Product',
+      price: 500,
       stock: 2,
     }),
   };

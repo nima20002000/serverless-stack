@@ -2,9 +2,10 @@
 -- Created: 2025-12-30
 -- Database: PostgreSQL (Supabase)
 --
--- Apply to databases in order:
--- 1. Preview (gozxjxtnrbuurmstjydo) - TEST FIRST
--- 2. Production (tanqgnztclrucfldxhuk) - ONLY after human approval
+-- Historical note: new boilerplate projects should use the Supabase CLI
+-- migration chain in supabase/migrations. If this archived migration is needed
+-- for an existing project, test it locally before applying it to a hosted
+-- project.
 --
 -- IMPORTANT: This migration is idempotent (safe to re-run)
 

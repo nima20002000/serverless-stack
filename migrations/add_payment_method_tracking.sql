@@ -3,19 +3,18 @@
 -- Database: PostgreSQL
 --
 -- This migration adds payment method tracking and explicit guest status
--- to support multi-gateway payments (Zarinpal, Digipay, future gateways)
+-- to support the built-in Stripe and PayPal payment providers.
 --
--- IMPORTANT: Run this on each database separately:
--- 1. Local development database
--- 2. Production database (when ready to deploy)
--- 3. Preview database (ALREADY APPLIED - gozxjxtnrbuurmstjydo)
+-- Historical note: new boilerplate projects should use the Supabase CLI
+-- migration chain in supabase/migrations instead of applying root-level
+-- archived migrations directly.
 
 -- Step 1: Create PaymentMethod enum
-CREATE TYPE "PaymentMethod" AS ENUM ('ZARINPAL', 'DIGIPAY');
+CREATE TYPE "PaymentMethod" AS ENUM ('STRIPE', 'PAYPAL');
 
 -- Step 2: Add paymentMethod column with default value
 ALTER TABLE transactions
-ADD COLUMN "paymentMethod" "PaymentMethod" DEFAULT 'ZARINPAL' NOT NULL;
+ADD COLUMN "paymentMethod" "PaymentMethod" DEFAULT 'STRIPE' NOT NULL;
 
 -- Step 3: Add isGuest boolean column with default value
 ALTER TABLE transactions
@@ -36,5 +35,5 @@ CREATE INDEX transactions_isguest_idx ON transactions("isGuest");
 -- GROUP BY "paymentMethod", "isGuest";
 --
 -- Expected result:
--- ZARINPAL | true  | <count of guest transactions>
--- ZARINPAL | false | <count of registered user transactions>
+-- STRIPE | true  | <count of guest transactions>
+-- STRIPE | false | <count of registered user transactions>
