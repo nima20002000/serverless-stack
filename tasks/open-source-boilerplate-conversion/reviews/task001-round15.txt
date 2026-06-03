@@ -1,8 +1,0 @@
-Review target: commit 2daf895 only. Criteria: task001 private publication artifact scrub plus prior task001 findings. Focus only on this commit diff and task001 acceptance criteria. Check that sanitized transitional CI is lockfile-strict and includes self-contained finalized production build validation for this commit, backup helpers do not silently create empty or incomplete payloads, R2 helper scripts remain env-driven and IPv4-safe, README/release/setup docs avoid linking to stale private docs, image host and Cloudflare Image Resizing docs are correct, and service-worker cleanup removes owned legacy caches without reintroducing private project literals or deleting unrelated caches. Do not review later task responsibilities such as legacy payment removal, full UI neutralization, or final CI expansion except where this commit directly changes those files.
-
-The patch misdocuments required runtime/build dependencies as optional, which can lead fresh deployments to omit variables that the current code imports unconditionally.
-
-Review comment:
-
-- [P2] Do not mark required services as optional — /data/dexter/Desktop/supabase-vercel-stack/README.md:83-87
-  For a fresh deployment that follows this section and omits the optional R2 or Upstash variables, the app fails before it can run: `src/lib/rate-limit/index.ts` throws at import time when `UPSTASH_REDIS_REST_URL/TOKEN` are missing, and `src/lib/storage/index.ts` defaults to R2 so `/api/admin/r2-browser` fails build/page-data collection without R2 credentials. Either make these integrations truly lazy/optional or document them as required for the current app.

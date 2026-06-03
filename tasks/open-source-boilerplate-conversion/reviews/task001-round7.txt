@@ -1,2 +1,0 @@
-Review target: commit 88235bb only. Criteria: leaked credentials, private infrastructure, personal emails, private paths/domains, unsafe workflow defaults, public-release blockers, and prior findings about PM2 PORT, R2 helper help output, empty backup failures, optional DNS export failures, hard-coded R2 credentials, remaining private VPS deploy workflow, CI test script availability, CI test failure, and stale service-worker cache cleanup without private Kitia literals. Only evaluate this commit diff and task001 acceptance criteria.
-

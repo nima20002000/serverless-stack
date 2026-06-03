@@ -1,8 +1,0 @@
-Review target: commit 4a1551e only. Criteria: task003 legacy Iranian payment provider removal plus prior task003 findings. Focus only on this commit diff and task003 acceptance criteria. Verify Digipay, Snappay, Zarinpal, and Zibal code paths, provider configs, routes, tests, docs, and dependencies are removed or made neutral where this commit changes them. Confirm the previous missing-module findings are fixed: RootLayout must not import/render deleted InstallmentBanner, Footer must not import/render deleted ZarinpalFooterBadge, ProductDetail must not import DIGIPAY_CONFIG or render Digipay installment UI, and E2E specs must not import mockZarinpalSuccess or call mockPaymentFailure with zarinpal. Do not review later UI redesign or final CI expansion except where this commit directly changes those files.
-
-The new E2E Stripe success mock bypasses payment finalization, so the updated checkout E2E flows no longer reach a completed transaction state.
-
-Review comment:
-
-- [P2] Complete the mocked payment before redirecting to success — /data/dexter/Desktop/supabase-vercel-stack/tests/e2e/helpers/payment.ts:55-55
-  In the Stripe E2E success path, this redirect sends the browser straight to `/payment/success`, but the app only marks Stripe transactions `COMPLETED` from the Stripe webhook. As a result, the transaction stays `PENDING`, the success page keeps showing “Payment pending”, and the checkout tests changed to `mockStripeSuccess` fail their success-heading and database `COMPLETED` assertions. The mock needs to trigger the same completion path, e.g. a test webhook/finalization step, before returning to the success page.

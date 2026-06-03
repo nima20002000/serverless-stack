@@ -1,8 +1,0 @@
-Review target: commit 2d88248 only. Criteria: task003 legacy Iranian payment provider removal plus prior task003 findings. Focus only on this commit diff and task003 acceptance criteria. Confirm deleted legacy provider references are not left as broken imports/callers, confirm Stripe/PayPal E2E success mocks complete the captured test transaction before redirecting, confirm the middleware rate-limit test remains in sync with middleware at this commit, and confirm PayPal E2E mocks match normal PayPal approval subdomains. Do not review later UI redesign, later English-copy conversion, or final CI expansion except where this commit directly changes those files.
-
-The legacy callbacks are removed, but their middleware rate-limit bypasses remain, leaving deleted API paths unprotected from request floods.
-
-Review comment:
-
-- [P2] Remove rate-limit bypasses for deleted callbacks — /data/dexter/Desktop/supabase-vercel-stack/src/app/api/transactions/verify/route.ts:22-22
-  After this commit deletes the legacy verification routes, `src/middleware.ts` still sets `shouldRateLimit = false` for `/api/transactions/verify`, `/api/transactions/verify-digipay`, and `/api/transactions/verify-zibal`. In deployments with this patch, unauthenticated requests to those now-nonexistent paths bypass the API limiter and can generate unlimited 404 traffic, so remove the stale exemptions or keep a minimal limited handler with the route removal.
