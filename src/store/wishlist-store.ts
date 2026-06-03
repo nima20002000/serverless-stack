@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createBrowserStorage } from '@/lib/browser-storage';
+import { browserPersist, createBrowserStorage } from '@/lib/browser-storage';
 
 export interface WishlistItem {
   productId: string;
@@ -34,7 +33,7 @@ interface WishlistStore {
 }
 
 export const useWishlistStore = create<WishlistStore>()(
-  persist(
+  browserPersist<WishlistStore, Pick<WishlistStore, 'items'>>(
     (set, get) => ({
       items: [],
       isInitialized: false,

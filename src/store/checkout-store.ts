@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createBrowserStorage } from '@/lib/browser-storage';
+import { browserPersist, createBrowserStorage } from '@/lib/browser-storage';
 
 /**
  * Checkout form data to persist across sessions
@@ -41,7 +40,10 @@ const initialFormData: CheckoutFormData = {
 };
 
 export const useCheckoutStore = create<CheckoutStore>()(
-  persist(
+  browserPersist<
+    CheckoutStore,
+    Pick<CheckoutStore, 'formData' | '_hasHydrated'>
+  >(
     (set) => ({
       formData: initialFormData,
       promoCode: null,

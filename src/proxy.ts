@@ -10,7 +10,7 @@ import {
 import { isServerE2EMode } from '@/lib/e2e-mode';
 import type { Ratelimit } from '@upstash/ratelimit';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const isE2ETest = isServerE2EMode();
 
   // Apply rate limiting to ALL API routes FIRST (before any auth checks)

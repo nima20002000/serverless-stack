@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createBrowserStorage } from '@/lib/browser-storage';
+import { browserPersist, createBrowserStorage } from '@/lib/browser-storage';
 import { formatPrice as formatStorefrontPrice } from '@/lib/utils/format';
 
 export interface CartItem {
@@ -30,7 +29,7 @@ interface CartStore {
 }
 
 export const useCartStore = create<CartStore>()(
-  persist(
+  browserPersist<CartStore, Pick<CartStore, 'items'>>(
     (set, get) => ({
       items: [],
 

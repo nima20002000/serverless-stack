@@ -49,7 +49,7 @@ function mockRateLimitFailure(reset: number = Date.now() + 120000) {
 }
 
 describe('middleware', () => {
-  let middleware: (req: NextRequest) => Promise<NextResponse>;
+  let proxy: (req: NextRequest) => Promise<NextResponse>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -57,9 +57,9 @@ describe('middleware', () => {
     process.env.NEXTAUTH_SECRET = 'test-secret';
     delete process.env.E2E_TEST;
 
-    // Import middleware fresh for each test
-    const module = await import('@/middleware');
-    middleware = module.middleware;
+    // Import proxy fresh for each test
+    const module = await import('@/proxy');
+    proxy = module.proxy;
   });
 
   afterEach(() => {
@@ -77,7 +77,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -91,7 +91,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -105,7 +105,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -114,7 +114,7 @@ describe('middleware', () => {
       const req = createRequest('/api/transactions/webhook-stripe');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
       expect(response.status).not.toBe(429);
@@ -133,7 +133,7 @@ describe('middleware', () => {
         getTokenMock.mockResolvedValue(null);
 
         const req = createRequest(path);
-        await middleware(req);
+        await proxy(req);
 
         expect(checkRateLimitMock).toHaveBeenCalledWith(
           req,
@@ -147,7 +147,7 @@ describe('middleware', () => {
       const req = createRequest('/api/auth/session');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
       expect(response.status).not.toBe(429);
@@ -157,7 +157,7 @@ describe('middleware', () => {
       const req = createRequest('/api/auth/providers');
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -166,7 +166,7 @@ describe('middleware', () => {
       const req = createRequest('/api/auth/csrf');
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -176,7 +176,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -190,7 +190,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -204,7 +204,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -218,7 +218,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -232,7 +232,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -246,7 +246,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -267,7 +267,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/auth/login');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(429);
       const body = await response.json();
@@ -285,7 +285,7 @@ describe('middleware', () => {
       const req = createRequest('/api/auth/login', {
         headers: { 'x-e2e-test': 'true' },
       });
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(429);
       expect(checkRateLimitMock).toHaveBeenCalledWith(
@@ -301,7 +301,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/auth/login');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(429);
       expect(checkRateLimitMock).not.toHaveBeenCalled();
@@ -313,7 +313,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/auth/login');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.headers.get('X-RateLimit-Limit')).toBe('5');
       expect(response.headers.get('X-RateLimit-Remaining')).toBe('0');
@@ -330,7 +330,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/auth/login');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       const retryAfter = parseInt(
         response.headers.get('Retry-After') || '0',
@@ -345,7 +345,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/users/me');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(429);
     });
@@ -360,7 +360,7 @@ describe('middleware', () => {
       const req = createRequest('/admin/dashboard');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/login');
@@ -370,7 +370,7 @@ describe('middleware', () => {
       const req = createRequest('/admin/users');
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
       const location = response.headers.get('Location');
@@ -385,7 +385,7 @@ describe('middleware', () => {
         email: 'admin@test.com',
       });
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(307);
     });
@@ -394,7 +394,7 @@ describe('middleware', () => {
       const req = createRequest('/profile');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/login');
@@ -404,7 +404,7 @@ describe('middleware', () => {
       const req = createRequest('/profile');
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(307);
     });
@@ -416,7 +416,7 @@ describe('middleware', () => {
         email: 'admin@test.com',
       });
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(307);
     });
@@ -431,7 +431,7 @@ describe('middleware', () => {
       const req = createRequest('/products/123');
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -440,7 +440,7 @@ describe('middleware', () => {
       const req = createRequest('/about');
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -449,7 +449,7 @@ describe('middleware', () => {
       const req = createRequest('/');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(307);
     });
@@ -464,7 +464,7 @@ describe('middleware', () => {
       const req = createRequest('/admin/users/123/edit');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/login');
@@ -474,7 +474,7 @@ describe('middleware', () => {
       const req = createRequest('/admin/products/categories/123/items/456');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
     });
@@ -484,7 +484,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -498,7 +498,7 @@ describe('middleware', () => {
       mockRateLimitSuccess();
       getTokenMock.mockResolvedValue(null);
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -511,7 +511,7 @@ describe('middleware', () => {
       const req = createRequest('/profile/orders/123');
       getTokenMock.mockResolvedValue(null);
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).toBe(307);
       expect(response.headers.get('Location')).toContain('/login');
@@ -521,7 +521,7 @@ describe('middleware', () => {
       const req = createRequest('/profile/settings');
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       expect(response.status).not.toBe(307);
     });
@@ -534,7 +534,7 @@ describe('middleware', () => {
         email: 'admin@test.com',
       });
 
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -554,10 +554,10 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const loginReq = createRequest('/api/auth/login');
-      await middleware(loginReq);
+      await proxy(loginReq);
 
       const registerReq = createRequest('/api/auth/register');
-      await middleware(registerReq);
+      await proxy(registerReq);
 
       const calls = checkRateLimitMock.mock.calls;
       expect(calls[0][2]).toBe('login');
@@ -569,13 +569,13 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const productsReq = createRequest('/api/products');
-      await middleware(productsReq);
+      await proxy(productsReq);
 
       const categoriesReq = createRequest('/api/categories');
-      await middleware(categoriesReq);
+      await proxy(categoriesReq);
 
       const tagsReq = createRequest('/api/tags');
-      await middleware(tagsReq);
+      await proxy(tagsReq);
 
       const calls = checkRateLimitMock.mock.calls;
       expect(calls[0][2]).toBe('public');
@@ -588,7 +588,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue(null);
 
       const req = createRequest('/api/settings');
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
@@ -611,7 +611,7 @@ describe('middleware', () => {
       });
 
       const req = createRequest('/api/admin/users');
-      const response = await middleware(req);
+      const response = await proxy(req);
 
       // Rate limit should still be applied even for authenticated admin
       expect(response.status).toBe(429);
@@ -625,7 +625,7 @@ describe('middleware', () => {
       });
 
       const req = createRequest('/admin/dashboard');
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
@@ -635,7 +635,7 @@ describe('middleware', () => {
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
       const req = createRequest('/profile');
-      await middleware(req);
+      await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });

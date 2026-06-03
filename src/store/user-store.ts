@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { createBrowserStorage } from '@/lib/browser-storage';
+import { browserPersist, createBrowserStorage } from '@/lib/browser-storage';
 
 interface User {
   id: string;
@@ -16,7 +15,7 @@ interface UserStore {
 }
 
 export const useUserStore = create<UserStore>()(
-  persist(
+  browserPersist<UserStore>(
     (set) => ({
       user: null,
       setUser: (user) => set({ user }),

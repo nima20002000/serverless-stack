@@ -10,7 +10,11 @@ const nextConfig = {
     },
     optimizeCss: true, // Enable CSS optimization
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
+    if (!dev) {
+      config.cache = false;
+    }
+
     // Fix for module resolution issues in Next.js 14
     // Prevents "Cannot read properties of undefined (reading 'call')" webpack error
     // when Node.js modules are referenced in client code import chains
@@ -45,15 +49,6 @@ const nextConfig = {
     return [
       {
         source: '/:all*(svg|jpg|jpeg|png|webp|avif|gif|ico)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',

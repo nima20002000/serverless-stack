@@ -47,10 +47,32 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const [featuredProductsRaw, discountedProductsRaw] = await Promise.all([
+  let featuredProductsRaw: Awaited<ReturnType<typeof getFeaturedProducts>> = [];
+  let discountedProductsRaw: Awaited<ReturnType<typeof getDiscountedProducts>> =
+    [];
+
+  const [featuredResult, discountedResult] = await Promise.allSettled([
     getFeaturedProducts({ limit: 4 }),
     getDiscountedProducts({ limit: 4 }),
   ]);
+
+  if (featuredResult.status === 'fulfilled') {
+    featuredProductsRaw = featuredResult.value;
+  } else {
+    console.error(
+      'Failed to load homepage featured products',
+      featuredResult.reason
+    );
+  }
+
+  if (discountedResult.status === 'fulfilled') {
+    discountedProductsRaw = discountedResult.value;
+  } else {
+    console.error(
+      'Failed to load homepage discounted products',
+      discountedResult.reason
+    );
+  }
 
   let categories: Awaited<ReturnType<typeof getCategoryTree>> = [];
   try {

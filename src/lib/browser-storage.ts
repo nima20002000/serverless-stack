@@ -1,4 +1,10 @@
-import type { PersistStorage, StorageValue } from 'zustand/middleware';
+import type { StateCreator } from 'zustand';
+import { persist } from 'zustand/middleware';
+import type {
+  PersistOptions,
+  PersistStorage,
+  StorageValue,
+} from 'zustand/middleware';
 
 /**
  * Safely get localStorage reference without throwing
@@ -74,3 +80,17 @@ export const createBrowserStorage = <T>(): PersistStorage<T> => {
     },
   };
 };
+
+export function browserPersist<TState, TPersistedState = TState>(
+  initializer: StateCreator<TState, [], []>,
+  options: PersistOptions<TState, TPersistedState>
+): StateCreator<TState, [], []> {
+  if (typeof window === 'undefined') {
+    return initializer;
+  }
+
+  return persist(
+    initializer as StateCreator<TState, [['zustand/persist', unknown]], []>,
+    options
+  ) as unknown as StateCreator<TState, [], []>;
+}
