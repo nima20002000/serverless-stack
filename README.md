@@ -94,73 +94,98 @@ Good agent tasks include:
 - Optional Upstash Redis cache and rate limiting.
 - Vercel-oriented deployment.
 
-## Quick Start
+## Installation
 
-1. Install dependencies:
+### Prerequisites
 
-   ```bash
-   npm install
-   npm --prefix tests install
-   ```
+Install these before starting:
 
-2. Run the terminal setup wizard:
+- Node.js 22 or newer.
+- npm.
+- `psql` if you want to apply the Supabase schema manually.
+- A Supabase project, or a local Supabase instance, for Postgres and API keys.
+- Stripe and/or PayPal sandbox credentials if you want checkout to call real payment providers.
+- Optional accounts for Vercel, Cloudflare R2, Resend/SMTP, and Upstash Redis.
 
-   ```bash
-   npm run setup
-   ```
+### 1. Clone And Install
 
-   The wizard creates `.env` from `.env.example` when needed, generates `NEXTAUTH_SECRET`, checks required service keys, checks Vercel login/link state, verifies the Supabase connection, applies the initial schema to an empty database, seeds demo catalog data, checks the Supabase REST API, and runs repository verification.
+```bash
+git clone https://github.com/nima20002000/serverless-stack.git
+cd serverless-stack
+npm install
+npm --prefix tests install
+```
 
-3. Start development:
+### 2. Configure Environment
 
-   ```bash
-   npm run dev
-   ```
+The fastest path is the guided setup wizard:
 
-4. Open `http://localhost:3000`.
+```bash
+npm run setup
+```
 
-### Manual Setup
+The wizard can create `.env` from `.env.example`, generate `NEXTAUTH_SECRET`, check service keys, check Vercel login/link state, verify Supabase, apply the initial schema to an empty database, seed demo catalog data, check the Supabase REST API, and run repository verification.
 
-Use this path when you want to apply each step yourself.
+You can also create the file yourself:
 
-1. Create local environment files:
+```bash
+cp .env.example .env
+```
 
-   ```bash
-   cp .env.example .env
-   cp .env.example tests/.env
-   ```
+Then fill in at least these required values:
 
-2. Configure required variables in `.env`:
-   - `DATABASE_URL`
-   - `NEXTAUTH_URL`
-   - `NEXTAUTH_SECRET`
-   - `NEXT_PUBLIC_APP_URL`
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - `SUPABASE_SECRET_KEY`
-   - Stripe and PayPal sandbox credentials if you want real checkout calls.
+- `DATABASE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
 
-3. Apply the Supabase schema and seed data:
+For checkout, also add Stripe and PayPal sandbox credentials from `.env.example`.
 
-   ```bash
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260531190011_initial_public_schema.sql
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
-   psql "$DATABASE_URL" -c "notify pgrst, 'reload schema';"
-   ```
+### 3. Prepare The Database
 
-4. Validate the payment schema when a database is available:
+If `npm run setup` did not apply the schema for you, run:
 
-   ```bash
-   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
-   ```
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260531190011_initial_public_schema.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/seed.sql
+psql "$DATABASE_URL" -c "notify pgrst, 'reload schema';"
+```
 
-5. Start development:
+Validate the payment schema when a database is available:
 
-   ```bash
-   npm run dev
-   ```
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/db/validate_payment_schema.sql
+```
 
-6. Open `http://localhost:3000`.
+### 4. Start The App
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+### 5. Verify The Install
+
+Run the lightweight repository checks:
+
+```bash
+npm run verify
+npm run lint
+npm run test:unit
+```
+
+Run integration and E2E tests only after configuring dedicated sandbox services:
+
+```bash
+npm run test:integration
+npm run test:e2e
+```
+
+For more detail, see `docs/SETUP_CHECKLIST.md`, `docs/TERMINAL_SETUP.md`, and `docs/ENVIRONMENT.md`.
 
 ## Environment Variables
 
