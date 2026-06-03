@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   bulkDeleteCategories,
   bulkUpdateCategories,
+  getActiveCategories,
 } from '@/services/category-service';
 import { createClient } from '@/lib/supabase/server';
 import { createSupabaseMock, createQueryMock } from '../helpers/supabase-mock';
@@ -125,5 +126,43 @@ describe('category-service', () => {
 
     expect(result).toEqual({ count: 2 });
     expect(updateQuery.update).toHaveBeenCalledWith({ isActive: false });
+  });
+
+  it('returns active root categories even when they have no children', async () => {
+    const supabase = createSupabaseMock();
+    const categoriesQuery = createQueryMock({
+      data: [
+        {
+          id: 'root',
+          name: 'Root',
+          children: [],
+        },
+        {
+          id: 'root-with-inactive-child',
+          name: 'Root With Inactive Child',
+          children: [{ id: 'child', isActive: false }],
+        },
+      ],
+      error: null,
+    });
+
+    supabase.from.mockReturnValue(categoriesQuery);
+    createClientMock.mockReturnValue(supabase as any);
+
+    const result = await getActiveCategories();
+
+    expect(result).toEqual([
+      { id: 'root', name: 'Root', children: [] },
+      {
+        id: 'root-with-inactive-child',
+        name: 'Root With Inactive Child',
+        children: [],
+      },
+    ]);
+    expect(categoriesQuery.select).toHaveBeenCalledWith(
+      '*, parent:categories!parentId(*), children:categories!parentId(id, name, slug, isActive)'
+    );
+    expect(categoriesQuery.eq).toHaveBeenCalledOnce();
+    expect(categoriesQuery.eq).toHaveBeenCalledWith('isActive', true);
   });
 });

@@ -201,10 +201,9 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
   const { data, error } = await supabase
     .from('categories')
     .select(
-      '*, parent:categories!parentId(*), children:categories!parentId!inner(id, name, slug, isActive)'
+      '*, parent:categories!parentId(*), children:categories!parentId(id, name, slug, isActive)'
     )
     .eq('isActive', true)
-    .eq('children.isActive', true)
     .order('name', { ascending: true });
 
   if (error) {
@@ -212,8 +211,12 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
     throw new Error('Unable to load active categories');
   }
 
-  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
-  return data || [];
+  return (data || []).map((category) => ({
+    ...category,
+    children: Array.isArray(category.children)
+      ? category.children.filter((child) => child.isActive)
+      : [],
+  }));
 }
 
 /**
