@@ -1,0 +1,6 @@
+# Public schema metadata checksums
+#
+# Hosted-project metadata snapshots are intentionally neutralized for the public
+# boilerplate. Regenerate a local metadata snapshot from a clean Supabase project
+# when schema review needs a compact table/column/enum/index comparison
+# artifact.

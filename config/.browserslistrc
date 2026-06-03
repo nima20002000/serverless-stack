@@ -1,0 +1,22 @@
+# Target modern browsers to reduce legacy JavaScript polyfills
+# This removes unnecessary polyfills for Array.at, Array.flat, etc.
+# All these browsers support ES2021+ features natively
+
+# Desktop browsers (last 2 versions)
+last 2 Chrome versions
+last 2 Firefox versions
+last 2 Safari versions
+last 2 Edge versions
+
+# Mobile browsers
+last 2 iOS versions
+last 2 ChromeAndroid versions
+
+# Exclude legacy browsers
+not IE 11
+not dead
+not op_mini all
+
+# Minimum browser support:
+# Chrome 91+, Firefox 90+, Safari 14.1+, Edge 91+
+# This ensures 95%+ global coverage while avoiding legacy polyfills

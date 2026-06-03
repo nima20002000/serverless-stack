@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: Install, lint, build, and test
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:54322/postgres
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ci-nextauth-secret-change-me
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-publishable-key
+      SUPABASE_SECRET_KEY: ci-secret-key
+      NEXT_PUBLIC_DEFAULT_LOCALE: en-US
+      NEXT_PUBLIC_DEFAULT_CURRENCY: USD
+      NEXT_PUBLIC_DEFAULT_PHONE_COUNTRY: US
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_placeholder
+      PAYPAL_CLIENT_ID: paypal-client-id-placeholder
+      PAYPAL_CLIENT_SECRET: paypal-client-secret-placeholder
+      PAYPAL_WEBHOOK_ID: paypal-webhook-id-placeholder
+      PAYPAL_ENV: sandbox
+      PAYMENT_SITE_NAME: Supabase Vercel Stack
+      UPSTASH_REDIS_REST_URL: https://example.upstash.io
+      UPSTASH_REDIS_REST_TOKEN: ci-upstash-token-placeholder
+      R2_ACCOUNT_ID: ci-r2-account-placeholder
+      R2_ACCESS_KEY_ID: ci-r2-access-key-placeholder
+      R2_SECRET_ACCESS_KEY: ci-r2-secret-placeholder
+      R2_BUCKET_NAME: ci-media-bucket
+      R2_PUBLIC_URL: https://media.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install test dependencies
+        run: npm --prefix tests ci
+
+      - name: Verify repository config
+        run: npm run verify
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Storybook build
+        run: npm run build-storybook
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev

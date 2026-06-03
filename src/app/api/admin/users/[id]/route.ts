@@ -1,0 +1,125 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
+import {
+  getUserById,
+  updateUserRole,
+  deleteUser,
+} from '@/services/admin-service';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(
+  _request: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    // Check authentication and admin role
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const userData = await getUserById(params.id);
+
+    // Serialize the response to ensure proper format
+    const user = {
+      ...userData,
+      _count: {
+        transactions: userData.transactions.length,
+        promoCodes: userData.promoCodes.length,
+      },
+      transactions: userData.transactions.map((t) => ({
+        id: t.id,
+        transactionCode: t.transactionCode,
+        amount: Number(t.amount),
+        status: t.status,
+        createdAt: t.createdAt,
+      })),
+      promoCodes: userData.promoCodes.map((p) => ({
+        id: p.id,
+        code: p.code,
+        expiresAt: p.expiresAt,
+        isUsed: p.isUsed,
+      })),
+    };
+
+    return NextResponse.json({ user });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unable to load user';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    // Check authentication and admin role
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Prevent admin from changing their own role
+    if (session.user.id === params.id) {
+      return NextResponse.json(
+        { error: 'You cannot change your own role' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { role } = body;
+
+    if (!role || !['USER', 'ADMIN'].includes(role)) {
+      return NextResponse.json(
+        { error: 'User role is invalid' },
+        { status: 400 }
+      );
+    }
+
+    const user = await updateUserRole(params.id, role as 'USER' | 'ADMIN');
+    return NextResponse.json(user);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unable to update user';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    // Check authentication and admin role
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Prevent admin from deleting their own account
+    if (session.user.id === params.id) {
+      return NextResponse.json(
+        { error: 'You cannot delete your own account' },
+        { status: 403 }
+      );
+    }
+
+    await deleteUser(params.id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unable to delete user';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}

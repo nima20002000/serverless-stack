@@ -1,0 +1,229 @@
+/**
+ * Cloudflare R2 Storage Adapter
+ *
+ * Uses AWS S3-compatible API to interact with Cloudflare R2
+ */
+
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
+import { NodeHttpHandler } from '@smithy/node-http-handler';
+import { Agent as HttpsAgent } from 'https';
+import {
+  StorageAdapter,
+  UploadOptions,
+  UploadResult,
+  DeleteResult,
+  ListObjectsOptions,
+  ListObjectsResult,
+} from '../types';
+import { log } from '@/lib/logger';
+
+export class R2StorageAdapter implements StorageAdapter {
+  private client: S3Client;
+  private bucketName: string;
+  private publicUrl: string;
+
+  constructor() {
+    const accountId = process.env.R2_ACCOUNT_ID;
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+    this.bucketName = process.env.R2_BUCKET_NAME || '';
+    this.publicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+
+    if (!accountId || !accessKeyId || !secretAccessKey || !this.bucketName) {
+      throw new Error(
+        'R2 credentials not configured. Check R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET_NAME'
+      );
+    }
+
+    // Configure S3 client for R2 with proper timeout and connection settings
+    this.client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+      },
+      requestHandler: new NodeHttpHandler({
+        httpsAgent: new HttpsAgent({
+          keepAlive: true,
+          maxSockets: 50,
+          family: 4, // Force IPv4 to avoid IPv6 connection issues
+        }),
+        requestTimeout: 30000, // 30 seconds timeout for receiving response
+        connectionTimeout: 10000, // 10 seconds timeout for establishing connection
+      }),
+    });
+
+    log.info('R2 Storage adapter initialized', { bucketName: this.bucketName });
+  }
+
+  async upload(options: UploadOptions): Promise<UploadResult> {
+    try {
+      const { file, path, contentType } = options;
+
+      log.info('Starting R2 upload', { path, contentType });
+
+      // Convert File to Buffer if needed
+      let body: Buffer;
+      if (Buffer.isBuffer(file)) {
+        // Already a Buffer
+        body = file;
+        log.info('File is already a Buffer', { size: body.length });
+      } else if (
+        file instanceof Blob ||
+        (file && typeof (file as unknown as Blob).arrayBuffer === 'function')
+      ) {
+        // File or Blob (works for both browser File and Next.js FormData File)
+        log.info('Converting File/Blob to Buffer');
+        const arrayBuffer = await file.arrayBuffer();
+        body = Buffer.from(arrayBuffer);
+        log.info('Converted to Buffer', { size: body.length });
+      } else {
+        throw new Error('Invalid file type');
+      }
+
+      // Upload to R2 using PutObjectCommand
+      log.info('Initiating R2 upload', {
+        bucket: this.bucketName,
+        path,
+        size: body.length,
+      });
+
+      const command = new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: path,
+        Body: body,
+        ContentType: contentType,
+      });
+
+      log.info('Sending upload command...');
+      await this.client.send(command);
+      log.info('Upload completed successfully');
+
+      const url = this.getPublicUrl(path);
+
+      log.info('File uploaded to R2', {
+        path,
+        contentType,
+        size: body.length,
+        url,
+      });
+
+      return {
+        success: true,
+        url,
+      };
+    } catch (error) {
+      log.error('R2 upload error', {
+        error,
+        path: options.path,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'File upload failed',
+      };
+    }
+  }
+
+  async delete(path: string): Promise<DeleteResult> {
+    try {
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucketName,
+        Key: path,
+      });
+
+      await this.client.send(command);
+
+      log.info('File deleted from R2', { path });
+
+      return { success: true };
+    } catch (error) {
+      log.error('R2 delete error', { error, path });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'File deletion failed',
+      };
+    }
+  }
+
+  getPublicUrl(path: string): string {
+    const objectPath = path.replace(/^\/+/, '');
+
+    // If custom domain is configured, use it
+    if (this.publicUrl) {
+      return `${this.publicUrl}/${objectPath}`;
+    }
+
+    log.error('R2_PUBLIC_URL is required for public media URLs', {
+      path: objectPath,
+    });
+    throw new Error('R2_PUBLIC_URL is required for public media URLs');
+  }
+
+  async exists(path: string): Promise<boolean> {
+    try {
+      const command = new HeadObjectCommand({
+        Bucket: this.bucketName,
+        Key: path,
+      });
+
+      await this.client.send(command);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async list(options?: ListObjectsOptions): Promise<ListObjectsResult> {
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucketName,
+        Prefix: options?.prefix || '',
+        Delimiter: options?.delimiter,
+        MaxKeys: options?.maxKeys || 100,
+        ContinuationToken: options?.continuationToken,
+      });
+
+      const response = await this.client.send(command);
+
+      const objects = (response.Contents || []).map((item) => ({
+        key: item.Key || '',
+        size: item.Size || 0,
+        lastModified: item.LastModified || new Date(),
+        url: this.getPublicUrl(item.Key || ''),
+        contentType: undefined, // R2 ListObjectsV2 doesn't return ContentType
+      }));
+      const prefixes = (response.CommonPrefixes || [])
+        .map((prefix) => prefix.Prefix || '')
+        .filter(Boolean);
+
+      log.info('Listed R2 objects', {
+        prefix: options?.prefix,
+        count: objects.length,
+        isTruncated: response.IsTruncated,
+      });
+
+      return {
+        success: true,
+        objects,
+        prefixes,
+        nextContinuationToken: response.NextContinuationToken,
+        isTruncated: response.IsTruncated,
+      };
+    } catch (error) {
+      log.error('R2 list error', { error, options });
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'File listing failed',
+      };
+    }
+  }
+}

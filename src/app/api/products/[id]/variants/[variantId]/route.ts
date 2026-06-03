@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
+import {
+  updateProductVariant,
+  deleteProductVariant,
+} from '@/services/product-service';
+
+export const dynamic = 'force-dynamic';
+
+export async function PUT(
+  req: NextRequest,
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; variantId: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
+      body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Variant name is required' },
+        { status: 400 }
+      );
+    }
+
+    if (stock === undefined || stock < 0) {
+      return NextResponse.json(
+        { error: 'Variant stock cannot be negative' },
+        { status: 400 }
+      );
+    }
+
+    const variant = await updateProductVariant(params.variantId, {
+      name,
+      sku,
+      color,
+      size,
+      material,
+      priceAdjust: priceAdjust || 0,
+      stock,
+      isActive,
+    });
+
+    return NextResponse.json({ variant });
+  } catch (error) {
+    console.error('Update product variant error:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to update product',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  {
+    params: paramsPromise,
+  }: { params: Promise<{ id: string; variantId: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await deleteProductVariant(params.variantId);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Delete product variant error:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to delete product variant',
+      },
+      { status: 500 }
+    );
+  }
+}

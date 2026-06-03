@@ -1,0 +1,26 @@
+{
+  "project": "Serverless Stack",
+  "description": "Neutral commerce boilerplate for Next.js, Supabase, Vercel, Tailwind CSS, Stripe, and PayPal.",
+  "stack": {
+    "framework": "Next.js App Router",
+    "language": "TypeScript",
+    "database": "Supabase Postgres",
+    "auth": "NextAuth",
+    "payments": ["Stripe", "PayPal"],
+    "styling": "Tailwind CSS",
+    "storage": "Cloudflare R2-compatible storage",
+    "cache": "Optional Upstash Redis",
+    "email": "Optional Resend or SMTP",
+    "deployment": "Vercel"
+  },
+  "directories": {
+    "src/app": "Routes, pages, and route handlers",
+    "src/components": "Reusable React components",
+    "src/lib": "Provider clients and shared utilities",
+    "src/services": "Business logic",
+    "src/store": "Client state stores",
+    "database": "Schema contract and database validation helpers",
+    "docs": "Public setup and operations documentation",
+    "tests": "Unit, integration, and E2E tests"
+  }
+}

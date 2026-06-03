@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --primary-muted: 214 95% 93%;
+    --danger: 0 72% 51%;
+    --danger-foreground: 0 0% 100%;
+    --danger-muted: 0 86% 97%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-muted: 138 76% 97%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+    --warning-muted: 48 96% 89%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 14%;
+    --card-foreground: 210 40% 98%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 213 94% 68%;
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 222 47% 11%;
+    --primary-muted: 217 33% 22%;
+    --danger: 0 73% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-muted: 0 63% 18%;
+    --success: 142 69% 58%;
+    --success-foreground: 222 47% 11%;
+    --success-muted: 145 80% 16%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 222 47% 11%;
+    --warning-muted: 39 92% 18%;
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer utilities {
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes blob {
+    0% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}

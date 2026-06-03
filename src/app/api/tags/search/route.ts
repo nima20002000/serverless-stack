@@ -1,0 +1,26 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { searchTags } from '@/services/tag-service';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get('q') || '';
+
+    if (!query) {
+      return NextResponse.json({ tags: [] });
+    }
+
+    const tags = await searchTags(query);
+    return NextResponse.json({ tags });
+  } catch (error) {
+    console.error('Search tags error:', error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Unable to search tags',
+      },
+      { status: 500 }
+    );
+  }
+}

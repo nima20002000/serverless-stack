@@ -1,0 +1,192 @@
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getProductById,
+  updateProduct,
+  deleteProduct,
+} from '@/services/product-service';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/options';
+
+export const dynamic = 'force-dynamic';
+const MAX_ID_LENGTH = 64;
+
+function isValidId(id: string): boolean {
+  return !!id && id.length <= MAX_ID_LENGTH;
+}
+
+// GET /api/products/[id] - Get single product (public, or admin with inactive variants)
+export async function GET(
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid product ID' },
+        { status: 400 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const includeRelations = searchParams.get('includeRelations') === 'true';
+    const includeInactiveParam = searchParams.get('includeInactive') === 'true';
+
+    // Only allow includeInactive for admin users
+    let includeInactive = false;
+    if (includeInactiveParam) {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.role === 'ADMIN') {
+        includeInactive = true;
+      }
+    }
+
+    const product = await getProductById(
+      params.id,
+      includeRelations,
+      includeInactive
+    );
+
+    // Serialize Decimal to number and handle nested relations
+    const serializedProduct = {
+      ...product,
+      price: Number(product.price),
+      ...('variants' in product &&
+        Array.isArray(product.variants) && {
+          variants: product.variants.map((v) => ({
+            ...v,
+            priceAdjust: Number(v.priceAdjust),
+          })),
+        }),
+    };
+
+    return NextResponse.json({ product: serializedProduct });
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Product not found' },
+      { status: 404 }
+    );
+  }
+}
+
+// PUT /api/products/[id] - Update product (admin only)
+export async function PUT(
+  req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid product ID' },
+        { status: 400 }
+      );
+    }
+
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const {
+      name,
+      description,
+      price,
+      discountPercent,
+      stock,
+      images,
+      hasVariants,
+      isFeatured,
+      isActive,
+      categoryId,
+      tagIds,
+    } = body;
+
+    type UpdateData = {
+      name?: string;
+      description?: string;
+      price?: number;
+      discountPercent?: number | null;
+      stock?: number;
+      images?: string[];
+      hasVariants?: boolean;
+      isFeatured?: boolean;
+      isActive?: boolean;
+      categoryId?: string | null;
+      tagIds?: string[];
+    };
+
+    const updateData: UpdateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = parseFloat(price);
+    if (discountPercent !== undefined)
+      updateData.discountPercent =
+        discountPercent !== null ? parseInt(discountPercent) : null;
+    if (stock !== undefined) updateData.stock = parseInt(stock);
+    if (images !== undefined) updateData.images = images;
+    if (hasVariants !== undefined) updateData.hasVariants = hasVariants;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+    if (isActive !== undefined) updateData.isActive = isActive;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (tagIds !== undefined) updateData.tagIds = tagIds;
+
+    const product = await updateProduct(params.id, updateData);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product updated successfully',
+      product,
+    });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to update product',
+      },
+      { status: 400 }
+    );
+  }
+}
+
+// DELETE /api/products/[id] - Delete product (admin only)
+export async function DELETE(
+  _req: NextRequest,
+  { params: paramsPromise }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const params = await paramsPromise;
+    if (!isValidId(params.id)) {
+      return NextResponse.json(
+        { error: 'Invalid product ID' },
+        { status: 400 }
+      );
+    }
+
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    await deleteProduct(params.id);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Product deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Unable to delete product',
+      },
+      { status: 400 }
+    );
+  }
+}

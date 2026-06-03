@@ -1,0 +1,6 @@
+# Deprecated environment-specific schema dump.
+#
+# This public boilerplate no longer tracks hosted-project metadata snapshots.
+# Use the Supabase CLI migration in `supabase/migrations/` as the canonical
+# schema source, then generate a local throwaway metadata dump when needed for
+# review.
