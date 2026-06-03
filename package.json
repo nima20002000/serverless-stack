@@ -4,8 +4,8 @@
   "description": "Open-source commerce boilerplate for Next.js, Supabase, Vercel, Stripe, and PayPal.",
   "license": "MIT",
   "scripts": {
-    "dev": "rm -rf .next && next dev --webpack 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
-    "dev:plain": "rm -rf .next && next dev --webpack",
+    "dev": "npm cache clean --force && rm -rf .next && next dev --webpack 2>&1 | pino-pretty -c -t 'HH:MM:ss' -i pid,hostname",
+    "dev:plain": "npm cache clean --force && rm -rf .next && next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
