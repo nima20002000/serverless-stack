@@ -12,6 +12,7 @@ import {
   updateTransactionStatus,
 } from '@/services/transaction-service';
 import { finalizeSuccessfulTransaction } from '@/lib/payments/finalize-successful-transaction';
+import { isServerE2EMode } from '@/lib/e2e-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -252,8 +253,7 @@ async function handleFailedEvent(options: {
 async function postHandler(req: NextRequest) {
   const startTime = Date.now();
   const signature = req.headers.get('stripe-signature');
-  const isE2E =
-    process.env.E2E_TEST === 'true' || req.headers.get('x-e2e-test') === 'true';
+  const isE2E = isServerE2EMode();
 
   if (!signature) {
     log.warn('Stripe webhook rejected: missing signature header');

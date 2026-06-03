@@ -8,6 +8,16 @@ Use this checklist for a fresh clone.
 - Copy `.env.example` to `.env`.
 - Add required Supabase, database, auth, Stripe, and PayPal variables.
 - Add optional R2, Resend, and Upstash variables only when you use those integrations.
+- Register the first admin account through the app, then promote that trusted user in Supabase before using `/admin`:
+
+  ```sql
+  update public.users
+  set role = 'ADMIN'
+  where email = 'admin@example.com';
+  ```
+
+  Use your own account identifier and run this only from a trusted Supabase SQL editor or server-side database session. Do not expose service-role or secret keys in client code.
+
 - Run `npm run verify`.
 - Run `npm run lint` and `npm run test:unit` before opening a pull request.
 - Start the app with `npm run dev`.

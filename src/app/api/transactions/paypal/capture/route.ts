@@ -15,6 +15,7 @@ import {
   updateTransactionStatus,
 } from '@/services/transaction-service';
 import { finalizeSuccessfulTransaction } from '@/lib/payments/finalize-successful-transaction';
+import { isServerE2EMode } from '@/lib/e2e-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -164,8 +165,7 @@ async function processCapture(options: {
 }
 
 async function getHandler(req: NextRequest) {
-  const isE2E =
-    process.env.E2E_TEST === 'true' || req.headers.get('x-e2e-test') === 'true';
+  const isE2E = isServerE2EMode();
   const searchParams = req.nextUrl.searchParams;
   const orderId = searchParams.get('token') || searchParams.get('orderId');
   const transactionId = searchParams.get('transactionId');
@@ -225,8 +225,7 @@ async function getHandler(req: NextRequest) {
 }
 
 async function postHandler(req: NextRequest) {
-  const isE2E =
-    process.env.E2E_TEST === 'true' || req.headers.get('x-e2e-test') === 'true';
+  const isE2E = isServerE2EMode();
   const body = await req.json();
   const orderId =
     typeof body?.orderId === 'string' ? body.orderId.trim() : undefined;

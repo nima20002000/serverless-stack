@@ -55,6 +55,7 @@ describe('middleware', () => {
     vi.clearAllMocks();
     vi.resetModules();
     process.env.NEXTAUTH_SECRET = 'test-secret';
+    delete process.env.E2E_TEST;
 
     // Import middleware fresh for each test
     const module = await import('@/middleware');
@@ -63,6 +64,7 @@ describe('middleware', () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    delete process.env.E2E_TEST;
   });
 
   // ============================================
@@ -273,6 +275,36 @@ describe('middleware', () => {
         'Too many requests. Please wait before trying again.'
       );
       expect(body.retryAfter).toBe(resetTime);
+    });
+
+    it('does not trust x-e2e-test header for rate limit bypass', async () => {
+      const resetTime = Date.now() + 120000;
+      mockRateLimitFailure(resetTime);
+      getTokenMock.mockResolvedValue(null);
+
+      const req = createRequest('/api/auth/login', {
+        headers: { 'x-e2e-test': 'true' },
+      });
+      const response = await middleware(req);
+
+      expect(response.status).toBe(429);
+      expect(checkRateLimitMock).toHaveBeenCalledWith(
+        req,
+        expect.objectContaining({ name: 'strictLimiter' }),
+        'login'
+      );
+    });
+
+    it('skips rate limiting only when server E2E mode is enabled', async () => {
+      process.env.E2E_TEST = 'true';
+      mockRateLimitFailure();
+      getTokenMock.mockResolvedValue(null);
+
+      const req = createRequest('/api/auth/login');
+      const response = await middleware(req);
+
+      expect(response.status).not.toBe(429);
+      expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
 
     it('includes rate limit headers in 429 response', async () => {

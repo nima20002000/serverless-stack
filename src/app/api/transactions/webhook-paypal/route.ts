@@ -14,6 +14,7 @@ import {
   updateTransactionStatus,
 } from '@/services/transaction-service';
 import { finalizeSuccessfulTransaction } from '@/lib/payments/finalize-successful-transaction';
+import { isServerE2EMode } from '@/lib/e2e-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -276,8 +277,7 @@ async function failPayPalTransaction(options: {
 }
 
 async function postHandler(req: NextRequest) {
-  const isE2E =
-    process.env.E2E_TEST === 'true' || req.headers.get('x-e2e-test') === 'true';
+  const isE2E = isServerE2EMode();
 
   const headers = getWebhookHeaders(req);
   if (!headers) {

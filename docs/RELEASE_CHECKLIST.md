@@ -36,6 +36,7 @@ npm run test:e2e
 ## Supabase
 
 - Apply migrations to a disposable local or preview project.
+- Confirm exactly one initial trusted user has been promoted to `ADMIN` for the target environment.
 - Validate schema expectations:
 
   ```bash

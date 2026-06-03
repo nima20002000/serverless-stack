@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getAllSettings, updateSettings } from '@/services/settings-service';
@@ -39,15 +39,19 @@ describe('admin settings API', () => {
     },
   };
 
-  const createPostRequest = (body: unknown) =>
+  const createPostRequest = (
+    body: unknown,
+    headers: Record<string, string> = {}
+  ) =>
     new NextRequest('http://localhost/api/admin/settings', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...headers },
       body: JSON.stringify(body),
     });
-  const createGetRequest = () =>
+  const createGetRequest = (headers: Record<string, string> = {}) =>
     new NextRequest('http://localhost/api/admin/settings', {
       method: 'GET',
+      headers,
     });
 
   const loadHandlers = async () => {
@@ -58,6 +62,11 @@ describe('admin settings API', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
+    delete process.env.E2E_TEST;
+  });
+
+  afterEach(() => {
+    delete process.env.E2E_TEST;
   });
 
   it('GET returns 403 when session is missing', async () => {
@@ -69,6 +78,34 @@ describe('admin settings API', () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(getAllSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it('GET does not trust x-e2e-test header for auth bypass', async () => {
+    getServerSessionMock.mockResolvedValue(null);
+    const { GET } = await loadHandlers();
+
+    const response = await GET(createGetRequest({ 'x-e2e-test': 'true' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(getAllSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it('GET skips auth only when server E2E mode is enabled', async () => {
+    process.env.E2E_TEST = 'true';
+    getAllSettingsMock.mockResolvedValue([
+      { key: 'siteName', value: 'E2E Store' },
+    ]);
+    const { GET } = await loadHandlers();
+
+    const response = await GET(createGetRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      settings: [{ key: 'siteName', value: 'E2E Store' }],
+    });
+    expect(getServerSessionMock).not.toHaveBeenCalled();
+    expect(getAllSettingsMock).toHaveBeenCalledTimes(1);
   });
 
   it('GET returns 403 when user is not admin', async () => {
@@ -130,6 +167,48 @@ describe('admin settings API', () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
     expect(updateSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it('POST does not trust x-e2e-test header for auth bypass', async () => {
+    getServerSessionMock.mockResolvedValue(null);
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest(
+        { settings: { siteName: 'Header Spoof' } },
+        { 'x-e2e-test': 'true' }
+      )
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: 'Forbidden' });
+    expect(updateSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it('POST skips auth only when server E2E mode is enabled', async () => {
+    process.env.E2E_TEST = 'true';
+    updateSettingsMock.mockResolvedValue();
+    const { POST } = await loadHandlers();
+
+    const response = await POST(
+      createPostRequest({ settings: { siteName: 'E2E Store' } })
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      message: 'Settings saved successfully',
+    });
+    expect(getServerSessionMock).not.toHaveBeenCalled();
+    expect(updateSettingsMock).toHaveBeenCalledWith({
+      siteName: 'E2E Store',
+    });
+    expect(logMock.info).toHaveBeenCalledWith(
+      'Site settings updated',
+      expect.objectContaining({
+        admin: 'e2e-admin',
+        keys: ['siteName'],
+      })
+    );
   });
 
   it('POST returns 400 for invalid settings payload', async () => {

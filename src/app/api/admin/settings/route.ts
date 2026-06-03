@@ -3,16 +3,14 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { getAllSettings, updateSettings } from '@/services/settings-service';
 import { log } from '@/lib/logger';
+import { isServerE2EMode } from '@/lib/e2e-mode';
 
 export const dynamic = 'force-dynamic';
 
 // GET /api/admin/settings - Get all site settings
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    // Check if running in E2E test mode
-    const isE2E =
-      process.env.E2E_TEST === 'true' ||
-      req.headers.get('x-e2e-test') === 'true';
+    const isE2E = isServerE2EMode();
 
     // Check authentication (skip in E2E mode for testing)
     if (!isE2E) {
@@ -37,10 +35,7 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/settings - Update site settings
 export async function POST(req: NextRequest) {
   try {
-    // Check if running in E2E test mode
-    const isE2E =
-      process.env.E2E_TEST === 'true' ||
-      req.headers.get('x-e2e-test') === 'true';
+    const isE2E = isServerE2EMode();
 
     // Check authentication (skip in E2E mode for testing)
     let adminEmail = 'e2e-admin';
