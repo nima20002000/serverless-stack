@@ -23,7 +23,7 @@ describe('useVariantManager', () => {
       result().addOrUpdateVariant();
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Variant name is required');
+    expect(window.alert).toHaveBeenCalledWith('Variant name is required.');
     expect(result().variants).toHaveLength(0);
 
     unmount();
@@ -36,6 +36,9 @@ describe('useVariantManager', () => {
       result().handleVariantFormChange({
         target: { name: 'name', value: 'Size L', type: 'text' },
       } as any);
+    });
+
+    withAct(() => {
       result().addOrUpdateVariant();
     });
 
@@ -68,9 +71,15 @@ describe('useVariantManager', () => {
 
     withAct(() => {
       result().editVariant(result().variants[0]);
+    });
+
+    withAct(() => {
       result().handleVariantFormChange({
         target: { name: 'name', value: 'Size XL', type: 'text' },
       } as any);
+    });
+
+    withAct(() => {
       result().addOrUpdateVariant();
     });
 
