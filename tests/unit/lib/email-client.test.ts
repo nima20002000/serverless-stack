@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { log } from '@/lib/logger';
 
 const resendSendMock = vi.fn();
 const nodemailerSendMock = vi.fn();
@@ -31,14 +32,25 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 describe('email client', () => {
+  const logMock = vi.mocked(log);
+
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.RESEND_API_KEY;
+    delete process.env.RESEND_SMTP;
+    delete process.env.RESEND_SMTP_HOST;
+    delete process.env.RESEND_SMTP_PORT;
+    delete process.env.RESEND_SMTP_SECURE;
+    delete process.env.RESEND_SMTP_USER;
+    delete process.env.RESEND_SMTP_PASS;
     delete process.env.EMAIL_SMTP_HOST;
     delete process.env.EMAIL_SMTP_PORT;
     delete process.env.EMAIL_SMTP_SECURE;
     delete process.env.EMAIL_SMTP_USER;
     delete process.env.EMAIL_SMTP_PASS;
+    delete process.env.EMAIL_FROM;
+    delete process.env.EMAIL_FROM_ADDRESS;
+    delete process.env.ADMIN_EMAIL;
     vi.resetModules();
   });
 
@@ -58,6 +70,11 @@ describe('email client', () => {
         subject: 'Your Serverless Stack sign-in code',
       })
     );
+    const payload = resendSendMock.mock.calls[0][0];
+    expect(payload.html).toContain('Use this verification code');
+    expect(payload.html).toContain('<div class="code">123456</div>');
+    expect(payload.text).toContain('Code: 123456');
+    expect(payload.from).toBe('Serverless Stack <noreply@example.com>');
   });
 
   it('sends buyer confirmation when email is present', async () => {
@@ -75,7 +92,7 @@ describe('email client', () => {
       fullName: 'Buyer',
       phone: '+12025556789',
       email: 'buyer@example.com',
-      shippingAddress: 'Addr',
+      shippingAddress: 'Addr <script>alert(1)</script>',
       postalCode: '12345',
       createdAt: '2024-01-01T00:00:00.000Z',
       isGuest: true,
@@ -83,7 +100,8 @@ describe('email client', () => {
         {
           quantity: 1,
           price: 1000,
-          product: { name: 'Product', price: 1000 },
+          product: { name: 'Product <unsafe>', price: 1000 },
+          variant: { name: 'Blue <XL>' },
         },
       ],
     });
@@ -95,6 +113,17 @@ describe('email client', () => {
         subject: 'Order KT-ABC123 confirmed - Serverless Stack',
       })
     );
+    const payload = resendSendMock.mock.calls[0][0];
+    expect(payload.html).toContain('Product &lt;unsafe&gt;');
+    expect(payload.html).toContain('Blue &lt;XL&gt;');
+    expect(payload.html).toContain(
+      'Addr &lt;script&gt;alert(1)&lt;/script&gt;'
+    );
+    expect(payload.html).not.toContain('<unsafe>');
+    expect(payload.html).not.toContain('<script>alert(1)</script>');
+    expect(payload.text).toContain('Order code: KT-ABC123');
+    expect(payload.text).toContain('Payment method: Stripe');
+    expect(payload.text).toContain('Product <unsafe> (Blue <XL>)');
   });
 
   it('skips buyer confirmation when email is missing', async () => {
@@ -175,5 +204,80 @@ describe('email client', () => {
       success: false,
       error: 'ADMIN_EMAIL not configured',
     });
+    expect(logMock.warn).toHaveBeenCalledWith(
+      'ADMIN_EMAIL not configured, skipping admin confirmation email'
+    );
+    expect(resendSendMock).not.toHaveBeenCalled();
+    expect(nodemailerSendMock).not.toHaveBeenCalled();
+  });
+
+  it('sends admin confirmation with configured recipient, reference, and sanitized customer fields', async () => {
+    process.env.RESEND_API_KEY = 'resend-key';
+    process.env.ADMIN_EMAIL = 'orders@example.com';
+    resendSendMock.mockResolvedValue({
+      data: { id: 'admin-msg' },
+      error: null,
+    });
+
+    const { sendAdminOrderConfirmation } = await import('@/lib/email/client');
+
+    const result = await sendAdminOrderConfirmation(
+      {
+        id: 'tx-1',
+        transactionCode: 'KT-ABC123',
+        amount: 1000,
+        paymentMethod: 'PAYPAL',
+        fullName: 'Buyer <Name>',
+        phone: '+12025556789',
+        email: 'buyer@example.com',
+        shippingAddress: 'Addr',
+        postalCode: '12345',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        isGuest: false,
+        items: [
+          {
+            quantity: 2,
+            price: 500,
+            product: { name: 'Product', price: 500 },
+          },
+        ],
+      },
+      98765
+    );
+
+    expect(result).toEqual({ success: true, messageId: 'admin-msg' });
+    expect(resendSendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'orders@example.com',
+        subject: 'New order KT-ABC123 - Buyer <Name>',
+      })
+    );
+    const payload = resendSendMock.mock.calls[0][0];
+    expect(payload.html).toContain('Payment method:</strong> PayPal');
+    expect(payload.html).toContain('Payment reference:</strong> 98765');
+    expect(payload.html).toContain('Buyer &lt;Name&gt;');
+    expect(payload.html).not.toContain('Buyer <Name>');
+    expect(payload.text).toContain('Account type: Registered user');
+    expect(payload.text).toContain('Payment reference: 98765');
+  });
+
+  it('returns provider failure details without logging configured secrets', async () => {
+    process.env.RESEND_API_KEY = 'resend-secret-value';
+    resendSendMock.mockResolvedValue({
+      data: null,
+      error: { message: 'provider rejected' },
+    });
+
+    const { sendOTPEmail } = await import('@/lib/email/client');
+
+    const result = await sendOTPEmail('user@example.com', '654321');
+
+    expect(result).toEqual({ success: false, error: 'provider rejected' });
+    expect(logMock.error).toHaveBeenCalledWith('Resend API error', {
+      error: 'provider rejected',
+    });
+    expect(JSON.stringify(logMock.error.mock.calls)).not.toContain(
+      'resend-secret-value'
+    );
   });
 });
