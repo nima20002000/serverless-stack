@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -11,8 +10,25 @@ import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import {
+  createProductFormSnapshot,
+  isProductFormDirty,
+} from '@/lib/admin/product-form-dirty';
 import type { ProductFormData, Tag } from '@/types/product-admin';
 import { toast } from '@/store/toast-store';
+
+const initialProductFormData: ProductFormData = {
+  name: '',
+  description: '',
+  price: '',
+  discountPercent: '',
+  stock: '',
+  hasVariants: false,
+  isFeatured: false,
+  isActive: true,
+  categoryId: null,
+};
 
 async function readJsonResponse<T>(
   response: Response,
@@ -42,18 +58,9 @@ async function readErrorMessage(
 }
 
 export default function NewProductPage() {
-  const router = useRouter();
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    price: '',
-    discountPercent: '',
-    stock: '',
-    hasVariants: false,
-    isFeatured: false,
-    isActive: true,
-    categoryId: null,
-  });
+  const [formData, setFormData] = useState<ProductFormData>(
+    initialProductFormData
+  );
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -65,6 +72,51 @@ export default function NewProductPage() {
 
   // Variant management
   const variantManager = useVariantManager();
+  const initialSnapshot = useMemo(
+    () =>
+      createProductFormSnapshot({
+        formData: initialProductFormData,
+        selectedTags: [],
+        productMedia: [],
+        variants: [],
+        variantDraft: {
+          showVariantForm: false,
+          editingVariantId: null,
+          form: variantManager.variantForm,
+          media: [],
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  const currentSnapshot = useMemo(
+    () =>
+      createProductFormSnapshot({
+        formData,
+        selectedTags,
+        productMedia: productMedia.media,
+        variants: variantManager.variants,
+        variantDraft: {
+          showVariantForm: variantManager.showVariantForm,
+          editingVariantId: variantManager.editingVariantId,
+          form: variantManager.variantForm,
+          media: variantManager.variantMedia,
+        },
+      }),
+    [
+      formData,
+      productMedia.media,
+      selectedTags,
+      variantManager.editingVariantId,
+      variantManager.showVariantForm,
+      variantManager.variantForm,
+      variantManager.variantMedia,
+      variantManager.variants,
+    ]
+  );
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty: isProductFormDirty(initialSnapshot, currentSnapshot),
+  });
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -251,7 +303,7 @@ export default function NewProductPage() {
         }
       }
 
-      router.push('/admin/products');
+      unsavedChangesGuard.allowedPush('/admin/products');
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Unable to create product';
@@ -364,7 +416,7 @@ export default function NewProductPage() {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => router.back()}
+              onClick={unsavedChangesGuard.guardedBack}
               disabled={isLoading}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
@@ -382,6 +434,7 @@ export default function NewProductPage() {
           </div>
         </Card>
       </form>
+      {unsavedChangesGuard.dialog}
     </div>
   );
 }

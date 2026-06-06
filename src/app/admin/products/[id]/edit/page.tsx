@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, use, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -11,6 +10,12 @@ import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import {
+  createProductFormSnapshot,
+  isProductFormDirty,
+  type ProductFormSnapshot,
+} from '@/lib/admin/product-form-dirty';
 import type {
   ProductFormData,
   Tag,
@@ -56,7 +61,6 @@ async function readErrorMessage(
 
 export default function EditProductPage({ params }: EditProductPageProps) {
   const { id } = useUnwrappedParams(params);
-  const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -74,6 +78,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [originalVariants, setOriginalVariants] = useState<Variant[]>([]);
+  const [initialSnapshot, setInitialSnapshot] =
+    useState<ProductFormSnapshot | null>(null);
 
   // Media management (product-level)
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
@@ -92,8 +98,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       const data = await response.json();
       const product = data.product;
-
-      setFormData({
+      const nextFormData = {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
@@ -103,24 +108,28 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         isFeatured: product.isFeatured || false,
         isActive: product.isActive,
         categoryId: product.categoryId || null,
-      });
+      };
+
+      setFormData(nextFormData);
 
       // Load existing media (product-level only, not variant media)
+      let nextProductMedia: MediaItem[] = [];
       if (product.media) {
-        const productMediaItems = product.media.filter(
-          (m: MediaItem) => !m.variantId
-        );
-        productMedia.setMedia(productMediaItems);
+        nextProductMedia = product.media.filter((m: MediaItem) => !m.variantId);
       }
+      productMedia.setMedia(nextProductMedia);
 
       // Load existing tags
+      let nextSelectedTags: Tag[] = [];
       if (product.tags) {
-        setSelectedTags(product.tags);
+        nextSelectedTags = product.tags;
       }
+      setSelectedTags(nextSelectedTags);
 
       // Load existing variants with their media (sorted by order)
+      let nextVariants: Variant[] = [];
       if (product.variants) {
-        const formattedVariants = product.variants
+        nextVariants = product.variants
           .sort((a: Variant, b: Variant) => (a.order ?? 0) - (b.order ?? 0))
           .map((v: Variant) => ({
             id: v.id,
@@ -135,9 +144,24 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             isActive: v.isActive,
             media: v.media || [],
           }));
-        variantManager.setVariants(formattedVariants);
-        setOriginalVariants(formattedVariants); // Store original state for comparison
       }
+      variantManager.setVariants(nextVariants);
+      setOriginalVariants(nextVariants); // Store original state for comparison
+
+      setInitialSnapshot(
+        createProductFormSnapshot({
+          formData: nextFormData,
+          selectedTags: nextSelectedTags,
+          productMedia: nextProductMedia,
+          variants: nextVariants,
+          variantDraft: {
+            showVariantForm: false,
+            editingVariantId: null,
+            form: variantManager.variantForm,
+            media: [],
+          },
+        })
+      );
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Unable to load product';
@@ -181,6 +205,34 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const currentSnapshot = useMemo(
+    () =>
+      createProductFormSnapshot({
+        formData,
+        selectedTags,
+        productMedia: productMedia.media,
+        variants: variantManager.variants,
+        variantDraft: {
+          showVariantForm: variantManager.showVariantForm,
+          editingVariantId: variantManager.editingVariantId,
+          form: variantManager.variantForm,
+          media: variantManager.variantMedia,
+        },
+      }),
+    [
+      formData,
+      productMedia.media,
+      selectedTags,
+      variantManager.editingVariantId,
+      variantManager.showVariantForm,
+      variantManager.variantForm,
+      variantManager.variantMedia,
+      variantManager.variants,
+    ]
+  );
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty: isProductFormDirty(initialSnapshot, currentSnapshot),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -540,7 +592,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         });
       }
 
-      router.push('/admin/products');
+      unsavedChangesGuard.allowedPush('/admin/products');
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Unable to save product';
@@ -660,7 +712,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => router.back()}
+              onClick={unsavedChangesGuard.guardedBack}
               disabled={isSaving}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
@@ -678,6 +730,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           </div>
         </Card>
       </form>
+      {unsavedChangesGuard.dialog}
     </div>
   );
 }
