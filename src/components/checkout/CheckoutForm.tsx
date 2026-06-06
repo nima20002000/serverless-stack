@@ -429,8 +429,8 @@ export default function CheckoutForm({
         />
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-        <p className="text-sm text-amber-800 text-start">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/25">
+        <p className="text-start text-sm text-amber-800 dark:text-amber-200">
           {t('checkout.fulfillmentNotice')}
         </p>
       </div>
@@ -453,7 +453,7 @@ export default function CheckoutForm({
 
   return (
     <Card className="mt-6">
-      <h2 className="text-lg font-bold text-slate-900 text-start mb-4 border-b border-slate-100 pb-3">
+      <h2 className="mb-4 border-b border-slate-100 pb-3 text-start text-lg font-bold text-slate-900 dark:border-slate-800 dark:text-white">
         {t('checkout.shippingInformation')}
       </h2>
       {formContent}

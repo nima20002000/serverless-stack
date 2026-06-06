@@ -83,8 +83,8 @@ function VariantSelector({
         disabled={outOfStock}
         className={`relative w-12 h-12 rounded-full border-2 transition-all ${
           isSelected
-            ? 'border-blue-600 ring-2 ring-blue-200/70'
-            : 'border-slate-200 hover:border-slate-300'
+            ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+            : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         style={{ background: variant.color || '#ddd' }}
         title={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
@@ -115,8 +115,8 @@ function VariantSelector({
         disabled={outOfStock}
         className={`px-4 py-2 rounded-2xl border-2 transition-all min-w-[4rem] ${
           isSelected
-            ? 'border-blue-600 bg-blue-50 text-blue-700'
-            : 'border-slate-200 hover:border-slate-300 text-slate-700'
+            ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
+            : 'border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed line-through' : 'cursor-pointer'}`}
         title={outOfStock ? 'Out of stock' : variant.name}
       >
@@ -136,26 +136,34 @@ function VariantSelector({
         disabled={outOfStock}
         className={`rounded-lg border-2 px-4 py-3 text-start transition-all ${
           isSelected
-            ? 'border-blue-600 bg-blue-50'
-            : 'border-slate-200 hover:border-slate-300'
+            ? 'border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/50'
+            : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="font-medium text-sm">{variant.name}</div>
+            <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
+              {variant.name}
+            </div>
             {variant.sku && (
-              <div className="text-xs text-slate-500 mt-1">{variant.sku}</div>
+              <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {variant.sku}
+              </div>
             )}
           </div>
           <div className="text-start">
             {variant.priceAdjust !== 0 && (
-              <div className="text-sm font-medium text-blue-700">
+              <div className="text-sm font-medium text-blue-700 dark:text-blue-200">
                 {variant.priceAdjust > 0 ? '+' : ''}
                 {formatPrice(Number(variant.priceAdjust))}
               </div>
             )}
             <div
-              className={`text-xs ${outOfStock ? 'text-red-600' : 'text-slate-500'}`}
+              className={`text-xs ${
+                outOfStock
+                  ? 'text-red-600 dark:text-rose-300'
+                  : 'text-slate-500 dark:text-slate-400'
+              }`}
             >
               {outOfStock ? 'Out of stock' : `Stock: ${variant.stock}`}
             </div>
@@ -174,7 +182,7 @@ function VariantSelector({
       {/* Color Variants */}
       {colorVariants.length > 0 && (
         <div>
-          <label className="mb-3 block text-sm font-medium text-slate-700">
+          <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Color
           </label>
           <div className="flex flex-wrap gap-3">
@@ -188,7 +196,7 @@ function VariantSelector({
       {/* Size Variants */}
       {sizeVariants.length > 0 && (
         <div>
-          <label className="mb-3 block text-sm font-medium text-slate-700">
+          <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Size
           </label>
           <div className="flex flex-wrap gap-2">
@@ -202,7 +210,7 @@ function VariantSelector({
       {/* Material Variants */}
       {materialVariants.length > 0 && (
         <div>
-          <label className="mb-3 block text-sm font-medium text-slate-700">
+          <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Material
           </label>
           <div className="flex flex-wrap gap-2">
@@ -213,8 +221,8 @@ function VariantSelector({
                 disabled={isOutOfStock(variant)}
                 className={`px-4 py-2 rounded-2xl border-2 transition-all ${
                   selected === variant.id
-                    ? 'border-blue-600 bg-blue-50 text-blue-700'
-                    : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                    ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
+                    : 'border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
                 } ${isOutOfStock(variant) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 {variant.material}
@@ -227,7 +235,7 @@ function VariantSelector({
       {/* Other Variants */}
       {otherVariants.length > 0 && (
         <div>
-          <label className="mb-3 block text-sm font-medium text-slate-700">
+          <label className="mb-3 block text-sm font-medium text-slate-700 dark:text-slate-300">
             Option
           </label>
           <div className="space-y-2">
@@ -240,21 +248,21 @@ function VariantSelector({
 
       {/* Selected Variant Info */}
       {selectedVariant && (
-        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+        <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/70 dark:bg-blue-950/40">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-700">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Selected option
               </p>
-              <p className="mt-1 text-base font-semibold text-slate-950">
+              <p className="mt-1 text-base font-semibold text-slate-950 dark:text-white">
                 {selectedVariant.name}
               </p>
             </div>
             <div className="text-start">
-              <p className="text-lg font-bold text-blue-700">
+              <p className="text-lg font-bold text-blue-700 dark:text-blue-200">
                 {getVariantPrice(selectedVariant)}
               </p>
-              <p className="text-xs text-slate-600 mt-1">
+              <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                 Stock: {selectedVariant.stock}
               </p>
             </div>

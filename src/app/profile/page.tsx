@@ -221,9 +221,9 @@ export default function ProfilePage() {
     formatShippingAddress(userProfile) || userProfile.shippingAddress || '';
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-slate-950 mb-8">
+        <h1 className="mb-8 text-3xl font-bold text-slate-950 dark:text-white">
           Account profile
         </h1>
 
@@ -246,7 +246,7 @@ export default function ProfilePage() {
         {/* User Info Card */}
         <Card className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-slate-950">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
               Profile details
             </h2>
             {!isEditingProfile && (
@@ -281,50 +281,75 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-3">
               <div>
-                <span className="text-slate-600">Account ID:</span>{' '}
-                <code className="font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded-lg text-sm border border-slate-200">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Account ID:
+                </span>{' '}
+                <code className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   {userProfile.uid}
                 </code>
               </div>
               <div>
-                <span className="text-slate-600">Name:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Name:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {userProfile.name || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Email:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Email:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.email || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Phone number:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Phone number:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.phone || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Shipping address:</span>{' '}
-                <span className="font-medium text-slate-950 whitespace-pre-line">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Shipping address:
+                </span>{' '}
+                <span className="whitespace-pre-line font-medium text-slate-950 dark:text-white">
                   {profileShippingAddress || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Postal code:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Postal code:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.postalCode || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Role:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Role:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {userProfile.role === 'ADMIN' ? 'Admin' : 'User'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Joined:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Joined:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {formatDate(userProfile.createdAt)}
                 </span>
               </div>
@@ -334,7 +359,7 @@ export default function ProfilePage() {
 
         {/* Password Management Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+          <h2 className="mb-4 text-xl font-semibold text-slate-950 dark:text-white">
             Password
           </h2>
 
@@ -346,7 +371,7 @@ export default function ProfilePage() {
 
         {/* Transaction History Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+          <h2 className="mb-4 text-xl font-semibold text-slate-950 dark:text-white">
             Transactions
           </h2>
           <TransactionHistory

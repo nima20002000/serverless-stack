@@ -105,8 +105,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     </div>
 
                     {error && (
-                      <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
-                        <p className="text-sm text-red-700">{error}</p>
+                      <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-rose-800 dark:bg-rose-900/30">
+                        <p className="text-sm text-red-700 dark:text-rose-200">
+                          {error}
+                        </p>
                       </div>
                     )}
 
@@ -116,7 +118,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                           <h3 className="mb-2 text-lg font-bold text-slate-950 dark:text-white">
                             {t('cart.emptyTitle')}
                           </h3>
-                          <p className="mb-6 text-sm text-slate-500">
+                          <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
                             {t('cart.drawerEmptyDescription')}
                           </p>
                           <Button

@@ -61,7 +61,7 @@ function FailureContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-slate-950">
       <div className="max-w-md w-full">
         <Card>
           <div className="text-center">
@@ -69,42 +69,52 @@ function FailureContent() {
             <div className="mb-6">{icon}</div>
 
             {/* Error Message */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-            <p className="text-gray-600 mb-6">{subtitle}</p>
+            <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+              {title}
+            </h1>
+            <p className="mb-6 text-gray-600 dark:text-slate-400">{subtitle}</p>
 
             {/* Transaction Code if available */}
             {transactionCode && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/80">
                 <div className="flex justify-between text-sm">
-                  <span className="font-mono font-bold text-gray-900">
+                  <span className="font-mono font-bold text-gray-900 dark:text-slate-100">
                     {transactionCode}
                   </span>
-                  <span className="text-gray-600">Transaction code</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Transaction code
+                  </span>
                 </div>
               </div>
             )}
 
             {readableProvider && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/80">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 dark:text-slate-100">
                     {readableProvider}
                   </span>
-                  <span className="text-gray-600">Provider</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Provider
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Error Details */}
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800">{errorMessage}</p>
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-rose-800 dark:bg-rose-900/30">
+                <p className="text-sm text-red-800 dark:text-rose-200">
+                  {errorMessage}
+                </p>
               </div>
             )}
 
             {/* Info Message */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-yellow-800">{infoMessage}</p>
+            <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-amber-800 dark:bg-amber-900/25">
+              <p className="text-sm text-yellow-800 dark:text-amber-200">
+                {infoMessage}
+              </p>
             </div>
 
             {/* Actions */}
@@ -134,8 +144,8 @@ export default function PaymentFailurePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-gray-600">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+          <div className="text-gray-600 dark:text-slate-400">Loading...</div>
         </div>
       }
     >

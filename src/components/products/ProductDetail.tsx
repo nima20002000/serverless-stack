@@ -222,25 +222,25 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       <div className="mb-6 text-sm">
         <button
           onClick={() => router.push('/products')}
-          className="text-slate-600 hover:text-slate-800"
+          className="text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
         >
           Products
         </button>
         {product.category && (
           <>
-            <span className="mx-2 text-slate-300">/</span>
+            <span className="mx-2 text-slate-300 dark:text-slate-700">/</span>
             <button
               onClick={() =>
                 product.category &&
                 router.push(`/products?category=${product.category.slug}`)
               }
-              className="text-slate-600 hover:text-slate-800"
+              className="text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
             >
               {product.category.name}
             </button>
           </>
         )}
-        <span className="mx-2 text-slate-300">/</span>
+        <span className="mx-2 text-slate-300 dark:text-slate-700">/</span>
         <span className="text-slate-900 dark:text-slate-100">
           {product.name}
         </span>
@@ -289,7 +289,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 <button
                   key={tag.id}
                   onClick={() => router.push(`/products?tag=${tag.slug}`)}
-                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   <TagIcon className="h-3 w-3" />
                   {tag.name}
@@ -310,18 +310,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 {formatPrice(effectivePrice)}
               </span>
               {discountPercent > 0 && (
-                <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700">
+                <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700 dark:bg-rose-900/40 dark:text-rose-200">
                   {discountPercent}% off
                 </span>
               )}
               {product.isFeatured && (
-                <span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-bold text-white">
+                <span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-bold text-white dark:bg-slate-100 dark:text-slate-950">
                   Featured
                 </span>
               )}
             </div>
             {selectedVariant && selectedVariant.priceAdjust !== 0 && (
-              <div className="mt-2 text-sm text-slate-500">
+              <div className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                 Base price: {formatPrice(product.price)}
                 {discountPercent > 0 && (
                   <span className="ms-2">(before discount)</span>
@@ -333,11 +333,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           {/* Stock Status */}
           <div className="mb-6">
             {isOutOfStock ? (
-              <span className="inline-block rounded-full border border-slate-200 bg-slate-100 px-4 py-2 font-medium text-slate-600">
+              <span className="inline-block rounded-full border border-slate-200 bg-slate-100 px-4 py-2 font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 Out of stock
               </span>
             ) : (
-              <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 font-medium text-emerald-700">
+              <span className="inline-block rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
                 In stock ({effectiveStock} available)
               </span>
             )}
@@ -367,42 +367,44 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
-              <p className="text-sm text-amber-700">{error}</p>
+            <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/25">
+              <p className="text-sm text-amber-700 dark:text-amber-200">
+                {error}
+              </p>
             </div>
           )}
 
           {/* Quantity Selector */}
           {!isOutOfStock && (
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-slate-700">
+              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Quantity
               </label>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleDecrement}
                   disabled={quantity <= 1}
-                  className="rounded-lg border border-slate-200 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-200 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
                   aria-label="Decrease quantity"
                 >
-                  <MinusIcon className="w-5 h-5 text-slate-600" />
+                  <MinusIcon className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </button>
 
-                <span className="text-lg font-medium text-slate-900 min-w-[3rem] text-center">
+                <span className="min-w-[3rem] text-center text-lg font-medium text-slate-900 dark:text-white">
                   {quantity}
                 </span>
 
                 <button
                   onClick={handleIncrement}
                   disabled={quantity >= effectiveStock}
-                  className="rounded-lg border border-slate-200 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-200 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
                   aria-label="Increase quantity"
                 >
-                  <PlusIcon className="w-5 h-5 text-slate-600" />
+                  <PlusIcon className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </button>
 
                 {quantity >= effectiveStock && (
-                  <span className="ms-2 text-sm text-amber-600">
+                  <span className="ms-2 text-sm text-amber-600 dark:text-amber-300">
                     Maximum stock
                   </span>
                 )}

@@ -43,18 +43,22 @@ export default function AdminLayout({
 
   // Authenticated admin - render layout and let pages handle their own loading states
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 dark">
+    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       {/* Admin User Info Bar */}
-      <div className="bg-slate-900 text-slate-100 border-b border-slate-800">
+      <div className="border-b border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 sm:gap-2">
             <div className="text-xs sm:text-sm order-2 sm:order-1">
-              <span className="opacity-90">Workspace: </span>
+              <span className="text-slate-500 dark:text-slate-400">
+                Workspace:{' '}
+              </span>
               <span className="font-medium">Admin console</span>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm order-1 sm:order-2">
               <div>
-                <span className="opacity-90">Signed in as </span>
+                <span className="text-slate-500 dark:text-slate-400">
+                  Signed in as{' '}
+                </span>
                 <span className="font-medium truncate max-w-[150px] sm:max-w-none inline-block">
                   {session?.user?.name || session?.user?.email || 'Admin'}
                 </span>

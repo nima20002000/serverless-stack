@@ -14,6 +14,7 @@ import { siteConfig } from '@/config/site';
 import LanguageSwitcher from '@/components/i18n/LanguageSwitcher';
 import { parsePathLocale } from '@/lib/i18n/routing';
 import { useTranslations } from '@/components/providers/I18nProvider';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 const HEADER_HIDDEN_PATHS = ['/checkout'];
 
@@ -84,6 +85,7 @@ export default function Header() {
                 </Link>
               ))}
               <LanguageSwitcher />
+              <ThemeToggle />
               <WishlistIcon />
               <CartIcon onClick={() => setIsCartOpen(true)} />
               {status === 'loading' ? (
@@ -167,6 +169,9 @@ export default function Header() {
                 ))}
                 <div className="px-3 py-2">
                   <LanguageSwitcher />
+                </div>
+                <div className="px-3 py-2">
+                  <ThemeToggle />
                 </div>
                 {session ? (
                   <>

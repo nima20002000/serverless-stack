@@ -389,18 +389,18 @@ export default function ProductGallery({
           <>
             <button
               onClick={goToPrevious}
-              className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 md:start-4 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 dark:bg-slate-950/80 dark:hover:bg-slate-900 md:start-4 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Previous image"
             >
-              <PreviousIcon className="h-5 w-5 text-gray-800 md:h-6 md:w-6" />
+              <PreviousIcon className="h-5 w-5 text-gray-800 dark:text-slate-100 md:h-6 md:w-6" />
             </button>
 
             <button
               onClick={goToNext}
-              className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 md:end-4 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 dark:bg-slate-950/80 dark:hover:bg-slate-900 md:end-4 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Next image"
             >
-              <NextIcon className="h-5 w-5 text-gray-800 md:h-6 md:w-6" />
+              <NextIcon className="h-5 w-5 text-gray-800 dark:text-slate-100 md:h-6 md:w-6" />
             </button>
           </>
         )}
@@ -437,8 +437,8 @@ export default function ProductGallery({
               onClick={() => handleThumbnailClick(index)}
               className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden border-2 transition-all ${
                 index === selectedIndex
-                  ? 'border-blue-600 ring-2 ring-blue-200/70'
-                  : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+                  : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
               }`}
             >
               {item.type === 'IMAGE' ? (

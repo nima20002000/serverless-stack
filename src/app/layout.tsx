@@ -3,9 +3,9 @@ import './globals.css';
 import { SessionProvider } from '@/components/providers/SessionProvider';
 import { VersionProvider } from '@/components/providers/VersionProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
+import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import AdminThemeGate from '@/components/layout/AdminThemeGate';
 import {
   generateOrganizationSchema,
   generateWebSiteSchema,
@@ -15,6 +15,7 @@ import ToastContainer from '@/components/ui-v4/Toast';
 import { siteConfig } from '@/config/site';
 import { getBaseUrl } from '@/lib/seo/config';
 import { getServerI18n } from '@/lib/i18n/server';
+import { getThemeBootScript } from '@/lib/theme';
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
@@ -39,8 +40,12 @@ export default async function RootLayout({
   const { locale, direction, messages } = await getServerI18n();
 
   return (
-    <html lang={locale} dir={direction}>
+    <html lang={locale} dir={direction} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: getThemeBootScript() }}
+          data-theme-boot
+        />
         {/* Organization JSON-LD structured data */}
         <script
           type="application/ld+json"
@@ -54,15 +59,16 @@ export default async function RootLayout({
       </head>
       <body className="antialiased flex flex-col min-h-screen">
         <I18nProvider locale={locale} direction={direction} messages={messages}>
-          <SessionProvider>
-            <VersionProvider>
-              <AdminThemeGate />
-              <ToastContainer />
-              <Header />
-              {children}
-              <Footer />
-            </VersionProvider>
-          </SessionProvider>
+          <ThemeProvider>
+            <SessionProvider>
+              <VersionProvider>
+                <ToastContainer />
+                <Header />
+                {children}
+                <Footer />
+              </VersionProvider>
+            </SessionProvider>
+          </ThemeProvider>
         </I18nProvider>
       </body>
     </html>

@@ -384,7 +384,7 @@ function ProductCard({ product }: ProductCardProps) {
                   : null
               }
               size="md"
-              className="bg-white/90 shadow-sm backdrop-blur-sm"
+              className="bg-white/90 shadow-sm backdrop-blur-sm dark:bg-slate-950/85"
             />
           </div>
           {/* Badges */}
@@ -450,8 +450,8 @@ function ProductCard({ product }: ProductCardProps) {
                       disabled={variantOutOfStock}
                       className={`relative h-6 w-6 rounded-lg border transition-all ${
                         isSelected
-                          ? 'border-blue-600 ring-2 ring-blue-200/70'
-                          : 'border-slate-200 hover:border-slate-300'
+                          ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
                       } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                       title={variantOutOfStock ? 'Out of stock' : variant.name}
                       aria-label={variant.name}
@@ -486,8 +486,8 @@ function ProductCard({ product }: ProductCardProps) {
                         disabled={variantOutOfStock}
                         className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
                           isSelected
-                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
                         } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
                         title={
                           variantOutOfStock ? 'Out of stock' : variant.name

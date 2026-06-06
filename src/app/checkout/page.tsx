@@ -158,10 +158,12 @@ export default function CheckoutPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          <span className="text-slate-500 text-sm">Loading...</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600 dark:border-slate-700 dark:border-t-slate-300" />
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            Loading...
+          </span>
         </div>
       </div>
     );
@@ -172,14 +174,14 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Minimal Checkout Header */}
-      <header className="bg-white border-b border-slate-200">
+      <header className="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <Link
               href="/cart"
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-2 text-slate-600 transition-colors hover:text-slate-900 dark:text-slate-300 dark:hover:text-white"
             >
               <ArrowLeftIcon
                 className={`h-4 w-4 ${getPreviousChevronClass(direction)}`}
@@ -187,11 +189,11 @@ export default function CheckoutPage() {
               <span className="text-sm">Back to cart</span>
             </Link>
             <Link href="/" className="flex items-center">
-              <span className="text-xl font-bold text-slate-950">
+              <span className="text-xl font-bold text-slate-950 dark:text-white">
                 Commerce Starter
               </span>
             </Link>
-            <div className="flex items-center gap-1.5 text-slate-500">
+            <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
               <LockClosedIcon className="w-4 h-4" />
               <span className="text-xs">Secure checkout</span>
             </div>
@@ -211,16 +213,16 @@ export default function CheckoutPage() {
           {/* Left Column - Form and Payment Methods */}
           <div className="lg:col-span-7 space-y-6">
             {/* Payment Method Selection */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-white">
                 Payment method
               </h2>
               <div className="space-y-2">
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
                     paymentMethod === 'STRIPE'
-                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-slate-200 dark:bg-slate-800 dark:ring-slate-200'
+                      : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
                   }`}
                 >
                   <input
@@ -232,14 +234,14 @@ export default function CheckoutPage() {
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-slate-900 text-sm">
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">
                       Stripe
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       Pay by card through Stripe Checkout.
                     </div>
                   </div>
-                  <span className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
+                  <span className="rounded bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
                     Card
                   </span>
                 </label>
@@ -247,8 +249,8 @@ export default function CheckoutPage() {
                 <label
                   className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
                     paymentMethod === 'PAYPAL'
-                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900'
-                      : 'border-slate-200 hover:border-slate-300'
+                      ? 'border-slate-900 bg-slate-50 ring-1 ring-slate-900 dark:border-slate-200 dark:bg-slate-800 dark:ring-slate-200'
+                      : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
                   }`}
                 >
                   <input
@@ -260,27 +262,27 @@ export default function CheckoutPage() {
                     className="w-4 h-4 text-slate-900 border-slate-300 focus:ring-slate-500"
                   />
                   <div className="flex-1">
-                    <div className="font-medium text-slate-900 text-sm">
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">
                       PayPal
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
                       Pay with a PayPal account or supported wallet.
                     </div>
                   </div>
-                  <span className="rounded bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700">
+                  <span className="rounded bg-sky-100 px-2 py-1 text-xs font-medium text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">
                     Wallet
                   </span>
                 </label>
               </div>
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
                 Payment details are collected by your selected provider. This
                 store never receives raw card or PayPal credentials.
               </p>
             </div>
 
             {/* Shipping Form */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-white">
                 Shipping information
               </h2>
               <CheckoutForm
@@ -305,7 +307,7 @@ export default function CheckoutPage() {
               >
                 {`Pay ${formatPrice(finalTotal)}`}
               </Button>
-              <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
+              <div className="mt-3 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
                 <ShieldCheckIcon className="w-4 h-4" />
                 <span className="text-xs">Encrypted provider checkout</span>
               </div>
@@ -314,8 +316,8 @@ export default function CheckoutPage() {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-5">
-            <div className="bg-white rounded-xl border border-slate-200 p-5 lg:sticky lg:top-8">
-              <h2 className="text-base font-semibold text-slate-900 mb-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 lg:sticky lg:top-8 dark:border-slate-800 dark:bg-slate-900">
+              <h2 className="mb-4 text-base font-semibold text-slate-900 dark:text-white">
                 Order summary
               </h2>
 
@@ -326,7 +328,7 @@ export default function CheckoutPage() {
                     key={`${item.productId}-${item.variantId || 'no-variant'}`}
                     className="flex gap-3 group"
                   >
-                    <div className="relative flex-shrink-0 w-14 h-14 bg-slate-100 rounded-lg overflow-hidden">
+                    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
                       {item.image ? (
                         <Image
                           src={optimizeImage.cartItem(item.image)}
@@ -336,31 +338,31 @@ export default function CheckoutPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                        <div className="flex h-full w-full items-center justify-center text-slate-400">
                           <span className="text-[10px]">No image</span>
                         </div>
                       )}
-                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-slate-600 text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                      <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-600 text-[10px] font-medium text-white dark:bg-slate-300 dark:text-slate-950">
                         {item.quantity}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-medium text-slate-900 truncate">
+                      <h3 className="truncate text-sm font-medium text-slate-900 dark:text-white">
                         {item.name}
                       </h3>
                       {item.variantName && (
-                        <p className="text-xs text-slate-500 truncate">
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
                           {item.variantName}
                         </p>
                       )}
-                      <p className="text-sm text-slate-900 mt-0.5">
+                      <p className="mt-0.5 text-sm text-slate-900 dark:text-slate-100">
                         {formatPrice(item.price * item.quantity)}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(item)}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 transition-all"
+                      className="p-1 text-slate-400 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100 dark:text-slate-500 dark:hover:text-rose-300"
                       aria-label={`Remove ${item.name}`}
                     >
                       <TrashIcon className="w-4 h-4" />
@@ -370,22 +372,22 @@ export default function CheckoutPage() {
               </div>
 
               {/* Divider */}
-              <div className="border-t border-slate-200 my-4" />
+              <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
 
               {/* Promo Code Input */}
               <div className="mb-4">
-                <h3 className="text-sm font-medium text-slate-700 mb-2">
+                <h3 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                   Promo code
                 </h3>
                 <PromoCodeInput subtotal={subtotal} />
               </div>
 
               {/* Divider */}
-              <div className="border-t border-slate-200 my-4" />
+              <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
 
               {/* Totals */}
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>
                     {itemCount} {itemCount === 1 ? 'item' : 'items'}
                   </span>
@@ -393,25 +395,27 @@ export default function CheckoutPage() {
                 </div>
 
                 {appliedPromo && discountAmount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-300">
                     <span>Discount ({appliedPromo.code})</span>
                     <span>- {formatPrice(discountAmount)}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between text-slate-600">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Shipping</span>
                   <span>Calculated later</span>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-slate-200 my-4" />
+              <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
 
               {/* Final Total */}
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-slate-900">Total</span>
-                <span className="text-lg font-bold text-slate-900">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Total
+                </span>
+                <span className="text-lg font-bold text-slate-900 dark:text-white">
                   {formatPrice(finalTotal)}
                 </span>
               </div>
@@ -428,7 +432,7 @@ export default function CheckoutPage() {
                 >
                   {`Pay ${formatPrice(finalTotal)}`}
                 </Button>
-                <div className="flex items-center justify-center gap-2 mt-3 text-slate-500">
+                <div className="mt-3 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
                   <ShieldCheckIcon className="w-4 h-4" />
                   <span className="text-xs">Encrypted provider checkout</span>
                 </div>

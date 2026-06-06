@@ -61,7 +61,9 @@ export default function CartItem({
             {item.name}
           </h3>
           {item.variantName && (
-            <p className="mb-1 text-xs text-slate-500">{item.variantName}</p>
+            <p className="mb-1 text-xs text-slate-500 dark:text-slate-400">
+              {item.variantName}
+            </p>
           )}
           <p className="text-sm text-slate-600 dark:text-slate-400">
             {formatPrice(item.price)}
@@ -75,7 +77,7 @@ export default function CartItem({
             className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
             aria-label={t('cart.decreaseQuantity')}
           >
-            <MinusIcon className="h-4 w-4 text-slate-600" />
+            <MinusIcon className="h-4 w-4 text-slate-600 dark:text-slate-300" />
           </button>
 
           <span className="min-w-[2rem] text-center text-sm font-medium text-slate-950 dark:text-white">
@@ -88,11 +90,13 @@ export default function CartItem({
             className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
             aria-label={t('cart.increaseQuantity')}
           >
-            <PlusIcon className="h-4 w-4 text-slate-600" />
+            <PlusIcon className="h-4 w-4 text-slate-600 dark:text-slate-300" />
           </button>
 
           {item.quantity >= item.stock && (
-            <span className="text-xs text-amber-600">{t('cart.maxStock')}</span>
+            <span className="text-xs text-amber-600 dark:text-amber-300">
+              {t('cart.maxStock')}
+            </span>
           )}
         </div>
       </div>
@@ -100,7 +104,7 @@ export default function CartItem({
       <div className="flex flex-col items-end justify-between">
         <button
           onClick={() => onRemove(item.productId, item.variantId)}
-          className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-50"
+          className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-50 dark:text-rose-300 dark:hover:bg-rose-900/30"
           aria-label={t('cart.removeFromCart')}
         >
           <TrashIcon className="h-5 w-5" />

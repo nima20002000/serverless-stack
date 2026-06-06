@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
  */
 export default function ProfileSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-8 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto px-4">
         <Skeleton className="h-9 w-48 mb-8" />
 
@@ -42,7 +42,10 @@ export default function ProfileSkeleton() {
           <Skeleton className="h-7 w-40 mb-4" />
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="border-b border-gray-200 pb-3">
+              <div
+                key={i}
+                className="border-b border-gray-200 pb-3 dark:border-slate-800"
+              >
                 <div className="flex justify-between items-center mb-2">
                   <Skeleton className="h-5 w-32" />
                   <Skeleton className="h-6 w-20 rounded-full" />

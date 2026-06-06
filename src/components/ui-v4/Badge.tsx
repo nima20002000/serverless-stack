@@ -39,13 +39,19 @@ const BadgeV4 = forwardRef<HTMLSpanElement, BadgeV4Props>(
     `;
 
     const variantStyles = {
-      default: 'bg-slate-100 text-slate-700 border border-slate-200',
-      outline: 'bg-transparent border border-slate-300 text-slate-600',
-      success: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-      warning: 'bg-amber-100 text-amber-700 border border-amber-200',
-      error: 'bg-red-100 text-red-700 border border-red-200',
-      info: 'bg-blue-50 text-blue-700 border border-blue-200',
-      premium: 'bg-slate-900 text-white border border-slate-900',
+      default:
+        'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
+      outline:
+        'bg-transparent border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300',
+      success:
+        'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-800',
+      warning:
+        'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-800',
+      error:
+        'bg-red-100 text-red-700 border border-red-200 dark:bg-rose-900/40 dark:text-rose-200 dark:border-rose-800',
+      info: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-800',
+      premium:
+        'bg-slate-900 text-white border border-slate-900 dark:bg-slate-100 dark:text-slate-950 dark:border-slate-100',
     };
 
     const sizeStyles = {

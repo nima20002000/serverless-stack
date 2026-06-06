@@ -156,82 +156,102 @@ function SuccessContent() {
   let description =
     'Your payment is still being confirmed by the payment provider.';
   let icon = <ClockIcon className="w-20 h-20 text-amber-500 mx-auto" />;
-  let noticeClass = 'bg-amber-50 border border-amber-200 text-amber-800';
+  let noticeClass =
+    'border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200';
 
   if (hasMissingCode) {
     title = 'Payment status unavailable';
     description =
       'The payment provider returned without a transaction code. Your cart has not been cleared.';
     icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
-    noticeClass = 'bg-red-50 border border-red-200 text-red-800';
+    noticeClass =
+      'border border-red-200 bg-red-50 text-red-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
   } else if (status === 'COMPLETED') {
     title = 'Payment Completed';
     description = 'Your order has been recorded successfully.';
     icon = <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto" />;
-    noticeClass = 'bg-blue-50 border border-blue-200 text-blue-800';
+    noticeClass =
+      'border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200';
   } else if (status === 'FAILED') {
     title = 'Payment Failed';
     description = 'The payment provider did not complete this payment.';
     icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
-    noticeClass = 'bg-red-50 border border-red-200 text-red-800';
+    noticeClass =
+      'border border-red-200 bg-red-50 text-red-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-slate-950">
       <div className="max-w-md w-full">
         <Card>
           <div className="text-center">
             <div className="mb-6">{icon}</div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-            <p className="text-gray-600 mb-6">{description}</p>
+            <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+              {title}
+            </h1>
+            <p className="mb-6 text-gray-600 dark:text-slate-400">
+              {description}
+            </p>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3">
+            <div className="mb-6 space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/80">
               {transactionCode && (
                 <div className="flex justify-between text-sm">
-                  <span className="font-mono font-bold text-gray-900">
+                  <span className="font-mono font-bold text-gray-900 dark:text-slate-100">
                     {transactionCode}
                   </span>
-                  <span className="text-gray-600">Transaction code</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Transaction code
+                  </span>
                 </div>
               )}
 
               {readableProvider && (
-                <div className="flex justify-between text-sm border-t pt-3">
-                  <span className="font-medium text-gray-900">
+                <div className="flex justify-between border-t border-gray-200 pt-3 text-sm dark:border-slate-700">
+                  <span className="font-medium text-gray-900 dark:text-slate-100">
                     {readableProvider}
                   </span>
-                  <span className="text-gray-600">Provider</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Provider
+                  </span>
                 </div>
               )}
 
               {refId && (
-                <div className="flex justify-between text-sm border-t pt-3">
-                  <span className="font-mono text-gray-900">{refId}</span>
-                  <span className="text-gray-600">Reference</span>
+                <div className="flex justify-between border-t border-gray-200 pt-3 text-sm dark:border-slate-700">
+                  <span className="font-mono text-gray-900 dark:text-slate-100">
+                    {refId}
+                  </span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Reference
+                  </span>
                 </div>
               )}
 
               {captureId && (
-                <div className="flex justify-between text-sm border-t pt-3">
-                  <span className="font-mono text-gray-900 break-all">
+                <div className="flex justify-between border-t border-gray-200 pt-3 text-sm dark:border-slate-700">
+                  <span className="break-all font-mono text-gray-900 dark:text-slate-100">
                     {captureId}
                   </span>
-                  <span className="text-gray-600">PayPal Capture</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    PayPal Capture
+                  </span>
                 </div>
               )}
 
               {sessionId && (
-                <div className="flex justify-between text-sm border-t pt-3">
-                  <span className="font-mono text-gray-900 break-all">
+                <div className="flex justify-between border-t border-gray-200 pt-3 text-sm dark:border-slate-700">
+                  <span className="break-all font-mono text-gray-900 dark:text-slate-100">
                     {sessionId}
                   </span>
-                  <span className="text-gray-600">Stripe Session</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    Stripe Session
+                  </span>
                 </div>
               )}
             </div>
 
-            <div className={`rounded-lg p-4 mb-6 ${noticeClass}`}>
+            <div className={`mb-6 rounded-lg p-4 ${noticeClass}`}>
               {isLoading && (
                 <p className="text-sm">
                   Checking the payment provider for the latest status...
@@ -304,8 +324,8 @@ export default function PaymentSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-gray-600">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+          <div className="text-gray-600 dark:text-slate-400">Loading...</div>
         </div>
       }
     >
