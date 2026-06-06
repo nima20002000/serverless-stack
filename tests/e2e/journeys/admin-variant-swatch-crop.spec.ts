@@ -8,6 +8,11 @@ const nextAuthSecret = process.env.NEXTAUTH_SECRET || 'test-secret';
 const productId = 'e2e-swatch-product';
 const variantId = 'e2e-swatch-variant';
 const swatchUrl = 'https://cdn.example.test/products/blue-swatch.jpg';
+const brokenSwatchUrl = 'https://cdn.example.test/products/broken-swatch.jpg';
+const imagePng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  'base64'
+);
 
 type SavedVariant = {
   tempId?: string;
@@ -47,8 +52,25 @@ async function mockSwatchApis(
     createdVariant?: SavedVariant;
     mediaSynced?: boolean;
     patchedVariant?: SavedVariant;
-  }
+  },
+  options: {
+    mediaObjects?: Array<{
+      key: string;
+      url: string;
+      size?: number;
+    }>;
+    brokenImageUrls?: string[];
+  } = {}
 ) {
+  const mediaObjects = options.mediaObjects || [
+    {
+      key: 'products/blue-swatch.jpg',
+      size: 1200,
+      url: swatchUrl,
+    },
+  ];
+  const brokenImageUrls = new Set(options.brokenImageUrls || []);
+
   await page.route('**/api/categories**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -64,19 +86,32 @@ async function mockSwatchApis(
       body: JSON.stringify({
         success: true,
         prefixes: [],
-        objects: [
-          {
-            key: 'products/blue-swatch.jpg',
-            size: 1200,
-            lastModified: '2026-06-06T00:00:00.000Z',
-            url: swatchUrl,
-          },
-        ],
+        objects: mediaObjects.map((object) => ({
+          key: object.key,
+          size: object.size || 1200,
+          lastModified: '2026-06-06T00:00:00.000Z',
+          url: object.url,
+        })),
         nextContinuationToken: null,
         isTruncated: false,
       }),
     });
   });
+
+  for (const object of mediaObjects) {
+    await page.route(object.url, async (route) => {
+      if (brokenImageUrls.has(object.url)) {
+        await route.fulfill({ status: 404, body: '' });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        body: imagePng,
+      });
+    });
+  }
 
   await page.route('**/api/products', async (route) => {
     if (route.request().method() === 'POST') {
@@ -270,7 +305,11 @@ test.describe('admin variant swatch crop', () => {
     await page.getByText('blue-swatch.jpg').click();
     await page.getByRole('button', { name: 'Select (1)' }).click();
 
-    await page.getByRole('button', { name: /Use image as swatch/ }).click();
+    await page
+      .getByRole('button', {
+        name: /Use image blue-swatch\.jpg as swatch/,
+      })
+      .click();
     await setRangeValue(page, 'Horizontal crop', '24');
     await setRangeValue(page, 'Vertical crop', '68');
     await setRangeValue(page, 'Zoom', '2.2');
@@ -309,5 +348,125 @@ test.describe('admin variant swatch crop', () => {
     );
     await expect(preview).toHaveCSS('background-position', '24% 68%');
     await expect(preview).toHaveCSS('background-size', '220%');
+  });
+
+  test('supports keyboard swatch selection, clear flow, and mobile RTL layout', async ({
+    context,
+    page,
+  }) => {
+    const saved: {
+      createdVariant?: SavedVariant;
+      mediaSynced?: boolean;
+      patchedVariant?: SavedVariant;
+    } = {};
+    await page.setViewportSize({ width: 390, height: 844 });
+    await addAdminSession(context);
+    await mockSwatchApis(page, saved);
+
+    await page.goto('/admin/products/new');
+    await page.evaluate(() => {
+      document.documentElement.dir = 'rtl';
+    });
+
+    await page.getByLabel('Product name').fill('Swatch product');
+    await page
+      .locator('textarea[name="description"]')
+      .fill('Product with swatch crop.');
+    await page.getByLabel(/Price/).fill('49');
+    await page.getByLabel(/^Stock$/).fill('6');
+
+    await page.getByRole('button', { name: '+ Add variant' }).click();
+    await page.getByLabel('Variant name').fill('Blue');
+    await page.locator('input[name="stock"]').last().fill('6');
+
+    await page
+      .getByRole('button', { name: '+ Select from media library' })
+      .nth(1)
+      .click();
+    await page.getByText('blue-swatch.jpg').click();
+    await page.getByRole('button', { name: 'Select (1)' }).click();
+
+    const swatchChoice = page.getByRole('button', {
+      name: /Use image blue-swatch\.jpg as swatch/,
+    });
+    await swatchChoice.focus();
+    await page.keyboard.press('Enter');
+    await expect(swatchChoice).toHaveAttribute('aria-pressed', 'true');
+
+    await expect(page.getByLabel('Horizontal crop')).toBeVisible();
+    await expect(page.getByLabel('Vertical crop')).toBeVisible();
+    await expect(page.getByLabel('Zoom')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Add$/ })).toBeEnabled();
+
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await expect(swatchChoice).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByLabel('Horizontal crop')).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Add$/ })).toBeEnabled();
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth
+        )
+      )
+      .toBe(true);
+  });
+
+  test('blocks saving and shows an admin warning for a broken swatch image', async ({
+    context,
+    page,
+  }) => {
+    const saved: {
+      createdVariant?: SavedVariant;
+      mediaSynced?: boolean;
+      patchedVariant?: SavedVariant;
+    } = {};
+    await addAdminSession(context);
+    await mockSwatchApis(page, saved, {
+      mediaObjects: [
+        {
+          key: 'products/broken-swatch.jpg',
+          url: brokenSwatchUrl,
+        },
+      ],
+      brokenImageUrls: [brokenSwatchUrl],
+    });
+
+    await page.goto('/admin/products/new');
+    await page.getByLabel('Product name').fill('Swatch product');
+    await page
+      .locator('textarea[name="description"]')
+      .fill('Product with broken swatch.');
+    await page.getByLabel(/Price/).fill('49');
+    await page.getByLabel(/^Stock$/).fill('6');
+
+    await page.getByRole('button', { name: '+ Add variant' }).click();
+    await page.getByLabel('Variant name').fill('Broken');
+    await page.locator('input[name="stock"]').last().fill('6');
+
+    await page
+      .getByRole('button', { name: '+ Select from media library' })
+      .nth(1)
+      .click();
+    await page.getByText('broken-swatch.jpg').click();
+    await page.getByRole('button', { name: 'Select (1)' }).click();
+
+    await page
+      .getByRole('button', {
+        name: /Use image broken-swatch\.jpg as swatch/,
+      })
+      .click();
+
+    await expect(
+      page.getByText('Selected swatch image could not be loaded')
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Add$/ })).toBeDisabled();
+    await expect(page.getByLabel('Horizontal crop')).toBeDisabled();
+
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await expect(
+      page.getByText('Selected swatch image could not be loaded')
+    ).toBeHidden();
+    await expect(page.getByRole('button', { name: /^Add$/ })).toBeEnabled();
   });
 });
