@@ -51,6 +51,9 @@ describe('email client', () => {
     delete process.env.EMAIL_FROM;
     delete process.env.EMAIL_FROM_ADDRESS;
     delete process.env.ADMIN_EMAIL;
+    delete process.env.NEXT_PUBLIC_SITE_CURRENCY;
+    delete process.env.NEXT_PUBLIC_SITE_LOCALE;
+    delete process.env.NEXT_PUBLIC_SITE_CURRENCY_DISPLAY;
     vi.resetModules();
   });
 
@@ -259,6 +262,80 @@ describe('email client', () => {
     expect(payload.html).not.toContain('Buyer <Name>');
     expect(payload.text).toContain('Account type: Registered user');
     expect(payload.text).toContain('Payment reference: 98765');
+  });
+
+  it('formats buyer and admin order emails with the configured store currency', async () => {
+    process.env.RESEND_API_KEY = 'resend-key';
+    process.env.ADMIN_EMAIL = 'orders@example.com';
+    process.env.NEXT_PUBLIC_SITE_CURRENCY = 'JPY';
+    process.env.NEXT_PUBLIC_SITE_LOCALE = 'ja-JP';
+    process.env.NEXT_PUBLIC_SITE_CURRENCY_DISPLAY = 'code';
+    resendSendMock.mockResolvedValue({
+      data: { id: 'currency-msg' },
+      error: null,
+    });
+
+    const { sendBuyerOrderConfirmation, sendAdminOrderConfirmation } =
+      await import('@/lib/email/client');
+    const total = new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      currencyDisplay: 'code',
+    }).format(3035);
+    const unitPrice = new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      currencyDisplay: 'code',
+    }).format(1234);
+    const lineTotal = new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+      currencyDisplay: 'code',
+    }).format(2468);
+    const transaction = {
+      id: 'tx-currency',
+      transactionCode: 'KT-JPY123',
+      amount: 3035,
+      paymentMethod: 'STRIPE' as const,
+      fullName: 'Buyer',
+      phone: '+12025556789',
+      email: 'buyer@example.com',
+      shippingAddress: 'Addr',
+      postalCode: '12345',
+      createdAt: '2024-01-01T00:00:00.000Z',
+      isGuest: true,
+      items: [
+        {
+          quantity: 2,
+          price: 1234,
+          product: { name: 'Jacket', price: 1234 },
+        },
+        {
+          quantity: 1,
+          price: 567,
+          product: { name: 'Scarf', price: 567 },
+        },
+      ],
+    };
+
+    await sendBuyerOrderConfirmation(transaction);
+    await sendAdminOrderConfirmation(transaction, 456);
+
+    const buyerPayload = resendSendMock.mock.calls[0][0];
+    const adminPayload = resendSendMock.mock.calls[1][0];
+
+    expect(buyerPayload.text).toContain(`Total: ${total}`);
+    expect(buyerPayload.text).toContain(`Unit price: ${unitPrice}`);
+    expect(buyerPayload.text).toContain(`Line total: ${lineTotal}`);
+    expect(buyerPayload.html).toContain(total);
+    expect(buyerPayload.html).toContain(unitPrice);
+    expect(buyerPayload.html).toContain(lineTotal);
+    expect(adminPayload.text).toContain(`Total: ${total}`);
+    expect(adminPayload.text).toContain(`Unit price: ${unitPrice}`);
+    expect(adminPayload.text).toContain(`Line total: ${lineTotal}`);
+    expect(adminPayload.html).toContain(total);
+    expect(adminPayload.html).toContain(unitPrice);
+    expect(adminPayload.html).toContain(lineTotal);
   });
 
   it('returns provider failure details without logging configured secrets', async () => {
