@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 import { log } from '@/lib/logger';
 import { getPaymentOrderDescription } from '@/lib/payments/provider-labels';
 import { siteLocale } from '@/config/site';
+import { toProviderAmountValue } from '@/lib/utils/money';
 
 type PayPalEnvironment = 'sandbox' | 'live';
 
@@ -89,25 +90,6 @@ export interface PayPalOrderDetails {
 
 let cachedToken: CachedToken | null = null;
 
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  'bif',
-  'clp',
-  'djf',
-  'gnf',
-  'jpy',
-  'kmf',
-  'krw',
-  'mga',
-  'pyg',
-  'rwf',
-  'ugx',
-  'vnd',
-  'vuv',
-  'xaf',
-  'xof',
-  'xpf',
-]);
-
 function getPayPalConfig(): PayPalConfig {
   const clientId = process.env.PAYPAL_CLIENT_ID || '';
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
@@ -153,16 +135,7 @@ export function getPayPalCurrency(): string {
 }
 
 export function toPayPalAmountValue(amount: number, currency: string): string {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('PayPal amount must be a positive number');
-  }
-
-  const normalizedCurrency = currency.toLowerCase();
-  if (ZERO_DECIMAL_CURRENCIES.has(normalizedCurrency)) {
-    return String(Math.round(amount));
-  }
-
-  return amount.toFixed(2);
+  return toProviderAmountValue(amount, currency);
 }
 
 export function parsePayPalAmountValue(value: string): number {

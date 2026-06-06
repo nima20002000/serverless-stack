@@ -1,10 +1,20 @@
 import { siteLocale } from '@/config/site';
+import { formatCurrencyAmount } from '@/lib/utils/money';
+import type { SiteCurrencyDisplay } from '@/config/site';
 
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat(siteLocale.locale, {
-    style: 'currency',
-    currency: siteLocale.currency,
-  }).format(price);
+type FormatPriceOptions = {
+  currency?: string;
+  locale?: string;
+  currencyDisplay?: SiteCurrencyDisplay;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+};
+
+export function formatPrice(
+  price: number,
+  options: FormatPriceOptions = {}
+): string {
+  return formatCurrencyAmount(price, options);
 }
 
 export function formatNumber(value: number): string {
