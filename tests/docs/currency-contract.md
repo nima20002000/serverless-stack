@@ -35,5 +35,6 @@ Verification:
 ```bash
 npm --prefix tests run test:unit -- unit/utils/format.test.ts unit/lib/payment-currency.test.ts unit/api/transactions/create-status.test.ts
 npm --prefix tests run test:unit -- unit/components/currency-display-surfaces.test.tsx unit/lib/email-client.test.ts unit/utils/format.test.ts unit/lib/payment-currency.test.ts
+npm --prefix tests run test:unit -- unit/contracts/currency-display-wiring.test.ts
 E2E_SITE_CURRENCY=JPY E2E_SITE_LOCALE=ja-JP E2E_SITE_CURRENCY_DISPLAY=code npm --prefix tests run test:e2e:chromium -- journeys/currency-display.spec.ts
 ```
