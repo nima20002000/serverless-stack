@@ -45,6 +45,8 @@ const webServerEnv = {
   NEXT_PUBLIC_SITE_CURRENCY_DISPLAY:
     process.env.E2E_SITE_CURRENCY_DISPLAY ||
     process.env.NEXT_PUBLIC_SITE_CURRENCY_DISPLAY,
+  NEXT_PUBLIC_SITE_DIRECTION:
+    process.env.E2E_SITE_DIRECTION || process.env.NEXT_PUBLIC_SITE_DIRECTION,
 };
 
 export default defineConfig({

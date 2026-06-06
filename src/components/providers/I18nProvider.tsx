@@ -1,13 +1,13 @@
 'use client';
 
 import { createContext, useContext, useMemo } from 'react';
-import type { Locale } from '@/lib/i18n/config';
+import type { Locale, TextDirection } from '@/lib/i18n/config';
 import type { Messages, TranslationKey } from '@/lib/i18n/dictionaries';
 import { createTranslator } from '@/lib/i18n/translate';
 
 type I18nContextValue = {
   locale: Locale;
-  direction: 'ltr' | 'rtl';
+  direction: TextDirection;
   messages: Messages;
   t: ReturnType<typeof createTranslator>;
 };
@@ -21,7 +21,7 @@ export function I18nProvider({
   children,
 }: {
   locale: Locale;
-  direction: 'ltr' | 'rtl';
+  direction: TextDirection;
   messages: Messages;
   children: React.ReactNode;
 }) {
@@ -48,6 +48,10 @@ export function useI18n() {
 
 export function useTranslations() {
   return useI18n().t;
+}
+
+export function useTextDirection() {
+  return useI18n().direction;
 }
 
 export type { TranslationKey };

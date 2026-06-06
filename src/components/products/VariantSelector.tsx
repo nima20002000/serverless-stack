@@ -134,7 +134,7 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`rounded-lg border-2 px-4 py-3 text-left transition-all ${
+        className={`rounded-lg border-2 px-4 py-3 text-start transition-all ${
           isSelected
             ? 'border-blue-600 bg-blue-50'
             : 'border-slate-200 hover:border-slate-300'
@@ -147,7 +147,7 @@ function VariantSelector({
               <div className="text-xs text-slate-500 mt-1">{variant.sku}</div>
             )}
           </div>
-          <div className="text-left">
+          <div className="text-start">
             {variant.priceAdjust !== 0 && (
               <div className="text-sm font-medium text-blue-700">
                 {variant.priceAdjust > 0 ? '+' : ''}
@@ -250,7 +250,7 @@ function VariantSelector({
                 {selectedVariant.name}
               </p>
             </div>
-            <div className="text-left">
+            <div className="text-start">
               <p className="text-lg font-bold text-blue-700">
                 {getVariantPrice(selectedVariant)}
               </p>

@@ -45,10 +45,10 @@ export default function NavigationCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-slate-100 mb-1 text-left group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
+            <h3 className="mb-1 text-start text-base font-bold text-gray-900 transition-colors group-hover:text-blue-600 sm:text-lg dark:text-slate-100 dark:group-hover:text-blue-300">
               {title}
             </h3>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 text-left leading-relaxed">
+            <p className="text-start text-xs leading-relaxed text-gray-600 sm:text-sm dark:text-slate-400">
               {description}
             </p>
           </div>

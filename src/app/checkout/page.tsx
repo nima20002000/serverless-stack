@@ -25,8 +25,11 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 import CheckoutForm from '@/components/checkout/CheckoutForm';
 import PromoCodeInput from '@/components/checkout/PromoCodeInput';
 import { useCheckoutStore } from '@/store/checkout-store';
+import { useTextDirection } from '@/components/providers/I18nProvider';
+import { getPreviousChevronClass } from '@/lib/i18n/direction';
 
 export default function CheckoutPage() {
+  const direction = useTextDirection();
   const router = useRouter();
   const { data: session, status } = useSession();
   const items = useCartStore((state) => state.items);
@@ -178,7 +181,9 @@ export default function CheckoutPage() {
               href="/cart"
               className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
-              <ArrowLeftIcon className="w-4 h-4" />
+              <ArrowLeftIcon
+                className={`h-4 w-4 ${getPreviousChevronClass(direction)}`}
+              />
               <span className="text-sm">Back to cart</span>
             </Link>
             <Link href="/" className="flex items-center">

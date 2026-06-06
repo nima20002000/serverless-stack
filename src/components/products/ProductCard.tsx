@@ -12,7 +12,10 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import Badge from '@/components/ui/Badge';
-import { useTranslations } from '@/components/providers/I18nProvider';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
 
 interface Variant {
   id: string;
@@ -50,6 +53,8 @@ interface ProductCardProps {
 
 function ProductCard({ product }: ProductCardProps) {
   const t = useTranslations();
+  const direction = useTextDirection();
+  const isRtl = direction === 'rtl';
   const addItem = useCartStore((state) => state.addItem);
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
@@ -215,22 +220,29 @@ function ProductCard({ product }: ProductCardProps) {
       const isLeftSwipe = distance > minSwipeDistance;
       const isRightSwipe = distance < -minSwipeDistance;
 
-      // In RTL, left swipe = next, right swipe = previous
       if (isLeftSwipe) {
         e.preventDefault();
         e.stopPropagation();
-        goToNextVariant();
+        if (isRtl) {
+          goToPrevVariant();
+        } else {
+          goToNextVariant();
+        }
       } else if (isRightSwipe) {
         e.preventDefault();
         e.stopPropagation();
-        goToPrevVariant();
+        if (isRtl) {
+          goToNextVariant();
+        } else {
+          goToPrevVariant();
+        }
       }
 
       // Reset
       touchStartX.current = 0;
       touchEndX.current = 0;
     },
-    [hasColorVariants, goToNextVariant, goToPrevVariant]
+    [hasColorVariants, goToNextVariant, goToPrevVariant, isRtl]
   );
 
   // Calculate discounted price
@@ -351,8 +363,8 @@ function ProductCard({ product }: ProductCardProps) {
               <div className="text-sm font-medium text-slate-400">No image</div>
             </div>
           )}
-          {/* Wishlist Button - Left side (RTL: visually on right) */}
-          <div className="absolute left-2 top-2 z-10">
+          {/* Wishlist Button */}
+          <div className="absolute start-2 top-2 z-10">
             <WishlistButton
               product={{
                 id: product.id,
@@ -376,7 +388,7 @@ function ProductCard({ product }: ProductCardProps) {
             />
           </div>
           {/* Badges */}
-          <div className="absolute top-2 right-2 flex flex-col gap-2">
+          <div className="absolute end-2 top-2 flex flex-col gap-2">
             {product.isFeatured && (
               <Badge variant="premium" size="sm">
                 Featured

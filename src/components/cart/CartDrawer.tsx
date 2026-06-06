@@ -7,7 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useCartStore, formatPrice, selectTotal } from '@/store/cart-store';
 import CartItem from './CartItem';
 import Button from '@/components/ui/Button';
-import { useTranslations } from '@/components/providers/I18nProvider';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
+import { getCartDrawerDirectionClasses } from '@/lib/i18n/direction';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -16,6 +20,8 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const t = useTranslations();
+  const direction = useTextDirection();
+  const drawerClasses = getCartDrawerDirectionClasses(direction);
   const router = useRouter();
   const { items, updateQuantity, removeItem } = useCartStore();
   const total = useCartStore(selectTotal);
@@ -66,17 +72,23 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
         <div className="fixed inset-0 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div
+              className={`pointer-events-none fixed inset-y-0 flex max-w-full ${drawerClasses.container}`}
+            >
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-300"
-                enterFrom="translate-x-full"
+                enterFrom={drawerClasses.enterFrom}
                 enterTo="translate-x-0"
                 leave="transform transition ease-in-out duration-300"
                 leaveFrom="translate-x-0"
-                leaveTo="translate-x-full"
+                leaveTo={drawerClasses.leaveTo}
               >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
+                <Dialog.Panel
+                  className="pointer-events-auto w-screen max-w-md"
+                  data-testid="cart-drawer-panel"
+                  data-direction={direction}
+                >
                   <div className="flex h-full flex-col bg-white shadow-xl dark:bg-slate-950">
                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 dark:border-slate-800">
                       <Dialog.Title className="text-lg font-bold text-slate-950 dark:text-white">

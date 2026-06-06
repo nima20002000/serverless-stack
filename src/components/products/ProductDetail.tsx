@@ -324,7 +324,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <div className="mt-2 text-sm text-slate-500">
                 Base price: {formatPrice(product.price)}
                 {discountPercent > 0 && (
-                  <span className="ml-2">(before discount)</span>
+                  <span className="ms-2">(before discount)</span>
                 )}
               </div>
             )}
@@ -402,7 +402,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 </button>
 
                 {quantity >= effectiveStock && (
-                  <span className="ml-2 text-sm text-amber-600">
+                  <span className="ms-2 text-sm text-amber-600">
                     Maximum stock
                   </span>
                 )}

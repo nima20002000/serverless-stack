@@ -10,6 +10,7 @@ import {
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
+import { useTextDirection } from '@/components/providers/I18nProvider';
 
 interface MediaItem {
   id: string;
@@ -45,6 +46,10 @@ export default function ProductGallery({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const direction = useTextDirection();
+  const isRtl = direction === 'rtl';
+  const PreviousIcon = isRtl ? ChevronRightIcon : ChevronLeftIcon;
+  const NextIcon = isRtl ? ChevronLeftIcon : ChevronRightIcon;
 
   // Track preloaded variant IDs to avoid redundant preloading
   const preloadedVariants = useRef<Set<string>>(new Set());
@@ -275,11 +280,18 @@ export default function ProductGallery({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    // In RTL, left swipe = previous, right swipe = next
     if (isLeftSwipe) {
-      goToPrevious();
+      if (isRtl) {
+        goToPrevious();
+      } else {
+        goToNext();
+      }
     } else if (isRightSwipe) {
-      goToNext();
+      if (isRtl) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
     }
 
     // Reset
@@ -306,11 +318,18 @@ export default function ProductGallery({
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    // In RTL, left swipe = previous, right swipe = next
     if (isLeftSwipe) {
-      goToPrevious();
+      if (isRtl) {
+        goToPrevious();
+      } else {
+        goToNext();
+      }
     } else if (isRightSwipe) {
-      goToNext();
+      if (isRtl) {
+        goToNext();
+      } else {
+        goToPrevious();
+      }
     }
 
     // Reset
@@ -370,18 +389,18 @@ export default function ProductGallery({
           <>
             <button
               onClick={goToPrevious}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
+              className="absolute start-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 md:start-4 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Previous image"
             >
-              <ChevronLeftIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
+              <PreviousIcon className="h-5 w-5 text-gray-800 md:h-6 md:w-6" />
             </button>
 
             <button
               onClick={goToNext}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-opacity active:opacity-100"
+              className="absolute end-2 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-2 opacity-70 shadow-lg transition-opacity hover:bg-white active:opacity-100 md:end-4 md:opacity-0 md:group-hover:opacity-100"
               aria-label="Next image"
             >
-              <ChevronRightIcon className="h-5 w-5 md:h-6 md:w-6 text-gray-800" />
+              <NextIcon className="h-5 w-5 text-gray-800 md:h-6 md:w-6" />
             </button>
           </>
         )}
@@ -474,7 +493,7 @@ export default function ProductGallery({
               e.stopPropagation();
               setIsZoomed(false);
             }}
-            className="absolute top-4 right-4 text-white bg-black bg-opacity-60 hover:bg-opacity-80 rounded-full p-2 transition-colors z-10"
+            className="absolute end-4 top-4 z-10 rounded-full bg-black bg-opacity-60 p-2 text-white transition-colors hover:bg-opacity-80"
             aria-label="Close"
           >
             <XMarkIcon className="h-6 w-6" />
@@ -488,10 +507,10 @@ export default function ProductGallery({
                   e.stopPropagation();
                   goToPrevious();
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
+                className="absolute start-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3 shadow-lg transition-all hover:bg-white/30"
                 aria-label="Previous image"
               >
-                <ChevronLeftIcon className="h-6 w-6 text-white" />
+                <PreviousIcon className="h-6 w-6 text-white" />
               </button>
 
               <button
@@ -499,10 +518,10 @@ export default function ProductGallery({
                   e.stopPropagation();
                   goToNext();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 rounded-full p-3 shadow-lg transition-all z-10"
+                className="absolute end-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/20 p-3 shadow-lg transition-all hover:bg-white/30"
                 aria-label="Next image"
               >
-                <ChevronRightIcon className="h-6 w-6 text-white" />
+                <NextIcon className="h-6 w-6 text-white" />
               </button>
             </>
           )}

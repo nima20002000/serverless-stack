@@ -9,10 +9,15 @@ import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
-import { useTranslations } from '@/components/providers/I18nProvider';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
+import { getPreviousChevronClass } from '@/lib/i18n/direction';
 
 export default function CartPageClient() {
   const t = useTranslations();
+  const direction = useTextDirection();
   const router = useRouter();
   const { items, updateQuantity, removeItem, clearCart } = useCartStore();
   const total = useCartStore(selectTotal);
@@ -58,7 +63,9 @@ export default function CartPageClient() {
               className="rounded-lg p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="Back to products"
             >
-              <ArrowLeftIcon className="h-5 w-5 text-slate-700 dark:text-slate-200" />
+              <ArrowLeftIcon
+                className={`h-5 w-5 text-slate-700 dark:text-slate-200 ${getPreviousChevronClass(direction)}`}
+              />
             </Link>
             <h1 className="text-2xl font-bold text-slate-950 dark:text-white">
               {t('cart.title')}
@@ -78,7 +85,7 @@ export default function CartPageClient() {
               </p>
               <button
                 onClick={handleClearCart}
-                className="text-left text-sm font-medium text-red-700 transition-colors hover:text-red-800"
+                className="text-start text-sm font-medium text-red-700 transition-colors hover:text-red-800"
               >
                 {t('cart.clearCart')}
               </button>
