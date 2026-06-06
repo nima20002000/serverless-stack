@@ -326,8 +326,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         v.id.startsWith('variant-')
       );
 
-      // Helper: Check if variant properties changed
-      const variantPropsChanged = (
+      // Helper: Check if non-swatch variant properties changed
+      const variantBasePropsChanged = (
         current: (typeof existingVariants)[0],
         original: (typeof originalVariants)[0] | undefined
       ) => {
@@ -340,7 +340,16 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           current.material !== original.material ||
           current.priceAdjust !== original.priceAdjust ||
           current.stock !== original.stock ||
-          current.isActive !== original.isActive ||
+          current.isActive !== original.isActive
+        );
+      };
+
+      const variantSwatchPropsChanged = (
+        current: (typeof existingVariants)[0],
+        original: (typeof originalVariants)[0] | undefined
+      ) => {
+        if (!original) return Boolean(current.swatchImageUrl);
+        return (
           current.swatchImageUrl !== original.swatchImageUrl ||
           JSON.stringify(current.swatchCrop || null) !==
             JSON.stringify(original.swatchCrop || null)
@@ -365,7 +374,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Update changed variants using batch API (single request instead of N parallel requests)
       const variantsToUpdate = existingVariants.filter((variant) => {
         const original = originalVariants.find((v) => v.id === variant.id);
-        return variantPropsChanged(variant, original);
+        return variantBasePropsChanged(variant, original);
       });
 
       if (variantsToUpdate.length > 0) {
@@ -385,8 +394,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 priceAdjust: parseFloat(variant.priceAdjust),
                 stock: parseInt(variant.stock),
                 isActive: variant.isActive,
-                swatchImageUrl: variant.swatchImageUrl || null,
-                swatchCrop: variant.swatchCrop || null,
               })),
             }),
           }
@@ -424,8 +431,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               stock: parseInt(variant.stock),
               order: variant.order,
               isActive: variant.isActive,
-              swatchImageUrl: variant.swatchImageUrl || null,
-              swatchCrop: variant.swatchCrop || null,
             })),
           }),
         });
@@ -575,6 +580,53 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         if (!batchSyncResponse.ok) {
           throw new Error(
             await readErrorMessage(batchSyncResponse, 'Unable to sync media')
+          );
+        }
+      }
+
+      const swatchVariantsToUpdate = variantManager.variants.filter(
+        (variant) => {
+          const realVariantId = variantIdMapping[variant.id] || variant.id;
+          if (!realVariantId) return false;
+          if (variant.id.startsWith('variant-')) {
+            return Boolean(variant.swatchImageUrl);
+          }
+
+          const original = originalVariants.find((v) => v.id === variant.id);
+          return variantSwatchPropsChanged(variant, original);
+        }
+      );
+
+      if (swatchVariantsToUpdate.length > 0) {
+        const swatchUpdateResponse = await fetch(
+          `/api/products/${id}/variants`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              variants: swatchVariantsToUpdate.map((variant) => ({
+                id: variantIdMapping[variant.id] || variant.id,
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                isActive: variant.isActive,
+                swatchImageUrl: variant.swatchImageUrl || null,
+                swatchCrop: variant.swatchCrop || null,
+              })),
+            }),
+          }
+        );
+
+        if (!swatchUpdateResponse.ok) {
+          throw new Error(
+            await readErrorMessage(
+              swatchUpdateResponse,
+              'Unable to save variant swatches'
+            )
           );
         }
       }

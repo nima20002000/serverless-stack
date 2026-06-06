@@ -10,6 +10,8 @@ import { calculateDiscountedPrice } from '@/lib/utils/format';
 import {
   normalizeVariantSwatchCrop,
   normalizeVariantSwatch,
+  SWATCH_CROP_LIMITS,
+  type NormalizedVariantSwatch,
   type VariantSwatchCrop,
 } from '@/lib/variant-swatch';
 
@@ -22,6 +24,7 @@ type Category = Tables<'categories'>;
 type Tag = Tables<'tags'>;
 
 type MediaType = Database['public']['Enums']['MediaType'];
+type SwatchMediaRecord = Pick<ProductMedia, 'url' | 'variantId' | 'type'>;
 
 // Product with all relations (matching Prisma's ProductWithRelations)
 export interface ProductWithRelations extends Product {
@@ -40,13 +43,13 @@ export interface VariantWithMedia extends ProductVariant {
 
 function getVariantSwatchUpdatePayload(data: {
   swatchImageUrl?: string | null;
-  swatchCrop?: Partial<VariantSwatchCrop> | null;
+  swatchCrop?: unknown;
 }): {
   swatchImageUrl?: string | null;
   swatchCrop?: VariantSwatchCrop | null;
 } {
   if (data.swatchImageUrl !== undefined) {
-    const swatch = normalizeVariantSwatch(data);
+    const swatch = normalizePersistableVariantSwatch(data);
 
     return {
       swatchImageUrl: swatch.swatchImageUrl,
@@ -55,6 +58,10 @@ function getVariantSwatchUpdatePayload(data: {
   }
 
   if (data.swatchCrop !== undefined) {
+    if (data.swatchCrop !== null) {
+      assertPersistableVariantSwatchCrop(data.swatchCrop);
+    }
+
     return {
       swatchCrop: data.swatchCrop
         ? normalizeVariantSwatchCrop(data.swatchCrop)
@@ -63,6 +70,295 @@ function getVariantSwatchUpdatePayload(data: {
   }
 
   return {};
+}
+
+function normalizePersistableVariantSwatch(data: {
+  swatchImageUrl?: unknown;
+  swatchCrop?: unknown;
+}): NormalizedVariantSwatch {
+  if (
+    data.swatchImageUrl !== undefined &&
+    data.swatchImageUrl !== null &&
+    typeof data.swatchImageUrl !== 'string'
+  ) {
+    throw new Error(
+      'Variant swatch image must reference an existing safe product media URL'
+    );
+  }
+
+  if (data.swatchCrop !== undefined && data.swatchCrop !== null) {
+    assertPersistableVariantSwatchCrop(data.swatchCrop);
+  }
+
+  const swatchImageUrl = data.swatchImageUrl as string | null | undefined;
+
+  return normalizeVariantSwatch({
+    swatchImageUrl,
+    swatchCrop: data.swatchCrop,
+  });
+}
+
+function assertPersistableVariantSwatchCrop(
+  crop: unknown
+): asserts crop is VariantSwatchCrop {
+  if (!crop || typeof crop !== 'object' || Array.isArray(crop)) {
+    throw new Error(
+      'Variant swatch crop values must be finite numbers within allowed bounds'
+    );
+  }
+
+  const cropRecord = crop as Record<keyof VariantSwatchCrop, unknown>;
+  const fields: Array<keyof VariantSwatchCrop> = ['x', 'y', 'zoom'];
+
+  for (const field of fields) {
+    const value = cropRecord[field];
+    const limits = SWATCH_CROP_LIMITS[field];
+
+    if (
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      value < limits.min ||
+      value > limits.max
+    ) {
+      throw new Error(
+        'Variant swatch crop values must be finite numbers within allowed bounds'
+      );
+    }
+  }
+}
+
+function isSafeMediaUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith('/')) return !trimmed.startsWith('//');
+
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function assertSafeSwatchMediaUrl(url: string): void {
+  if (!isSafeMediaUrl(url)) {
+    throw new Error(
+      'Variant swatch image must reference an existing safe product media URL'
+    );
+  }
+}
+
+function mediaRecordOwnsVariantSwatch(
+  media: SwatchMediaRecord,
+  variantId: string,
+  swatchImageUrl: string
+): boolean {
+  return (
+    media.type === 'IMAGE' &&
+    media.url === swatchImageUrl &&
+    (media.variantId === null || media.variantId === variantId)
+  );
+}
+
+async function validateVariantSwatchMediaOwnership(
+  supabase: ReturnType<typeof createClient>,
+  productId: string,
+  variantId: string,
+  swatch: NormalizedVariantSwatch
+): Promise<void> {
+  if (!swatch.swatchImageUrl) return;
+
+  const swatchImageUrl = swatch.swatchImageUrl;
+  assertSafeSwatchMediaUrl(swatchImageUrl);
+
+  const { data: media, error } = await supabase
+    .from('product_media')
+    .select('url, variantId, type')
+    .eq('productId', productId)
+    .eq('url', swatchImageUrl);
+
+  if (error) {
+    log.error('Failed to validate variant swatch media ownership', {
+      productId,
+      variantId,
+      error,
+    });
+    throw new Error('Unable to validate variant swatch image');
+  }
+
+  const ownsSwatch = (media || []).some((record) =>
+    mediaRecordOwnsVariantSwatch(record, variantId, swatchImageUrl)
+  );
+
+  if (!ownsSwatch) {
+    throw new Error(
+      'Variant swatch image must reference existing product or variant media'
+    );
+  }
+}
+
+async function validateVariantSwatchMediaOwnershipBatch(
+  supabase: ReturnType<typeof createClient>,
+  productId: string,
+  swatches: Array<{
+    variantId: string;
+    swatch: NormalizedVariantSwatch;
+  }>
+): Promise<void> {
+  const swatchesWithImages = swatches.filter(
+    ({ swatch }) => swatch.swatchImageUrl
+  );
+  if (swatchesWithImages.length === 0) return;
+
+  const swatchUrls = Array.from(
+    new Set(
+      swatchesWithImages.map(({ swatch }) => {
+        const url = swatch.swatchImageUrl as string;
+        assertSafeSwatchMediaUrl(url);
+        return url;
+      })
+    )
+  );
+
+  const { data: media, error } = await supabase
+    .from('product_media')
+    .select('url, variantId, type')
+    .eq('productId', productId)
+    .in('url', swatchUrls);
+
+  if (error) {
+    log.error('Failed to validate variant swatch media ownership', {
+      productId,
+      error,
+    });
+    throw new Error('Unable to validate variant swatch images');
+  }
+
+  const mediaRecords = media || [];
+  for (const { variantId, swatch } of swatchesWithImages) {
+    const swatchImageUrl = swatch.swatchImageUrl;
+    if (!swatchImageUrl) continue;
+
+    const ownsSwatch = mediaRecords.some((record) =>
+      mediaRecordOwnsVariantSwatch(record, variantId, swatchImageUrl)
+    );
+
+    if (!ownsSwatch) {
+      throw new Error(
+        'Variant swatch image must reference existing product or variant media'
+      );
+    }
+  }
+}
+
+async function clearVariantSwatchesForDeletedMedia(
+  supabase: ReturnType<typeof createClient>,
+  deletedMedia: Array<
+    Pick<ProductMedia, 'productId' | 'variantId' | 'url' | 'type'>
+  >
+): Promise<void> {
+  const imageMedia = deletedMedia.filter((media) => media.type === 'IMAGE');
+  if (imageMedia.length === 0) return;
+
+  const updatedAt = new Date().toISOString();
+  const mediaGroups = new Map<string, { productId: string; url: string }>();
+
+  for (const media of imageMedia) {
+    mediaGroups.set(JSON.stringify([media.productId, media.url]), {
+      productId: media.productId,
+      url: media.url,
+    });
+  }
+
+  await Promise.all(
+    Array.from(mediaGroups.values()).map(async (media) => {
+      const { data: remainingMedia, error: remainingMediaError } =
+        await supabase
+          .from('product_media')
+          .select('variantId, type')
+          .eq('productId', media.productId)
+          .eq('url', media.url)
+          .eq('type', 'IMAGE');
+
+      if (remainingMediaError) {
+        log.error('Failed to check remaining swatch media owners', {
+          productId: media.productId,
+          url: media.url,
+          error: remainingMediaError,
+        });
+        throw new Error('Unable to clear stale variant swatch references');
+      }
+
+      const remainingProductOwner = (remainingMedia || []).some(
+        (record) => record.type === 'IMAGE' && record.variantId === null
+      );
+      if (remainingProductOwner) return;
+
+      const remainingVariantOwners = new Set(
+        (remainingMedia || [])
+          .filter((record) => record.type === 'IMAGE' && record.variantId)
+          .map((record) => record.variantId as string)
+      );
+
+      const { data: swatchVariants, error: swatchVariantsError } =
+        await supabase
+          .from('product_variants')
+          .select('id')
+          .eq('productId', media.productId)
+          .eq('swatchImageUrl', media.url);
+
+      if (swatchVariantsError) {
+        log.error(
+          'Failed to fetch stale variant swatches after media deletion',
+          {
+            productId: media.productId,
+            url: media.url,
+            error: swatchVariantsError,
+          }
+        );
+        throw new Error('Unable to clear stale variant swatch references');
+      }
+
+      const staleVariantIds = (swatchVariants || [])
+        .map((variant) => variant.id)
+        .filter((variantId) => !remainingVariantOwners.has(variantId));
+
+      await Promise.all(
+        staleVariantIds.map((variantId) =>
+          Promise.resolve(
+            supabase
+              .from('product_variants')
+              .update({
+                swatchImageUrl: null,
+                swatchCrop: null,
+                updatedAt,
+              })
+              .eq('id', variantId)
+              .eq('productId', media.productId)
+          ).then(({ error }) => {
+            if (error) {
+              log.error(
+                'Failed to clear stale variant swatch after media deletion',
+                {
+                  productId: media.productId,
+                  variantId,
+                  error,
+                }
+              );
+              throw new Error(
+                'Unable to clear stale variant swatch references'
+              );
+            }
+
+            log.warn('Cleared stale variant swatch after media deletion', {
+              productId: media.productId,
+              variantId,
+            });
+          })
+        )
+      );
+    })
+  );
 }
 
 /**
@@ -1697,7 +1993,7 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
   // Get the media being deleted to check if it's the default
   const { data: media, error: fetchError } = await supabase
     .from('product_media')
-    .select('productId, variantId, isDefault')
+    .select('productId, variantId, isDefault, url, type')
     .eq('id', id)
     .single();
 
@@ -1711,6 +2007,8 @@ export async function deleteProductMedia(id: string): Promise<DeleteResult> {
     log.error('Failed to delete product media', { id, error });
     throw new Error('Unable to delete product media');
   }
+
+  await clearVariantSwatchesForDeletedMedia(supabase, [media]);
 
   // If the deleted media was the default, set the first remaining media as default
   if (media.isDefault) {
@@ -1783,19 +2081,42 @@ export async function batchSyncProductMedia(
   let deleted = 0;
   let added = 0;
   let updated = 0;
+  let mediaDeletedForSwatchCleanup: Array<
+    Pick<ProductMedia, 'productId' | 'variantId' | 'url' | 'type'>
+  > = [];
 
   // Step 1: Delete media in bulk
   if (operations.delete.length > 0) {
-    const { error, count } = await supabase
+    const { data: mediaToDelete, error: fetchDeleteError } = await supabase
       .from('product_media')
-      .delete({ count: 'exact' })
+      .select('id, productId, variantId, url, type')
+      .eq('productId', productId)
       .in('id', operations.delete);
 
-    if (error) {
-      log.error('Failed to delete media in batch', { error });
+    if (fetchDeleteError) {
+      log.error('Failed to fetch media before batch deletion', {
+        productId,
+        error: fetchDeleteError,
+      });
       throw new Error('Unable to delete product media');
     }
-    deleted = count || 0;
+
+    const deleteIds = (mediaToDelete || []).map((media) => media.id);
+    if (deleteIds.length === 0) {
+      deleted = 0;
+    } else {
+      const { error, count } = await supabase
+        .from('product_media')
+        .delete({ count: 'exact' })
+        .in('id', deleteIds);
+
+      if (error) {
+        log.error('Failed to delete media in batch', { error });
+        throw new Error('Unable to delete product media');
+      }
+      deleted = count || 0;
+      mediaDeletedForSwatchCleanup = mediaToDelete || [];
+    }
   }
 
   // Step 2: Add new media in bulk
@@ -1818,9 +2139,22 @@ export async function batchSyncProductMedia(
 
     if (error) {
       log.error('Failed to add media in batch', { error });
+      if (mediaDeletedForSwatchCleanup.length > 0) {
+        await clearVariantSwatchesForDeletedMedia(
+          supabase,
+          mediaDeletedForSwatchCleanup
+        );
+      }
       throw new Error('Unable to add product media');
     }
     added = count || mediaToInsert.length;
+  }
+
+  if (mediaDeletedForSwatchCleanup.length > 0) {
+    await clearVariantSwatchesForDeletedMedia(
+      supabase,
+      mediaDeletedForSwatchCleanup
+    );
   }
 
   // Step 3: Update existing media
@@ -2055,7 +2389,7 @@ export async function batchCreateProductVariants(
     order?: number;
     isActive?: boolean;
     swatchImageUrl?: string | null;
-    swatchCrop?: Partial<VariantSwatchCrop> | null;
+    swatchCrop?: unknown;
   }>
 ): Promise<{
   variants: VariantWithMedia[];
@@ -2105,7 +2439,7 @@ export async function batchCreateProductVariants(
 
     // Auto-assign order if not provided
     const order = variant.order ?? ++currentMaxOrder;
-    const swatch = normalizeVariantSwatch(variant);
+    const swatch = normalizePersistableVariantSwatch(variant);
 
     return {
       id: variantId,
@@ -2124,6 +2458,18 @@ export async function batchCreateProductVariants(
       updatedAt: new Date().toISOString(),
     };
   });
+
+  await validateVariantSwatchMediaOwnershipBatch(
+    supabase,
+    productId,
+    variantsToInsert.map((variant) => ({
+      variantId: variant.id,
+      swatch: {
+        swatchImageUrl: variant.swatchImageUrl,
+        swatchCrop: variant.swatchCrop,
+      },
+    }))
+  );
 
   // Bulk insert all variants in a single query
   const { data: createdVariants, error } = await supabase
@@ -2172,7 +2518,7 @@ export async function batchUpdateProductVariants(
     stock: number;
     isActive?: boolean;
     swatchImageUrl?: string | null;
-    swatchCrop?: Partial<VariantSwatchCrop> | null;
+    swatchCrop?: unknown;
   }>
 ): Promise<{ updated: number }> {
   if (variants.length === 0) {
@@ -2185,6 +2531,34 @@ export async function batchUpdateProductVariants(
   });
 
   const supabase = createClient();
+
+  const requestedVariantIds = Array.from(
+    new Set(variants.map((variant) => variant.id))
+  );
+  const { data: ownedVariants, error: ownedVariantsError } = await supabase
+    .from('product_variants')
+    .select('id, swatchImageUrl')
+    .eq('productId', productId)
+    .in('id', requestedVariantIds);
+
+  if (ownedVariantsError) {
+    log.error('Failed to validate variant product ownership', {
+      productId,
+      error: ownedVariantsError,
+    });
+    throw new Error('Unable to validate product variants');
+  }
+
+  const ownedVariantIds = new Set((ownedVariants || []).map(({ id }) => id));
+  const ownedVariantSwatchUrlById = new Map(
+    (ownedVariants || []).map(({ id, swatchImageUrl }) => [id, swatchImageUrl])
+  );
+  const allVariantsBelongToProduct = requestedVariantIds.every((id) =>
+    ownedVariantIds.has(id)
+  );
+  if (!allVariantsBelongToProduct) {
+    throw new Error('Product variants must belong to the requested product');
+  }
 
   // Validate all SKUs for uniqueness (batch check)
   const skusToCheck = variants.filter((v) => v.sku).map((v) => v.sku as string);
@@ -2207,11 +2581,40 @@ export async function batchUpdateProductVariants(
 
   const updatedAt = new Date().toISOString();
 
+  const swatchUpdates = variants.map((variant) => ({
+    variant,
+    swatchUpdate: getVariantSwatchUpdatePayload(variant),
+  }));
+
+  const swatchOwnershipChecks = swatchUpdates
+    .filter(
+      ({ variant }) =>
+        variant.swatchImageUrl !== undefined || variant.swatchCrop !== undefined
+    )
+    .map(({ variant, swatchUpdate }) => {
+      const nextSwatchImageUrl =
+        swatchUpdate.swatchImageUrl !== undefined
+          ? swatchUpdate.swatchImageUrl
+          : ownedVariantSwatchUrlById.get(variant.id);
+
+      return {
+        variantId: variant.id,
+        swatch: {
+          swatchImageUrl: nextSwatchImageUrl ?? null,
+          swatchCrop: swatchUpdate.swatchCrop ?? null,
+        },
+      };
+    });
+
+  await validateVariantSwatchMediaOwnershipBatch(
+    supabase,
+    productId,
+    swatchOwnershipChecks
+  );
+
   // Update all variants in parallel, skipping individual stock updates
   await Promise.all(
-    variants.map((variant) => {
-      const swatchUpdate = getVariantSwatchUpdatePayload(variant);
-
+    swatchUpdates.map(({ variant, swatchUpdate }) => {
       return supabase
         .from('product_variants')
         .update({
@@ -2226,7 +2629,8 @@ export async function batchUpdateProductVariants(
           ...swatchUpdate,
           updatedAt,
         })
-        .eq('id', variant.id);
+        .eq('id', variant.id)
+        .eq('productId', productId);
     })
   );
 
@@ -2256,7 +2660,7 @@ export async function createProductVariant(data: {
   order?: number;
   isActive?: boolean;
   swatchImageUrl?: string | null;
-  swatchCrop?: Partial<VariantSwatchCrop> | null;
+  swatchCrop?: unknown;
 }): Promise<VariantWithMedia> {
   log.info('Creating product variant', {
     productId: data.productId,
@@ -2295,7 +2699,13 @@ export async function createProductVariant(data: {
 
   // Create variant
   const variantId = randomUUID();
-  const swatch = normalizeVariantSwatch(data);
+  const swatch = normalizePersistableVariantSwatch(data);
+  await validateVariantSwatchMediaOwnership(
+    supabase,
+    data.productId,
+    variantId,
+    swatch
+  );
   const { data: variant, error } = await supabase
     .from('product_variants')
     .insert({
@@ -2357,7 +2767,7 @@ export async function updateProductVariant(
     stock: number;
     isActive: boolean;
     swatchImageUrl: string | null;
-    swatchCrop: Partial<VariantSwatchCrop> | null;
+    swatchCrop: unknown;
   }>,
   options?: {
     skipStockUpdate?: boolean;
@@ -2371,7 +2781,7 @@ export async function updateProductVariant(
   // Get the variant first to know which product to update
   const { data: existingVariant, error: fetchError } = await supabase
     .from('product_variants')
-    .select('productId')
+    .select('productId, swatchImageUrl')
     .eq('id', id)
     .single();
 
@@ -2397,6 +2807,26 @@ export async function updateProductVariant(
     swatchImageUrl,
     swatchCrop,
   });
+
+  const hasSwatchUpdate =
+    swatchImageUrl !== undefined || swatchCrop !== undefined;
+  if (hasSwatchUpdate) {
+    const nextSwatchImageUrl =
+      swatchUpdate.swatchImageUrl !== undefined
+        ? swatchUpdate.swatchImageUrl
+        : existingVariant.swatchImageUrl;
+
+    await validateVariantSwatchMediaOwnership(
+      supabase,
+      existingVariant.productId,
+      id,
+      {
+        swatchImageUrl: nextSwatchImageUrl ?? null,
+        swatchCrop: swatchUpdate.swatchCrop ?? null,
+      }
+    );
+  }
+
   const { data: variant, error } = await supabase
     .from('product_variants')
     .update({

@@ -279,6 +279,58 @@ describe('POST /api/products/[id]/variants', () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({ error: 'boom' });
   });
+
+  it('returns 400 when swatch ownership validation fails', async () => {
+    const { POST } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    createProductVariantMock.mockRejectedValue(
+      new Error(
+        'Variant swatch image must reference existing product or variant media'
+      )
+    );
+
+    const response = await POST(
+      createVariantsPostRequest('p1', {
+        name: 'Blue',
+        stock: 1,
+        swatchImageUrl: '/media/missing.jpg',
+        swatchCrop: { x: 20, y: 60, zoom: 2 },
+      }),
+      { params: { id: 'p1' } }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Variant swatch image must reference existing product or variant media',
+    });
+  });
+
+  it('returns 400 when swatch crop validation fails', async () => {
+    const { POST } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    createProductVariantMock.mockRejectedValue(
+      new Error(
+        'Variant swatch crop values must be finite numbers within allowed bounds'
+      )
+    );
+
+    const response = await POST(
+      createVariantsPostRequest('p1', {
+        name: 'Blue',
+        stock: 1,
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 20, y: 101, zoom: 2 },
+      }),
+      { params: { id: 'p1' } }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Variant swatch crop values must be finite numbers within allowed bounds',
+    });
+  });
 });
 
 describe('PUT /api/products/[id]/variants/[variantId]', () => {
@@ -412,6 +464,32 @@ describe('PUT /api/products/[id]/variants/[variantId]', () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({ error: 'boom' });
   });
+
+  it('returns 400 when swatch validation fails', async () => {
+    const { PUT } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    updateProductVariantMock.mockRejectedValue(
+      new Error(
+        'Variant swatch crop values must be finite numbers within allowed bounds'
+      )
+    );
+
+    const response = await PUT(
+      createVariantPutRequest('p1', 'v1', {
+        name: 'Blue',
+        stock: 1,
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 20, y: 60, zoom: 5 },
+      }),
+      { params: { id: 'p1', variantId: 'v1' } }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Variant swatch crop values must be finite numbers within allowed bounds',
+    });
+  });
 });
 
 describe('DELETE /api/products/[id]/variants/[variantId]', () => {
@@ -518,6 +596,65 @@ describe('PATCH /api/products/[id]/variants', () => {
         swatchCrop: { x: 30, y: 60, zoom: 1.5 },
       }),
     ]);
+  });
+
+  it('returns 400 when batch swatch validation fails', async () => {
+    const { PATCH } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    batchUpdateMock.mockRejectedValue(
+      new Error(
+        'Variant swatch image must reference existing product or variant media'
+      )
+    );
+
+    const response = await PATCH(
+      createVariantsPatchRequest('p1', {
+        variants: [
+          {
+            id: 'v1',
+            name: 'Blue',
+            stock: 3,
+            swatchImageUrl: '/media/missing.jpg',
+            swatchCrop: { x: 30, y: 60, zoom: 1.5 },
+          },
+        ],
+      }),
+      { params: { id: 'p1' } }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Variant swatch image must reference existing product or variant media',
+    });
+  });
+
+  it('returns 400 when batch variant product ownership validation fails', async () => {
+    const { PATCH } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    batchUpdateMock.mockRejectedValue(
+      new Error('Product variants must belong to the requested product')
+    );
+
+    const response = await PATCH(
+      createVariantsPatchRequest('p1', {
+        variants: [
+          {
+            id: 'v-from-other-product',
+            name: 'Blue',
+            stock: 3,
+            swatchImageUrl: '/media/blue.jpg',
+            swatchCrop: { x: 30, y: 60, zoom: 1.5 },
+          },
+        ],
+      }),
+      { params: { id: 'p1' } }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Product variants must belong to the requested product',
+    });
   });
 });
 

@@ -4,9 +4,11 @@ import {
   getPriceDisplay,
   addProductMedia,
   deleteProductMedia,
+  batchSyncProductMedia,
   updateProductStockFromVariants,
   createProductVariant,
   batchUpdateProductVariants,
+  updateProductVariant,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -416,14 +418,26 @@ describe('product-service', () => {
     expect(unsetDefaultQuery.update).toHaveBeenCalledWith({ isDefault: false });
   });
 
-  it('deletes default media and promotes first remaining', async () => {
+  it('deletes default media, clears stale swatches, and promotes first remaining', async () => {
     const supabase = createSupabaseMock();
 
     const fetchQuery = createQueryMock({
-      data: { productId: 'p1', variantId: null, isDefault: true },
+      data: {
+        productId: 'p1',
+        variantId: null,
+        isDefault: true,
+        url: '/media/blue.jpg',
+        type: 'IMAGE',
+      },
       error: null,
     });
     const deleteQuery = createQueryMock({ data: null, error: null });
+    const remainingMediaQuery = createQueryMock({ data: [], error: null });
+    const swatchVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const clearSwatchQuery = createQueryMock({ data: null, error: null });
     const selectRemaining = createQueryMock({
       data: { id: 'm2' },
       error: null,
@@ -433,6 +447,9 @@ describe('product-service', () => {
     supabase.from
       .mockReturnValueOnce(fetchQuery)
       .mockReturnValueOnce(deleteQuery)
+      .mockReturnValueOnce(remainingMediaQuery)
+      .mockReturnValueOnce(swatchVariantsQuery)
+      .mockReturnValueOnce(clearSwatchQuery)
       .mockReturnValueOnce(selectRemaining)
       .mockReturnValueOnce(updateRemaining);
 
@@ -441,7 +458,228 @@ describe('product-service', () => {
     const result = await deleteProductMedia('m1');
 
     expect(result).toEqual({ success: true });
+    expect(clearSwatchQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchImageUrl: null,
+        swatchCrop: null,
+      })
+    );
+    expect(swatchVariantsQuery.eq).toHaveBeenCalledWith(
+      'swatchImageUrl',
+      '/media/blue.jpg'
+    );
+    expect(clearSwatchQuery.eq).toHaveBeenCalledWith('id', 'v1');
     expect(updateRemaining.update).toHaveBeenCalledWith({ isDefault: true });
+  });
+
+  it('batch media deletion is product-scoped and clears matching variant swatches', async () => {
+    const supabase = createSupabaseMock();
+
+    const mediaFetchQuery = createQueryMock({
+      data: [
+        {
+          id: 'm1',
+          productId: 'p1',
+          variantId: 'v1',
+          url: '/media/blue.jpg',
+          type: 'IMAGE',
+        },
+      ],
+      error: null,
+    });
+    const deleteQuery = createQueryMock({ data: null, error: null, count: 1 });
+    const remainingMediaQuery = createQueryMock({ data: [], error: null });
+    const swatchVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const clearSwatchQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(mediaFetchQuery)
+      .mockReturnValueOnce(deleteQuery)
+      .mockReturnValueOnce(remainingMediaQuery)
+      .mockReturnValueOnce(swatchVariantsQuery)
+      .mockReturnValueOnce(clearSwatchQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchSyncProductMedia('p1', {
+      delete: ['m1', 'other-product-media'],
+      add: [],
+      update: [],
+    });
+
+    expect(mediaFetchQuery.eq).toHaveBeenCalledWith('productId', 'p1');
+    expect(deleteQuery.in).toHaveBeenCalledWith('id', ['m1']);
+    expect(swatchVariantsQuery.eq).toHaveBeenCalledWith(
+      'swatchImageUrl',
+      '/media/blue.jpg'
+    );
+    expect(clearSwatchQuery.eq).toHaveBeenCalledWith('id', 'v1');
+  });
+
+  it('does not clear swatches when another product-level image still owns the URL', async () => {
+    const supabase = createSupabaseMock();
+
+    const mediaFetchQuery = createQueryMock({
+      data: [
+        {
+          id: 'm1',
+          productId: 'p1',
+          variantId: 'v1',
+          url: '/media/blue.jpg',
+          type: 'IMAGE',
+        },
+      ],
+      error: null,
+    });
+    const deleteQuery = createQueryMock({ data: null, error: null, count: 1 });
+    const remainingMediaQuery = createQueryMock({
+      data: [{ variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+    const swatchVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const clearSwatchQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(mediaFetchQuery)
+      .mockReturnValueOnce(deleteQuery)
+      .mockReturnValueOnce(remainingMediaQuery)
+      .mockReturnValueOnce(swatchVariantsQuery)
+      .mockReturnValueOnce(clearSwatchQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchSyncProductMedia('p1', {
+      delete: ['m1'],
+      add: [],
+      update: [],
+    });
+
+    expect(remainingMediaQuery.eq).toHaveBeenCalledWith(
+      'url',
+      '/media/blue.jpg'
+    );
+    expect(swatchVariantsQuery.select).not.toHaveBeenCalled();
+    expect(clearSwatchQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('checks stale swatches after batch media additions so replacement owners are preserved', async () => {
+    const supabase = createSupabaseMock();
+
+    const mediaFetchQuery = createQueryMock({
+      data: [
+        {
+          id: 'm1',
+          productId: 'p1',
+          variantId: 'v1',
+          url: '/media/blue.jpg',
+          type: 'IMAGE',
+        },
+      ],
+      error: null,
+    });
+    const deleteQuery = createQueryMock({ data: null, error: null, count: 1 });
+    const insertQuery = createQueryMock({ data: null, error: null, count: 1 });
+    const remainingMediaQuery = createQueryMock({
+      data: [{ variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+    const swatchVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const clearSwatchQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(mediaFetchQuery)
+      .mockReturnValueOnce(deleteQuery)
+      .mockReturnValueOnce(insertQuery)
+      .mockReturnValueOnce(remainingMediaQuery)
+      .mockReturnValueOnce(swatchVariantsQuery)
+      .mockReturnValueOnce(clearSwatchQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchSyncProductMedia('p1', {
+      delete: ['m1'],
+      add: [
+        {
+          type: 'IMAGE',
+          url: '/media/blue.jpg',
+        },
+      ],
+      update: [],
+    });
+
+    expect(insertQuery.insert.mock.invocationCallOrder[0]).toBeLessThan(
+      remainingMediaQuery.select.mock.invocationCallOrder[0]
+    );
+    expect(swatchVariantsQuery.select).not.toHaveBeenCalled();
+    expect(clearSwatchQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('clears stale swatches when batch media add fails after deletion', async () => {
+    const supabase = createSupabaseMock();
+
+    const mediaFetchQuery = createQueryMock({
+      data: [
+        {
+          id: 'm1',
+          productId: 'p1',
+          variantId: 'v1',
+          url: '/media/blue.jpg',
+          type: 'IMAGE',
+        },
+      ],
+      error: null,
+    });
+    const deleteQuery = createQueryMock({ data: null, error: null, count: 1 });
+    const insertQuery = createQueryMock({
+      data: null,
+      error: { message: 'upload failed' },
+    });
+    const remainingMediaQuery = createQueryMock({ data: [], error: null });
+    const swatchVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const clearSwatchQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(mediaFetchQuery)
+      .mockReturnValueOnce(deleteQuery)
+      .mockReturnValueOnce(insertQuery)
+      .mockReturnValueOnce(remainingMediaQuery)
+      .mockReturnValueOnce(swatchVariantsQuery)
+      .mockReturnValueOnce(clearSwatchQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      batchSyncProductMedia('p1', {
+        delete: ['m1'],
+        add: [
+          {
+            type: 'IMAGE',
+            url: '/media/replacement.jpg',
+          },
+        ],
+        update: [],
+      })
+    ).rejects.toThrow('Unable to add product media');
+
+    expect(clearSwatchQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchImageUrl: null,
+        swatchCrop: null,
+      })
+    );
+    expect(clearSwatchQuery.eq).toHaveBeenCalledWith('id', 'v1');
   });
 
   it('updates product stock from variant totals and sets hasVariants true', async () => {
@@ -529,10 +767,14 @@ describe('product-service', () => {
     );
   });
 
-  it('normalizes and persists variant swatch metadata on create', async () => {
+  it('persists valid variant swatch metadata on create', async () => {
     const supabase = createSupabaseMock();
 
     const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
     const insertQuery = createQueryMock({
       data: { id: 'v1', order: 1 },
       error: null,
@@ -545,6 +787,7 @@ describe('product-service', () => {
 
     supabase.from
       .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
       .mockReturnValueOnce(insertQuery)
       .mockReturnValueOnce(variantsQuery)
       .mockReturnValueOnce(updateProductQuery);
@@ -556,20 +799,149 @@ describe('product-service', () => {
       name: 'Blue',
       stock: 5,
       swatchImageUrl: '/media/blue.jpg',
-      swatchCrop: { x: -10, y: 120, zoom: 8 },
+      swatchCrop: { x: 10, y: 80, zoom: 3 },
     });
 
     expect(insertQuery.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         swatchImageUrl: '/media/blue.jpg',
-        swatchCrop: { x: 0, y: 100, zoom: 4 },
+        swatchCrop: { x: 10, y: 80, zoom: 3 },
       })
     );
+  });
+
+  it('rejects invalid crop values before variant creation writes', async () => {
+    const supabase = createSupabaseMock();
+
+    const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+    const insertQuery = createQueryMock({ data: { id: 'v1' }, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(insertQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      createProductVariant({
+        productId: 'p1',
+        name: 'Blue',
+        stock: 5,
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: -1, y: '60', zoom: Number.NaN },
+      })
+    ).rejects.toThrow(
+      'Variant swatch crop values must be finite numbers within allowed bounds'
+    );
+    expect(mediaOwnershipQuery.select).not.toHaveBeenCalled();
+    expect(insertQuery.insert).not.toHaveBeenCalled();
+  });
+
+  it('rejects variant swatch creation when the URL is not owned product media', async () => {
+    const supabase = createSupabaseMock();
+
+    const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [],
+      error: null,
+    });
+    const insertQuery = createQueryMock({ data: { id: 'v1' }, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(insertQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      createProductVariant({
+        productId: 'p1',
+        name: 'Blue',
+        stock: 5,
+        swatchImageUrl: '/media/missing.jpg',
+        swatchCrop: { x: 20, y: 60, zoom: 2 },
+      })
+    ).rejects.toThrow(
+      'Variant swatch image must reference existing product or variant media'
+    );
+    expect(insertQuery.insert).not.toHaveBeenCalled();
+  });
+
+  it('rejects unsafe variant swatch image URLs before querying media ownership', async () => {
+    const supabase = createSupabaseMock();
+
+    const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: 'javascript:alert(1)', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+
+    supabase.from
+      .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      createProductVariant({
+        productId: 'p1',
+        name: 'Blue',
+        stock: 5,
+        swatchImageUrl: 'javascript:alert(1)',
+        swatchCrop: { x: 20, y: 60, zoom: 2 },
+      })
+    ).rejects.toThrow(
+      'Variant swatch image must reference an existing safe product media URL'
+    );
+    expect(mediaOwnershipQuery.select).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-string variant swatch image URLs before normalizing', async () => {
+    const supabase = createSupabaseMock();
+
+    const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+
+    supabase.from
+      .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      createProductVariant({
+        productId: 'p1',
+        name: 'Blue',
+        stock: 5,
+        swatchImageUrl: 123 as unknown as string,
+        swatchCrop: { x: 20, y: 60, zoom: 2 },
+      })
+    ).rejects.toThrow(
+      'Variant swatch image must reference an existing safe product media URL'
+    );
+    expect(mediaOwnershipQuery.select).not.toHaveBeenCalled();
   });
 
   it('normalizes and persists variant swatch metadata on batch update', async () => {
     const supabase = createSupabaseMock();
 
+    const ownedVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: 'v1', type: 'IMAGE' }],
+      error: null,
+    });
     const updateVariantQuery = createQueryMock({ data: null, error: null });
     const variantsQuery = createQueryMock({
       data: [{ stock: 5 }],
@@ -578,6 +950,8 @@ describe('product-service', () => {
     const updateProductQuery = createQueryMock({ data: null, error: null });
 
     supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
       .mockReturnValueOnce(updateVariantQuery)
       .mockReturnValueOnce(variantsQuery)
       .mockReturnValueOnce(updateProductQuery);
@@ -602,9 +976,125 @@ describe('product-service', () => {
     );
   });
 
-  it('preserves existing swatch metadata when batch update omits swatch fields', async () => {
+  it('rejects batch swatch updates when the URL is not product or variant media', async () => {
     const supabase = createSupabaseMock();
 
+    const ownedVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/other.jpg', variantId: 'v1', type: 'IMAGE' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      batchUpdateProductVariants('p1', [
+        {
+          id: 'v1',
+          name: 'Blue',
+          stock: 5,
+          swatchImageUrl: '/media/missing.jpg',
+          swatchCrop: { x: 30, y: 60, zoom: 2 },
+        },
+      ])
+    ).rejects.toThrow(
+      'Variant swatch image must reference existing product or variant media'
+    );
+    expect(updateVariantQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects batch variant updates for variants outside the product', async () => {
+    const supabase = createSupabaseMock();
+
+    const ownedVariantsQuery = createQueryMock({
+      data: [],
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      batchUpdateProductVariants('p1', [
+        {
+          id: 'v-from-other-product',
+          name: 'Blue',
+          stock: 5,
+          swatchImageUrl: '/media/blue.jpg',
+          swatchCrop: { x: 30, y: 60, zoom: 2 },
+        },
+      ])
+    ).rejects.toThrow('Product variants must belong to the requested product');
+    expect(mediaOwnershipQuery.select).not.toHaveBeenCalled();
+    expect(updateVariantQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects invalid crop values before batch swatch updates write', async () => {
+    const supabase = createSupabaseMock();
+
+    const ownedVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: 'v1', type: 'IMAGE' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      batchUpdateProductVariants('p1', [
+        {
+          id: 'v1',
+          name: 'Blue',
+          stock: 5,
+          swatchImageUrl: '/media/blue.jpg',
+          swatchCrop: { x: 30, y: 101, zoom: 2 },
+        },
+      ])
+    ).rejects.toThrow(
+      'Variant swatch crop values must be finite numbers within allowed bounds'
+    );
+    expect(mediaOwnershipQuery.select).not.toHaveBeenCalled();
+    expect(updateVariantQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('validates existing swatch ownership on crop-only batch update', async () => {
+    const supabase = createSupabaseMock();
+
+    const ownedVariantsQuery = createQueryMock({
+      data: [{ id: 'v1', swatchImageUrl: '/media/blue.jpg' }],
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
     const updateVariantQuery = createQueryMock({ data: null, error: null });
     const variantsQuery = createQueryMock({
       data: [{ stock: 5 }],
@@ -613,6 +1103,171 @@ describe('product-service', () => {
     const updateProductQuery = createQueryMock({ data: null, error: null });
 
     supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateProductQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchUpdateProductVariants('p1', [
+      {
+        id: 'v1',
+        name: 'Blue',
+        stock: 5,
+        swatchCrop: { x: 25, y: 60, zoom: 2 },
+      },
+    ]);
+
+    expect(mediaOwnershipQuery.in).toHaveBeenCalledWith('url', [
+      '/media/blue.jpg',
+    ]);
+    expect(updateVariantQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchCrop: { x: 25, y: 60, zoom: 2 },
+      })
+    );
+    expect(updateVariantQuery.update.mock.calls[0][0]).not.toHaveProperty(
+      'swatchImageUrl'
+    );
+  });
+
+  it('validates swatch ownership on single variant update', async () => {
+    const supabase = createSupabaseMock();
+
+    const existingVariantQuery = createQueryMock({
+      data: { id: 'v1', productId: 'p1', swatchImageUrl: null },
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: 'v1', type: 'IMAGE' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({
+      data: { id: 'v1', productId: 'p1', swatchImageUrl: '/media/blue.jpg' },
+      error: null,
+    });
+    const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+    supabase.from
+      .mockReturnValueOnce(existingVariantQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery)
+      .mockReturnValueOnce(variantMediaQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await updateProductVariant('v1', {
+      swatchImageUrl: '/media/blue.jpg',
+      swatchCrop: { x: 20, y: 60, zoom: 2 },
+    });
+
+    expect(updateVariantQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 20, y: 60, zoom: 2 },
+      })
+    );
+  });
+
+  it('validates existing swatch ownership on crop-only variant update', async () => {
+    const supabase = createSupabaseMock();
+
+    const existingVariantQuery = createQueryMock({
+      data: {
+        id: 'v1',
+        productId: 'p1',
+        swatchImageUrl: '/media/blue.jpg',
+      },
+      error: null,
+    });
+    const mediaOwnershipQuery = createQueryMock({
+      data: [{ url: '/media/blue.jpg', variantId: null, type: 'IMAGE' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({
+      data: {
+        id: 'v1',
+        productId: 'p1',
+        swatchCrop: { x: 25, y: 60, zoom: 2 },
+      },
+      error: null,
+    });
+    const variantMediaQuery = createQueryMock({ data: [], error: null });
+
+    supabase.from
+      .mockReturnValueOnce(existingVariantQuery)
+      .mockReturnValueOnce(mediaOwnershipQuery)
+      .mockReturnValueOnce(updateVariantQuery)
+      .mockReturnValueOnce(variantMediaQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await updateProductVariant('v1', {
+      swatchCrop: { x: 25, y: 60, zoom: 2 },
+    });
+
+    expect(mediaOwnershipQuery.eq).toHaveBeenCalledWith(
+      'url',
+      '/media/blue.jpg'
+    );
+    expect(updateVariantQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchCrop: { x: 25, y: 60, zoom: 2 },
+      })
+    );
+    expect(updateVariantQuery.update.mock.calls[0][0]).not.toHaveProperty(
+      'swatchImageUrl'
+    );
+  });
+
+  it('rejects invalid crop values when clearing a variant swatch', async () => {
+    const supabase = createSupabaseMock();
+
+    const existingVariantQuery = createQueryMock({
+      data: {
+        id: 'v1',
+        productId: 'p1',
+        swatchImageUrl: '/media/blue.jpg',
+      },
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(existingVariantQuery)
+      .mockReturnValueOnce(updateVariantQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await expect(
+      updateProductVariant('v1', {
+        swatchImageUrl: null,
+        swatchCrop: { x: 25, y: 60, zoom: 5 },
+      })
+    ).rejects.toThrow(
+      'Variant swatch crop values must be finite numbers within allowed bounds'
+    );
+    expect(updateVariantQuery.update).not.toHaveBeenCalled();
+  });
+
+  it('preserves existing swatch metadata when batch update omits swatch fields', async () => {
+    const supabase = createSupabaseMock();
+
+    const ownedVariantsQuery = createQueryMock({
+      data: [{ id: 'v1' }],
+      error: null,
+    });
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+    const variantsQuery = createQueryMock({
+      data: [{ stock: 5 }],
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(ownedVariantsQuery)
       .mockReturnValueOnce(updateVariantQuery)
       .mockReturnValueOnce(variantsQuery)
       .mockReturnValueOnce(updateProductQuery);

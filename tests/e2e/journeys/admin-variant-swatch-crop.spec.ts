@@ -41,7 +41,14 @@ async function addAdminSession(context: BrowserContext) {
   ]);
 }
 
-async function mockSwatchApis(page: Page, saved: { variant?: SavedVariant }) {
+async function mockSwatchApis(
+  page: Page,
+  saved: {
+    createdVariant?: SavedVariant;
+    mediaSynced?: boolean;
+    patchedVariant?: SavedVariant;
+  }
+) {
   await page.route('**/api/categories**', async (route) => {
     await route.fulfill({
       status: 200,
@@ -91,14 +98,16 @@ async function mockSwatchApis(page: Page, saved: { variant?: SavedVariant }) {
       const payload = route.request().postDataJSON() as {
         variants: SavedVariant[];
       };
-      saved.variant = payload.variants[0];
+      saved.createdVariant = payload.variants[0];
 
       await route.fulfill({
         status: 201,
         contentType: 'application/json',
         body: JSON.stringify({
-          variants: [{ ...saved.variant, id: variantId }],
-          idMapping: { [saved.variant.tempId || 'variant-temp']: variantId },
+          variants: [{ ...saved.createdVariant, id: variantId }],
+          idMapping: {
+            [saved.createdVariant.tempId || 'variant-temp']: variantId,
+          },
         }),
       });
       return;
@@ -108,7 +117,7 @@ async function mockSwatchApis(page: Page, saved: { variant?: SavedVariant }) {
       const payload = route.request().postDataJSON() as {
         variants: SavedVariant[];
       };
-      saved.variant = payload.variants[0];
+      saved.patchedVariant = payload.variants[0];
 
       await route.fulfill({
         status: 200,
@@ -122,6 +131,8 @@ async function mockSwatchApis(page: Page, saved: { variant?: SavedVariant }) {
   });
 
   await page.route(`**/api/products/${productId}/media`, async (route) => {
+    saved.mediaSynced = true;
+
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -130,14 +141,15 @@ async function mockSwatchApis(page: Page, saved: { variant?: SavedVariant }) {
   });
 
   await page.route(`**/api/products/${productId}?**`, async (route) => {
-    const variant = saved.variant || {
-      id: variantId,
-      name: 'Blue',
-      color: '#2563eb',
-      stock: 6,
-      swatchImageUrl: swatchUrl,
-      swatchCrop: { x: 24, y: 68, zoom: 2.2 },
-    };
+    const variant = saved.patchedVariant ||
+      saved.createdVariant || {
+        id: variantId,
+        name: 'Blue',
+        color: '#2563eb',
+        stock: 6,
+        swatchImageUrl: swatchUrl,
+        swatchCrop: { x: 24, y: 68, zoom: 2.2 },
+      };
 
     await route.fulfill({
       status: 200,
@@ -224,7 +236,11 @@ test.describe('admin variant swatch crop', () => {
     context,
     page,
   }) => {
-    const saved: { variant?: SavedVariant } = {};
+    const saved: {
+      createdVariant?: SavedVariant;
+      mediaSynced?: boolean;
+      patchedVariant?: SavedVariant;
+    } = {};
     await addAdminSession(context);
     await mockSwatchApis(page, saved);
 
@@ -263,7 +279,15 @@ test.describe('admin variant swatch crop', () => {
     await page.getByRole('button', { name: 'Create Product' }).click();
     await expect(page).toHaveURL(/\/admin\/products$/);
 
-    expect(saved.variant).toEqual(
+    expect(saved.createdVariant).toEqual(
+      expect.objectContaining({
+        name: 'Blue',
+      })
+    );
+    expect(saved.createdVariant).not.toHaveProperty('swatchImageUrl');
+    expect(saved.createdVariant).not.toHaveProperty('swatchCrop');
+    expect(saved.mediaSynced).toBe(true);
+    expect(saved.patchedVariant).toEqual(
       expect.objectContaining({
         name: 'Blue',
         swatchImageUrl: swatchUrl,

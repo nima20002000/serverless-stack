@@ -8,6 +8,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+function isVariantSwatchValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.startsWith('Variant swatch image must reference') ||
+      error.message.startsWith('Variant swatch crop'))
+  );
+}
+
 export async function PUT(
   req: NextRequest,
   {
@@ -70,7 +78,7 @@ export async function PUT(
         error:
           error instanceof Error ? error.message : 'Unable to update product',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }

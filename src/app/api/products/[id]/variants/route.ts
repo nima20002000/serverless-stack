@@ -11,6 +11,15 @@ import {
 export const dynamic = 'force-dynamic';
 const MAX_ID_LENGTH = 64;
 
+function isVariantSwatchValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.startsWith('Variant swatch image must reference') ||
+      error.message.startsWith('Variant swatch crop') ||
+      error.message.startsWith('Product variants must belong'))
+  );
+}
+
 export async function GET(
   _req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ id: string }> }
@@ -35,7 +44,7 @@ export async function GET(
             ? error.message
             : 'Unable to load product variants',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }
@@ -107,7 +116,7 @@ export async function POST(
             order?: number;
             isActive?: boolean;
             swatchImageUrl?: string | null;
-            swatchCrop?: { x?: number; y?: number; zoom?: number } | null;
+            swatchCrop?: unknown;
           }) => ({
             tempId: v.tempId,
             name: v.name,
@@ -180,7 +189,7 @@ export async function POST(
             ? error.message
             : 'Unable to create product variant',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }
@@ -254,7 +263,7 @@ export async function PATCH(
           stock: number;
           isActive?: boolean;
           swatchImageUrl?: string | null;
-          swatchCrop?: { x?: number; y?: number; zoom?: number } | null;
+          swatchCrop?: unknown;
         }) => ({
           id: v.id,
           name: v.name,
@@ -281,7 +290,7 @@ export async function PATCH(
             ? error.message
             : 'Unable to update product variants',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }

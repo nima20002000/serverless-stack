@@ -217,8 +217,6 @@ export default function NewProductPage() {
           stock: parseInt(variant.stock),
           order: variant.order,
           isActive: variant.isActive,
-          swatchImageUrl: variant.swatchImageUrl || null,
-          swatchCrop: variant.swatchCrop || null,
         }));
 
         const variantResponse = await fetch(
@@ -301,6 +299,44 @@ export default function NewProductPage() {
         if (!batchSyncResponse.ok) {
           throw new Error(
             await readErrorMessage(batchSyncResponse, 'Unable to add media')
+          );
+        }
+      }
+
+      const swatchVariantsToUpdate = variantManager.variants.filter(
+        (variant) => variant.swatchImageUrl && variantIdMapping[variant.id]
+      );
+
+      if (swatchVariantsToUpdate.length > 0) {
+        const swatchUpdateResponse = await fetch(
+          `/api/products/${productId}/variants`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              variants: swatchVariantsToUpdate.map((variant) => ({
+                id: variantIdMapping[variant.id],
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                isActive: variant.isActive,
+                swatchImageUrl: variant.swatchImageUrl || null,
+                swatchCrop: variant.swatchCrop || null,
+              })),
+            }),
+          }
+        );
+
+        if (!swatchUpdateResponse.ok) {
+          throw new Error(
+            await readErrorMessage(
+              swatchUpdateResponse,
+              'Unable to save variant swatches'
+            )
           );
         }
       }
