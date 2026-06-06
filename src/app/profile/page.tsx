@@ -13,6 +13,7 @@ import TransactionHistory from '@/components/profile/TransactionHistory';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
 import { formatDate } from '@/lib/utils/format';
+import { formatShippingAddress } from '@/lib/shipping-address';
 
 interface UserProfile {
   id: string;
@@ -21,6 +22,11 @@ interface UserProfile {
   email: string | null;
   phone: string | null;
   shippingAddress: string | null;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string | null;
   role: string;
   createdAt: string;
@@ -38,6 +44,13 @@ interface Transaction {
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;
+  shippingAddress?: string | null;
+  shippingCountry?: string | null;
+  shippingRegion?: string | null;
+  shippingCity?: string | null;
+  shippingAddressLine1?: string | null;
+  shippingAddressLine2?: string | null;
+  postalCode?: string | null;
   items: {
     id: string;
     quantity: number;
@@ -142,6 +155,11 @@ export default function ProfilePage() {
       email: string;
       phone: string;
       shippingAddress: string;
+      shippingCountry: string;
+      shippingRegion: string;
+      shippingCity: string;
+      shippingAddressLine1: string;
+      shippingAddressLine2: string;
       postalCode: string;
     }) => {
       editFormActions.setIsSubmitting(true);
@@ -199,6 +217,9 @@ export default function ProfilePage() {
     return null;
   }
 
+  const profileShippingAddress =
+    formatShippingAddress(userProfile) || userProfile.shippingAddress || '';
+
   return (
     <div className="min-h-screen bg-slate-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
@@ -242,6 +263,14 @@ export default function ProfilePage() {
                 email: userProfile.email || '',
                 phone: userProfile.phone || '',
                 shippingAddress: userProfile.shippingAddress || '',
+                shippingCountry: userProfile.shippingCountry || '',
+                shippingRegion: userProfile.shippingRegion || '',
+                shippingCity: userProfile.shippingCity || '',
+                shippingAddressLine1:
+                  userProfile.shippingAddressLine1 ||
+                  userProfile.shippingAddress ||
+                  '',
+                shippingAddressLine2: userProfile.shippingAddressLine2 || '',
                 postalCode: userProfile.postalCode || '',
               }}
               onSave={handleSaveProfile}
@@ -277,8 +306,8 @@ export default function ProfilePage() {
               </div>
               <div>
                 <span className="text-slate-600">Shipping address:</span>{' '}
-                <span className="font-medium text-slate-950">
-                  {userProfile.shippingAddress || 'Not provided'}
+                <span className="font-medium text-slate-950 whitespace-pre-line">
+                  {profileShippingAddress || 'Not provided'}
                 </span>
               </div>
               <div>

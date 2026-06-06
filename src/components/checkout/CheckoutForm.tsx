@@ -12,6 +12,7 @@ import {
   isValidPhoneNumber,
   isValidName,
 } from '@/lib/utils/text';
+import { validateShippingAddress } from '@/lib/shipping-address';
 import { useCheckoutStore } from '@/store/checkout-store';
 
 interface CheckoutFormProps {
@@ -21,6 +22,11 @@ interface CheckoutFormProps {
     phone: string;
     email: string;
     shippingAddress: string;
+    shippingCountry: string;
+    shippingRegion: string;
+    shippingCity: string;
+    shippingAddressLine1: string;
+    shippingAddressLine2: string;
     postalCode: string;
   }) => void;
   isProcessing: boolean;
@@ -47,6 +53,11 @@ export default function CheckoutForm({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingCountry, setShippingCountry] = useState('');
+  const [shippingRegion, setShippingRegion] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingAddressLine1, setShippingAddressLine1] = useState('');
+  const [shippingAddressLine2, setShippingAddressLine2] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [formError, setFormError] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -86,14 +97,26 @@ export default function CheckoutForm({
         setEmail(session.user.email || '');
 
         setShippingAddress(savedFormData.shippingAddress || '');
+        setShippingCountry(savedFormData.shippingCountry || '');
+        setShippingRegion(savedFormData.shippingRegion || '');
+        setShippingCity(savedFormData.shippingCity || '');
+        setShippingAddressLine1(savedFormData.shippingAddressLine1 || '');
+        setShippingAddressLine2(savedFormData.shippingAddressLine2 || '');
         setPostalCode(savedFormData.postalCode || '');
 
         try {
           const response = await fetch('/api/user/profile');
           if (response.ok) {
             const data = await response.json();
-            if (data.shippingAddress) setShippingAddress(data.shippingAddress);
-            if (data.postalCode) setPostalCode(data.postalCode);
+            setShippingAddress(data.shippingAddress ?? '');
+            setShippingCountry(data.shippingCountry ?? '');
+            setShippingRegion(data.shippingRegion ?? '');
+            setShippingCity(data.shippingCity ?? '');
+            setShippingAddressLine1(
+              data.shippingAddressLine1 ?? data.shippingAddress ?? ''
+            );
+            setShippingAddressLine2(data.shippingAddressLine2 ?? '');
+            setPostalCode(data.postalCode ?? '');
           }
         } catch (error) {
           console.error('Error loading shipping data:', error);
@@ -106,6 +129,16 @@ export default function CheckoutForm({
         if (savedFormData.email) setEmail(savedFormData.email);
         if (savedFormData.shippingAddress)
           setShippingAddress(savedFormData.shippingAddress);
+        if (savedFormData.shippingCountry)
+          setShippingCountry(savedFormData.shippingCountry);
+        if (savedFormData.shippingRegion)
+          setShippingRegion(savedFormData.shippingRegion);
+        if (savedFormData.shippingCity)
+          setShippingCity(savedFormData.shippingCity);
+        if (savedFormData.shippingAddressLine1)
+          setShippingAddressLine1(savedFormData.shippingAddressLine1);
+        if (savedFormData.shippingAddressLine2)
+          setShippingAddressLine2(savedFormData.shippingAddressLine2);
         if (savedFormData.postalCode) setPostalCode(savedFormData.postalCode);
       }
 
@@ -125,6 +158,11 @@ export default function CheckoutForm({
       phone,
       email,
       shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
       postalCode,
     });
   }, [
@@ -132,6 +170,11 @@ export default function CheckoutForm({
     phone,
     email,
     shippingAddress,
+    shippingCountry,
+    shippingRegion,
+    shippingCity,
+    shippingAddressLine1,
+    shippingAddressLine2,
     postalCode,
     hasLoadedSavedData,
     saveFormData,
@@ -159,8 +202,18 @@ export default function CheckoutForm({
       return;
     }
 
-    if (!shippingAddress.trim()) {
-      setFormError('Please enter a shipping address.');
+    const shippingAddressResult = validateShippingAddress({
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      postalCode,
+      shippingAddress,
+    });
+
+    if (!shippingAddressResult.valid) {
+      setFormError(shippingAddressResult.error);
       return;
     }
 
@@ -168,8 +221,13 @@ export default function CheckoutForm({
       fullName,
       phone: normalizedPhone,
       email,
-      shippingAddress,
-      postalCode,
+      shippingAddress: shippingAddressResult.address.shippingAddress,
+      shippingCountry: shippingAddressResult.address.shippingCountry,
+      shippingRegion: shippingAddressResult.address.shippingRegion,
+      shippingCity: shippingAddressResult.address.shippingCity,
+      shippingAddressLine1: shippingAddressResult.address.shippingAddressLine1,
+      shippingAddressLine2: shippingAddressResult.address.shippingAddressLine2,
+      postalCode: shippingAddressResult.address.postalCode,
     });
   };
 
@@ -188,17 +246,6 @@ export default function CheckoutForm({
   const hasProfileName = !!(isLoggedIn && initialProfileData.name);
   const hasProfilePhone = !!(isLoggedIn && initialProfileData.phone);
   const hasProfileEmail = !!(isLoggedIn && initialProfileData.email);
-
-  const textareaClassName = [
-    'w-full min-h-[96px] px-4 py-2',
-    'text-slate-900 text-sm text-start placeholder:text-slate-400',
-    'bg-white border border-slate-200 rounded-lg',
-    'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
-    'transition-all duration-200 ease-out',
-    'disabled:opacity-50 disabled:cursor-not-allowed',
-    'dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500',
-    'dark:focus:border-slate-500 dark:focus:ring-slate-700/60',
-  ].join(' ');
 
   const formContent = (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -279,28 +326,71 @@ export default function CheckoutForm({
       </div>
 
       <div>
-        <label
-          htmlFor="shippingAddress"
-          className="block text-sm font-medium text-slate-700 text-start mb-2"
-        >
-          Shipping address *
-        </label>
-        <textarea
-          id="shippingAddress"
-          value={shippingAddress}
-          onChange={(e) => setShippingAddress(e.target.value)}
-          rows={3}
-          className={`${textareaClassName} resize-none`}
+        <Input
+          id="shippingCountry"
+          label="Country *"
+          type="text"
+          value={shippingCountry}
+          onChange={(e) => setShippingCountry(e.target.value)}
           required
           dir="auto"
-          autoComplete="street-address"
+          autoComplete="country-name"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          id="shippingCity"
+          label="City"
+          type="text"
+          value={shippingCity}
+          onChange={(e) => setShippingCity(e.target.value)}
+          dir="auto"
+          autoComplete="address-level2"
+        />
+        <Input
+          id="shippingRegion"
+          label="State, region, or province"
+          type="text"
+          value={shippingRegion}
+          onChange={(e) => setShippingRegion(e.target.value)}
+          dir="auto"
+          autoComplete="address-level1"
+        />
+      </div>
+
+      <div>
+        <Input
+          id="shippingAddressLine1"
+          label="Address line 1 *"
+          type="text"
+          value={shippingAddressLine1}
+          onChange={(e) => {
+            setShippingAddressLine1(e.target.value);
+            setShippingAddress(e.target.value);
+          }}
+          required
+          dir="auto"
+          autoComplete="address-line1"
+        />
+      </div>
+
+      <div>
+        <Input
+          id="shippingAddressLine2"
+          label="Address line 2"
+          type="text"
+          value={shippingAddressLine2}
+          onChange={(e) => setShippingAddressLine2(e.target.value)}
+          dir="auto"
+          autoComplete="address-line2"
         />
       </div>
 
       <div>
         <Input
           id="postalCode"
-          label="Postal code (optional)"
+          label="Postal or ZIP code (optional)"
           type="text"
           value={postalCode}
           onChange={(e) => setPostalCode(e.target.value.slice(0, 32))}

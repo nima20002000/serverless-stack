@@ -62,6 +62,11 @@ export default function CheckoutPage() {
       phone: string;
       email: string;
       shippingAddress: string;
+      shippingCountry: string;
+      shippingRegion: string;
+      shippingCity: string;
+      shippingAddressLine1: string;
+      shippingAddressLine2: string;
       postalCode: string;
     }) => {
       try {
@@ -85,6 +90,11 @@ export default function CheckoutPage() {
               phone: formData.phone,
               email: formData.email || undefined,
               shippingAddress: formData.shippingAddress,
+              shippingCountry: formData.shippingCountry,
+              shippingRegion: formData.shippingRegion,
+              shippingCity: formData.shippingCity,
+              shippingAddressLine1: formData.shippingAddressLine1,
+              shippingAddressLine2: formData.shippingAddressLine2,
               postalCode: formData.postalCode || undefined,
             },
             // Include promo code if applied
@@ -123,6 +133,11 @@ export default function CheckoutPage() {
       phone: string;
       email: string;
       shippingAddress: string;
+      shippingCountry: string;
+      shippingRegion: string;
+      shippingCity: string;
+      shippingAddressLine1: string;
+      shippingAddressLine2: string;
       postalCode: string;
     }) => {
       processPayment(formData);

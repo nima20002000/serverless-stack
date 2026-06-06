@@ -18,6 +18,11 @@ const baseUser = {
   role: 'USER' as const,
   isVerified: true,
   shippingAddress: null,
+  shippingCountry: null,
+  shippingRegion: null,
+  shippingCity: null,
+  shippingAddressLine1: null,
+  shippingAddressLine2: null,
   postalCode: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-02-01T00:00:00.000Z',
@@ -67,7 +72,7 @@ describe('user-service queries', () => {
 
     expect(supabase.from).toHaveBeenCalledWith('users');
     expect(query.select).toHaveBeenCalledWith(
-      'id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt'
+      'id, uid, email, phone, name, role, isVerified, shippingAddress, shippingCountry, shippingRegion, shippingCity, shippingAddressLine1, shippingAddressLine2, postalCode, createdAt, updatedAt'
     );
     expect(query.limit).toHaveBeenCalledWith(1);
     expect(query.eq).toHaveBeenCalledWith(column, value);

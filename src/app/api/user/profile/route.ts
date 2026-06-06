@@ -27,7 +27,7 @@ async function getHandler() {
     const { data: user, error } = await supabase
       .from('users')
       .select(
-        'id, uid, name, email, phone, shippingAddress, postalCode, isVerified, role, createdAt, password'
+        'id, uid, name, email, phone, shippingAddress, shippingCountry, shippingRegion, shippingCity, shippingAddressLine1, shippingAddressLine2, postalCode, isVerified, role, createdAt, password'
       )
       .eq('id', session.user.id)
       .single();
@@ -69,7 +69,18 @@ async function patchHandler(req: NextRequest) {
     }
 
     const data = await req.json();
-    const { name, email, phone, shippingAddress, postalCode } = data;
+    const {
+      name,
+      email,
+      phone,
+      shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      postalCode,
+    } = data;
 
     // Update user profile using service
     const updatedUser = await updateUserProfile(session.user.id, {
@@ -77,6 +88,11 @@ async function patchHandler(req: NextRequest) {
       email,
       phone,
       shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
       postalCode,
     });
 

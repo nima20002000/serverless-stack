@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getPhoneLookupCandidates } from '@/lib/utils/text';
+import type { ShippingAddressFields } from '@/lib/shipping-address';
 
 /**
  * User information type (without password)
@@ -13,10 +14,15 @@ export type UserInfo = {
   role: 'USER' | 'ADMIN';
   isVerified: boolean;
   shippingAddress: string | null;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string | null;
   createdAt: Date;
   updatedAt: Date;
-};
+} & ShippingAddressFields;
 
 /**
  * Generic user query function
@@ -32,7 +38,7 @@ export async function queryUser(where: {
   let query = supabase
     .from('users')
     .select(
-      'id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt'
+      'id, uid, email, phone, name, role, isVerified, shippingAddress, shippingCountry, shippingRegion, shippingCity, shippingAddressLine1, shippingAddressLine2, postalCode, createdAt, updatedAt'
     )
     .limit(1);
 

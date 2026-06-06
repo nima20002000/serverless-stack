@@ -74,10 +74,11 @@ export function getCurrencyFractionDigits(
   locale = siteLocale.locale
 ): number {
   const normalizedCurrency = normalizeCurrencyCode(currency);
-  return new Intl.NumberFormat(locale, {
+  const fractionDigits = new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: normalizedCurrency,
   }).resolvedOptions().maximumFractionDigits;
+  return typeof fractionDigits === 'number' ? fractionDigits : 2;
 }
 
 export function roundCurrencyAmount(

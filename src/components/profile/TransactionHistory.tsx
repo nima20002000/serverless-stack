@@ -2,6 +2,7 @@
 
 import { useMemo, useCallback } from 'react';
 import { formatDateTime, formatPrice } from '@/lib/utils/format';
+import { formatShippingAddress } from '@/lib/shipping-address';
 
 interface Transaction {
   id: string;
@@ -14,6 +15,13 @@ interface Transaction {
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;
+  shippingAddress?: string | null;
+  shippingCountry?: string | null;
+  shippingRegion?: string | null;
+  shippingCity?: string | null;
+  shippingAddressLine1?: string | null;
+  shippingAddressLine2?: string | null;
+  postalCode?: string | null;
   items: {
     id: string;
     quantity: number;
@@ -98,84 +106,100 @@ export default function TransactionHistory({
 
     return (
       <div className="space-y-4">
-        {transactions.map((transaction) => (
-          <div
-            key={transaction.id}
-            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <div className="font-medium text-gray-900">
-                  Transaction code: {transaction.transactionCode}
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  {formatDateTime(transaction.createdAt)}
-                </div>
-                <div className="mt-2">
-                  {getPaymentMethodBadge(transaction.paymentMethod)}
-                </div>
-                {transaction.paymentProviderRef && (
-                  <div className="mt-2 text-xs text-gray-600" dir="ltr">
-                    Ref: {transaction.paymentProviderRef}
-                  </div>
-                )}
-                {transaction.stripePaymentIntentId && (
-                  <div
-                    className="mt-1 text-xs text-indigo-600 break-all"
-                    dir="ltr"
-                  >
-                    Stripe Intent: {transaction.stripePaymentIntentId}
-                  </div>
-                )}
-                {transaction.paypalOrderId && (
-                  <div
-                    className="mt-1 text-xs text-sky-600 break-all"
-                    dir="ltr"
-                  >
-                    PayPal Order: {transaction.paypalOrderId}
-                  </div>
-                )}
-              </div>
-              {getStatusBadge(transaction.status)}
-            </div>
+        {transactions.map((transaction) => {
+          const formattedShippingAddress =
+            formatShippingAddress(transaction) || transaction.shippingAddress;
 
-            <div className="border-t border-gray-100 pt-3 mt-3">
-              <div className="text-sm text-gray-600 mb-2">Products:</div>
-              <div className="space-y-2">
-                {transaction.items.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <div className="flex flex-col">
-                      <span className="text-gray-700">
-                        {item.product.name} x {item.quantity}
-                      </span>
-                      {item.variant && (
-                        <span className="text-xs text-blue-600 mt-0.5">
-                          {item.variant.name}
-                        </span>
-                      )}
+          return (
+            <div
+              key={transaction.id}
+              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <div className="font-medium text-gray-900">
+                    Transaction code: {transaction.transactionCode}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {formatDateTime(transaction.createdAt)}
+                  </div>
+                  <div className="mt-2">
+                    {getPaymentMethodBadge(transaction.paymentMethod)}
+                  </div>
+                  {transaction.paymentProviderRef && (
+                    <div className="mt-2 text-xs text-gray-600" dir="ltr">
+                      Ref: {transaction.paymentProviderRef}
                     </div>
-                    <span className="font-medium">
-                      {formatPrice(Number(item.price))}
-                    </span>
+                  )}
+                  {transaction.stripePaymentIntentId && (
+                    <div
+                      className="mt-1 text-xs text-indigo-600 break-all"
+                      dir="ltr"
+                    >
+                      Stripe Intent: {transaction.stripePaymentIntentId}
+                    </div>
+                  )}
+                  {transaction.paypalOrderId && (
+                    <div
+                      className="mt-1 text-xs text-sky-600 break-all"
+                      dir="ltr"
+                    >
+                      PayPal Order: {transaction.paypalOrderId}
+                    </div>
+                  )}
+                </div>
+                {getStatusBadge(transaction.status)}
+              </div>
+
+              {formattedShippingAddress && (
+                <div className="border-t border-gray-100 pt-3 mt-3">
+                  <div className="text-sm text-gray-600 mb-1">
+                    Shipping address:
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="text-sm text-gray-700 whitespace-pre-line">
+                    {formattedShippingAddress}
+                  </div>
+                </div>
+              )}
 
-            <div className="border-t border-gray-100 pt-3 mt-3 flex justify-between items-center">
-              <span className="text-gray-700 font-medium">Total:</span>
-              <span className="text-lg font-bold text-gray-900">
-                {formatPrice(Number(transaction.amount))}
-              </span>
-            </div>
-
-            {transaction.invoice && (
-              <div className="mt-3 text-sm text-gray-600">
-                Invoice number: {transaction.invoice.invoiceNumber}
+              <div className="border-t border-gray-100 pt-3 mt-3">
+                <div className="text-sm text-gray-600 mb-2">Products:</div>
+                <div className="space-y-2">
+                  {transaction.items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <div className="flex flex-col">
+                        <span className="text-gray-700">
+                          {item.product.name} x {item.quantity}
+                        </span>
+                        {item.variant && (
+                          <span className="text-xs text-blue-600 mt-0.5">
+                            {item.variant.name}
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-medium">
+                        {formatPrice(Number(item.price))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              <div className="border-t border-gray-100 pt-3 mt-3 flex justify-between items-center">
+                <span className="text-gray-700 font-medium">Total:</span>
+                <span className="text-lg font-bold text-gray-900">
+                  {formatPrice(Number(transaction.amount))}
+                </span>
+              </div>
+
+              {transaction.invoice && (
+                <div className="mt-3 text-sm text-gray-600">
+                  Invoice number: {transaction.invoice.invoiceNumber}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   }, [transactions, isLoading, getStatusBadge, getPaymentMethodBadge]);

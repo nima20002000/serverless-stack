@@ -8,6 +8,7 @@ import {
   isValidPhoneNumber,
   isValidName,
 } from '@/lib/utils/text';
+import { validateShippingAddress } from '@/lib/shipping-address';
 
 interface ProfileEditFormProps {
   initialData: {
@@ -15,6 +16,11 @@ interface ProfileEditFormProps {
     email: string;
     phone: string;
     shippingAddress: string;
+    shippingCountry: string;
+    shippingRegion: string;
+    shippingCity: string;
+    shippingAddressLine1: string;
+    shippingAddressLine2: string;
     postalCode: string;
   };
   onSave: (data: ProfileEditFormProps['initialData']) => Promise<void>;
@@ -31,16 +37,6 @@ export default function ProfileEditForm({
   onValidationError,
 }: ProfileEditFormProps) {
   const [formData, setFormData] = useState(initialData);
-  const textareaClassName = [
-    'w-full min-h-[96px] px-4 py-2',
-    'text-slate-900 text-sm text-start placeholder:text-slate-400',
-    'bg-white border border-slate-200 rounded-lg',
-    'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
-    'transition-all duration-200 ease-out',
-    'disabled:opacity-50 disabled:cursor-not-allowed',
-    'dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500',
-    'dark:focus:border-slate-500 dark:focus:ring-slate-700/60',
-  ].join(' ');
 
   const handleSubmit = async () => {
     // Validate name
@@ -60,12 +56,45 @@ export default function ProfileEditForm({
       }
     }
 
+    const hasStructuredAddressInput = [
+      formData.shippingCountry,
+      formData.shippingRegion,
+      formData.shippingCity,
+      formData.shippingAddressLine2,
+    ].some((value) => value.trim());
+    const hasChangedLegacyLine1 =
+      formData.shippingAddressLine1.trim() !== '' &&
+      formData.shippingAddressLine1.trim() !==
+        initialData.shippingAddress.trim();
+    const shippingAddressResult =
+      hasStructuredAddressInput || hasChangedLegacyLine1
+        ? validateShippingAddress(formData)
+        : null;
+
+    if (shippingAddressResult && !shippingAddressResult.valid) {
+      onValidationError(shippingAddressResult.error);
+      return;
+    }
+
     // Normalize phone before sending
     const normalizedData = {
       ...formData,
       phone: formData.phone
         ? normalizePhoneNumber(formData.phone)
         : formData.phone,
+      ...(shippingAddressResult?.valid
+        ? {
+            shippingAddress: shippingAddressResult.address.shippingAddress,
+            shippingCountry: shippingAddressResult.address.shippingCountry,
+            shippingRegion: shippingAddressResult.address.shippingRegion,
+            shippingCity: shippingAddressResult.address.shippingCity,
+            shippingAddressLine1:
+              shippingAddressResult.address.shippingAddressLine1,
+            shippingAddressLine2:
+              shippingAddressResult.address.shippingAddressLine2,
+            postalCode: shippingAddressResult.address.postalCode,
+          }
+        : {}),
     };
 
     await onSave(normalizedData);
@@ -97,23 +126,59 @@ export default function ProfileEditForm({
         placeholder="+12125551234"
         autoComplete="tel"
       />
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          Shipping address
-        </label>
-        <textarea
-          value={formData.shippingAddress}
+      <Input
+        label="Country"
+        type="text"
+        value={formData.shippingCountry}
+        onChange={(e) =>
+          setFormData({ ...formData, shippingCountry: e.target.value })
+        }
+        autoComplete="country-name"
+      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          label="City"
+          type="text"
+          value={formData.shippingCity}
           onChange={(e) =>
-            setFormData({ ...formData, shippingAddress: e.target.value })
+            setFormData({ ...formData, shippingCity: e.target.value })
           }
-          className={textareaClassName}
-          rows={3}
-          dir="auto"
-          autoComplete="street-address"
+          autoComplete="address-level2"
+        />
+        <Input
+          label="State, region, or province"
+          type="text"
+          value={formData.shippingRegion}
+          onChange={(e) =>
+            setFormData({ ...formData, shippingRegion: e.target.value })
+          }
+          autoComplete="address-level1"
         />
       </div>
       <Input
-        label="Postal code"
+        label="Address line 1"
+        type="text"
+        value={formData.shippingAddressLine1}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            shippingAddressLine1: e.target.value,
+            shippingAddress: e.target.value,
+          })
+        }
+        autoComplete="address-line1"
+      />
+      <Input
+        label="Address line 2"
+        type="text"
+        value={formData.shippingAddressLine2}
+        onChange={(e) =>
+          setFormData({ ...formData, shippingAddressLine2: e.target.value })
+        }
+        autoComplete="address-line2"
+      />
+      <Input
+        label="Postal or ZIP code"
         type="text"
         dir="ltr"
         value={formData.postalCode}

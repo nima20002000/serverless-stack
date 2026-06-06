@@ -10,6 +10,11 @@ export interface CheckoutFormData {
   phone: string;
   email: string;
   shippingAddress: string;
+  shippingCountry: string;
+  shippingRegion: string;
+  shippingCity: string;
+  shippingAddressLine1: string;
+  shippingAddressLine2: string;
   postalCode: string;
 }
 
@@ -36,6 +41,11 @@ const initialFormData: CheckoutFormData = {
   phone: '',
   email: '',
   shippingAddress: '',
+  shippingCountry: '',
+  shippingRegion: '',
+  shippingCity: '',
+  shippingAddressLine1: '',
+  shippingAddressLine2: '',
   postalCode: '',
 };
 

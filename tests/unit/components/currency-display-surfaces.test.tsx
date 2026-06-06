@@ -159,6 +159,14 @@ describe('configured currency display surfaces', () => {
             isGuest: false,
             transactionCode: 'TX-PROFILE',
             createdAt: '2024-01-01T00:00:00.000Z',
+            shippingAddress:
+              'Invalidenstrasse 117\nFloor 2\nBerlin, Berlin, 10115\nGermany',
+            shippingCountry: 'Germany',
+            shippingRegion: 'Berlin',
+            shippingCity: 'Berlin',
+            shippingAddressLine1: 'Invalidenstrasse 117',
+            shippingAddressLine2: 'Floor 2',
+            postalCode: '10115',
             items: [
               {
                 id: 'item-profile-jpy',
@@ -180,6 +188,8 @@ describe('configured currency display surfaces', () => {
     );
 
     expect(markup).toContain('TX-PROFILE');
+    expect(markup).toContain('Invalidenstrasse 117');
+    expect(markup).toContain('Germany');
     expectMarkupCurrency(markup, 1234);
     expectMarkupCurrency(markup, 3035);
   });
@@ -205,8 +215,14 @@ describe('configured currency display surfaces', () => {
           fullName: 'Admin Buyer',
           phone: '+12025550123',
           email: 'buyer@example.com',
-          shippingAddress: '123 Currency St',
-          postalCode: '12345',
+          shippingAddress:
+            'Invalidenstrasse 117\nFloor 2\nBerlin, Berlin, 10115\nGermany',
+          shippingCountry: 'Germany',
+          shippingRegion: 'Berlin',
+          shippingCity: 'Berlin',
+          shippingAddressLine1: 'Invalidenstrasse 117',
+          shippingAddressLine2: 'Floor 2',
+          postalCode: '10115',
           createAccount: false,
           user: null,
           items: [
@@ -227,6 +243,8 @@ describe('configured currency display surfaces', () => {
     );
 
     expect(markup).toContain('TX-ADMIN');
+    expect(markup).toContain('Invalidenstrasse 117');
+    expect(markup).toContain('Germany');
     expectMarkupCurrency(markup, 1234);
     expectMarkupCurrency(markup, 2468);
     expectMarkupCurrencyCount(markup, 3035, 2);

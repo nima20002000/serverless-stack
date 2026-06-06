@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { PaginatedResponse, StockVerificationResult } from '@/types/api';
 import { log } from '@/lib/logger';
 import type { PaymentProvider } from '@/lib/payments/providers';
+import type { ShippingAddressFields } from '@/lib/shipping-address';
 
 /**
  * Generate a unique transaction code
@@ -39,9 +40,14 @@ export async function createTransaction(data: {
     phone: string;
     email?: string;
     shippingAddress: string;
+    shippingCountry?: string;
+    shippingRegion?: string;
+    shippingCity?: string;
+    shippingAddressLine1?: string;
+    shippingAddressLine2?: string;
     postalCode?: string;
     createAccount?: boolean;
-  };
+  } & ShippingAddressFields;
   // Optional client info for tracking
   ipAddress?: string | null;
   userAgent?: string | null;
@@ -83,6 +89,11 @@ export async function createTransaction(data: {
         phone: data.shippingInfo.phone,
         email: data.shippingInfo.email || null,
         shippingAddress: data.shippingInfo.shippingAddress,
+        shippingCountry: data.shippingInfo.shippingCountry || null,
+        shippingRegion: data.shippingInfo.shippingRegion || null,
+        shippingCity: data.shippingInfo.shippingCity || null,
+        shippingAddressLine1: data.shippingInfo.shippingAddressLine1 || null,
+        shippingAddressLine2: data.shippingInfo.shippingAddressLine2 || null,
         postalCode: data.shippingInfo.postalCode || null,
         createAccount: data.shippingInfo.createAccount || false,
         // Client tracking info

@@ -126,7 +126,12 @@ function createTransactionRequest(paymentMethod: unknown) {
         fullName: 'Test Buyer',
         phone: '+12125551234',
         email: 'buyer@example.com',
-        shippingAddress: '123 Test Street',
+        shippingCountry: 'Germany',
+        shippingRegion: 'Berlin',
+        shippingCity: 'Berlin',
+        shippingAddressLine1: 'Invalidenstrasse 117',
+        shippingAddressLine2: 'Floor 2',
+        postalCode: '10115',
       },
     }),
   });
@@ -179,6 +184,20 @@ describe('POST /api/transactions/create payment provider contract', () => {
     const response = await POST(createTransactionRequest('STRIPE'));
 
     expect(response.status).toBe(200);
+    expect(createTransactionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shippingInfo: expect.objectContaining({
+          shippingCountry: 'Germany',
+          shippingRegion: 'Berlin',
+          shippingCity: 'Berlin',
+          shippingAddressLine1: 'Invalidenstrasse 117',
+          shippingAddressLine2: 'Floor 2',
+          postalCode: '10115',
+          shippingAddress:
+            'Invalidenstrasse 117\nFloor 2\nBerlin, Berlin, 10115\nGermany',
+        }),
+      })
+    );
     expect(createStripeCheckoutSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({
         transactionId: 'tx_1',

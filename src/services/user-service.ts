@@ -7,6 +7,10 @@ import {
   getPhoneLookupCandidates,
   normalizePhoneNumber,
 } from '@/lib/utils/text';
+import {
+  normalizeShippingAddress,
+  type ShippingAddressFields,
+} from '@/lib/shipping-address';
 
 // Import utilities from modular structure
 import {
@@ -48,6 +52,10 @@ type UserWithoutPassword = Omit<
 // Re-export for backward compatibility
 export type { UserInfo };
 export { validateEmail, validatePassword, validatePhone, detectIdentifierType };
+
+function cleanAddressPart(value: string | null | undefined): string {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+}
 
 /**
  * Generate next available UID for new user
@@ -325,21 +333,24 @@ export async function getUserByIdentifier(
  */
 export async function updateUserShippingInfo(
   userId: string,
-  data: {
-    shippingAddress: string;
-    postalCode?: string;
-  }
+  data: ShippingAddressFields
 ): Promise<void> {
   log.info('Updating user shipping info', { userId });
 
   try {
     const supabase = createClient();
+    const address = normalizeShippingAddress(data);
 
     const { error } = await supabase
       .from('users')
       .update({
-        shippingAddress: data.shippingAddress,
-        postalCode: data.postalCode,
+        shippingAddress: address.shippingAddress,
+        shippingCountry: address.shippingCountry || null,
+        shippingRegion: address.shippingRegion || null,
+        shippingCity: address.shippingCity || null,
+        shippingAddressLine1: address.shippingAddressLine1 || null,
+        shippingAddressLine2: address.shippingAddressLine2 || null,
+        postalCode: address.postalCode || null,
       })
       .eq('id', userId);
 
@@ -369,6 +380,11 @@ export async function updateUserProfile(
     email?: string;
     phone?: string;
     shippingAddress?: string;
+    shippingCountry?: string;
+    shippingRegion?: string;
+    shippingCity?: string;
+    shippingAddressLine1?: string;
+    shippingAddressLine2?: string;
     postalCode?: string;
   }
 ): Promise<UserInfo> {
@@ -390,9 +406,77 @@ export async function updateUserProfile(
     if (data.name !== undefined) updateData.name = data.name;
     if (data.email !== undefined) updateData.email = data.email || null;
     if (data.phone !== undefined) updateData.phone = phone || null;
-    if (data.shippingAddress !== undefined)
-      updateData.shippingAddress = data.shippingAddress;
-    if (data.postalCode !== undefined) updateData.postalCode = data.postalCode;
+    if (
+      data.shippingAddress !== undefined ||
+      data.shippingCountry !== undefined ||
+      data.shippingRegion !== undefined ||
+      data.shippingCity !== undefined ||
+      data.shippingAddressLine1 !== undefined ||
+      data.shippingAddressLine2 !== undefined ||
+      data.postalCode !== undefined
+    ) {
+      const existingUser = await queryUser({ id: userId });
+      const existingLegacyAddress = cleanAddressPart(
+        existingUser?.shippingAddress
+      );
+      const explicitLine1 = cleanAddressPart(data.shippingAddressLine1);
+      const hasExplicitStructuredAddressField =
+        cleanAddressPart(data.shippingCountry) !== '' ||
+        cleanAddressPart(data.shippingRegion) !== '' ||
+        cleanAddressPart(data.shippingCity) !== '' ||
+        cleanAddressPart(data.shippingAddressLine2) !== '' ||
+        (explicitLine1 !== '' && explicitLine1 !== existingLegacyAddress);
+      const mergedAddress: ShippingAddressFields = {
+        shippingAddress: existingUser?.shippingAddress ?? undefined,
+        shippingCountry: existingUser?.shippingCountry ?? undefined,
+        shippingRegion: existingUser?.shippingRegion ?? undefined,
+        shippingCity: existingUser?.shippingCity ?? undefined,
+        shippingAddressLine1: existingUser?.shippingAddressLine1 ?? undefined,
+        shippingAddressLine2: existingUser?.shippingAddressLine2 ?? undefined,
+        postalCode: existingUser?.postalCode ?? undefined,
+      };
+
+      if (data.shippingAddress !== undefined) {
+        mergedAddress.shippingAddress = data.shippingAddress;
+      }
+      if (data.shippingCountry !== undefined) {
+        mergedAddress.shippingCountry = data.shippingCountry;
+      }
+      if (data.shippingRegion !== undefined) {
+        mergedAddress.shippingRegion = data.shippingRegion;
+      }
+      if (data.shippingCity !== undefined) {
+        mergedAddress.shippingCity = data.shippingCity;
+      }
+      if (data.shippingAddressLine1 !== undefined) {
+        mergedAddress.shippingAddressLine1 = data.shippingAddressLine1;
+      }
+      if (data.shippingAddressLine2 !== undefined) {
+        mergedAddress.shippingAddressLine2 = data.shippingAddressLine2;
+      }
+      if (data.postalCode !== undefined) {
+        mergedAddress.postalCode = data.postalCode;
+      }
+
+      const hasStoredStructuredAddress = Boolean(
+        existingUser?.shippingCountry ||
+        existingUser?.shippingRegion ||
+        existingUser?.shippingCity ||
+        existingUser?.shippingAddressLine2
+      );
+      if (!hasExplicitStructuredAddressField && !hasStoredStructuredAddress) {
+        mergedAddress.shippingAddressLine1 = undefined;
+      }
+
+      const address = normalizeShippingAddress(mergedAddress);
+      updateData.shippingAddress = address.shippingAddress || null;
+      updateData.shippingCountry = address.shippingCountry || null;
+      updateData.shippingRegion = address.shippingRegion || null;
+      updateData.shippingCity = address.shippingCity || null;
+      updateData.shippingAddressLine1 = address.shippingAddressLine1 || null;
+      updateData.shippingAddressLine2 = address.shippingAddressLine2 || null;
+      updateData.postalCode = address.postalCode || null;
+    }
 
     // Update user
     const { data: updatedUser, error } = await supabase
@@ -400,7 +484,7 @@ export async function updateUserProfile(
       .update(updateData)
       .eq('id', userId)
       .select(
-        'id, uid, email, phone, name, role, isVerified, shippingAddress, postalCode, createdAt, updatedAt'
+        'id, uid, email, phone, name, role, isVerified, shippingAddress, shippingCountry, shippingRegion, shippingCity, shippingAddressLine1, shippingAddressLine2, postalCode, createdAt, updatedAt'
       )
       .single();
 

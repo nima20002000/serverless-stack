@@ -43,6 +43,11 @@ type TransactionWithDetails = {
   email: string | null;
   phone: string;
   shippingAddress: string;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string;
   paymentProviderRef: string | null;
   stripePaymentIntentId: string | null;
