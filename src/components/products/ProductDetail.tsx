@@ -29,6 +29,8 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  swatchImageUrl?: string | null;
+  swatchCrop?: unknown;
   media?: MediaItem[];
 }
 

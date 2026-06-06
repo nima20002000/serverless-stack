@@ -16,6 +16,7 @@ import {
   useTextDirection,
   useTranslations,
 } from '@/components/providers/I18nProvider';
+import { getVariantSwatchStyle } from '@/lib/variant-swatch';
 
 interface Variant {
   id: string;
@@ -26,6 +27,8 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  swatchImageUrl?: string | null;
+  swatchCrop?: unknown;
   media?: Array<{
     id: string;
     type: 'IMAGE' | 'VIDEO';
@@ -98,7 +101,9 @@ function ProductCard({ product }: ProductCardProps) {
   // Get color variants for image swapping
   const colorVariants = useMemo(() => {
     return activeVariants.filter(
-      (v) => v.color && v.media && v.media.length > 0
+      (v) =>
+        (v.color || v.swatchImageUrl) &&
+        (v.swatchImageUrl || (v.media && v.media.length > 0))
     );
   }, [activeVariants]);
 
@@ -174,8 +179,10 @@ function ProductCard({ product }: ProductCardProps) {
     setSelectedVariant(nextVariant);
     if (nextVariant.media && nextVariant.media.length > 0) {
       setCurrentImage(nextVariant.media[0].url);
+    } else {
+      setCurrentImage(product.images[0] || '');
     }
-  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+  }, [hasColorVariants, currentVariantIndex, colorVariants, product.images]);
 
   // Navigate to previous color variant image
   const goToPrevVariant = useCallback(() => {
@@ -190,8 +197,10 @@ function ProductCard({ product }: ProductCardProps) {
     setSelectedVariant(prevVariant);
     if (prevVariant.media && prevVariant.media.length > 0) {
       setCurrentImage(prevVariant.media[0].url);
+    } else {
+      setCurrentImage(product.images[0] || '');
     }
-  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+  }, [hasColorVariants, currentVariantIndex, colorVariants, product.images]);
 
   // Touch swipe handlers
   const onTouchStart = useCallback(
@@ -274,7 +283,7 @@ function ProductCard({ product }: ProductCardProps) {
     }
 
     // Update carousel index if this is a color variant
-    if (hasColorVariants && variant.color) {
+    if (hasColorVariants && (variant.color || variant.swatchImageUrl)) {
       const variantIndex = colorVariants.findIndex((v) => v.id === variant.id);
       if (variantIndex >= 0) {
         setCurrentVariantIndex(variantIndex);
@@ -439,6 +448,11 @@ function ProductCard({ product }: ProductCardProps) {
                 {colorVariants.map((variant) => {
                   const isSelected = selectedVariant?.id === variant.id;
                   const variantOutOfStock = variant.stock === 0;
+                  const imageSwatchStyle = getVariantSwatchStyle(
+                    variant.swatchImageUrl,
+                    variant.swatchCrop
+                  );
+                  const hasImageSwatch = !!variant.swatchImageUrl;
 
                   return (
                     <button
@@ -455,10 +469,15 @@ function ProductCard({ product }: ProductCardProps) {
                       } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                       title={variantOutOfStock ? 'Out of stock' : variant.name}
                       aria-label={variant.name}
+                      data-testid={`product-card-swatch-${variant.id}`}
                     >
                       <span
                         className="absolute inset-0 rounded-[6px] border border-white/70"
-                        style={{ background: variant.color || '#e2e8f0' }}
+                        style={
+                          hasImageSwatch
+                            ? imageSwatchStyle
+                            : { background: variant.color || '#e2e8f0' }
+                        }
                       />
                     </button>
                   );
@@ -466,10 +485,14 @@ function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
 
-            {activeVariants.some((variant) => !variant.color) && (
+            {activeVariants.some(
+              (variant) => !variant.color && !variant.swatchImageUrl
+            ) && (
               <div className="flex flex-wrap gap-1.5">
                 {activeVariants
-                  .filter((variant) => !variant.color)
+                  .filter(
+                    (variant) => !variant.color && !variant.swatchImageUrl
+                  )
                   .map((variant) => {
                     const isSelected = selectedVariant?.id === variant.id;
                     const variantOutOfStock = variant.stock === 0;

@@ -3,6 +3,7 @@
 import { useState, useMemo, memo, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { formatPrice } from '@/lib/utils/format';
+import { getVariantSwatchStyle } from '@/lib/variant-swatch';
 
 interface Variant {
   id: string;
@@ -14,6 +15,8 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  swatchImageUrl?: string | null;
+  swatchCrop?: unknown;
 }
 
 interface VariantSelectorProps {
@@ -43,17 +46,23 @@ function VariantSelector({
 
   // Memoize variant filtering to avoid recalculating on every render
   const { colorVariants, sizeVariants, materialVariants, otherVariants } =
-    useMemo(
-      () => ({
-        colorVariants: variants.filter((v) => v.color && v.isActive),
-        sizeVariants: variants.filter((v) => v.size && v.isActive),
-        materialVariants: variants.filter((v) => v.material && v.isActive),
-        otherVariants: variants.filter(
-          (v) => !v.color && !v.size && !v.material && v.isActive
+    useMemo(() => {
+      const hasVisualSwatch = (variant: Variant) =>
+        Boolean(variant.color || variant.swatchImageUrl);
+
+      return {
+        colorVariants: variants.filter((v) => hasVisualSwatch(v) && v.isActive),
+        sizeVariants: variants.filter(
+          (v) => !hasVisualSwatch(v) && v.size && v.isActive
         ),
-      }),
-      [variants]
-    );
+        materialVariants: variants.filter(
+          (v) => !hasVisualSwatch(v) && !v.size && v.material && v.isActive
+        ),
+        otherVariants: variants.filter(
+          (v) => !hasVisualSwatch(v) && !v.size && !v.material && v.isActive
+        ),
+      };
+    }, [variants]);
 
   if (!variants || variants.length === 0) {
     return null;
@@ -76,6 +85,11 @@ function VariantSelector({
   const ColorSwatch = ({ variant }: { variant: Variant }) => {
     const isSelected = selected === variant.id;
     const outOfStock = isOutOfStock(variant);
+    const imageSwatchStyle = getVariantSwatchStyle(
+      variant.swatchImageUrl,
+      variant.swatchCrop
+    );
+    const hasImageSwatch = !!variant.swatchImageUrl;
 
     return (
       <button
@@ -86,9 +100,14 @@ function VariantSelector({
             ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
             : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-        style={{ background: variant.color || '#ddd' }}
+        style={
+          hasImageSwatch
+            ? imageSwatchStyle
+            : { background: variant.color || '#ddd' }
+        }
         title={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
         aria-label={variant.name}
+        data-testid={`variant-swatch-${variant.id}`}
       >
         {isSelected && (
           <div className="absolute inset-0 flex items-center justify-center">

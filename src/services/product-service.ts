@@ -7,6 +7,11 @@ import { clearCachePattern } from '@/lib/redis/client';
 import { Database } from '@/types/supabase';
 import { randomUUID } from 'crypto';
 import { calculateDiscountedPrice } from '@/lib/utils/format';
+import {
+  normalizeVariantSwatchCrop,
+  normalizeVariantSwatch,
+  type VariantSwatchCrop,
+} from '@/lib/variant-swatch';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -32,6 +37,33 @@ export interface VariantWithMedia extends ProductVariant {
 }
 
 // ========== HELPER FUNCTIONS ==========
+
+function getVariantSwatchUpdatePayload(data: {
+  swatchImageUrl?: string | null;
+  swatchCrop?: Partial<VariantSwatchCrop> | null;
+}): {
+  swatchImageUrl?: string | null;
+  swatchCrop?: VariantSwatchCrop | null;
+} {
+  if (data.swatchImageUrl !== undefined) {
+    const swatch = normalizeVariantSwatch(data);
+
+    return {
+      swatchImageUrl: swatch.swatchImageUrl,
+      swatchCrop: swatch.swatchCrop,
+    };
+  }
+
+  if (data.swatchCrop !== undefined) {
+    return {
+      swatchCrop: data.swatchCrop
+        ? normalizeVariantSwatchCrop(data.swatchCrop)
+        : null,
+    };
+  }
+
+  return {};
+}
 
 /**
  * Populate images array from media for backward compatibility
@@ -2022,6 +2054,8 @@ export async function batchCreateProductVariants(
     stock: number;
     order?: number;
     isActive?: boolean;
+    swatchImageUrl?: string | null;
+    swatchCrop?: Partial<VariantSwatchCrop> | null;
   }>
 ): Promise<{
   variants: VariantWithMedia[];
@@ -2071,6 +2105,7 @@ export async function batchCreateProductVariants(
 
     // Auto-assign order if not provided
     const order = variant.order ?? ++currentMaxOrder;
+    const swatch = normalizeVariantSwatch(variant);
 
     return {
       id: variantId,
@@ -2084,6 +2119,8 @@ export async function batchCreateProductVariants(
       stock: variant.stock,
       order,
       isActive: variant.isActive !== undefined ? variant.isActive : true,
+      swatchImageUrl: swatch.swatchImageUrl,
+      swatchCrop: swatch.swatchCrop,
       updatedAt: new Date().toISOString(),
     };
   });
@@ -2134,6 +2171,8 @@ export async function batchUpdateProductVariants(
     priceAdjust?: number;
     stock: number;
     isActive?: boolean;
+    swatchImageUrl?: string | null;
+    swatchCrop?: Partial<VariantSwatchCrop> | null;
   }>
 ): Promise<{ updated: number }> {
   if (variants.length === 0) {
@@ -2170,8 +2209,10 @@ export async function batchUpdateProductVariants(
 
   // Update all variants in parallel, skipping individual stock updates
   await Promise.all(
-    variants.map((variant) =>
-      supabase
+    variants.map((variant) => {
+      const swatchUpdate = getVariantSwatchUpdatePayload(variant);
+
+      return supabase
         .from('product_variants')
         .update({
           name: variant.name,
@@ -2182,10 +2223,11 @@ export async function batchUpdateProductVariants(
           priceAdjust: variant.priceAdjust || 0,
           stock: variant.stock,
           isActive: variant.isActive !== undefined ? variant.isActive : true,
+          ...swatchUpdate,
           updatedAt,
         })
-        .eq('id', variant.id)
-    )
+        .eq('id', variant.id);
+    })
   );
 
   // Recalculate stock only once at the end
@@ -2213,6 +2255,8 @@ export async function createProductVariant(data: {
   stock: number;
   order?: number;
   isActive?: boolean;
+  swatchImageUrl?: string | null;
+  swatchCrop?: Partial<VariantSwatchCrop> | null;
 }): Promise<VariantWithMedia> {
   log.info('Creating product variant', {
     productId: data.productId,
@@ -2251,6 +2295,7 @@ export async function createProductVariant(data: {
 
   // Create variant
   const variantId = randomUUID();
+  const swatch = normalizeVariantSwatch(data);
   const { data: variant, error } = await supabase
     .from('product_variants')
     .insert({
@@ -2265,6 +2310,8 @@ export async function createProductVariant(data: {
       stock: data.stock,
       order,
       isActive: data.isActive !== undefined ? data.isActive : true,
+      swatchImageUrl: swatch.swatchImageUrl,
+      swatchCrop: swatch.swatchCrop,
       updatedAt: new Date().toISOString(),
     })
     .select()
@@ -2309,6 +2356,8 @@ export async function updateProductVariant(
     priceAdjust: number;
     stock: number;
     isActive: boolean;
+    swatchImageUrl: string | null;
+    swatchCrop: Partial<VariantSwatchCrop> | null;
   }>,
   options?: {
     skipStockUpdate?: boolean;
@@ -2343,10 +2392,16 @@ export async function updateProductVariant(
     }
   }
 
+  const { swatchImageUrl, swatchCrop, ...variantUpdateData } = data;
+  const swatchUpdate = getVariantSwatchUpdatePayload({
+    swatchImageUrl,
+    swatchCrop,
+  });
   const { data: variant, error } = await supabase
     .from('product_variants')
     .update({
-      ...data,
+      ...variantUpdateData,
+      ...swatchUpdate,
       updatedAt: new Date().toISOString(),
     })
     .eq('id', id)

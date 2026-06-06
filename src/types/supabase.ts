@@ -185,6 +185,8 @@ export type Database = {
           size: string | null;
           sku: string | null;
           stock: number;
+          swatchCrop: Json | null;
+          swatchImageUrl: string | null;
           updatedAt: string;
         };
         Insert: {
@@ -200,6 +202,8 @@ export type Database = {
           size?: string | null;
           sku?: string | null;
           stock?: number;
+          swatchCrop?: Json | null;
+          swatchImageUrl?: string | null;
           updatedAt: string;
         };
         Update: {
@@ -215,6 +219,8 @@ export type Database = {
           size?: string | null;
           sku?: string | null;
           stock?: number;
+          swatchCrop?: Json | null;
+          swatchImageUrl?: string | null;
           updatedAt?: string;
         };
         Relationships: [

@@ -4,6 +4,7 @@ import {
   isProductFormDirty,
   type ProductFormSnapshotInput,
 } from '@/lib/admin/product-form-dirty';
+import { DEFAULT_SWATCH_CROP } from '@/lib/variant-swatch';
 
 function baseInput(
   overrides: Partial<ProductFormSnapshotInput> = {}
@@ -84,6 +85,8 @@ function baseInput(
         priceAdjust: '0',
         stock: '0',
         isActive: true,
+        swatchImageUrl: '',
+        swatchCrop: DEFAULT_SWATCH_CROP,
       },
       media: [],
     },
@@ -205,6 +208,30 @@ describe('product form dirty snapshots', () => {
     ).toBe(true);
   });
 
+  it('detects variant swatch image and crop changes', () => {
+    const input = baseInput();
+    const initial = snapshot(input);
+
+    expect(
+      isProductFormDirty(
+        initial,
+        snapshot(
+          baseInput({
+            variants: input.variants.map((variant) =>
+              variant.id === 'variant-blue'
+                ? {
+                    ...variant,
+                    swatchImageUrl: '/products/tote-blue.jpg',
+                    swatchCrop: { x: 20, y: 70, zoom: 2 },
+                  }
+                : variant
+            ),
+          })
+        )
+      )
+    ).toBe(true);
+  });
+
   it('ignores an empty add-variant form but detects filled draft values', () => {
     const initial = snapshot(baseInput());
 
@@ -262,6 +289,8 @@ describe('product form dirty snapshots', () => {
                 priceAdjust: redVariant.priceAdjust,
                 stock: redVariant.stock,
                 isActive: redVariant.isActive,
+                swatchImageUrl: redVariant.swatchImageUrl || '',
+                swatchCrop: redVariant.swatchCrop || DEFAULT_SWATCH_CROP,
               },
               media: redVariant.media || [],
             },
@@ -287,6 +316,8 @@ describe('product form dirty snapshots', () => {
                 priceAdjust: redVariant.priceAdjust,
                 stock: '9',
                 isActive: redVariant.isActive,
+                swatchImageUrl: redVariant.swatchImageUrl || '',
+                swatchCrop: redVariant.swatchCrop || DEFAULT_SWATCH_CROP,
               },
               media: redVariant.media || [],
             },

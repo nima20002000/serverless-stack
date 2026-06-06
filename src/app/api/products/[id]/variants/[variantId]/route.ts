@@ -22,8 +22,18 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
-      body;
+    const {
+      name,
+      sku,
+      color,
+      size,
+      material,
+      priceAdjust,
+      stock,
+      isActive,
+      swatchImageUrl,
+      swatchCrop,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -48,6 +58,8 @@ export async function PUT(
       priceAdjust: priceAdjust || 0,
       stock,
       isActive,
+      swatchImageUrl,
+      swatchCrop,
     });
 
     return NextResponse.json({ variant });

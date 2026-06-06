@@ -1,3 +1,5 @@
+import type { VariantSwatchCrop } from '@/lib/variant-swatch';
+
 /**
  * Shared types for product admin pages (new & edit)
  */
@@ -31,6 +33,8 @@ export interface Variant {
   order: number;
   isActive: boolean;
   media?: MediaItem[];
+  swatchImageUrl?: string | null;
+  swatchCrop?: VariantSwatchCrop | null;
 }
 
 export interface ProductFormData {
@@ -54,4 +58,6 @@ export interface VariantFormData {
   priceAdjust: string;
   stock: string;
   isActive: boolean;
+  swatchImageUrl: string;
+  swatchCrop: VariantSwatchCrop;
 }

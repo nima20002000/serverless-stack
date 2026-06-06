@@ -5,6 +5,10 @@ import type {
   Variant,
   VariantFormData,
 } from '@/types/product-admin';
+import {
+  DEFAULT_SWATCH_CROP,
+  normalizeVariantSwatch,
+} from '@/lib/variant-swatch';
 
 export type VariantDraftState = {
   showVariantForm: boolean;
@@ -51,6 +55,8 @@ type NormalizedVariant = {
   order: number;
   isActive: boolean;
   media: NormalizedMediaItem[];
+  swatchImageUrl: string | null;
+  swatchCrop: VariantFormData['swatchCrop'] | null;
 };
 
 type NormalizedVariantDraft = {
@@ -68,6 +74,8 @@ const defaultVariantForm: VariantFormData = {
   priceAdjust: '0',
   stock: '0',
   isActive: true,
+  swatchImageUrl: '',
+  swatchCrop: DEFAULT_SWATCH_CROP,
 };
 
 function normalizeText(value: string | null | undefined): string {
@@ -98,6 +106,8 @@ function normalizeVariantForm(form: VariantFormData): VariantFormData {
     priceAdjust: form.priceAdjust,
     stock: form.stock,
     isActive: form.isActive,
+    swatchImageUrl: normalizeVariantSwatch(form).swatchImageUrl || '',
+    swatchCrop: normalizeVariantSwatch(form).swatchCrop || DEFAULT_SWATCH_CROP,
   };
 }
 
@@ -133,6 +143,8 @@ function normalizeVariant(variant: Variant): NormalizedVariant {
     order: variant.order,
     isActive: variant.isActive,
     media: normalizeMedia(variant.media ?? []),
+    swatchImageUrl: normalizeVariantSwatch(variant).swatchImageUrl,
+    swatchCrop: normalizeVariantSwatch(variant).swatchCrop,
   };
 }
 
@@ -164,6 +176,11 @@ function isVariantDraftMeaningful(
       normalizedDraftForm.priceAdjust !== editedVariant.priceAdjust ||
       normalizedDraftForm.stock !== editedVariant.stock ||
       normalizedDraftForm.isActive !== editedVariant.isActive ||
+      normalizeVariantSwatch(normalizedDraftForm).swatchImageUrl !==
+        editedVariant.swatchImageUrl ||
+      stableStringify(
+        normalizeVariantSwatch(normalizedDraftForm).swatchCrop
+      ) !== stableStringify(editedVariant.swatchCrop) ||
       stableStringify(normalizedDraftMedia) !==
         stableStringify(editedVariant.media)
     );

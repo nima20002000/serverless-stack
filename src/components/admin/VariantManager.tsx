@@ -27,6 +27,12 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { formatPrice } from '@/lib/utils/format';
 import { siteLocale } from '@/config/site';
+import {
+  DEFAULT_SWATCH_CROP,
+  SWATCH_CROP_LIMITS,
+  getVariantSwatchStyle,
+  normalizeVariantSwatchCrop,
+} from '@/lib/variant-swatch';
 
 interface VariantManagerProps {
   variants: Variant[];
@@ -34,7 +40,9 @@ interface VariantManagerProps {
   editingVariantId: string | null;
   variantForm: VariantFormData;
   variantMedia: MediaItem[];
+  productMedia?: MediaItem[];
   onVariantFormChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSetVariantForm: React.Dispatch<React.SetStateAction<VariantFormData>>;
   onAddOrUpdate: () => void;
   onEdit: (variant: Variant) => void;
   onDelete: (variantId: string) => void;
@@ -173,7 +181,9 @@ export default function VariantManager({
   editingVariantId,
   variantForm,
   variantMedia,
+  productMedia = [],
   onVariantFormChange,
+  onSetVariantForm,
   onAddOrUpdate,
   onEdit,
   onDelete,
@@ -249,6 +259,39 @@ export default function VariantManager({
     }
 
     onSetVariantMedia(remaining);
+  };
+
+  const swatchImageOptions = [...productMedia, ...variantMedia]
+    .filter((media) => media.type === 'IMAGE')
+    .filter(
+      (media, index, items) =>
+        items.findIndex((item) => item.url === media.url) === index
+    );
+
+  const handleSelectSwatchImage = (url: string) => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchImageUrl: url,
+      swatchCrop: normalizeVariantSwatchCrop(prev.swatchCrop),
+    }));
+  };
+
+  const handleClearSwatch = () => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchImageUrl: '',
+      swatchCrop: DEFAULT_SWATCH_CROP,
+    }));
+  };
+
+  const handleSwatchCropChange = (field: 'x' | 'y' | 'zoom', value: string) => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchCrop: normalizeVariantSwatchCrop({
+        ...prev.swatchCrop,
+        [field]: Number(value),
+      }),
+    }));
   };
 
   return (
@@ -390,6 +433,129 @@ export default function VariantManager({
               onCloseBrowser={() => setShowVariantMediaBrowser(false)}
               title=""
             />
+          </div>
+
+          <div className="border-t border-blue-200 dark:border-blue-900/50 pt-3 sm:pt-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+              <div className="flex-1">
+                <h4 className="mb-2 text-left text-xs font-medium text-gray-900 dark:text-slate-100 sm:text-sm">
+                  Variant swatch image
+                </h4>
+                <p className="mb-3 text-left text-[10px] text-gray-600 dark:text-slate-400 sm:text-xs">
+                  Select an existing product or variant image for the storefront
+                  swatch.
+                </p>
+
+                {swatchImageOptions.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                    {swatchImageOptions.map((media) => {
+                      const isSelected =
+                        variantForm.swatchImageUrl === media.url;
+
+                      return (
+                        <button
+                          key={`${media.id}-${media.url}`}
+                          type="button"
+                          onClick={() => handleSelectSwatchImage(media.url)}
+                          className={`aspect-square overflow-hidden rounded border-2 bg-gray-100 transition-colors dark:bg-slate-800 ${
+                            isSelected
+                              ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+                              : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-500'
+                          }`}
+                          aria-label={`Use ${media.alt || 'image'} as swatch`}
+                        >
+                          <span
+                            className="block h-full w-full bg-cover bg-center"
+                            style={{
+                              backgroundImage: `url("${media.url}")`,
+                            }}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded border border-dashed border-gray-300 p-3 text-left text-xs text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                    Add product or variant images before choosing a swatch.
+                  </p>
+                )}
+              </div>
+
+              <div className="w-full rounded border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 lg:w-64">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-16 w-16 flex-shrink-0 rounded-full border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800"
+                    style={getVariantSwatchStyle(
+                      variantForm.swatchImageUrl,
+                      variantForm.swatchCrop
+                    )}
+                    aria-label="Variant swatch preview"
+                  />
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-xs font-medium text-gray-900 dark:text-slate-100">
+                      Swatch preview
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleClearSwatch}
+                      disabled={!variantForm.swatchImageUrl}
+                      className="mt-2 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                {variantForm.swatchImageUrl && (
+                  <div className="mt-4 space-y-3">
+                    <label className="block text-left text-xs text-gray-600 dark:text-slate-400">
+                      Horizontal crop
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.x.min}
+                        max={SWATCH_CROP_LIMITS.x.max}
+                        step="1"
+                        value={variantForm.swatchCrop.x}
+                        onChange={(event) =>
+                          handleSwatchCropChange('x', event.target.value)
+                        }
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                    <label className="block text-left text-xs text-gray-600 dark:text-slate-400">
+                      Vertical crop
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.y.min}
+                        max={SWATCH_CROP_LIMITS.y.max}
+                        step="1"
+                        value={variantForm.swatchCrop.y}
+                        onChange={(event) =>
+                          handleSwatchCropChange('y', event.target.value)
+                        }
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                    <label className="block text-left text-xs text-gray-600 dark:text-slate-400">
+                      Zoom
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.zoom.min}
+                        max={SWATCH_CROP_LIMITS.zoom.max}
+                        step="0.1"
+                        value={variantForm.swatchCrop.zoom}
+                        onChange={(event) =>
+                          handleSwatchCropChange('zoom', event.target.value)
+                        }
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 justify-start">

@@ -106,6 +106,8 @@ export async function POST(
             stock: number;
             order?: number;
             isActive?: boolean;
+            swatchImageUrl?: string | null;
+            swatchCrop?: { x?: number; y?: number; zoom?: number } | null;
           }) => ({
             tempId: v.tempId,
             name: v.name,
@@ -117,6 +119,8 @@ export async function POST(
             stock: v.stock,
             order: v.order,
             isActive: v.isActive,
+            swatchImageUrl: v.swatchImageUrl,
+            swatchCrop: v.swatchCrop,
           })
         )
       );
@@ -125,8 +129,18 @@ export async function POST(
     }
 
     // Single variant creation (backward compatibility)
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
-      body;
+    const {
+      name,
+      sku,
+      color,
+      size,
+      material,
+      priceAdjust,
+      stock,
+      isActive,
+      swatchImageUrl,
+      swatchCrop,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -152,6 +166,8 @@ export async function POST(
       priceAdjust: priceAdjust || 0,
       stock,
       isActive,
+      swatchImageUrl,
+      swatchCrop,
     });
 
     return NextResponse.json({ variant }, { status: 201 });
@@ -237,6 +253,8 @@ export async function PATCH(
           priceAdjust?: number;
           stock: number;
           isActive?: boolean;
+          swatchImageUrl?: string | null;
+          swatchCrop?: { x?: number; y?: number; zoom?: number } | null;
         }) => ({
           id: v.id,
           name: v.name,
@@ -247,6 +265,8 @@ export async function PATCH(
           priceAdjust: v.priceAdjust || 0,
           stock: v.stock,
           isActive: v.isActive,
+          swatchImageUrl: v.swatchImageUrl,
+          swatchCrop: v.swatchCrop,
         })
       )
     );

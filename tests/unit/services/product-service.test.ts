@@ -6,6 +6,7 @@ import {
   deleteProductMedia,
   updateProductStockFromVariants,
   createProductVariant,
+  batchUpdateProductVariants,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -526,6 +527,112 @@ describe('product-service', () => {
     expect(updateProductQuery.update).toHaveBeenCalledWith(
       expect.objectContaining({ hasVariants: true })
     );
+  });
+
+  it('normalizes and persists variant swatch metadata on create', async () => {
+    const supabase = createSupabaseMock();
+
+    const maxOrderQuery = createQueryMock({ data: { order: 0 }, error: null });
+    const insertQuery = createQueryMock({
+      data: { id: 'v1', order: 1 },
+      error: null,
+    });
+    const variantsQuery = createQueryMock({
+      data: [{ stock: 5 }],
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(maxOrderQuery)
+      .mockReturnValueOnce(insertQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateProductQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await createProductVariant({
+      productId: 'p1',
+      name: 'Blue',
+      stock: 5,
+      swatchImageUrl: '/media/blue.jpg',
+      swatchCrop: { x: -10, y: 120, zoom: 8 },
+    });
+
+    expect(insertQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 0, y: 100, zoom: 4 },
+      })
+    );
+  });
+
+  it('normalizes and persists variant swatch metadata on batch update', async () => {
+    const supabase = createSupabaseMock();
+
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+    const variantsQuery = createQueryMock({
+      data: [{ stock: 5 }],
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(updateVariantQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateProductQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchUpdateProductVariants('p1', [
+      {
+        id: 'v1',
+        name: 'Blue',
+        stock: 5,
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 30, y: 60, zoom: 2 },
+      },
+    ]);
+
+    expect(updateVariantQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        swatchImageUrl: '/media/blue.jpg',
+        swatchCrop: { x: 30, y: 60, zoom: 2 },
+      })
+    );
+  });
+
+  it('preserves existing swatch metadata when batch update omits swatch fields', async () => {
+    const supabase = createSupabaseMock();
+
+    const updateVariantQuery = createQueryMock({ data: null, error: null });
+    const variantsQuery = createQueryMock({
+      data: [{ stock: 5 }],
+      error: null,
+    });
+    const updateProductQuery = createQueryMock({ data: null, error: null });
+
+    supabase.from
+      .mockReturnValueOnce(updateVariantQuery)
+      .mockReturnValueOnce(variantsQuery)
+      .mockReturnValueOnce(updateProductQuery);
+
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    await batchUpdateProductVariants('p1', [
+      {
+        id: 'v1',
+        name: 'Blue',
+        stock: 5,
+      },
+    ]);
+
+    const updatePayload = updateVariantQuery.update.mock.calls[0][0] as Record<
+      string,
+      unknown
+    >;
+    expect(updatePayload).not.toHaveProperty('swatchImageUrl');
+    expect(updatePayload).not.toHaveProperty('swatchCrop');
   });
 
   describe('getProductById variant filtering', () => {

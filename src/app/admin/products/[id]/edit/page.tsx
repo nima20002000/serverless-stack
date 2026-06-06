@@ -143,6 +143,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             order: v.order ?? 0,
             isActive: v.isActive,
             media: v.media || [],
+            swatchImageUrl: v.swatchImageUrl || null,
+            swatchCrop: v.swatchCrop || null,
           }));
       }
       variantManager.setVariants(nextVariants);
@@ -338,7 +340,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           current.material !== original.material ||
           current.priceAdjust !== original.priceAdjust ||
           current.stock !== original.stock ||
-          current.isActive !== original.isActive
+          current.isActive !== original.isActive ||
+          current.swatchImageUrl !== original.swatchImageUrl ||
+          JSON.stringify(current.swatchCrop || null) !==
+            JSON.stringify(original.swatchCrop || null)
         );
       };
 
@@ -380,6 +385,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 priceAdjust: parseFloat(variant.priceAdjust),
                 stock: parseInt(variant.stock),
                 isActive: variant.isActive,
+                swatchImageUrl: variant.swatchImageUrl || null,
+                swatchCrop: variant.swatchCrop || null,
               })),
             }),
           }
@@ -417,6 +424,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               stock: parseInt(variant.stock),
               order: variant.order,
               isActive: variant.isActive,
+              swatchImageUrl: variant.swatchImageUrl || null,
+              swatchCrop: variant.swatchCrop || null,
             })),
           }),
         });
@@ -693,7 +702,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             editingVariantId={variantManager.editingVariantId}
             variantForm={variantManager.variantForm}
             variantMedia={variantManager.variantMedia}
+            productMedia={productMedia.media}
             onVariantFormChange={variantManager.handleVariantFormChange}
+            onSetVariantForm={variantManager.setVariantForm}
             onAddOrUpdate={variantManager.addOrUpdateVariant}
             onEdit={variantManager.editVariant}
             onDelete={variantManager.deleteVariant}

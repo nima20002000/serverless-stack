@@ -217,6 +217,8 @@ export default function NewProductPage() {
           stock: parseInt(variant.stock),
           order: variant.order,
           isActive: variant.isActive,
+          swatchImageUrl: variant.swatchImageUrl || null,
+          swatchCrop: variant.swatchCrop || null,
         }));
 
         const variantResponse = await fetch(
@@ -396,7 +398,9 @@ export default function NewProductPage() {
             editingVariantId={variantManager.editingVariantId}
             variantForm={variantManager.variantForm}
             variantMedia={variantManager.variantMedia}
+            productMedia={productMedia.media}
             onVariantFormChange={variantManager.handleVariantFormChange}
+            onSetVariantForm={variantManager.setVariantForm}
             onAddOrUpdate={variantManager.addOrUpdateVariant}
             onEdit={variantManager.editVariant}
             onDelete={variantManager.deleteVariant}
