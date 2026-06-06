@@ -3,6 +3,8 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { siteConfig } from '@/config/site';
+import { useTranslations } from '@/components/providers/I18nProvider';
+import { parsePathLocale } from '@/lib/i18n/routing';
 
 const HIDDEN_PATHS = ['/checkout'];
 
@@ -10,33 +12,35 @@ const footerGroups = [
   {
     title: 'Shop',
     links: [
-      { href: '/products', label: 'Products' },
-      { href: '/wishlist', label: 'Wishlist' },
-      { href: '/cart', label: 'Cart' },
+      { href: '/products', labelKey: 'nav.products' },
+      { href: '/wishlist', labelKey: 'nav.wishlist' },
+      { href: '/cart', labelKey: 'nav.cart' },
     ],
   },
   {
     title: 'Support',
     links: [
-      { href: '/shipping', label: 'Shipping' },
-      { href: '/refund-policy', label: 'Returns' },
-      { href: '/faq', label: 'FAQ' },
-      { href: '/contact', label: 'Contact' },
+      { href: '/shipping', labelKey: 'footer.shipping' },
+      { href: '/refund-policy', labelKey: 'footer.returns' },
+      { href: '/faq', labelKey: 'footer.faq' },
+      { href: '/contact', labelKey: 'nav.contact' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { href: '/about', label: 'About' },
-      { href: '/privacy', label: 'Privacy' },
-      { href: '/terms', label: 'Terms' },
+      { href: '/about', labelKey: 'nav.about' },
+      { href: '/privacy', labelKey: 'footer.privacy' },
+      { href: '/terms', labelKey: 'footer.terms' },
     ],
   },
 ];
 
 export default function Footer() {
+  const t = useTranslations();
   const pathname = usePathname();
-  const isHidden = HIDDEN_PATHS.some((path) => pathname.startsWith(path));
+  const routePathname = parsePathLocale(pathname).pathnameWithoutLocale;
+  const isHidden = HIDDEN_PATHS.some((path) => routePathname.startsWith(path));
 
   if (isHidden) {
     return null;
@@ -58,7 +62,7 @@ export default function Footer() {
           {footerGroups.map((group) => (
             <div key={group.title}>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-900 dark:text-slate-100">
-                {group.title}
+                {t(`footer.${group.title.toLowerCase()}`)}
               </h3>
               <ul className="mt-4 space-y-3">
                 {group.links.map((link) => (
@@ -67,7 +71,7 @@ export default function Footer() {
                       href={link.href}
                       className="text-sm text-slate-600 transition-colors hover:text-slate-950 dark:text-slate-400 dark:hover:text-slate-100"
                     >
-                      {link.label}
+                      {t(link.labelKey)}
                     </Link>
                   </li>
                 ))}
@@ -78,8 +82,8 @@ export default function Footer() {
 
         <div className="mt-10 border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400">
           <p>
-            (c) {new Date().getFullYear()} {siteConfig.displayName}. Open-source
-            commerce boilerplate.
+            (c) {new Date().getFullYear()} {siteConfig.displayName}.{' '}
+            {t('footer.boilerplate')}
           </p>
         </div>
       </div>

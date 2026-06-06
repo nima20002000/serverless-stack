@@ -11,24 +11,29 @@ import CartDrawer from '@/components/cart/CartDrawer';
 import SearchBar from '@/components/ui/SearchBar';
 import { WishlistIcon } from '@/components/wishlist/WishlistIcon';
 import { siteConfig } from '@/config/site';
+import LanguageSwitcher from '@/components/i18n/LanguageSwitcher';
+import { parsePathLocale } from '@/lib/i18n/routing';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 const HEADER_HIDDEN_PATHS = ['/checkout'];
 
 const publicLinks = [
-  { href: '/products', label: 'Products' },
-  { href: '/about', label: 'About' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/products', labelKey: 'nav.products' },
+  { href: '/about', labelKey: 'nav.about' },
+  { href: '/contact', labelKey: 'nav.contact' },
 ];
 
 export default function Header() {
+  const t = useTranslations();
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
+  const routePathname = parsePathLocale(pathname).pathnameWithoutLocale;
   const isHeaderHidden = HEADER_HIDDEN_PATHS.some((path) =>
-    pathname.startsWith(path)
+    routePathname.startsWith(path)
   );
 
   useEffect(() => {
@@ -75,14 +80,15 @@ export default function Header() {
                   href={link.href}
                   className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                 >
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               ))}
+              <LanguageSwitcher />
               <WishlistIcon />
               <CartIcon onClick={() => setIsCartOpen(true)} />
               {status === 'loading' ? (
                 <span className="px-3 py-2 text-sm text-slate-500">
-                  Loading...
+                  {t('common.loading')}
                 </span>
               ) : session ? (
                 <>
@@ -90,14 +96,14 @@ export default function Header() {
                     href="/profile"
                     className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white"
                   >
-                    Account
+                    {t('nav.account')}
                   </Link>
                   {session.user?.role === 'ADMIN' && (
                     <Link
                       href="/admin"
                       className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-slate-300"
                     >
-                      Admin
+                      {t('nav.admin')}
                     </Link>
                   )}
                   <Button
@@ -105,19 +111,19 @@ export default function Header() {
                     size="sm"
                     onClick={() => signOut({ callbackUrl: '/' })}
                   >
-                    Sign out
+                    {t('nav.signOut')}
                   </Button>
                 </>
               ) : (
                 <>
                   <Link href="/login">
                     <Button variant="ghost" size="sm">
-                      Sign in
+                      {t('nav.signIn')}
                     </Button>
                   </Link>
                   <Link href="/register">
                     <Button variant="primary" size="sm">
-                      Create account
+                      {t('nav.createAccount')}
                     </Button>
                   </Link>
                 </>
@@ -130,7 +136,7 @@ export default function Header() {
               <button
                 onClick={() => setIsMobileMenuOpen((value) => !value)}
                 className="rounded-lg p-2 text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                aria-label="Toggle navigation menu"
+                aria-label={t('nav.toggleNavigation')}
                 aria-expanded={isMobileMenuOpen}
               >
                 {isMobileMenuOpen ? (
@@ -156,23 +162,26 @@ export default function Header() {
                     href={link.href}
                     className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    {link.label}
+                    {t(link.labelKey)}
                   </Link>
                 ))}
+                <div className="px-3 py-2">
+                  <LanguageSwitcher />
+                </div>
                 {session ? (
                   <>
                     <Link
                       href="/profile"
                       className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      Account
+                      {t('nav.account')}
                     </Link>
                     {session.user?.role === 'ADMIN' && (
                       <Link
                         href="/admin"
                         className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
-                        Admin
+                        {t('nav.admin')}
                       </Link>
                     )}
                     <Button
@@ -181,19 +190,19 @@ export default function Header() {
                       className="justify-start"
                       onClick={() => signOut({ callbackUrl: '/' })}
                     >
-                      Sign out
+                      {t('nav.signOut')}
                     </Button>
                   </>
                 ) : (
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <Link href="/login">
                       <Button variant="secondary" size="sm" fullWidth>
-                        Sign in
+                        {t('nav.signIn')}
                       </Button>
                     </Link>
                     <Link href="/register">
                       <Button variant="primary" size="sm" fullWidth>
-                        Create account
+                        {t('nav.createAccount')}
                       </Button>
                     </Link>
                   </div>

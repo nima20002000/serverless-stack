@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore, formatPrice, selectTotal } from '@/store/cart-store';
 import CartItem from './CartItem';
 import Button from '@/components/ui/Button';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const t = useTranslations();
   const router = useRouter();
   const { items, updateQuantity, removeItem } = useCartStore();
   const total = useCartStore(selectTotal);
@@ -28,7 +30,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
       setError('');
       updateQuantity(productId, quantity, variantId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update cart');
+      setError(err instanceof Error ? err.message : t('cart.couldNotUpdate'));
     }
   };
 
@@ -78,14 +80,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <div className="flex h-full flex-col bg-white shadow-xl dark:bg-slate-950">
                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 dark:border-slate-800">
                       <Dialog.Title className="text-lg font-bold text-slate-950 dark:text-white">
-                        Cart
+                        {t('cart.title')}
                       </Dialog.Title>
                       <button
                         type="button"
                         className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
                         onClick={onClose}
                       >
-                        <span className="sr-only">Close cart</span>
+                        <span className="sr-only">{t('cart.closeCart')}</span>
                         <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                       </button>
                     </div>
@@ -100,16 +102,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       {items.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center text-center">
                           <h3 className="mb-2 text-lg font-bold text-slate-950 dark:text-white">
-                            Your cart is empty
+                            {t('cart.emptyTitle')}
                           </h3>
                           <p className="mb-6 text-sm text-slate-500">
-                            Add a product to start checkout.
+                            {t('cart.drawerEmptyDescription')}
                           </p>
                           <Button
                             variant="primary"
                             onClick={handleContinueShopping}
                           >
-                            Browse products
+                            {t('cart.browseProducts')}
                           </Button>
                         </div>
                       ) : (
@@ -130,7 +132,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       <div className="space-y-4 border-t border-slate-200 bg-slate-50 px-5 py-6 dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between text-lg font-bold">
                           <span className="text-slate-950 dark:text-white">
-                            Total
+                            {t('cart.total')}
                           </span>
                           <span className="text-slate-950 dark:text-white">
                             {formatPrice(total)}
@@ -143,14 +145,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             fullWidth
                             onClick={handleCheckout}
                           >
-                            View cart
+                            {t('cart.viewCart')}
                           </Button>
                           <Button
                             variant="secondary"
                             fullWidth
                             onClick={handleContinueShopping}
                           >
-                            Continue shopping
+                            {t('cart.continueShopping')}
                           </Button>
                         </div>
                       </div>

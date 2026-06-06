@@ -9,6 +9,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import ProductGallery from './ProductGallery';
 import VariantSelector from './VariantSelector';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface MediaItem {
   id: string;
@@ -63,6 +64,7 @@ interface ProductDetailProps {
 }
 
 export default function ProductDetail({ product }: ProductDetailProps) {
+  const t = useTranslations();
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
   const [quantity, setQuantity] = useState(1);
@@ -419,10 +421,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               onClick={handleAddToCart}
             >
               {isOutOfStock
-                ? 'Out of stock'
+                ? t('products.outOfStock')
                 : isAdding
-                  ? 'Adding...'
-                  : 'Add to Cart'}
+                  ? t('products.adding')
+                  : t('products.addToCart')}
             </Button>
 
             <Button
@@ -431,7 +433,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               className="w-full"
               onClick={() => router.back()}
             >
-              Back to products
+              {t('products.backToProducts')}
             </Button>
           </div>
         </div>

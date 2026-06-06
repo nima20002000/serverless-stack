@@ -12,6 +12,7 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import Badge from '@/components/ui/Badge';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface Variant {
   id: string;
@@ -48,6 +49,7 @@ interface ProductCardProps {
 }
 
 function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations();
   const addItem = useCartStore((state) => state.addItem);
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
@@ -516,10 +518,10 @@ function ProductCard({ product }: ProductCardProps) {
           onClick={handleAddToCart}
         >
           {isOutOfStock
-            ? 'Out of stock'
+            ? t('products.outOfStock')
             : isAdding
-              ? 'Adding...'
-              : 'Add to Cart'}
+              ? t('products.adding')
+              : t('products.addToCart')}
         </Button>
       </div>
     </div>

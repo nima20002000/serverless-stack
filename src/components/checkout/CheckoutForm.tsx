@@ -14,6 +14,7 @@ import {
 } from '@/lib/utils/text';
 import { validateShippingAddress } from '@/lib/shipping-address';
 import { useCheckoutStore } from '@/store/checkout-store';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface CheckoutFormProps {
   session: Session | null;
@@ -43,6 +44,7 @@ export default function CheckoutForm({
   formRef,
   compact = false,
 }: CheckoutFormProps) {
+  const t = useTranslations();
   const {
     formData: savedFormData,
     setFormData: saveFormData,
@@ -185,20 +187,18 @@ export default function CheckoutForm({
     setFormError('');
 
     if (!fullName.trim()) {
-      setFormError('Please enter your full name.');
+      setFormError(t('checkout.enterFullName'));
       return;
     }
 
     if (fullName.trim() && !isValidName(fullName)) {
-      setFormError(
-        'Name can contain letters, spaces, hyphens, periods, and apostrophes.'
-      );
+      setFormError(t('checkout.invalidName'));
       return;
     }
 
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone.trim() || !isValidPhoneNumber(normalizedPhone)) {
-      setFormError('Please enter a valid phone number.');
+      setFormError(t('checkout.invalidPhone'));
       return;
     }
 
@@ -213,7 +213,11 @@ export default function CheckoutForm({
     });
 
     if (!shippingAddressResult.valid) {
-      setFormError(shippingAddressResult.error);
+      setFormError(
+        shippingAddressResult.error.includes('country')
+          ? t('validation.shippingCountry')
+          : t('validation.addressLine1')
+      );
       return;
     }
 
@@ -233,11 +237,17 @@ export default function CheckoutForm({
 
   if (!_hasHydrated || (isLoadingProfile && session)) {
     if (compact) {
-      return <div className="text-center py-8 text-slate-500">Loading...</div>;
+      return (
+        <div className="text-center py-8 text-slate-500">
+          {t('common.loading')}
+        </div>
+      );
     }
     return (
       <Card className="mt-6">
-        <div className="text-center py-8 text-slate-500">Loading...</div>
+        <div className="text-center py-8 text-slate-500">
+          {t('common.loading')}
+        </div>
       </Card>
     );
   }
@@ -258,7 +268,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="fullName"
-          label="Full name *"
+          label={t('checkout.fullName')}
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -269,11 +279,17 @@ export default function CheckoutForm({
         />
         {hasProfileName && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your name, go to{' '}
+            {
+              t('checkout.profileNameHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profileNameHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
@@ -282,7 +298,7 @@ export default function CheckoutForm({
         <Input
           id="phone"
           name="phone"
-          label="Phone number *"
+          label={t('checkout.phone')}
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
@@ -294,11 +310,17 @@ export default function CheckoutForm({
         />
         {hasProfilePhone && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your phone number, go to{' '}
+            {
+              t('checkout.profilePhoneHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profilePhoneHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
@@ -306,7 +328,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="email"
-          label="Email (optional)"
+          label={t('checkout.email')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -316,11 +338,17 @@ export default function CheckoutForm({
         />
         {hasProfileEmail && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your email, go to{' '}
+            {
+              t('checkout.profileEmailHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profileEmailHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
@@ -328,7 +356,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="shippingCountry"
-          label="Country *"
+          label={t('checkout.country')}
           type="text"
           value={shippingCountry}
           onChange={(e) => setShippingCountry(e.target.value)}
@@ -341,7 +369,7 @@ export default function CheckoutForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input
           id="shippingCity"
-          label="City"
+          label={t('checkout.city')}
           type="text"
           value={shippingCity}
           onChange={(e) => setShippingCity(e.target.value)}
@@ -350,7 +378,7 @@ export default function CheckoutForm({
         />
         <Input
           id="shippingRegion"
-          label="State, region, or province"
+          label={t('checkout.region')}
           type="text"
           value={shippingRegion}
           onChange={(e) => setShippingRegion(e.target.value)}
@@ -362,7 +390,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="shippingAddressLine1"
-          label="Address line 1 *"
+          label={t('checkout.addressLine1')}
           type="text"
           value={shippingAddressLine1}
           onChange={(e) => {
@@ -378,7 +406,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="shippingAddressLine2"
-          label="Address line 2"
+          label={t('checkout.addressLine2')}
           type="text"
           value={shippingAddressLine2}
           onChange={(e) => setShippingAddressLine2(e.target.value)}
@@ -390,7 +418,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="postalCode"
-          label="Postal or ZIP code (optional)"
+          label={t('checkout.postalCodeOptional')}
           type="text"
           value={postalCode}
           onChange={(e) => setPostalCode(e.target.value.slice(0, 32))}
@@ -403,7 +431,7 @@ export default function CheckoutForm({
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
         <p className="text-sm text-amber-800 text-start">
-          Shipping and tax are calculated by the configured fulfillment setup.
+          {t('checkout.fulfillmentNotice')}
         </p>
       </div>
 
@@ -415,7 +443,7 @@ export default function CheckoutForm({
           isLoading={isProcessing}
           disabled={isProcessing}
         >
-          Continue to payment
+          {t('checkout.continueToPayment')}
         </Button>
       )}
     </form>
@@ -426,7 +454,7 @@ export default function CheckoutForm({
   return (
     <Card className="mt-6">
       <h2 className="text-lg font-bold text-slate-900 text-start mb-4 border-b border-slate-100 pb-3">
-        Shipping information
+        {t('checkout.shippingInformation')}
       </h2>
       {formContent}
     </Card>

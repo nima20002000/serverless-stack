@@ -4,6 +4,7 @@ import { TrashIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { CartItem as CartItemType, formatPrice } from '@/store/cart-store';
 import Image from 'next/image';
 import { optimizeImage } from '@/lib/cloudflare-images-client';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface CartItemProps {
   item: CartItemType;
@@ -20,6 +21,8 @@ export default function CartItem({
   onUpdateQuantity,
   onRemove,
 }: CartItemProps) {
+  const t = useTranslations();
+
   const handleIncrement = () => {
     if (item.quantity < item.stock) {
       onUpdateQuantity(item.productId, item.quantity + 1, item.variantId);
@@ -70,7 +73,7 @@ export default function CartItem({
             onClick={handleDecrement}
             disabled={item.quantity <= 1}
             className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
-            aria-label="Decrease quantity"
+            aria-label={t('cart.decreaseQuantity')}
           >
             <MinusIcon className="h-4 w-4 text-slate-600" />
           </button>
@@ -83,13 +86,13 @@ export default function CartItem({
             onClick={handleIncrement}
             disabled={item.quantity >= item.stock}
             className="rounded-md border border-slate-300 p-1 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
-            aria-label="Increase quantity"
+            aria-label={t('cart.increaseQuantity')}
           >
             <PlusIcon className="h-4 w-4 text-slate-600" />
           </button>
 
           {item.quantity >= item.stock && (
-            <span className="text-xs text-amber-600">Maximum stock</span>
+            <span className="text-xs text-amber-600">{t('cart.maxStock')}</span>
           )}
         </div>
       </div>
@@ -98,7 +101,7 @@ export default function CartItem({
         <button
           onClick={() => onRemove(item.productId, item.variantId)}
           className="rounded-md p-1 text-red-600 transition-colors hover:bg-red-50"
-          aria-label="Remove from cart"
+          aria-label={t('cart.removeFromCart')}
         >
           <TrashIcon className="h-5 w-5" />
         </button>
