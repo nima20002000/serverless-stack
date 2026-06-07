@@ -80,6 +80,22 @@ describe('email client', () => {
     expect(payload.from).toBe('Serverless Stack <noreply@example.com>');
   });
 
+  it('renders OTP email in the requested locale', async () => {
+    process.env.RESEND_API_KEY = 'resend-key';
+    resendSendMock.mockResolvedValue({ data: { id: 'msg-de' }, error: null });
+
+    const { sendOTPEmail } = await import('@/lib/email/client');
+
+    await sendOTPEmail('user@example.com', '123456', { locale: 'de' });
+
+    const payload = resendSendMock.mock.calls[0][0];
+    expect(payload.subject).toBe('Dein Anmeldecode für Serverless Stack');
+    expect(payload.html).toContain('lang="de"');
+    expect(payload.html).toContain('Verwende diesen Bestätigungscode');
+    expect(payload.text).toContain('Code: 123456');
+    expect(payload.text).toContain('Dieser Code läuft in 5 Minuten ab.');
+  });
+
   it('sends buyer confirmation when email is present', async () => {
     process.env.RESEND_API_KEY = 'resend-key';
 
@@ -127,6 +143,55 @@ describe('email client', () => {
     expect(payload.text).toContain('Order code: KT-ABC123');
     expect(payload.text).toContain('Payment method: Stripe');
     expect(payload.text).toContain('Product <unsafe> (Blue <XL>)');
+  });
+
+  it('renders buyer order confirmation in the requested locale', async () => {
+    process.env.RESEND_API_KEY = 'resend-key';
+    process.env.NEXT_PUBLIC_SITE_CURRENCY = 'EUR';
+    resendSendMock.mockResolvedValue({ data: { id: 'buyer-de' }, error: null });
+
+    const { sendBuyerOrderConfirmation } = await import('@/lib/email/client');
+
+    await sendBuyerOrderConfirmation(
+      {
+        id: 'tx-1',
+        transactionCode: 'KT-DE123',
+        amount: 3035.5,
+        paymentMethod: 'PAYPAL',
+        fullName: 'Käufer',
+        phone: '+4915123456789',
+        email: 'buyer@example.com',
+        shippingAddress: 'Teststraße 1',
+        postalCode: '10115',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        isGuest: true,
+        items: [
+          {
+            quantity: 2,
+            price: 1234.5,
+            product: { name: 'Mantel', price: 1234.5 },
+          },
+        ],
+      },
+      { locale: 'de' }
+    );
+
+    const payload = resendSendMock.mock.calls[0][0];
+    const expectedTotal = new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+      currencyDisplay: 'symbol',
+    }).format(3035.5);
+
+    expect(payload.subject).toBe(
+      'Bestellung KT-DE123 bestätigt - Serverless Stack'
+    );
+    expect(payload.html).toContain('Bestellung bestätigt');
+    expect(payload.html).toContain('Bestellcode');
+    expect(payload.html).toContain(expectedTotal);
+    expect(payload.text).toContain('Zahlungsmethode: PayPal');
+    expect(payload.text).toContain(`Gesamt: ${expectedTotal}`);
+    expect(payload.text).toContain('Menge: 2');
   });
 
   it('skips buyer confirmation when email is missing', async () => {

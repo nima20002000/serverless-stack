@@ -1,5 +1,7 @@
 import { siteConfig, siteLocale } from '@/config/site';
 import { getBaseUrl } from './config';
+import { getLocalizedPath } from '@/lib/seo/localized-metadata';
+import type { Locale } from '@/lib/i18n/config';
 
 interface BreadcrumbItem {
   name: string;
@@ -45,9 +47,14 @@ function toAbsoluteUrl(url: string, baseUrl: string): string {
  */
 export function generateProductSchema(
   product: SchemaProduct,
-  selectedVariant?: SchemaVariant
+  selectedVariant?: SchemaVariant,
+  options: { locale?: Locale } = {}
 ): object {
   const baseUrl = getBaseUrl();
+  const productPath = `/products/${product.slug || product.id}`;
+  const urlPath = options.locale
+    ? getLocalizedPath(productPath, options.locale)
+    : productPath;
 
   // Get images from product media or variant media
   const images: string[] = [];
@@ -112,6 +119,7 @@ export function generateProductSchema(
       ? `${product.name} - ${selectedVariant.name}`
       : product.name,
     description: product.description || `${product.name} - ${siteConfig.name}`,
+    ...(options.locale && { inLanguage: options.locale }),
     image: schemaImages,
     ...(product.sku && { sku: product.sku }),
     brand: {
@@ -123,7 +131,7 @@ export function generateProductSchema(
       price: finalPrice.toString(),
       priceCurrency: siteLocale.currency,
       availability,
-      url: `${baseUrl}/products/${product.slug || product.id}`,
+      url: `${baseUrl}${urlPath}`,
       ...(product.discount &&
         product.discount > 0 && {
           priceValidUntil: new Date(
@@ -189,12 +197,15 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]): object {
  */
 export function generateProductBreadcrumbs(
   product: SchemaProduct,
-  categoryHierarchy?: Array<{ name: string; slug: string }>
+  categoryHierarchy?: Array<{ name: string; slug: string }>,
+  options: { homeLabel?: string; locale?: Locale } = {}
 ): BreadcrumbItem[] {
+  const localizePath = (path: string) =>
+    options.locale ? getLocalizedPath(path, options.locale) : path;
   const items: BreadcrumbItem[] = [
     {
-      name: 'Home',
-      url: '/',
+      name: options.homeLabel || 'Home',
+      url: localizePath('/'),
     },
   ];
 
@@ -203,21 +214,21 @@ export function generateProductBreadcrumbs(
     categoryHierarchy.forEach((category) => {
       items.push({
         name: category.name,
-        url: `/products?category=${category.slug}`,
+        url: localizePath(`/products?category=${category.slug}`),
       });
     });
   } else if (product.category) {
     // Fallback to just the direct category
     items.push({
       name: product.category.name,
-      url: `/products?category=${product.category.slug}`,
+      url: localizePath(`/products?category=${product.category.slug}`),
     });
   }
 
   // Add the product itself
   items.push({
     name: product.name,
-    url: `/products/${product.slug || product.id}`,
+    url: localizePath(`/products/${product.slug || product.id}`),
   });
 
   return items;

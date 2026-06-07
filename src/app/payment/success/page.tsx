@@ -12,6 +12,8 @@ import { useCartStore } from '@/store/cart-store';
 import { useCheckoutStore } from '@/store/checkout-store';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { useI18n, useTranslations } from '@/components/providers/I18nProvider';
+import { prefixPathWithLocale } from '@/lib/i18n/routing';
 
 type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
 
@@ -33,6 +35,8 @@ function providerLabel(provider: string | null) {
 function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale } = useI18n();
+  const t = useTranslations();
   const clearCart = useCartStore((state) => state.clearCart);
   const clearCheckoutFormData = useCheckoutStore(
     (state) => state.clearFormData
@@ -52,9 +56,7 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!transactionCode) {
-      setStatusError(
-        'We could not find a transaction code for this payment return.'
-      );
+      setStatusError(t('payment.missingTransactionCode'));
       setIsLoading(false);
       return () => undefined;
     }
@@ -79,7 +81,7 @@ function SuccessContent() {
           throw new Error(
             typeof data.error === 'string'
               ? data.error
-              : 'Unable to load payment status.'
+              : t('payment.unableToLoadStatus')
           );
         }
 
@@ -123,7 +125,7 @@ function SuccessContent() {
         setStatusError(
           error instanceof Error
             ? error.message
-            : 'Unable to load payment status.'
+            : t('payment.unableToLoadStatus')
         );
       } finally {
         if (isMounted) {
@@ -144,7 +146,7 @@ function SuccessContent() {
         clearInterval(intervalId);
       }
     };
-  }, [clearCart, clearCheckoutFormData, transactionCode]);
+  }, [clearCart, clearCheckoutFormData, t, transactionCode]);
 
   const showPollingNotice = status === 'PENDING' && attempts > 0;
   const isPendingLong = status === 'PENDING' && attempts >= 30;
@@ -152,29 +154,27 @@ function SuccessContent() {
   const readableProvider = providerLabel(provider);
   const hasMissingCode = !transactionCode;
 
-  let title = 'Payment pending';
-  let description =
-    'Your payment is still being confirmed by the payment provider.';
+  let title = t('payment.pending');
+  let description = t('payment.pendingSuccessDescription');
   let icon = <ClockIcon className="w-20 h-20 text-amber-500 mx-auto" />;
   let noticeClass =
     'border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/25 dark:text-amber-200';
 
   if (hasMissingCode) {
-    title = 'Payment status unavailable';
-    description =
-      'The payment provider returned without a transaction code. Your cart has not been cleared.';
+    title = t('payment.statusUnavailable');
+    description = t('payment.unavailableSuccessDescription');
     icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
     noticeClass =
       'border border-red-200 bg-red-50 text-red-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
   } else if (status === 'COMPLETED') {
-    title = 'Payment Completed';
-    description = 'Your order has been recorded successfully.';
+    title = t('payment.completed');
+    description = t('payment.completedDescription');
     icon = <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto" />;
     noticeClass =
       'border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-200';
   } else if (status === 'FAILED') {
-    title = 'Payment Failed';
-    description = 'The payment provider did not complete this payment.';
+    title = t('payment.failed');
+    description = t('payment.failedDescription');
     icon = <XCircleIcon className="w-20 h-20 text-red-500 mx-auto" />;
     noticeClass =
       'border border-red-200 bg-red-50 text-red-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
@@ -201,7 +201,7 @@ function SuccessContent() {
                     {transactionCode}
                   </span>
                   <span className="text-gray-600 dark:text-slate-400">
-                    Transaction code
+                    {t('payment.transactionCode')}
                   </span>
                 </div>
               )}
@@ -212,7 +212,7 @@ function SuccessContent() {
                     {readableProvider}
                   </span>
                   <span className="text-gray-600 dark:text-slate-400">
-                    Provider
+                    {t('payment.provider')}
                   </span>
                 </div>
               )}
@@ -223,7 +223,7 @@ function SuccessContent() {
                     {refId}
                   </span>
                   <span className="text-gray-600 dark:text-slate-400">
-                    Reference
+                    {t('payment.reference')}
                   </span>
                 </div>
               )}
@@ -234,7 +234,7 @@ function SuccessContent() {
                     {captureId}
                   </span>
                   <span className="text-gray-600 dark:text-slate-400">
-                    PayPal Capture
+                    {t('payment.paypalCapture')}
                   </span>
                 </div>
               )}
@@ -245,7 +245,7 @@ function SuccessContent() {
                     {sessionId}
                   </span>
                   <span className="text-gray-600 dark:text-slate-400">
-                    Stripe Session
+                    {t('payment.stripeSession')}
                   </span>
                 </div>
               )}
@@ -253,63 +253,58 @@ function SuccessContent() {
 
             <div className={`mb-6 rounded-lg p-4 ${noticeClass}`}>
               {isLoading && (
-                <p className="text-sm">
-                  Checking the payment provider for the latest status...
-                </p>
+                <p className="text-sm">{t('payment.checkingStatus')}</p>
               )}
               {!isLoading && status === 'COMPLETED' && (
-                <p className="text-sm">
-                  Your cart has been cleared. You can review this transaction
-                  from your profile.
-                </p>
+                <p className="text-sm">{t('payment.cartCleared')}</p>
               )}
               {!isLoading && status === 'FAILED' && (
-                <p className="text-sm">
-                  Your cart is still available so you can retry checkout.
-                </p>
+                <p className="text-sm">{t('payment.retryCheckout')}</p>
               )}
               {!isLoading && status === 'PENDING' && !isPendingLong && (
-                <p className="text-sm">
-                  Keep this page open while we poll for confirmation, or return
-                  to the cart if you need to try again.
-                </p>
+                <p className="text-sm">{t('payment.keepOpen')}</p>
               )}
               {!isLoading && status === 'PENDING' && isPendingLong && (
-                <p className="text-sm">
-                  Confirmation is taking longer than expected. Check your
-                  profile later or return to the cart.
-                </p>
+                <p className="text-sm">{t('payment.takingLonger')}</p>
               )}
               {!isLoading && !status && statusError && (
                 <p className="text-sm">{statusError}</p>
               )}
               {!isLoading && showPollingNotice && (
                 <p className="text-xs mt-2 opacity-80">
-                  Status check {attempts} of 30.
+                  {t('payment.statusCheck', { attempts })}
                 </p>
               )}
             </div>
 
             <div className="space-y-3">
               {status === 'FAILED' || status === 'PENDING' || hasMissingCode ? (
-                <Link href="/cart" className="block">
+                <Link
+                  href={prefixPathWithLocale('/cart', locale)}
+                  className="block"
+                >
                   <Button variant="primary" className="w-full">
-                    Return to cart
+                    {t('payment.returnToCart')}
                   </Button>
                 </Link>
               ) : (
                 <Button
                   variant="primary"
                   className="w-full"
-                  onClick={() => router.push('/products')}
+                  onClick={() =>
+                    router.push(prefixPathWithLocale('/products', locale))
+                  }
                 >
-                  Continue shopping
+                  {t('payment.continueShopping')}
                 </Button>
               )}
 
-              <Link href="/profile" className="block">
+              <Link
+                href={prefixPathWithLocale('/profile', locale)}
+                className="block"
+              >
                 <Button variant="secondary" className="w-full">
-                  View transactions
+                  {t('payment.viewTransactions')}
                 </Button>
               </Link>
             </div>

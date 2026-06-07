@@ -3,9 +3,15 @@ import ProductList from '@/components/products/ProductList';
 import ProductsHero from '@/components/products/ProductsHero';
 import { getActiveProducts } from '@/services/product-service';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
-import { getAbsoluteUrl } from '@/lib/seo/config';
-import { siteConfig, siteLocale } from '@/config/site';
+import { siteConfig } from '@/config/site';
 import { getRequestLocale } from '@/lib/i18n/server';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { createTranslator } from '@/lib/i18n/translate';
+import {
+  buildLocalizedAlternates,
+  getOpenGraphLocale,
+} from '@/lib/seo/localized-metadata';
+import { getEnabledLanguages } from '@/services/localization-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,38 +29,48 @@ export async function generateMetadata({
 }: ProductsPageProps): Promise<Metadata> {
   const params = await searchParams;
   const locale = await getRequestLocale();
+  const languages = await getEnabledLanguages();
+  const t = createTranslator(getDictionary(locale));
   const { category, tag, search, page } = params;
 
-  let title = `Products - ${siteConfig.displayName}`;
-  let description = `Browse the product catalog for ${siteConfig.displayName}.`;
+  let title = t('seo.productsTitle', { siteName: siteConfig.displayName });
+  let description = t('seo.productsDescription', {
+    siteName: siteConfig.displayName,
+  });
 
   if (category) {
-    title = `${category} products - ${siteConfig.displayName}`;
-    description = `Browse products in the ${category} category.`;
+    title = t('seo.productsCategoryTitle', {
+      category,
+      siteName: siteConfig.displayName,
+    });
+    description = t('seo.productsCategoryDescription', { category });
   } else if (tag) {
-    title = `${tag} products - ${siteConfig.displayName}`;
-    description = `Browse products tagged ${tag}.`;
+    title = t('seo.productsTagTitle', {
+      tag,
+      siteName: siteConfig.displayName,
+    });
+    description = t('seo.productsTagDescription', { tag });
   } else if (search) {
-    title = `Search results for ${search} - ${siteConfig.displayName}`;
-    description = `Product search results for "${search}".`;
+    title = t('seo.productsSearchTitle', {
+      search,
+      siteName: siteConfig.displayName,
+    });
+    description = t('seo.productsSearchDescription', { search });
   }
 
   if (page && parseInt(page) > 1) {
-    title = `${title} - Page ${page}`;
+    title = `${title} - ${t('seo.pageSuffix', { page })}`;
   }
 
-  const canonicalPath = '/products';
-  const queryParams: string[] = [];
+  const queryParams = new URLSearchParams();
 
-  if (category) queryParams.push(`category=${category}`);
-  if (tag) queryParams.push(`tag=${tag}`);
-  if (search) queryParams.push(`search=${encodeURIComponent(search)}`);
-  if (page && parseInt(page) > 1) queryParams.push(`page=${page}`);
+  if (category) queryParams.set('category', category);
+  if (tag) queryParams.set('tag', tag);
+  if (search) queryParams.set('search', search);
+  if (page && parseInt(page) > 1) queryParams.set('page', page);
 
   const canonicalUrl =
-    queryParams.length > 0
-      ? `${canonicalPath}?${queryParams.join('&')}`
-      : canonicalPath;
+    queryParams.size > 0 ? `/products?${queryParams.toString()}` : '/products';
 
   return {
     title,
@@ -63,14 +79,14 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      locale: locale === 'de' ? 'de_DE' : siteLocale.ogLocale,
+      locale: getOpenGraphLocale(locale),
       siteName: siteConfig.displayName,
       images: [
         {
           url: DEFAULT_OG_IMAGE,
           width: 1200,
           height: 630,
-          alt: `${siteConfig.displayName} products`,
+          alt: t('seo.productsOgAlt', { siteName: siteConfig.displayName }),
         },
       ],
     },
@@ -80,9 +96,7 @@ export async function generateMetadata({
       description,
       images: [DEFAULT_OG_IMAGE],
     },
-    alternates: {
-      canonical: getAbsoluteUrl(canonicalUrl),
-    },
+    alternates: buildLocalizedAlternates(canonicalUrl, locale, languages),
   };
 }
 

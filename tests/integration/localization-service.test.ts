@@ -23,6 +23,8 @@ import {
   saveTagTranslations,
   updateLanguageSettings,
 } from '@/services/localization-service';
+import { buildLocalizedAlternates } from '@/lib/seo/localized-metadata';
+import { generateProductSchema } from '@/lib/seo/structured-data';
 
 const supabase = createTestSupabaseClient();
 const TEST_PREFIX = `TEST-L10N-${Date.now()}`;
@@ -159,6 +161,28 @@ describe('localized catalog service integration', () => {
     expect(listedProduct?.category?.name).toBe(
       `${TEST_PREFIX} Deutsche Kategorie`
     );
+
+    const alternates = buildLocalizedAlternates(
+      `/products/${product.id}`,
+      'de'
+    );
+    expect(alternates.canonical).toContain(`/de/products/${product.id}`);
+    expect(alternates.languages).toMatchObject({
+      en: expect.stringContaining(`/en/products/${product.id}`),
+      de: expect.stringContaining(`/de/products/${product.id}`),
+    });
+
+    const productSchema = generateProductSchema(localizedProduct, undefined, {
+      locale: 'de',
+    });
+    expect(productSchema).toMatchObject({
+      '@type': 'Product',
+      name: `${TEST_PREFIX} Deutsches Produkt`,
+      inLanguage: 'de',
+      offers: {
+        url: expect.stringContaining(`/de/products/${product.id}`),
+      },
+    });
   });
 
   it('rejects default language changes without changing the persisted default', async () => {

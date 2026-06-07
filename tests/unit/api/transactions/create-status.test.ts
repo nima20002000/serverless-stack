@@ -9,6 +9,7 @@ const {
   getStripeCurrencyMock,
   createPayPalOrderMock,
   getPayPalCurrencyMock,
+  transactionUpdateMock,
 } = vi.hoisted(() => ({
   createTransactionMock: vi.fn(),
   verifyStockAvailabilityMock: vi.fn(),
@@ -17,6 +18,7 @@ const {
   getStripeCurrencyMock: vi.fn(),
   createPayPalOrderMock: vi.fn(),
   getPayPalCurrencyMock: vi.fn(),
+  transactionUpdateMock: vi.fn(),
 }));
 
 vi.mock('next-auth', () => ({
@@ -79,7 +81,7 @@ vi.mock('@/lib/supabase/server', () => ({
       }
 
       return {
-        update: vi.fn(() => ({
+        update: transactionUpdateMock.mockImplementation(() => ({
           eq: vi.fn(async () => ({ error: null })),
         })),
       };
@@ -115,10 +117,13 @@ vi.mock('@/lib/utils/url', () => ({
   getAppBaseUrl: vi.fn(() => 'http://localhost:3000'),
 }));
 
-function createTransactionRequest(paymentMethod: unknown) {
+function createTransactionRequest(
+  paymentMethod: unknown,
+  headers: Record<string, string> = {}
+) {
   return new NextRequest('http://localhost:3000/api/transactions/create', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...headers },
     body: JSON.stringify({
       paymentMethod,
       items: [{ productId: 'prod_1', quantity: 1 }],
@@ -161,6 +166,9 @@ describe('POST /api/transactions/create payment provider contract', () => {
       status: 'CREATED',
       approvalUrl: 'https://paypal.test/approve',
     });
+    transactionUpdateMock.mockImplementation(() => ({
+      eq: vi.fn(async () => ({ error: null })),
+    }));
   });
 
   it('rejects unsupported payment providers before transaction creation', async () => {
@@ -213,6 +221,24 @@ describe('POST /api/transactions/create payment provider contract', () => {
         paymentMethod: 'STRIPE',
         paymentUrl: 'https://checkout.stripe.test/session',
         amount: 10,
+      })
+    );
+  });
+
+  it('persists checkout locale in provider metadata for localized buyer emails', async () => {
+    const { POST } = await import('@/app/api/transactions/create/route');
+
+    const response = await POST(
+      createTransactionRequest('STRIPE', { 'x-site-locale': 'de' })
+    );
+
+    expect(response.status).toBe(200);
+    expect(transactionUpdateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMetadata: expect.objectContaining({
+          provider: 'STRIPE',
+          locale: 'de',
+        }),
       })
     );
   });

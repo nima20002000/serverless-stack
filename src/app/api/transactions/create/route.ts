@@ -23,6 +23,11 @@ import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
 import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
 import { normalizePaymentProvider } from '@/lib/payments/providers';
 import { validateShippingAddress } from '@/lib/shipping-address';
+import {
+  defaultLocale,
+  isSupportedLocale,
+  localeHeaderName,
+} from '@/lib/i18n/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +36,10 @@ async function postHandler(req: NextRequest) {
   const startTime = Date.now();
   // Extract client info for storing in transaction
   const { ipAddress, userAgent } = getClientInfo(req);
+  const headerLocale = req.headers.get(localeHeaderName);
+  const checkoutLocale = isSupportedLocale(headerLocale)
+    ? headerLocale
+    : defaultLocale;
 
   try {
     const session = await getServerSession(authOptions);
@@ -579,6 +588,7 @@ async function postHandler(req: NextRequest) {
             checkoutSessionId: stripeSession.id,
             paymentIntentId: stripePaymentIntentId,
             currency: stripeCurrency.toUpperCase(),
+            locale: checkoutLocale,
           },
         })
         .eq('id', transaction.id);
@@ -632,6 +642,7 @@ async function postHandler(req: NextRequest) {
             provider: 'PAYPAL',
             orderId: paypalOrder.id,
             currency: paypalCurrency,
+            locale: checkoutLocale,
           },
         })
         .eq('id', transaction.id);

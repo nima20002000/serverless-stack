@@ -11,10 +11,19 @@ import {
   renderJsonLd,
 } from '@/lib/seo/structured-data';
 import { getProductOgImage } from '@/lib/seo/og-images';
-import { getAbsoluteUrl } from '@/lib/seo/config';
 import { formatPrice } from '@/lib/utils/format';
 import { siteConfig, siteLocale } from '@/config/site';
 import { getRequestLocale } from '@/lib/i18n/server';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { createTranslator } from '@/lib/i18n/translate';
+import {
+  buildLocalizedAlternates,
+  getIntlLocale,
+  getOpenGraphLocale,
+  warnLocalizedMetadataFallback,
+} from '@/lib/seo/localized-metadata';
+import type { TranslationFallback } from '@/lib/i18n/localized-content';
+import { getEnabledLanguages } from '@/services/localization-service';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -36,6 +45,8 @@ export async function generateMetadata({
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
   const locale = await getRequestLocale();
+  const languages = await getEnabledLanguages();
+  const t = createTranslator(getDictionary(locale));
   try {
     const product = await getCachedProduct(id, locale);
 
@@ -51,7 +62,12 @@ export async function generateMetadata({
         order: number;
       }>;
       category?: { id: string; name: string; slug: string } | null;
+      translationFallback?: TranslationFallback;
     };
+    warnLocalizedMetadataFallback(
+      `product:${id}`,
+      productWithRelations.translationFallback
+    );
 
     const firstImage =
       productWithRelations.media && productWithRelations.media.length > 0
@@ -70,9 +86,15 @@ export async function generateMetadata({
 
     // Build description
     const categoryName = productWithRelations.category?.name || '';
-    const stockStatus = product.stock > 0 ? 'In stock' : 'Out of stock';
-    const priceText = `Price: ${formatPrice(finalPrice)}`;
-    const fullDescription = `${product.description} | ${categoryName ? `Category: ${categoryName} | ` : ''}${priceText} | Availability: ${stockStatus}`;
+    const stockStatus =
+      product.stock > 0 ? t('seo.inStock') : t('seo.outOfStock');
+    const priceText = `${t('seo.productPrice')}: ${formatPrice(finalPrice, {
+      locale: getIntlLocale(locale),
+    })}`;
+    const categoryText = categoryName
+      ? `${t('seo.productCategory')}: ${categoryName} | `
+      : '';
+    const fullDescription = `${product.description} | ${categoryText}${priceText} | ${t('seo.productAvailability')}: ${stockStatus}`;
     const metadataTitle =
       productWithRelations.seoTitle ||
       `${product.name} - ${siteConfig.displayName}`;
@@ -85,7 +107,7 @@ export async function generateMetadata({
       openGraph: {
         title: metadataTitle,
         description: metadataDescription,
-        locale: locale === 'de' ? 'de_DE' : siteLocale.ogLocale,
+        locale: getOpenGraphLocale(locale),
         siteName: siteConfig.displayName,
         images: ogImage
           ? [
@@ -104,9 +126,11 @@ export async function generateMetadata({
         description: metadataDescription,
         images: ogImage ? [ogImage] : undefined,
       },
-      alternates: {
-        canonical: getAbsoluteUrl(`/products/${id}`),
-      },
+      alternates: buildLocalizedAlternates(
+        `/products/${id}`,
+        locale,
+        languages
+      ),
       other: {
         'og:type': 'product',
         'product:price:amount': finalPrice.toString(),
@@ -117,8 +141,10 @@ export async function generateMetadata({
     };
   } catch {
     return {
-      title: `Product not found - ${siteConfig.displayName}`,
-      description: 'This product is not currently available.',
+      title: t('seo.productNotFoundTitle', {
+        siteName: siteConfig.displayName,
+      }),
+      description: t('seo.productNotFoundDescription'),
     };
   }
 }
@@ -214,8 +240,18 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   }));
 
   // Generate JSON-LD structured data
-  const productSchema = generateProductSchema(productWithRelations);
-  const breadcrumbItems = generateProductBreadcrumbs(productWithRelations);
+  const productSchema = generateProductSchema(productWithRelations, undefined, {
+    locale,
+  });
+  const t = createTranslator(getDictionary(locale));
+  const breadcrumbItems = generateProductBreadcrumbs(
+    productWithRelations,
+    undefined,
+    {
+      locale,
+      homeLabel: t('seo.breadcrumbHome'),
+    }
+  );
   const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
 
   return (

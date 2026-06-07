@@ -67,6 +67,7 @@ describe('finalizeSuccessfulTransaction email notifications', () => {
     ...transaction,
     amount: 1000,
     paymentMethod: 'STRIPE',
+    paymentMetadata: { locale: 'de' },
     shippingAddress: 'Addr',
     postalCode: '12345',
     createdAt: '2024-01-01T00:00:00.000Z',
@@ -115,7 +116,8 @@ describe('finalizeSuccessfulTransaction email notifications', () => {
       12345
     );
     expect(sendBuyerOrderConfirmationMock).toHaveBeenCalledWith(
-      fullTransaction
+      fullTransaction,
+      { locale: 'de' }
     );
     expect(logMock.info).toHaveBeenCalledWith(
       'Admin confirmation email sent successfully',

@@ -4,6 +4,15 @@ import nodemailer from 'nodemailer';
 import { log } from '@/lib/logger';
 import { siteConfig } from '@/config/site';
 import { formatDateTime, formatPrice } from '@/lib/utils/format';
+import {
+  defaultLocale,
+  getLocaleDirection,
+  isSupportedLocale,
+  type Locale,
+} from '@/lib/i18n/config';
+import { getDictionary } from '@/lib/i18n/dictionaries';
+import { createTranslator } from '@/lib/i18n/translate';
+import { getIntlLocale } from '@/lib/seo/localized-metadata';
 
 export interface SendEmailResult {
   success: boolean;
@@ -46,8 +55,9 @@ export type TransactionEmailData = {
 };
 
 const siteName = siteConfig.displayName || siteConfig.name;
-const direction = siteConfig.direction;
-const language = siteConfig.language;
+const configuredLanguage = isSupportedLocale(siteConfig.language)
+  ? siteConfig.language
+  : defaultLocale;
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -68,10 +78,31 @@ function paymentMethodLabel(
   return paymentMethod === 'PAYPAL' ? 'PayPal' : 'Stripe';
 }
 
-function layoutEmail(title: string, body: string): string {
+type EmailI18n = {
+  locale: Locale;
+  intlLocale: string;
+  direction: ReturnType<typeof getLocaleDirection>;
+  t: ReturnType<typeof createTranslator>;
+};
+
+type EmailLocaleOptions = {
+  locale?: Locale;
+};
+
+function getEmailI18n(options: EmailLocaleOptions = {}): EmailI18n {
+  const locale = options.locale || configuredLanguage;
+  return {
+    locale,
+    intlLocale: getIntlLocale(locale),
+    direction: getLocaleDirection(locale),
+    t: createTranslator(getDictionary(locale)),
+  };
+}
+
+function layoutEmail(title: string, body: string, i18n: EmailI18n): string {
   return `
 <!DOCTYPE html>
-<html dir="${direction}" lang="${language}">
+<html dir="${i18n.direction}" lang="${i18n.locale}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,7 +128,7 @@ function layoutEmail(title: string, body: string): string {
     <div class="content">${body}</div>
     <div class="footer">
       <p>${escapeHtml(siteName)}</p>
-      <p>This is an automated message. Please do not reply to this email.</p>
+      <p>${escapeHtml(i18n.t('email.automated'))}</p>
     </div>
   </div>
 </body>
@@ -221,23 +252,26 @@ async function sendEmail(options: {
 
 export async function sendOTPEmail(
   email: string,
-  otp: string
+  otp: string,
+  options: EmailLocaleOptions = {}
 ): Promise<SendEmailResult> {
+  const i18n = getEmailI18n(options);
   const safeOtp = escapeHtml(otp);
-  const title = `Your ${siteName} sign-in code`;
+  const title = i18n.t('email.otpSubject', { siteName });
   const html = layoutEmail(
     title,
     `
-      <p>Use this verification code to finish signing in to ${escapeHtml(siteName)}.</p>
+      <p>${escapeHtml(i18n.t('email.otpIntro', { siteName }))}</p>
       <div class="code">${safeOtp}</div>
-      <p>This code expires in 5 minutes. If you did not request it, you can safely ignore this email.</p>
-    `
+      <p>${escapeHtml(i18n.t('email.otpExpiry'))}</p>
+    `,
+    i18n
   );
   const text = `${title}
 
-Code: ${otp}
+${i18n.t('email.code')}: ${otp}
 
-This code expires in 5 minutes. If you did not request it, you can safely ignore this email.`;
+${i18n.t('email.otpExpiry')}`;
 
   log.info('Sending OTP email', { email });
 
@@ -255,14 +289,18 @@ This code expires in 5 minutes. If you did not request it, you can safely ignore
   return result;
 }
 
-function buildItemsRows(transaction: TransactionEmailData) {
+function buildItemsRows(transaction: TransactionEmailData, i18n: EmailI18n) {
   const rows = transaction.items
     .map((item, index) => {
       const variant = item.variant?.name
         ? `<br><small>${escapeHtml(item.variant.name)}</small>`
         : '';
-      const unitPrice = formatPrice(Number(item.price));
-      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+      const unitPrice = formatPrice(Number(item.price), {
+        locale: i18n.intlLocale,
+      });
+      const lineTotal = formatPrice(Number(item.price) * item.quantity, {
+        locale: i18n.intlLocale,
+      });
 
       return `
         <tr>
@@ -281,10 +319,10 @@ function buildItemsRows(transaction: TransactionEmailData) {
       <thead>
         <tr>
           <th>#</th>
-          <th>Product</th>
-          <th>Quantity</th>
-          <th>Unit price</th>
-          <th>Line total</th>
+          <th>${escapeHtml(i18n.t('email.product'))}</th>
+          <th>${escapeHtml(i18n.t('email.quantity'))}</th>
+          <th>${escapeHtml(i18n.t('email.unitPrice'))}</th>
+          <th>${escapeHtml(i18n.t('email.lineTotal'))}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -292,24 +330,33 @@ function buildItemsRows(transaction: TransactionEmailData) {
   `;
 }
 
-function buildItemsText(transaction: TransactionEmailData): string {
+function buildItemsText(
+  transaction: TransactionEmailData,
+  i18n: EmailI18n
+): string {
   return transaction.items
     .map((item, index) => {
       const variant = item.variant?.name ? ` (${item.variant.name})` : '';
-      const unitPrice = formatPrice(Number(item.price));
-      const lineTotal = formatPrice(Number(item.price) * item.quantity);
+      const unitPrice = formatPrice(Number(item.price), {
+        locale: i18n.intlLocale,
+      });
+      const lineTotal = formatPrice(Number(item.price) * item.quantity, {
+        locale: i18n.intlLocale,
+      });
 
       return `${index + 1}. ${item.product.name}${variant}
-   Quantity: ${item.quantity}
-   Unit price: ${unitPrice}
-   Line total: ${lineTotal}`;
+   ${i18n.t('email.quantity')}: ${item.quantity}
+   ${i18n.t('email.unitPrice')}: ${unitPrice}
+   ${i18n.t('email.lineTotal')}: ${lineTotal}`;
     })
     .join('\n\n');
 }
 
 export async function sendBuyerOrderConfirmation(
-  transaction: TransactionEmailData
+  transaction: TransactionEmailData,
+  options: EmailLocaleOptions = {}
 ): Promise<SendEmailResult> {
+  const i18n = getEmailI18n(options);
   const buyerEmail = transaction.email;
 
   log.info('Attempting to send buyer order confirmation', {
@@ -329,69 +376,79 @@ export async function sendBuyerOrderConfirmation(
   }
 
   const buyerName =
-    transaction.user?.name || transaction.fullName || 'Customer';
+    transaction.user?.name ||
+    transaction.fullName ||
+    i18n.t('email.customerFallback');
   const buyerPhone =
-    transaction.user?.phone || transaction.phone || 'Not provided';
-  const orderDate = formatDateTime(transaction.createdAt);
+    transaction.user?.phone || transaction.phone || i18n.t('email.notProvided');
+  const orderDate = formatDateTime(transaction.createdAt, {
+    locale: i18n.intlLocale,
+  });
   const totalItems = transaction.items.reduce(
     (sum, item) => sum + item.quantity,
     0
   );
-  const total = formatPrice(Number(transaction.amount));
-  const subject = `Order ${transaction.transactionCode} confirmed - ${siteName}`;
+  const total = formatPrice(Number(transaction.amount), {
+    locale: i18n.intlLocale,
+  });
+  const subject = i18n.t('email.orderConfirmedSubject', {
+    orderCode: transaction.transactionCode,
+    siteName,
+  });
 
   const html = layoutEmail(
-    'Order confirmed',
+    i18n.t('email.orderConfirmedTitle'),
     `
-      <p>Hi ${escapeHtml(buyerName)},</p>
-      <p>Thanks for your order from ${escapeHtml(siteName)}. We received your payment and will process the order shortly.</p>
+      <p>${escapeHtml(i18n.t('email.orderConfirmedGreeting', { buyerName }))}</p>
+      <p>${escapeHtml(i18n.t('email.orderConfirmedIntro', { siteName }))}</p>
       <div class="panel">
-        <strong>Order code:</strong> ${escapeHtml(transaction.transactionCode)}<br>
-        <strong>Order date:</strong> ${escapeHtml(orderDate)}<br>
-        <strong>Items:</strong> ${totalItems}<br>
-        <strong>Payment method:</strong> ${paymentMethodLabel(transaction.paymentMethod)}<br>
-        <strong>Total:</strong> ${escapeHtml(total)}
+        <strong>${escapeHtml(i18n.t('email.orderCode'))}:</strong> ${escapeHtml(transaction.transactionCode)}<br>
+        <strong>${escapeHtml(i18n.t('email.orderDate'))}:</strong> ${escapeHtml(orderDate)}<br>
+        <strong>${escapeHtml(i18n.t('email.items'))}:</strong> ${totalItems}<br>
+        <strong>${escapeHtml(i18n.t('email.paymentMethod'))}:</strong> ${paymentMethodLabel(transaction.paymentMethod)}<br>
+        <strong>${escapeHtml(i18n.t('email.total'))}:</strong> ${escapeHtml(total)}
       </div>
-      <h2>Shipping</h2>
+      <h2>${escapeHtml(i18n.t('email.shipping'))}</h2>
       <p>
-        <strong>Name:</strong> ${escapeHtml(buyerName)}<br>
-        <strong>Phone:</strong> ${escapeHtml(buyerPhone)}<br>
-        <strong>Address:</strong> ${escapeHtml(transaction.shippingAddress || 'Not provided')}<br>
+        <strong>${escapeHtml(i18n.t('email.name'))}:</strong> ${escapeHtml(buyerName)}<br>
+        <strong>${escapeHtml(i18n.t('email.phone'))}:</strong> ${escapeHtml(buyerPhone)}<br>
+        <strong>${escapeHtml(i18n.t('email.address'))}:</strong> ${escapeHtml(transaction.shippingAddress || i18n.t('email.notProvided'))}<br>
         ${
           transaction.postalCode
-            ? `<strong>Postal code:</strong> ${escapeHtml(transaction.postalCode)}`
+            ? `<strong>${escapeHtml(i18n.t('email.postalCode'))}:</strong> ${escapeHtml(transaction.postalCode)}`
             : ''
         }
       </p>
-      <h2>Order items</h2>
-      ${buildItemsRows(transaction)}
-      <div class="total">Total: ${escapeHtml(total)}</div>
-    `
+      <h2>${escapeHtml(i18n.t('email.orderItems'))}</h2>
+      ${buildItemsRows(transaction, i18n)}
+      <div class="total">${escapeHtml(i18n.t('email.total'))}: ${escapeHtml(total)}</div>
+    `,
+    i18n
   );
 
-  const text = `Order confirmed
+  const text = `${i18n.t('email.orderConfirmedTitle')}
 
-Hi ${buyerName},
+${i18n.t('email.orderConfirmedGreeting', { buyerName })}
 
-Thanks for your order from ${siteName}. We received your payment and will process the order shortly.
+${i18n.t('email.orderConfirmedIntro', { siteName })}
 
-Order code: ${transaction.transactionCode}
-Order date: ${orderDate}
-Items: ${totalItems}
-Payment method: ${paymentMethodLabel(transaction.paymentMethod)}
-Total: ${total}
+${i18n.t('email.orderCode')}: ${transaction.transactionCode}
+${i18n.t('email.orderDate')}: ${orderDate}
+${i18n.t('email.items')}: ${totalItems}
+${i18n.t('email.paymentMethod')}: ${paymentMethodLabel(transaction.paymentMethod)}
+${i18n.t('email.total')}: ${total}
 
-Shipping
-Name: ${buyerName}
-Phone: ${buyerPhone}
-Address: ${transaction.shippingAddress || 'Not provided'}
-${transaction.postalCode ? `Postal code: ${transaction.postalCode}` : ''}
+${i18n.t('email.shipping')}
+${i18n.t('email.name')}: ${buyerName}
+${i18n.t('email.phone')}: ${buyerPhone}
+${i18n.t('email.address')}: ${transaction.shippingAddress || i18n.t('email.notProvided')}
+${transaction.postalCode ? `${i18n.t('email.postalCode')}: ${transaction.postalCode}` : ''}
 
-Order items
+${i18n.t('email.orderItems')}
 
-${buildItemsText(transaction)}
+${buildItemsText(transaction, i18n)}
 
-Total: ${total}`;
+${i18n.t('email.total')}: ${total}`;
 
   const result = await sendEmail({
     to: buyerEmail,
@@ -415,6 +472,7 @@ export async function sendAdminOrderConfirmation(
   transaction: TransactionEmailData,
   refId?: number
 ): Promise<SendEmailResult> {
+  const i18n = getEmailI18n({ locale: defaultLocale });
   const adminEmail = process.env.ADMIN_EMAIL;
 
   log.info('Attempting to send admin order confirmation', {
@@ -475,9 +533,10 @@ export async function sendAdminOrderConfirmation(
         }
       </p>
       <h2>Order items</h2>
-      ${buildItemsRows(transaction)}
+      ${buildItemsRows(transaction, i18n)}
       <div class="total">Total: ${escapeHtml(total)}</div>
-    `
+    `,
+    i18n
   );
 
   const text = `New order received
@@ -501,7 +560,7 @@ ${transaction.postalCode ? `Postal code: ${transaction.postalCode}` : ''}
 
 Order items
 
-${buildItemsText(transaction)}
+${buildItemsText(transaction, i18n)}
 
 Total: ${total}`;
 

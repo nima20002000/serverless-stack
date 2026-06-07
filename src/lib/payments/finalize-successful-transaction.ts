@@ -11,6 +11,7 @@ import {
   sendBuyerOrderConfirmation,
 } from '@/lib/email/client';
 import { log } from '@/lib/logger';
+import { isSupportedLocale, type Locale } from '@/lib/i18n/config';
 
 interface SuccessfulTransactionContext {
   id: string;
@@ -28,6 +29,18 @@ interface FinalizeSuccessfulTransactionOptions {
   source: string;
   adminRefId?: number;
   skipNotifications?: boolean;
+}
+
+function getBuyerEmailLocale(transaction: {
+  paymentMetadata?: unknown;
+}): Locale | undefined {
+  const metadata = transaction.paymentMetadata;
+  if (!metadata || typeof metadata !== 'object') return undefined;
+
+  const locale = (metadata as Record<string, unknown>).locale;
+  return typeof locale === 'string' && isSupportedLocale(locale)
+    ? locale
+    : undefined;
 }
 
 /**
@@ -111,8 +124,10 @@ export async function finalizeSuccessfulTransaction(
 
     if (fullTransaction.email) {
       try {
-        const buyerEmailResult =
-          await sendBuyerOrderConfirmation(fullTransaction);
+        const buyerEmailResult = await sendBuyerOrderConfirmation(
+          fullTransaction,
+          { locale: getBuyerEmailLocale(fullTransaction) }
+        );
 
         if (!buyerEmailResult.success) {
           log.warn('Buyer confirmation email not sent', {

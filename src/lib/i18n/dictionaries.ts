@@ -10,6 +10,26 @@ const enMessages = {
     loading: 'Loading...',
     close: 'Close',
   },
+  seo: {
+    productsTitle: 'Products - {siteName}',
+    productsDescription: 'Browse the product catalog for {siteName}.',
+    productsCategoryTitle: '{category} products - {siteName}',
+    productsCategoryDescription: 'Browse products in the {category} category.',
+    productsTagTitle: '{tag} products - {siteName}',
+    productsTagDescription: 'Browse products tagged {tag}.',
+    productsSearchTitle: 'Search results for {search} - {siteName}',
+    productsSearchDescription: 'Product search results for "{search}".',
+    pageSuffix: 'Page {page}',
+    productsOgAlt: '{siteName} products',
+    productCategory: 'Category',
+    productPrice: 'Price',
+    productAvailability: 'Availability',
+    inStock: 'In stock',
+    outOfStock: 'Out of stock',
+    productNotFoundTitle: 'Product not found - {siteName}',
+    productNotFoundDescription: 'This product is not currently available.',
+    breadcrumbHome: 'Home',
+  },
   nav: {
     products: 'Products',
     about: 'About',
@@ -137,12 +157,110 @@ const enMessages = {
     shippingCountry: 'Please enter the shipping country.',
     addressLine1: 'Please enter address line 1.',
   },
+  payment: {
+    statusUnavailable: 'Payment status unavailable',
+    cancelled: 'Payment cancelled',
+    pending: 'Payment pending',
+    failed: 'Payment failed',
+    completed: 'Payment Completed',
+    unavailableDescription:
+      'The payment provider returned without a transaction code.',
+    unavailableSuccessDescription:
+      'The payment provider returned without a transaction code. Your cart has not been cleared.',
+    cancelledDescription:
+      'You cancelled checkout before payment was completed.',
+    pendingDescription:
+      'The payment provider is still processing this transaction.',
+    failedDescription: 'The payment provider could not complete this payment.',
+    completedDescription: 'Your order has been recorded successfully.',
+    pendingSuccessDescription:
+      'Your payment is still being confirmed by the payment provider.',
+    missingCodeInfo:
+      'Your cart has not been cleared. Return to the cart to continue checkout.',
+    cancelledInfo: 'Your cart is still available so you can retry checkout.',
+    pendingInfo:
+      'Your cart is still available. You can wait and check your profile later, or retry checkout.',
+    failedInfo:
+      'No payment was captured by this page. Return to the cart to choose Stripe or PayPal again.',
+    transactionCode: 'Transaction code',
+    provider: 'Provider',
+    reference: 'Reference',
+    paypalCapture: 'PayPal Capture',
+    stripeSession: 'Stripe Session',
+    checkingStatus: 'Checking the payment provider for the latest status...',
+    cartCleared:
+      'Your cart has been cleared. You can review this transaction from your profile.',
+    retryCheckout: 'Your cart is still available so you can retry checkout.',
+    keepOpen:
+      'Keep this page open while we poll for confirmation, or return to the cart if you need to try again.',
+    takingLonger:
+      'Confirmation is taking longer than expected. Check your profile later or return to the cart.',
+    statusCheck: 'Status check {attempts} of 30.',
+    missingTransactionCode:
+      'We could not find a transaction code for this payment return.',
+    unableToLoadStatus: 'Unable to load payment status.',
+    returnToCart: 'Return to cart',
+    continueShopping: 'Continue shopping',
+    viewTransactions: 'View transactions',
+  },
+  email: {
+    automated:
+      'This is an automated message. Please do not reply to this email.',
+    otpSubject: 'Your {siteName} sign-in code',
+    otpIntro: 'Use this verification code to finish signing in to {siteName}.',
+    otpExpiry:
+      'This code expires in 5 minutes. If you did not request it, you can safely ignore this email.',
+    code: 'Code',
+    orderConfirmedSubject: 'Order {orderCode} confirmed - {siteName}',
+    orderConfirmedTitle: 'Order confirmed',
+    orderConfirmedGreeting: 'Hi {buyerName},',
+    orderConfirmedIntro:
+      'Thanks for your order from {siteName}. We received your payment and will process the order shortly.',
+    orderCode: 'Order code',
+    orderDate: 'Order date',
+    items: 'Items',
+    paymentMethod: 'Payment method',
+    total: 'Total',
+    shipping: 'Shipping',
+    name: 'Name',
+    phone: 'Phone',
+    address: 'Address',
+    postalCode: 'Postal code',
+    orderItems: 'Order items',
+    product: 'Product',
+    quantity: 'Quantity',
+    unitPrice: 'Unit price',
+    lineTotal: 'Line total',
+    customerFallback: 'Customer',
+    notProvided: 'Not provided',
+  },
 };
 
 const deMessages: Messages = {
   common: {
     loading: 'Wird geladen...',
     close: 'Schließen',
+  },
+  seo: {
+    productsTitle: 'Produkte - {siteName}',
+    productsDescription: 'Durchsuche den Produktkatalog von {siteName}.',
+    productsCategoryTitle: '{category} Produkte - {siteName}',
+    productsCategoryDescription:
+      'Durchsuche Produkte in der Kategorie {category}.',
+    productsTagTitle: '{tag} Produkte - {siteName}',
+    productsTagDescription: 'Durchsuche Produkte mit dem Schlagwort {tag}.',
+    productsSearchTitle: 'Suchergebnisse für {search} - {siteName}',
+    productsSearchDescription: 'Produktsuchergebnisse für "{search}".',
+    pageSuffix: 'Seite {page}',
+    productsOgAlt: '{siteName} Produkte',
+    productCategory: 'Kategorie',
+    productPrice: 'Preis',
+    productAvailability: 'Verfügbarkeit',
+    inStock: 'Auf Lager',
+    outOfStock: 'Nicht vorrätig',
+    productNotFoundTitle: 'Produkt nicht gefunden - {siteName}',
+    productNotFoundDescription: 'Dieses Produkt ist derzeit nicht verfügbar.',
+    breadcrumbHome: 'Startseite',
   },
   nav: {
     products: 'Produkte',
@@ -271,6 +389,87 @@ const deMessages: Messages = {
   validation: {
     shippingCountry: 'Bitte gib das Lieferland ein.',
     addressLine1: 'Bitte gib Adresszeile 1 ein.',
+  },
+  payment: {
+    statusUnavailable: 'Zahlungsstatus nicht verfügbar',
+    cancelled: 'Zahlung abgebrochen',
+    pending: 'Zahlung ausstehend',
+    failed: 'Zahlung fehlgeschlagen',
+    completed: 'Zahlung abgeschlossen',
+    unavailableDescription:
+      'Der Zahlungsanbieter hat ohne Transaktionscode zurückgeleitet.',
+    unavailableSuccessDescription:
+      'Der Zahlungsanbieter hat ohne Transaktionscode zurückgeleitet. Dein Warenkorb wurde nicht geleert.',
+    cancelledDescription:
+      'Du hast den Checkout abgebrochen, bevor die Zahlung abgeschlossen wurde.',
+    pendingDescription:
+      'Der Zahlungsanbieter verarbeitet diese Transaktion noch.',
+    failedDescription:
+      'Der Zahlungsanbieter konnte diese Zahlung nicht abschließen.',
+    completedDescription: 'Deine Bestellung wurde erfolgreich erfasst.',
+    pendingSuccessDescription:
+      'Deine Zahlung wird noch vom Zahlungsanbieter bestätigt.',
+    missingCodeInfo:
+      'Dein Warenkorb wurde nicht geleert. Kehre zum Warenkorb zurück, um den Checkout fortzusetzen.',
+    cancelledInfo:
+      'Dein Warenkorb ist weiterhin verfügbar, damit du den Checkout erneut versuchen kannst.',
+    pendingInfo:
+      'Dein Warenkorb ist weiterhin verfügbar. Du kannst warten und später dein Profil prüfen oder den Checkout erneut versuchen.',
+    failedInfo:
+      'Auf dieser Seite wurde keine Zahlung erfasst. Kehre zum Warenkorb zurück, um Stripe oder PayPal erneut auszuwählen.',
+    transactionCode: 'Transaktionscode',
+    provider: 'Anbieter',
+    reference: 'Referenz',
+    paypalCapture: 'PayPal-Erfassung',
+    stripeSession: 'Stripe-Sitzung',
+    checkingStatus: 'Der aktuelle Status wird beim Zahlungsanbieter geprüft...',
+    cartCleared:
+      'Dein Warenkorb wurde geleert. Du kannst diese Transaktion in deinem Profil prüfen.',
+    retryCheckout:
+      'Dein Warenkorb ist weiterhin verfügbar, damit du den Checkout erneut versuchen kannst.',
+    keepOpen:
+      'Lass diese Seite offen, während wir auf die Bestätigung warten, oder kehre zum Warenkorb zurück, wenn du es erneut versuchen musst.',
+    takingLonger:
+      'Die Bestätigung dauert länger als erwartet. Prüfe später dein Profil oder kehre zum Warenkorb zurück.',
+    statusCheck: 'Statusprüfung {attempts} von 30.',
+    missingTransactionCode:
+      'Wir konnten keinen Transaktionscode für diese Zahlungsrückleitung finden.',
+    unableToLoadStatus: 'Der Zahlungsstatus konnte nicht geladen werden.',
+    returnToCart: 'Zurück zum Warenkorb',
+    continueShopping: 'Weiter einkaufen',
+    viewTransactions: 'Transaktionen ansehen',
+  },
+  email: {
+    automated:
+      'Dies ist eine automatische Nachricht. Bitte antworte nicht auf diese E-Mail.',
+    otpSubject: 'Dein Anmeldecode für {siteName}',
+    otpIntro:
+      'Verwende diesen Bestätigungscode, um die Anmeldung bei {siteName} abzuschließen.',
+    otpExpiry:
+      'Dieser Code läuft in 5 Minuten ab. Wenn du ihn nicht angefordert hast, kannst du diese E-Mail ignorieren.',
+    code: 'Code',
+    orderConfirmedSubject: 'Bestellung {orderCode} bestätigt - {siteName}',
+    orderConfirmedTitle: 'Bestellung bestätigt',
+    orderConfirmedGreeting: 'Hallo {buyerName},',
+    orderConfirmedIntro:
+      'Danke für deine Bestellung bei {siteName}. Wir haben deine Zahlung erhalten und bearbeiten die Bestellung in Kürze.',
+    orderCode: 'Bestellcode',
+    orderDate: 'Bestelldatum',
+    items: 'Artikel',
+    paymentMethod: 'Zahlungsmethode',
+    total: 'Gesamt',
+    shipping: 'Versand',
+    name: 'Name',
+    phone: 'Telefon',
+    address: 'Adresse',
+    postalCode: 'Postleitzahl',
+    orderItems: 'Bestellartikel',
+    product: 'Produkt',
+    quantity: 'Menge',
+    unitPrice: 'Einzelpreis',
+    lineTotal: 'Zeilensumme',
+    customerFallback: 'Kunde',
+    notProvided: 'Nicht angegeben',
   },
 };
 

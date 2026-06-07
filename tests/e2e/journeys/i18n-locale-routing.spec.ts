@@ -1,6 +1,41 @@
 import { expect, test } from '@playwright/test';
+import { createE2ESupabaseClient } from '../utils/database';
+
+async function ensureGermanEnabled() {
+  const supabase = createE2ESupabaseClient();
+  const now = new Date().toISOString();
+  await supabase.from('supported_languages').upsert(
+    [
+      {
+        code: 'en',
+        label: 'English',
+        nativeLabel: 'English',
+        direction: 'ltr',
+        isEnabled: true,
+        isDefault: true,
+        sortOrder: 0,
+        updatedAt: now,
+      },
+      {
+        code: 'de',
+        label: 'German',
+        nativeLabel: 'Deutsch',
+        direction: 'ltr',
+        isEnabled: true,
+        isDefault: false,
+        sortOrder: 10,
+        updatedAt: now,
+      },
+    ],
+    { onConflict: 'code' }
+  );
+}
 
 test.describe('i18n locale routing', () => {
+  test.beforeEach(async () => {
+    await ensureGermanEnabled();
+  });
+
   test('detects German visitors, renders localized routes, and switches language with cookie update', async ({
     browser,
   }) => {
@@ -59,5 +94,38 @@ test.describe('i18n locale routing', () => {
     await expect(
       page.getByRole('heading', { name: 'Dein Warenkorb ist leer' })
     ).toBeVisible();
+  });
+
+  test('renders localized SEO metadata and customer payment status copy', async ({
+    page,
+  }) => {
+    await page.goto('/de/products');
+    await expect(page).toHaveTitle(/Produkte - Serverless Stack/);
+
+    await expect(page.locator('head link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/de\/products$/
+    );
+    await expect(
+      page.locator('head link[rel="alternate"][hreflang="en"]')
+    ).toHaveAttribute('href', /\/en\/products$/);
+    await expect(
+      page.locator('head link[rel="alternate"][hreflang="de"]')
+    ).toHaveAttribute('href', /\/de\/products$/);
+
+    await page.goto(
+      '/de/payment/failure?status=cancelled&provider=stripe&code=E2E-SEO'
+    );
+    await expect(
+      page.getByRole('heading', { name: 'Zahlung abgebrochen' })
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        'Dein Warenkorb ist weiterhin verfügbar, damit du den Checkout erneut versuchen kannst.'
+      )
+    ).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: 'Zurück zum Warenkorb' })
+    ).toHaveAttribute('href', '/de/cart');
   });
 });
