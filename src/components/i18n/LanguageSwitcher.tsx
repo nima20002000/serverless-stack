@@ -2,11 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useI18n, useTranslations } from '@/components/providers/I18nProvider';
-import {
-  localeMetadata,
-  supportedLocales,
-  type Locale,
-} from '@/lib/i18n/config';
+import { type Locale } from '@/lib/i18n/config';
 import { replacePathLocale } from '@/lib/i18n/routing';
 
 function localizedHref(
@@ -19,7 +15,7 @@ function localizedHref(
 }
 
 export default function LanguageSwitcher() {
-  const { locale } = useI18n();
+  const { locale, languages } = useI18n();
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -31,7 +27,8 @@ export default function LanguageSwitcher() {
       aria-label={t('nav.languageSwitcher')}
     >
       <span className="sr-only">{t('nav.language')}</span>
-      {supportedLocales.map((supportedLocale) => {
+      {languages.map((language) => {
+        const supportedLocale = language.code;
         const isActive = supportedLocale === locale;
         return (
           <a
@@ -46,7 +43,7 @@ export default function LanguageSwitcher() {
             }`}
             aria-current={isActive ? 'true' : undefined}
           >
-            {localeMetadata[supportedLocale].nativeLabel}
+            {language.nativeLabel}
           </a>
         );
       })}

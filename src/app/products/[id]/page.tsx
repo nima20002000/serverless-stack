@@ -14,6 +14,7 @@ import { getProductOgImage } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 import { formatPrice } from '@/lib/utils/format';
 import { siteConfig, siteLocale } from '@/config/site';
+import { getRequestLocale } from '@/lib/i18n/server';
 
 type Product = Tables<'products'>;
 type ProductVariant = Tables<'product_variants'>;
@@ -26,19 +27,22 @@ interface ProductPageProps {
 }
 
 // Cache the product query to avoid duplicate fetching between metadata and page
-const getCachedProduct = cache(async (id: string) => {
-  return getProductById(id, true);
+const getCachedProduct = cache(async (id: string, locale: string) => {
+  return getProductById(id, true, false, locale);
 });
 
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
+  const locale = await getRequestLocale();
   try {
-    const product = await getCachedProduct(id);
+    const product = await getCachedProduct(id, locale);
 
     // Get first image from media or fallback to legacy images
     const productWithRelations = product as Product & {
+      seoTitle?: string | null;
+      seoDescription?: string | null;
       media?: Array<{
         id: string;
         type: 'IMAGE' | 'VIDEO';
@@ -69,14 +73,19 @@ export async function generateMetadata({
     const stockStatus = product.stock > 0 ? 'In stock' : 'Out of stock';
     const priceText = `Price: ${formatPrice(finalPrice)}`;
     const fullDescription = `${product.description} | ${categoryName ? `Category: ${categoryName} | ` : ''}${priceText} | Availability: ${stockStatus}`;
+    const metadataTitle =
+      productWithRelations.seoTitle ||
+      `${product.name} - ${siteConfig.displayName}`;
+    const metadataDescription =
+      productWithRelations.seoDescription || fullDescription.substring(0, 160);
 
     return {
-      title: `${product.name} - ${siteConfig.displayName}`,
-      description: fullDescription.substring(0, 160),
+      title: metadataTitle,
+      description: metadataDescription,
       openGraph: {
-        title: `${product.name} - ${siteConfig.displayName}`,
-        description: product.description,
-        locale: siteLocale.ogLocale,
+        title: metadataTitle,
+        description: metadataDescription,
+        locale: locale === 'de' ? 'de_DE' : siteLocale.ogLocale,
         siteName: siteConfig.displayName,
         images: ogImage
           ? [
@@ -91,8 +100,8 @@ export async function generateMetadata({
       },
       twitter: {
         card: 'summary_large_image',
-        title: `${product.name} - ${siteConfig.displayName}`,
-        description: product.description,
+        title: metadataTitle,
+        description: metadataDescription,
         images: ogImage ? [ogImage] : undefined,
       },
       alternates: {
@@ -116,13 +125,14 @@ export async function generateMetadata({
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { id } = await params;
+  const locale = await getRequestLocale();
   let product;
   let relatedProducts;
 
   try {
-    product = await getCachedProduct(id);
+    product = await getCachedProduct(id, locale);
     // Fetch related products
-    relatedProducts = await getRelatedProducts(id, { limit: 4 });
+    relatedProducts = await getRelatedProducts(id, { limit: 4, locale });
   } catch {
     notFound();
   }

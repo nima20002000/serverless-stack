@@ -1,11 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import ProductFormFields from '@/components/admin/ProductFormFields';
+import LocalizedProductFields, {
+  type ProductMediaTranslationDraft,
+  type ProductTranslationDraft,
+  type TagTranslationDraft,
+} from '@/components/admin/LocalizedProductFields';
 import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
@@ -17,6 +22,7 @@ import {
 } from '@/lib/admin/product-form-dirty';
 import type { ProductFormData, Tag } from '@/types/product-admin';
 import { toast } from '@/store/toast-store';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 
 const initialProductFormData: ProductFormData = {
   name: '',
@@ -62,6 +68,15 @@ export default function NewProductPage() {
     initialProductFormData
   );
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [languages, setLanguages] = useState<ManagedLanguage[]>([]);
+  const [translations, setTranslations] = useState<
+    Record<string, ProductTranslationDraft>
+  >({});
+  const [mediaTranslations, setMediaTranslations] =
+    useState<ProductMediaTranslationDraft>({});
+  const [tagTranslations, setTagTranslations] = useState<TagTranslationDraft>(
+    {}
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -72,6 +87,30 @@ export default function NewProductPage() {
 
   // Variant management
   const variantManager = useVariantManager();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('/api/admin/languages')
+      .then((response) => {
+        if (!response.ok) throw new Error('Unable to load language settings');
+        return response.json();
+      })
+      .then((data) => {
+        if (isMounted) setLanguages(data.languages || []);
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setErrorMessage(
+            error instanceof Error ? error.message : 'Unable to load languages'
+          );
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   const initialSnapshot = useMemo(
     () =>
       createProductFormSnapshot({
@@ -115,7 +154,11 @@ export default function NewProductPage() {
     ]
   );
   const unsavedChangesGuard = useUnsavedChangesGuard({
-    isDirty: isProductFormDirty(initialSnapshot, currentSnapshot),
+    isDirty:
+      isProductFormDirty(initialSnapshot, currentSnapshot) ||
+      JSON.stringify(translations) !== '{}' ||
+      JSON.stringify(mediaTranslations) !== '{}' ||
+      JSON.stringify(tagTranslations) !== '{}',
   });
 
   const validateForm = () => {
@@ -201,6 +244,49 @@ export default function NewProductPage() {
       if (!productId) {
         throw new Error('Created product ID was not returned');
       }
+
+      const translationResponse = await fetch(
+        `/api/admin/products/${productId}/translations`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ translations, mediaTranslations: {} }),
+        }
+      );
+
+      if (!translationResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            translationResponse,
+            'Unable to save product translations'
+          )
+        );
+      }
+
+      await Promise.all(
+        selectedTags.map(async (tag) => {
+          const translationsForTag = tagTranslations[tag.id];
+          if (!translationsForTag) return;
+
+          const tagTranslationResponse = await fetch(
+            `/api/admin/tags/${tag.id}/translations`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ translations: translationsForTag }),
+            }
+          );
+
+          if (!tagTranslationResponse.ok) {
+            throw new Error(
+              await readErrorMessage(
+                tagTranslationResponse,
+                'Unable to save tag translations'
+              )
+            );
+          }
+        })
+      );
 
       // Step 2: Create variants in batch (single API call instead of N+1 requests)
       let variantIdMapping: Record<string, string> = {}; // tempId -> realId
@@ -423,6 +509,24 @@ export default function NewProductPage() {
             onCloseBrowser={() => setShowMediaBrowser(false)}
             disabled={isLoading}
             title="Media and Video"
+          />
+        </Card>
+
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Localized content
+          </h2>
+          <LocalizedProductFields
+            languages={languages}
+            translations={translations}
+            mediaTranslations={mediaTranslations}
+            media={productMedia.media}
+            selectedTags={selectedTags}
+            tagTranslations={tagTranslations}
+            disabled={isLoading}
+            onTranslationsChange={setTranslations}
+            onMediaTranslationsChange={setMediaTranslations}
+            onTagTranslationsChange={setTagTranslations}
           />
         </Card>
 

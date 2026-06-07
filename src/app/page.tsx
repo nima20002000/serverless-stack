@@ -48,14 +48,14 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const { t } = await getServerI18n();
+  const { locale, t } = await getServerI18n();
   let featuredProductsRaw: Awaited<ReturnType<typeof getFeaturedProducts>> = [];
   let discountedProductsRaw: Awaited<ReturnType<typeof getDiscountedProducts>> =
     [];
 
   const [featuredResult, discountedResult] = await Promise.allSettled([
-    getFeaturedProducts({ limit: 4 }),
-    getDiscountedProducts({ limit: 4 }),
+    getFeaturedProducts({ limit: 4, locale }),
+    getDiscountedProducts({ limit: 4, locale }),
   ]);
 
   if (featuredResult.status === 'fulfilled') {
@@ -78,7 +78,7 @@ export default async function Home() {
 
   let categories: Awaited<ReturnType<typeof getCategoryTree>> = [];
   try {
-    categories = await getCategoryTree();
+    categories = await getCategoryTree({ locale });
   } catch (error) {
     console.error('Failed to load category tree for homepage', error);
   }

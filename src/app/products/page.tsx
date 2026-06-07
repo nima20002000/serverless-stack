@@ -5,6 +5,7 @@ import { getActiveProducts } from '@/services/product-service';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 import { siteConfig, siteLocale } from '@/config/site';
+import { getRequestLocale } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export async function generateMetadata({
   searchParams,
 }: ProductsPageProps): Promise<Metadata> {
   const params = await searchParams;
+  const locale = await getRequestLocale();
   const { category, tag, search, page } = params;
 
   let title = `Products - ${siteConfig.displayName}`;
@@ -61,7 +63,7 @@ export async function generateMetadata({
       title,
       description,
       type: 'website',
-      locale: siteLocale.ogLocale,
+      locale: locale === 'de' ? 'de_DE' : siteLocale.ogLocale,
       siteName: siteConfig.displayName,
       images: [
         {
@@ -85,10 +87,12 @@ export async function generateMetadata({
 }
 
 export default async function ProductsPage() {
+  const locale = await getRequestLocale();
   const result = await getActiveProducts({
     page: 1,
     perPage: 20,
     sortBy: 'popular',
+    locale,
   });
 
   const products = result.data.map((product) => ({
@@ -114,6 +118,7 @@ export default async function ProductsPage() {
           initialProducts={products}
           initialPage={1}
           initialTotal={result.total}
+          locale={locale}
         />
       </main>
     </div>

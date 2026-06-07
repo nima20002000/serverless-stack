@@ -38,7 +38,7 @@ export default async function RootLayout({
   // Generate site-wide JSON-LD structured data
   const organizationSchema = generateOrganizationSchema();
   const webSiteSchema = generateWebSiteSchema();
-  const { locale, direction, messages } = await getServerI18n();
+  const { locale, direction, messages, languages } = await getServerI18n();
 
   return (
     <html lang={locale} dir={direction} suppressHydrationWarning>
@@ -59,7 +59,12 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased flex flex-col min-h-screen">
-        <I18nProvider locale={locale} direction={direction} messages={messages}>
+        <I18nProvider
+          locale={locale}
+          direction={direction}
+          messages={messages}
+          languages={languages}
+        >
           <ThemeProvider>
             <SessionProvider>
               <VersionProvider>

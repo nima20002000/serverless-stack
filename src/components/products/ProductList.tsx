@@ -56,6 +56,7 @@ interface ProductListProps {
   initialProducts?: Product[];
   initialPage?: number;
   initialTotal?: number;
+  locale?: string;
 }
 
 /**
@@ -129,6 +130,7 @@ function ProductList({
   initialProducts = [],
   initialPage = 1,
   initialTotal = 0,
+  locale,
 }: ProductListProps) {
   // Store ALL products fetched from server
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
@@ -154,11 +156,17 @@ function ProductList({
           // Fetch remaining pages
           const pagePromises = [];
           for (let i = 2; i <= totalPages; i++) {
+            const params = new URLSearchParams({
+              page: i.toString(),
+              perPage: perPage.toString(),
+              sortBy: 'popular',
+            });
+            if (locale) {
+              params.set('locale', locale);
+            }
             pagePromises.push(
               fetchWithRateLimit<{ data: Product[]; total: number }>(() =>
-                fetch(
-                  `/api/products?page=${i}&perPage=${perPage}&sortBy=popular`
-                )
+                fetch(`/api/products?${params.toString()}`)
               )
             );
           }
@@ -192,6 +200,7 @@ function ProductList({
     isInitialLoad,
     allProducts.length,
     fetchWithRateLimit,
+    locale,
   ]);
 
   // Client-side sorted products (instant filtering!)

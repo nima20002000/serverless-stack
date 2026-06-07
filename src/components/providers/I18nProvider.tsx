@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useMemo } from 'react';
 import type { Locale, TextDirection } from '@/lib/i18n/config';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 import type { Messages, TranslationKey } from '@/lib/i18n/dictionaries';
 import { createTranslator } from '@/lib/i18n/translate';
 
 type I18nContextValue = {
   locale: Locale;
   direction: TextDirection;
+  languages: ManagedLanguage[];
   messages: Messages;
   t: ReturnType<typeof createTranslator>;
 };
@@ -17,11 +19,13 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 export function I18nProvider({
   locale,
   direction,
+  languages,
   messages,
   children,
 }: {
   locale: Locale;
   direction: TextDirection;
+  languages: ManagedLanguage[];
   messages: Messages;
   children: React.ReactNode;
 }) {
@@ -29,10 +33,11 @@ export function I18nProvider({
     () => ({
       locale,
       direction,
+      languages,
       messages,
       t: createTranslator(messages),
     }),
-    [direction, locale, messages]
+    [direction, languages, locale, messages]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

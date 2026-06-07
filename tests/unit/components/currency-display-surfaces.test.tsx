@@ -46,6 +46,10 @@ async function loadCurrencySurfaces() {
   vi.doMock('next-auth/react', () => ({
     useSession: () => ({ data: null, status: 'unauthenticated' }),
   }));
+  vi.doMock('@/components/providers/I18nProvider', () => ({
+    useTextDirection: () => 'ltr',
+    useTranslations: () => (key: string, fallback?: string) => fallback || key,
+  }));
   vi.doMock('@/components/wishlist/WishlistButton', () => ({
     WishlistButton: () =>
       React.createElement('button', { type: 'button' }, 'Wishlist'),

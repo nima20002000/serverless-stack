@@ -12,6 +12,8 @@ export const defaultLocale: Locale = 'en';
 export const localeCookieName = 'site-locale';
 export const localeHeaderName = 'x-site-locale';
 export const localeDirectionHeaderName = 'x-site-locale-dir';
+export const localePathnameHeaderName = 'x-site-pathname';
+export const localeSearchHeaderName = 'x-site-search';
 export const configuredDirection = parseTextDirection(
   process.env.NEXT_PUBLIC_SITE_DIRECTION
 );

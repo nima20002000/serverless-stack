@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { Tables } from '@/lib/supabase/types';
 import { PaginatedResponse, DeleteResult } from '@/types/api';
 import { log } from '@/lib/logger';
-import { clearCachePattern } from '@/lib/redis/client';
 import { Database } from '@/types/supabase';
 import { randomUUID } from 'crypto';
 import { calculateDiscountedPrice } from '@/lib/utils/format';
@@ -14,6 +13,16 @@ import {
   type NormalizedVariantSwatch,
   type VariantSwatchCrop,
 } from '@/lib/variant-swatch';
+import { mergeLocalizedFields } from '@/lib/i18n/localized-content';
+import {
+  getCategoryTranslationsForCategoryIds,
+  getDefaultLanguageCode,
+  getProductMediaTranslationsForMediaIds,
+  getProductTranslationsForProductIds,
+  getTagTranslationsForTagIds,
+  resolvePublicLocale,
+} from '@/services/localization-service';
+import { invalidateProductCache } from '@/lib/catalog-cache';
 
 // ========== TYPE DEFINITIONS ==========
 
@@ -25,6 +34,14 @@ type Tag = Tables<'tags'>;
 
 type MediaType = Database['public']['Enums']['MediaType'];
 type SwatchMediaRecord = Pick<ProductMedia, 'url' | 'variantId' | 'type'>;
+type ProductWithOptionalRelations = Product & {
+  category?: Category | null;
+  tags?: Tag[];
+  media?: ProductMedia[];
+  variants?: VariantWithMedia[];
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+};
 
 // Product with all relations (matching Prisma's ProductWithRelations)
 export interface ProductWithRelations extends Product {
@@ -32,6 +49,8 @@ export interface ProductWithRelations extends Product {
   tags?: Tag[];
   media?: ProductMedia[];
   variants?: VariantWithMedia[];
+  seoTitle?: string | null;
+  seoDescription?: string | null;
 }
 
 // Variant with media
@@ -404,41 +423,6 @@ function populateProductsImages(
 }
 
 /**
- * Helper to invalidate all product caches
- * Since Upstash doesn't support pattern matching, we clear common cache keys
- * Now includes all sort options to ensure cache consistency
- */
-async function invalidateProductCache(): Promise<void> {
-  // Clear common pagination keys (pages 1-10, which covers most traffic)
-  // Include all sort options to ensure cache consistency
-  const cacheKeys: string[] = [];
-  const sortOptions = [
-    'popular',
-    'newest',
-    'price-asc',
-    'price-desc',
-    'featured',
-    'discount',
-  ];
-  const perPageOptions = [10, 20, 50];
-
-  for (let page = 1; page <= 10; page++) {
-    for (const perPage of perPageOptions) {
-      for (const sort of sortOptions) {
-        cacheKeys.push(
-          `products:active:page:${page}:limit:${perPage}:sort:${sort}`
-        );
-      }
-      // Also clear old cache keys without sort parameter for backward compatibility
-      cacheKeys.push(`products:active:page:${page}:limit:${perPage}`);
-    }
-  }
-
-  await clearCachePattern(cacheKeys);
-  log.info('Product cache invalidated', { keysCleared: cacheKeys.length });
-}
-
-/**
  * Fetch product with all relations
  * @param productId - Product ID
  * @param includeInactiveVariants - Whether to include inactive variants (default: false, for public access)
@@ -560,6 +544,144 @@ async function fetchProductWithRelations(
   };
 }
 
+function mapProductTranslations(
+  rows: Awaited<ReturnType<typeof getProductTranslationsForProductIds>>
+): Map<string, (typeof rows)[number]> {
+  return new Map(rows.map((row) => [`${row.productId}:${row.locale}`, row]));
+}
+
+function mapCategoryTranslations(
+  rows: Awaited<ReturnType<typeof getCategoryTranslationsForCategoryIds>>
+): Map<string, (typeof rows)[number]> {
+  return new Map(rows.map((row) => [`${row.categoryId}:${row.locale}`, row]));
+}
+
+function mapTagTranslations(
+  rows: Awaited<ReturnType<typeof getTagTranslationsForTagIds>>
+): Map<string, (typeof rows)[number]> {
+  return new Map(rows.map((row) => [`${row.tagId}:${row.locale}`, row]));
+}
+
+function mapMediaTranslations(
+  rows: Awaited<ReturnType<typeof getProductMediaTranslationsForMediaIds>>
+): Map<string, (typeof rows)[number]> {
+  return new Map(rows.map((row) => [`${row.mediaId}:${row.locale}`, row]));
+}
+
+async function localizeProducts<T extends ProductWithOptionalRelations>(
+  products: T[],
+  requestedLocale?: string | null
+): Promise<T[]> {
+  if (!requestedLocale || products.length === 0) return products;
+
+  const locale = await resolvePublicLocale(requestedLocale);
+  const fallbackLocale = await getDefaultLanguageCode();
+  const productIds = products.map((product) => product.id);
+
+  const categoryIds = Array.from(
+    new Set(
+      products
+        .map((product) => product.category?.id || product.categoryId)
+        .filter(Boolean) as string[]
+    )
+  );
+  const tagIds = Array.from(
+    new Set(
+      products.flatMap((product) => (product.tags || []).map((tag) => tag.id))
+    )
+  );
+  const mediaIds = Array.from(
+    new Set(
+      products.flatMap((product) => [
+        ...(product.media || []).map((media) => media.id),
+        ...(product.variants || []).flatMap((variant) =>
+          variant.media.map((media) => media.id)
+        ),
+      ])
+    )
+  );
+
+  const [
+    productTranslationRows,
+    categoryTranslationRows,
+    tagTranslationRows,
+    mediaTranslationRows,
+  ] = await Promise.all([
+    getProductTranslationsForProductIds(productIds, locale, fallbackLocale),
+    getCategoryTranslationsForCategoryIds(categoryIds, locale, fallbackLocale),
+    getTagTranslationsForTagIds(tagIds, locale, fallbackLocale),
+    getProductMediaTranslationsForMediaIds(mediaIds, locale, fallbackLocale),
+  ]);
+
+  const productTranslations = mapProductTranslations(productTranslationRows);
+  const categoryTranslations = mapCategoryTranslations(categoryTranslationRows);
+  const tagTranslations = mapTagTranslations(tagTranslationRows);
+  const mediaTranslations = mapMediaTranslations(mediaTranslationRows);
+
+  return products.map((product) => {
+    const productTranslation = productTranslations.get(
+      `${product.id}:${locale}`
+    );
+    const productFallbackTranslation = productTranslations.get(
+      `${product.id}:${fallbackLocale}`
+    );
+    const localizedProduct = mergeLocalizedFields(
+      product,
+      ['name', 'description', 'seoTitle', 'seoDescription'],
+      locale,
+      fallbackLocale,
+      productTranslation,
+      productFallbackTranslation
+    );
+
+    const category = product.category
+      ? mergeLocalizedFields(
+          product.category,
+          ['name', 'description'],
+          locale,
+          fallbackLocale,
+          categoryTranslations.get(`${product.category.id}:${locale}`),
+          categoryTranslations.get(`${product.category.id}:${fallbackLocale}`)
+        )
+      : product.category;
+
+    const tags = product.tags?.map((tag) =>
+      mergeLocalizedFields(
+        tag,
+        ['name'],
+        locale,
+        fallbackLocale,
+        tagTranslations.get(`${tag.id}:${locale}`),
+        tagTranslations.get(`${tag.id}:${fallbackLocale}`)
+      )
+    );
+
+    const localizeMedia = (media: ProductMedia) =>
+      mergeLocalizedFields(
+        media,
+        ['alt'],
+        locale,
+        fallbackLocale,
+        mediaTranslations.get(`${media.id}:${locale}`),
+        mediaTranslations.get(`${media.id}:${fallbackLocale}`)
+      );
+
+    const media = product.media?.map(localizeMedia);
+    const variants = product.variants?.map((variant) => ({
+      ...variant,
+      media: variant.media.map(localizeMedia),
+    }));
+
+    return {
+      ...localizedProduct,
+      category,
+      tags,
+      media,
+      variants,
+    } as T;
+  });
+}
+
 // ========== PRODUCT QUERIES ==========
 
 /**
@@ -574,6 +696,7 @@ export async function getAllProducts(options?: {
   search?: string;
   status?: string;
   stock?: string;
+  locale?: string | null;
   includeRelations?: boolean; // NEW: Control whether to fetch relations
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
@@ -636,8 +759,16 @@ export async function getAllProducts(options?: {
       variants: [],
     }));
 
+    const populatedProducts = populateProductsImages(
+      productsWithEmptyRelations
+    );
+    const localizedProducts = await localizeProducts(
+      populatedProducts,
+      options?.locale
+    );
+
     return {
-      data: populateProductsImages(productsWithEmptyRelations),
+      data: localizedProducts,
       total: count || 0,
       page,
       perPage,
@@ -690,8 +821,14 @@ export async function getAllProducts(options?: {
     }
   );
 
+  const populatedProducts = populateProductsImages(productsWithRelations);
+  const localizedProducts = await localizeProducts(
+    populatedProducts,
+    options?.locale
+  );
+
   return {
-    data: populateProductsImages(productsWithRelations),
+    data: localizedProducts,
     total: count || 0,
     page,
     perPage,
@@ -888,6 +1025,7 @@ export async function getActiveProducts(options?: {
   perPage?: number;
   sortBy?: ProductSortOption;
   includeOutOfStock?: boolean; // Set to true to include out-of-stock products (for admin/special views)
+  locale?: string | null;
 }): Promise<PaginatedResponse<ProductWithRelations>> {
   const page = options?.page || 1;
   const perPage = options?.perPage || 20;
@@ -1025,8 +1163,14 @@ export async function getActiveProducts(options?: {
     ? count || 0
     : productsWithRelations.length;
 
+  const populatedProducts = populateProductsImages(productsWithRelations);
+  const localizedProducts = await localizeProducts(
+    populatedProducts,
+    options?.locale
+  );
+
   return {
-    data: populateProductsImages(productsWithRelations),
+    data: localizedProducts,
     total: filteredTotal,
     page,
     perPage,
@@ -1041,6 +1185,7 @@ export async function getActiveProducts(options?: {
  */
 export async function getFeaturedProducts(options?: {
   limit?: number;
+  locale?: string | null;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
   const supabase = createClient();
@@ -1103,7 +1248,10 @@ export async function getFeaturedProducts(options?: {
     });
   }
 
-  return populateProductsImages(productsWithRelations);
+  return localizeProducts(
+    populateProductsImages(productsWithRelations),
+    options?.locale
+  );
 }
 
 /**
@@ -1113,6 +1261,7 @@ export async function getFeaturedProducts(options?: {
  */
 export async function getDiscountedProducts(options?: {
   limit?: number;
+  locale?: string | null;
 }): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
   const supabase = createClient();
@@ -1176,7 +1325,10 @@ export async function getDiscountedProducts(options?: {
     });
   }
 
-  return populateProductsImages(productsWithRelations);
+  return localizeProducts(
+    populateProductsImages(productsWithRelations),
+    options?.locale
+  );
 }
 
 /**
@@ -1188,7 +1340,8 @@ export async function getDiscountedProducts(options?: {
 export async function getProductById(
   id: string,
   includeRelations = false,
-  includeInactive = false
+  includeInactive = false,
+  locale?: string | null
 ): Promise<Product | ProductWithRelations> {
   const supabase = createClient();
 
@@ -1209,7 +1362,8 @@ export async function getProductById(
       throw new Error('Product not found');
     }
 
-    return product;
+    const [localizedProduct] = await localizeProducts([product], locale);
+    return localizedProduct;
   }
 
   // Fetch with all relations
@@ -1225,7 +1379,8 @@ export async function getProductById(
     throw new Error('Product not found');
   }
 
-  return product;
+  const [localizedProduct] = await localizeProducts([product], locale);
+  return localizedProduct;
 }
 
 /**
@@ -1236,6 +1391,7 @@ export async function searchProducts(
   options?: {
     page?: number;
     perPage?: number;
+    locale?: string | null;
   }
 ): Promise<PaginatedResponse<Product>> {
   const page = options?.page || 1;
@@ -1261,8 +1417,13 @@ export async function searchProducts(
     throw new Error('Unable to search products');
   }
 
+  const localizedProducts = await localizeProducts(
+    products || [],
+    options?.locale
+  );
+
   return {
-    data: products || [],
+    data: localizedProducts,
     total: count || 0,
     page,
     perPage,
@@ -1278,6 +1439,7 @@ export async function getRelatedProducts(
   productId: string,
   options?: {
     limit?: number;
+    locale?: string | null;
   }
 ): Promise<ProductWithRelations[]> {
   const limit = options?.limit || 4;
@@ -1413,7 +1575,10 @@ export async function getRelatedProducts(
     }
   }
 
-  return populateProductsImages(relatedProductsWithRelations);
+  return localizeProducts(
+    populateProductsImages(relatedProductsWithRelations),
+    options?.locale
+  );
 }
 
 // ========== PRODUCT MUTATIONS ==========

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCategoryBySlug } from '@/services/category-service';
+import { localeHeaderName } from '@/lib/i18n/config';
+import { normalizeLocaleForDataFetch } from '@/lib/i18n/locale-cache';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ slug: string }> }
 ) {
   try {
@@ -17,7 +19,11 @@ export async function GET(
       );
     }
 
-    const category = await getCategoryBySlug(slug);
+    const locale = normalizeLocaleForDataFetch(
+      req.nextUrl.searchParams.get('locale') ||
+        req.headers.get(localeHeaderName)
+    );
+    const category = await getCategoryBySlug(slug, { locale });
 
     if (!category) {
       return NextResponse.json(

@@ -6,6 +6,8 @@ import {
 } from '@/services/product-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
+import { localeHeaderName } from '@/lib/i18n/config';
+import { normalizeLocaleForDataFetch } from '@/lib/i18n/locale-cache';
 
 export const dynamic = 'force-dynamic';
 const MAX_ID_LENGTH = 64;
@@ -31,6 +33,9 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const includeRelations = searchParams.get('includeRelations') === 'true';
     const includeInactiveParam = searchParams.get('includeInactive') === 'true';
+    const locale = normalizeLocaleForDataFetch(
+      searchParams.get('locale') || req.headers.get(localeHeaderName)
+    );
 
     // Only allow includeInactive for admin users
     let includeInactive = false;
@@ -44,7 +49,8 @@ export async function GET(
     const product = await getProductById(
       params.id,
       includeRelations,
-      includeInactive
+      includeInactive,
+      includeInactive ? null : locale
     );
 
     // Serialize Decimal to number and handle nested relations

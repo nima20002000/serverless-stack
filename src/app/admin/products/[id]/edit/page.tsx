@@ -6,6 +6,11 @@ import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import ProductFormFields from '@/components/admin/ProductFormFields';
+import LocalizedProductFields, {
+  type ProductMediaTranslationDraft,
+  type ProductTranslationDraft,
+  type TagTranslationDraft,
+} from '@/components/admin/LocalizedProductFields';
 import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
@@ -23,6 +28,7 @@ import type {
   Variant,
 } from '@/types/product-admin';
 import { toast } from '@/store/toast-store';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;
@@ -59,6 +65,31 @@ async function readErrorMessage(
   return text || fallbackMessage;
 }
 
+function getSavedTranslationMedia(
+  productLevelMedia: MediaItem[],
+  variants: Variant[]
+): MediaItem[] {
+  const mediaById = new Map<string, MediaItem>();
+
+  for (const mediaItem of productLevelMedia) {
+    if (!mediaItem.id.startsWith('new-')) {
+      mediaById.set(mediaItem.id, mediaItem);
+    }
+  }
+
+  for (const variant of variants) {
+    for (const mediaItem of variant.media || []) {
+      if (!mediaItem.id.startsWith('new-')) {
+        mediaById.set(mediaItem.id, mediaItem);
+      }
+    }
+  }
+
+  return Array.from(mediaById.values()).sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+}
+
 export default function EditProductPage({ params }: EditProductPageProps) {
   const { id } = useUnwrappedParams(params);
   const [formData, setFormData] = useState<ProductFormData>({
@@ -73,6 +104,22 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     categoryId: null,
   });
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [languages, setLanguages] = useState<ManagedLanguage[]>([]);
+  const [translations, setTranslations] = useState<
+    Record<string, ProductTranslationDraft>
+  >({});
+  const [initialTranslations, setInitialTranslations] = useState<
+    Record<string, ProductTranslationDraft>
+  >({});
+  const [mediaTranslations, setMediaTranslations] =
+    useState<ProductMediaTranslationDraft>({});
+  const [initialMediaTranslations, setInitialMediaTranslations] =
+    useState<ProductMediaTranslationDraft>({});
+  const [tagTranslations, setTagTranslations] = useState<TagTranslationDraft>(
+    {}
+  );
+  const [initialTagTranslations, setInitialTagTranslations] =
+    useState<TagTranslationDraft>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -98,6 +145,18 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       const data = await response.json();
       const product = data.product;
+      const [languagesResponse, translationsResponse] = await Promise.all([
+        fetch('/api/admin/languages'),
+        fetch(`/api/admin/products/${id}/translations`),
+      ]);
+      if (!languagesResponse.ok) {
+        throw new Error('Unable to load language settings');
+      }
+      if (!translationsResponse.ok) {
+        throw new Error('Unable to load product translations');
+      }
+      const languageData = await languagesResponse.json();
+      const translationData = await translationsResponse.json();
       const nextFormData = {
         name: product.name,
         description: product.description,
@@ -111,6 +170,31 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       };
 
       setFormData(nextFormData);
+      setLanguages(languageData.languages || []);
+      const nextTranslations = Object.fromEntries(
+        (translationData.translations || []).map(
+          (translation: ProductTranslationDraft & { locale: string }) => [
+            translation.locale,
+            {
+              name: translation.name || '',
+              description: translation.description || '',
+              seoTitle: translation.seoTitle || '',
+              seoDescription: translation.seoDescription || '',
+            },
+          ]
+        )
+      );
+      setTranslations(nextTranslations);
+      setInitialTranslations(nextTranslations);
+      const nextMediaTranslations: ProductMediaTranslationDraft = {};
+      for (const translation of translationData.mediaTranslations || []) {
+        nextMediaTranslations[translation.mediaId] = {
+          ...(nextMediaTranslations[translation.mediaId] || {}),
+          [translation.locale]: { alt: translation.alt || '' },
+        };
+      }
+      setMediaTranslations(nextMediaTranslations);
+      setInitialMediaTranslations(nextMediaTranslations);
 
       // Load existing media (product-level only, not variant media)
       let nextProductMedia: MediaItem[] = [];
@@ -125,6 +209,27 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         nextSelectedTags = product.tags;
       }
       setSelectedTags(nextSelectedTags);
+      const nextTagTranslations: TagTranslationDraft = {};
+      await Promise.all(
+        nextSelectedTags.map(async (tag) => {
+          const tagResponse = await fetch(
+            `/api/admin/tags/${tag.id}/translations`
+          );
+          if (!tagResponse.ok) return;
+
+          const tagData = await tagResponse.json();
+          nextTagTranslations[tag.id] = Object.fromEntries(
+            (tagData.translations || []).map(
+              (translation: { locale: string; name?: string | null }) => [
+                translation.locale,
+                { name: translation.name || '' },
+              ]
+            )
+          );
+        })
+      );
+      setTagTranslations(nextTagTranslations);
+      setInitialTagTranslations(nextTagTranslations);
 
       // Load existing variants with their media (sorted by order)
       let nextVariants: Variant[] = [];
@@ -233,7 +338,13 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     ]
   );
   const unsavedChangesGuard = useUnsavedChangesGuard({
-    isDirty: isProductFormDirty(initialSnapshot, currentSnapshot),
+    isDirty:
+      isProductFormDirty(initialSnapshot, currentSnapshot) ||
+      JSON.stringify(translations) !== JSON.stringify(initialTranslations) ||
+      JSON.stringify(mediaTranslations) !==
+        JSON.stringify(initialMediaTranslations) ||
+      JSON.stringify(tagTranslations) !==
+        JSON.stringify(initialTagTranslations),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -631,6 +742,64 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
+      const remainingSavedMediaIds = new Set(
+        getSavedTranslationMedia(
+          productMedia.media,
+          variantManager.variants
+        ).map((mediaItem) => mediaItem.id)
+      );
+      const remainingMediaTranslations = Object.fromEntries(
+        Object.entries(mediaTranslations).filter(([mediaId]) =>
+          remainingSavedMediaIds.has(mediaId)
+        )
+      );
+
+      const translationResponse = await fetch(
+        `/api/admin/products/${id}/translations`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            translations,
+            mediaTranslations: remainingMediaTranslations,
+          }),
+        }
+      );
+
+      if (!translationResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            translationResponse,
+            'Unable to save product translations'
+          )
+        );
+      }
+
+      await Promise.all(
+        selectedTags.map(async (tag) => {
+          const translationsForTag = tagTranslations[tag.id];
+          if (!translationsForTag) return;
+
+          const tagTranslationResponse = await fetch(
+            `/api/admin/tags/${tag.id}/translations`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ translations: translationsForTag }),
+            }
+          );
+
+          if (!tagTranslationResponse.ok) {
+            throw new Error(
+              await readErrorMessage(
+                tagTranslationResponse,
+                'Unable to save tag translations'
+              )
+            );
+          }
+        })
+      );
+
       // Step 5: Reorder variants only if order changed
       const orderChanged =
         variantManager.variants.some((variant) => {
@@ -743,6 +912,27 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             onCloseBrowser={() => setShowMediaBrowser(false)}
             disabled={isSaving}
             title="Media and Video Product"
+          />
+        </Card>
+
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Localized content
+          </h2>
+          <LocalizedProductFields
+            languages={languages}
+            translations={translations}
+            mediaTranslations={mediaTranslations}
+            media={getSavedTranslationMedia(
+              productMedia.media,
+              variantManager.variants
+            )}
+            selectedTags={selectedTags}
+            tagTranslations={tagTranslations}
+            disabled={isSaving}
+            onTranslationsChange={setTranslations}
+            onMediaTranslationsChange={setMediaTranslations}
+            onTagTranslationsChange={setTagTranslations}
           />
         </Card>
 

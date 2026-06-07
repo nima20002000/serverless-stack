@@ -695,6 +695,42 @@ describe('middleware', () => {
       expect(response.headers.get('Set-Cookie')).toBeNull();
     });
 
+    it('preserves explicit locale headers on API requests', async () => {
+      const req = createRequest('/api/products', {
+        headers: {
+          'x-site-locale': 'de',
+          'accept-language': 'en-US',
+        },
+      });
+      mockRateLimitSuccess();
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.headers.get('x-middleware-request-x-site-locale')).toBe(
+        'de'
+      );
+      expect(response.headers.get('Set-Cookie')).toBeNull();
+    });
+
+    it('negotiates API locale from cookie and Accept-Language when no locale header is present', async () => {
+      const req = createRequest('/api/products', {
+        headers: {
+          cookie: 'site-locale=de',
+          'accept-language': 'en-US',
+        },
+      });
+      mockRateLimitSuccess();
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.headers.get('x-middleware-request-x-site-locale')).toBe(
+        'de'
+      );
+      expect(response.headers.get('Set-Cookie')).toBeNull();
+    });
+
     it('uses locale cookie before Accept-Language on unprefixed pages', async () => {
       const req = createRequest('/cart', {
         headers: {

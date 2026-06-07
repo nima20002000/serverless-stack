@@ -15,6 +15,8 @@ import {
   localeCookieName,
   localeDirectionHeaderName,
   localeHeaderName,
+  localePathnameHeaderName,
+  localeSearchHeaderName,
   type Locale,
 } from '@/lib/i18n/config';
 import {
@@ -62,6 +64,8 @@ function createLocalizedRequestHeaders(
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set(localeHeaderName, locale);
   requestHeaders.set(localeDirectionHeaderName, getLocaleDirection(locale));
+  requestHeaders.set(localePathnameHeaderName, req.nextUrl.pathname);
+  requestHeaders.set(localeSearchHeaderName, req.nextUrl.search);
   return requestHeaders;
 }
 
@@ -80,7 +84,12 @@ export async function proxy(req: NextRequest) {
         cookieLocale: readCookie(req, localeCookieName),
         acceptLanguage: req.headers.get('accept-language'),
       })
-    : defaultLocale;
+    : negotiateLocale({
+        urlLocale: req.headers.get(localeHeaderName),
+        cookieLocale: readCookie(req, localeCookieName),
+        acceptLanguage: req.headers.get('accept-language'),
+        fallbackLocale: defaultLocale,
+      });
   let token: Awaited<ReturnType<typeof getToken>> | null = null;
   let hasLoadedToken = false;
   const loadToken = async () => {
