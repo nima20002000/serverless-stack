@@ -4,6 +4,7 @@ import { SessionProvider } from '@/components/providers/SessionProvider';
 import { VersionProvider } from '@/components/providers/VersionProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
+import { ClientErrorReporter } from '@/components/providers/ClientErrorReporter';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import {
@@ -62,6 +63,7 @@ export default async function RootLayout({
           <ThemeProvider>
             <SessionProvider>
               <VersionProvider>
+                <ClientErrorReporter />
                 <ToastContainer />
                 <Header />
                 {children}

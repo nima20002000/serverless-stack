@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { browserPersist, createBrowserStorage } from '@/lib/browser-storage';
+import { reportFallbackWarning } from '@/lib/observability/client';
 import { formatPrice as formatStorefrontPrice } from '@/lib/utils/format';
 
 export const CART_STORAGE_KEY = 'cart-storage';
@@ -386,15 +387,40 @@ function publishCartSyncEvent(
   rememberCartSyncEvent(event.id);
 
   try {
-    getCartSyncChannel()?.postMessage(event);
-  } catch {
-    // BroadcastChannel unavailable or closed; localStorage remains the fallback.
+    const channel = getCartSyncChannel();
+    if (channel) {
+      channel.postMessage(event);
+    } else {
+      reportFallbackWarning({
+        name: 'cart-sync-broadcast-unavailable',
+        primary: 'BroadcastChannel cart sync',
+        fallback: 'localStorage cart sync event',
+        reason: 'BroadcastChannel unavailable',
+        context: { eventType: type },
+      });
+    }
+  } catch (error) {
+    reportFallbackWarning({
+      name: 'cart-sync-broadcast-failed',
+      primary: 'BroadcastChannel cart sync',
+      fallback: 'localStorage cart sync event',
+      reason:
+        error instanceof Error ? error.message : 'BroadcastChannel unavailable',
+      context: { eventType: type },
+    });
   }
 
   try {
     window.localStorage.setItem(CART_SYNC_EVENT_KEY, JSON.stringify(event));
-  } catch {
-    // Storage unavailable; the current tab still has the updated in-memory cart.
+  } catch (error) {
+    reportFallbackWarning({
+      name: 'cart-sync-storage-failed',
+      primary: 'localStorage cart sync event',
+      fallback: 'current tab in-memory cart only',
+      reason:
+        error instanceof Error ? error.message : 'localStorage unavailable',
+      context: { eventType: type },
+    });
   }
 }
 
