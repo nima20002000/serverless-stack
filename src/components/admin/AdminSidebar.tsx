@@ -8,6 +8,7 @@ import {
   UsersIcon,
   ShoppingBagIcon,
   CreditCardIcon,
+  ChartBarIcon,
   Bars3Icon,
   XMarkIcon,
   FolderIcon,
@@ -27,6 +28,7 @@ const navigation: NavItem[] = [
   { name: 'Products', href: '/admin/products', icon: ShoppingBagIcon },
   { name: 'Categories', href: '/admin/categories', icon: FolderIcon },
   { name: 'Transactions', href: '/admin/transactions', icon: CreditCardIcon },
+  { name: 'Sales analytics', href: '/admin/sales', icon: ChartBarIcon },
   { name: 'Site settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
