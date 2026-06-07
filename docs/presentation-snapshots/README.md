@@ -71,21 +71,29 @@ an admin table, verify that all visible records are seeded demo records.
 
 ## Capture Workflow
 
+Precondition: the disposable E2E Supabase project must already have enabled
+`en` and `de` rows in `supported_languages`. The capture spec validates those
+rows but does not mutate global language settings.
+
 Run the focused capture spec from the repo root:
 
 ```bash
 set -a; source .env; set +a
 unset UPSTASH_REDIS_REST_URL UPSTASH_REDIS_REST_TOKEN
 E2E_ALLOW_DESTRUCTIVE_DB=I_UNDERSTAND_E2E_DATABASE_IS_DESTRUCTIVE \
-  npm --prefix tests run test:e2e -- --project=chromium journeys/presentation-snapshots.spec.ts
+  npm --prefix tests run test:e2e -- --project=chromium \
+  journeys/presentation-storefront-snapshots.spec.ts \
+  journeys/presentation-snapshots.spec.ts
 ```
 
-The spec:
+The workflow:
 
-1. validates required manifest fields;
-2. ensures output paths stay inside `docs/presentation-snapshots/`;
-3. captures the `captureStatus: "sample"` entries to their manifest paths;
-4. verifies that generated sample files exist and are non-empty.
+1. seeds deterministic storefront demo data and captures the `NIM-227`
+   storefront entries;
+2. validates required manifest fields;
+3. ensures output paths stay inside `docs/presentation-snapshots/`;
+4. captures the `captureStatus: "sample"` entries to their manifest paths;
+5. verifies that generated sample files exist and are non-empty.
 
 If Playwright is blocked, use the same route/state/viewport values from
 `manifest.json`, capture manually, save to the exact manifest path, and run the
