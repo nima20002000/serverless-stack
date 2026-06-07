@@ -16,8 +16,7 @@ const e2ePayPalWebhookBypassSecret =
   process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET ||
   e2eEnv?.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET ||
   'local-e2e-paypal-webhook-secret';
-process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET =
-  e2ePayPalWebhookBypassSecret;
+process.env.E2E_PAYPAL_WEBHOOK_BYPASS_SECRET = e2ePayPalWebhookBypassSecret;
 
 /**
  * Playwright E2E test configuration for the commerce boilerplate.
@@ -38,7 +37,16 @@ const webServerEnv = {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   NEXTAUTH_SECRET: e2eNextAuthSecret,
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+  NEXTAUTH_URL: process.env.NEXTAUTH_URL || baseURL,
+  NEXT_PUBLIC_SITE_CURRENCY:
+    process.env.E2E_SITE_CURRENCY || process.env.NEXT_PUBLIC_SITE_CURRENCY,
+  NEXT_PUBLIC_SITE_LOCALE:
+    process.env.E2E_SITE_LOCALE || process.env.NEXT_PUBLIC_SITE_LOCALE,
+  NEXT_PUBLIC_SITE_CURRENCY_DISPLAY:
+    process.env.E2E_SITE_CURRENCY_DISPLAY ||
+    process.env.NEXT_PUBLIC_SITE_CURRENCY_DISPLAY,
+  NEXT_PUBLIC_SITE_DIRECTION:
+    process.env.E2E_SITE_DIRECTION || process.env.NEXT_PUBLIC_SITE_DIRECTION,
 };
 
 export default defineConfig({

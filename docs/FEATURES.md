@@ -14,7 +14,12 @@ The practical requirement is small: create the required free-tier API keys, conn
 
 ![Product catalog](assets/products.png)
 
-Additional screenshots are available in `docs/assets/`:
+Presentation-ready screenshots are available in `docs/presentation-snapshots/`:
+
+- Storefront: home, catalog, product detail, cart, checkout, payment status, profile, wishlist, mobile dark theme, and localized examples.
+- Admin: dashboard, products, localized product editor, variant swatches/crop controls, categories, media storage browser, settings/languages/RTL, users, transactions/invoice detail, sales analytics, and fallback states.
+
+Additional static documentation images are available in `docs/assets/`:
 
 - `home.png`
 - `products.png`
@@ -28,11 +33,13 @@ Additional screenshots are available in `docs/assets/`:
 - Public homepage with storefront-first positioning.
 - Product catalog page.
 - Product detail page.
+- Product variant display with stock, price adjustment, media, and swatches.
 - Category and tag data model.
 - Featured products and sale products.
 - Related product section.
 - Stock-aware product cards.
 - Search entry points.
+- Locale-prefixed storefront routes.
 - LTR/RTL-capable site configuration.
 - Configurable site metadata, locale, currency, and Open Graph defaults.
 
@@ -64,13 +71,20 @@ Additional screenshots are available in `docs/assets/`:
 
 - Admin dashboard route group.
 - Product management.
+- Product variant management.
+- Variant media and swatch crop controls.
+- Localized product, media alt text, and tag translation controls.
 - Category management.
 - Tag management.
 - User management.
 - Transaction management.
+- Invoice and transaction detail surfaces.
+- Sales analytics.
 - Promo code management.
 - Site settings management.
+- Language settings with LTR/RTL-aware options.
 - Product media workflows.
+- Media library and storage browser workflows.
 - Bulk product, category, and user operations.
 - Role-protected admin access.
 

@@ -7,6 +7,11 @@ import { useRouter } from 'next/navigation';
 import { useCartStore, formatPrice, selectTotal } from '@/store/cart-store';
 import CartItem from './CartItem';
 import Button from '@/components/ui/Button';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
+import { getCartDrawerDirectionClasses } from '@/lib/i18n/direction';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -14,6 +19,9 @@ interface CartDrawerProps {
 }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+  const t = useTranslations();
+  const direction = useTextDirection();
+  const drawerClasses = getCartDrawerDirectionClasses(direction);
   const router = useRouter();
   const { items, updateQuantity, removeItem } = useCartStore();
   const total = useCartStore(selectTotal);
@@ -28,7 +36,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
       setError('');
       updateQuantity(productId, quantity, variantId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update cart');
+      setError(err instanceof Error ? err.message : t('cart.couldNotUpdate'));
     }
   };
 
@@ -64,35 +72,43 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
 
         <div className="fixed inset-0 overflow-hidden">
           <div className="absolute inset-0 overflow-hidden">
-            <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div
+              className={`pointer-events-none fixed inset-y-0 flex max-w-full ${drawerClasses.container}`}
+            >
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-300"
-                enterFrom="translate-x-full"
+                enterFrom={drawerClasses.enterFrom}
                 enterTo="translate-x-0"
                 leave="transform transition ease-in-out duration-300"
                 leaveFrom="translate-x-0"
-                leaveTo="translate-x-full"
+                leaveTo={drawerClasses.leaveTo}
               >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-md">
+                <Dialog.Panel
+                  className="pointer-events-auto w-screen max-w-md"
+                  data-testid="cart-drawer-panel"
+                  data-direction={direction}
+                >
                   <div className="flex h-full flex-col bg-white shadow-xl dark:bg-slate-950">
                     <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 dark:border-slate-800">
                       <Dialog.Title className="text-lg font-bold text-slate-950 dark:text-white">
-                        Cart
+                        {t('cart.title')}
                       </Dialog.Title>
                       <button
                         type="button"
                         className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
                         onClick={onClose}
                       >
-                        <span className="sr-only">Close cart</span>
+                        <span className="sr-only">{t('cart.closeCart')}</span>
                         <XMarkIcon className="h-6 w-6" aria-hidden="true" />
                       </button>
                     </div>
 
                     {error && (
-                      <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 p-3">
-                        <p className="text-sm text-red-700">{error}</p>
+                      <div className="mx-4 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-rose-800 dark:bg-rose-900/30">
+                        <p className="text-sm text-red-700 dark:text-rose-200">
+                          {error}
+                        </p>
                       </div>
                     )}
 
@@ -100,16 +116,16 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       {items.length === 0 ? (
                         <div className="flex h-full flex-col items-center justify-center text-center">
                           <h3 className="mb-2 text-lg font-bold text-slate-950 dark:text-white">
-                            Your cart is empty
+                            {t('cart.emptyTitle')}
                           </h3>
-                          <p className="mb-6 text-sm text-slate-500">
-                            Add a product to start checkout.
+                          <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+                            {t('cart.drawerEmptyDescription')}
                           </p>
                           <Button
                             variant="primary"
                             onClick={handleContinueShopping}
                           >
-                            Browse products
+                            {t('cart.browseProducts')}
                           </Button>
                         </div>
                       ) : (
@@ -130,7 +146,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       <div className="space-y-4 border-t border-slate-200 bg-slate-50 px-5 py-6 dark:border-slate-800 dark:bg-slate-900">
                         <div className="flex items-center justify-between text-lg font-bold">
                           <span className="text-slate-950 dark:text-white">
-                            Total
+                            {t('cart.total')}
                           </span>
                           <span className="text-slate-950 dark:text-white">
                             {formatPrice(total)}
@@ -143,14 +159,14 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                             fullWidth
                             onClick={handleCheckout}
                           >
-                            View cart
+                            {t('cart.viewCart')}
                           </Button>
                           <Button
                             variant="secondary"
                             fullWidth
                             onClick={handleContinueShopping}
                           >
-                            Continue shopping
+                            {t('cart.continueShopping')}
                           </Button>
                         </div>
                       </div>

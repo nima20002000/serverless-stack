@@ -1,7 +1,27 @@
 export type SiteDirection = 'ltr' | 'rtl';
+export type SiteCurrencyDisplay = 'symbol' | 'narrowSymbol' | 'code' | 'name';
 
 function getDirection(value: string | undefined): SiteDirection {
   return value === 'rtl' ? 'rtl' : 'ltr';
+}
+
+function getCurrencyDisplay(value: string | undefined): SiteCurrencyDisplay {
+  if (value === undefined || value === '') {
+    return 'symbol';
+  }
+
+  if (
+    value === 'symbol' ||
+    value === 'narrowSymbol' ||
+    value === 'code' ||
+    value === 'name'
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `Invalid NEXT_PUBLIC_SITE_CURRENCY_DISPLAY value: ${value}. Expected symbol, narrowSymbol, code, or name.`
+  );
 }
 
 export const siteConfig = {
@@ -13,6 +33,9 @@ export const siteConfig = {
   direction: getDirection(process.env.NEXT_PUBLIC_SITE_DIRECTION),
   locale: process.env.NEXT_PUBLIC_SITE_LOCALE || 'en-US',
   currency: (process.env.NEXT_PUBLIC_SITE_CURRENCY || 'USD').toUpperCase(),
+  currencyDisplay: getCurrencyDisplay(
+    process.env.NEXT_PUBLIC_SITE_CURRENCY_DISPLAY
+  ),
   displayName: process.env.NEXT_PUBLIC_SITE_DISPLAY_NAME || 'Serverless Stack',
   timeZone: process.env.NEXT_PUBLIC_SITE_TIME_ZONE,
 };
@@ -23,6 +46,7 @@ export const siteLocale = {
   locale: siteConfig.locale,
   ogLocale: siteConfig.locale.replace('-', '_'),
   currency: siteConfig.currency,
+  currencyDisplay: siteConfig.currencyDisplay,
   timeZone: siteConfig.timeZone,
 };
 

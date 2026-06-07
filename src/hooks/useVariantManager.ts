@@ -4,6 +4,10 @@ import type {
   VariantFormData,
   MediaItem,
 } from '@/types/product-admin';
+import {
+  DEFAULT_SWATCH_CROP,
+  normalizeVariantSwatch,
+} from '@/lib/variant-swatch';
 
 /**
  * Custom hook for managing product variants
@@ -22,6 +26,8 @@ export function useVariantManager(initialVariants: Variant[] = []) {
     priceAdjust: '0',
     stock: '0',
     isActive: true,
+    swatchImageUrl: '',
+    swatchCrop: DEFAULT_SWATCH_CROP,
   });
   const [variantMedia, setVariantMedia] = useState<MediaItem[]>([]);
 
@@ -51,6 +57,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
                 id: editingVariantId,
                 order: v.order,
                 media: variantMedia,
+                ...normalizeVariantSwatch(variantForm),
               }
             : v
         )
@@ -66,6 +73,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
         id: `variant-${Date.now()}`,
         order: newOrder,
         media: variantMedia,
+        ...normalizeVariantSwatch(variantForm),
       };
       setVariants([...variants, newVariant]);
     }
@@ -84,6 +92,8 @@ export function useVariantManager(initialVariants: Variant[] = []) {
       priceAdjust: variant.priceAdjust,
       stock: variant.stock,
       isActive: variant.isActive,
+      swatchImageUrl: variant.swatchImageUrl || '',
+      swatchCrop: variant.swatchCrop || DEFAULT_SWATCH_CROP,
     });
     setVariantMedia(variant.media || []);
     setEditingVariantId(variant.id);
@@ -131,6 +141,8 @@ export function useVariantManager(initialVariants: Variant[] = []) {
       priceAdjust: '0',
       stock: '0',
       isActive: true,
+      swatchImageUrl: '',
+      swatchCrop: DEFAULT_SWATCH_CROP,
     });
     setVariantMedia([]);
     setEditingVariantId(null);
@@ -146,6 +158,7 @@ export function useVariantManager(initialVariants: Variant[] = []) {
     setShowVariantForm,
     editingVariantId,
     variantForm,
+    setVariantForm,
     variantMedia,
     setVariantMedia,
     handleVariantFormChange,

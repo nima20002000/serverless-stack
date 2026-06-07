@@ -11,6 +11,15 @@ import {
 export const dynamic = 'force-dynamic';
 const MAX_ID_LENGTH = 64;
 
+function isVariantSwatchValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.startsWith('Variant swatch image must reference') ||
+      error.message.startsWith('Variant swatch crop') ||
+      error.message.startsWith('Product variants must belong'))
+  );
+}
+
 export async function GET(
   _req: NextRequest,
   { params: paramsPromise }: { params: Promise<{ id: string }> }
@@ -35,7 +44,7 @@ export async function GET(
             ? error.message
             : 'Unable to load product variants',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }
@@ -106,6 +115,8 @@ export async function POST(
             stock: number;
             order?: number;
             isActive?: boolean;
+            swatchImageUrl?: string | null;
+            swatchCrop?: unknown;
           }) => ({
             tempId: v.tempId,
             name: v.name,
@@ -117,6 +128,8 @@ export async function POST(
             stock: v.stock,
             order: v.order,
             isActive: v.isActive,
+            swatchImageUrl: v.swatchImageUrl,
+            swatchCrop: v.swatchCrop,
           })
         )
       );
@@ -125,8 +138,18 @@ export async function POST(
     }
 
     // Single variant creation (backward compatibility)
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
-      body;
+    const {
+      name,
+      sku,
+      color,
+      size,
+      material,
+      priceAdjust,
+      stock,
+      isActive,
+      swatchImageUrl,
+      swatchCrop,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -152,6 +175,8 @@ export async function POST(
       priceAdjust: priceAdjust || 0,
       stock,
       isActive,
+      swatchImageUrl,
+      swatchCrop,
     });
 
     return NextResponse.json({ variant }, { status: 201 });
@@ -164,7 +189,7 @@ export async function POST(
             ? error.message
             : 'Unable to create product variant',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }
@@ -237,6 +262,8 @@ export async function PATCH(
           priceAdjust?: number;
           stock: number;
           isActive?: boolean;
+          swatchImageUrl?: string | null;
+          swatchCrop?: unknown;
         }) => ({
           id: v.id,
           name: v.name,
@@ -247,6 +274,8 @@ export async function PATCH(
           priceAdjust: v.priceAdjust || 0,
           stock: v.stock,
           isActive: v.isActive,
+          swatchImageUrl: v.swatchImageUrl,
+          swatchCrop: v.swatchCrop,
         })
       )
     );
@@ -261,7 +290,7 @@ export async function PATCH(
             ? error.message
             : 'Unable to update product variants',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }

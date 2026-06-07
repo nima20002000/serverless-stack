@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronLeftIcon, HomeIcon } from '@heroicons/react/24/outline';
+import { useTextDirection } from '@/components/providers/I18nProvider';
 
 interface BreadcrumbItem {
   label: string;
@@ -13,6 +14,8 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
+  const direction = useTextDirection();
+
   return (
     <nav
       className="flex items-center gap-2 text-sm mb-6"
@@ -30,7 +33,11 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
 
         return (
           <div key={index} className="flex items-center gap-2">
-            <ChevronLeftIcon className="w-4 h-4 text-gray-400 dark:text-slate-500 rotate-180" />
+            <ChevronLeftIcon
+              className={`h-4 w-4 text-gray-400 dark:text-slate-500 ${
+                direction === 'rtl' ? '' : 'rotate-180'
+              }`}
+            />
             {item.href && !isLast ? (
               <Link
                 href={item.href}

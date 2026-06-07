@@ -97,6 +97,7 @@ describe('GET /api/products', () => {
       page: 2,
       perPage: 5,
       sortBy: 'price-asc',
+      locale: null,
     });
     expect(response.status).toBe(200);
     expect(body.total).toBe(1);
@@ -115,6 +116,22 @@ describe('GET /api/products', () => {
       page: 1,
       perPage: 20,
       sortBy: 'newest',
+      locale: null,
+    });
+  });
+
+  it('passes locale query through to product listing service', async () => {
+    const { GET } = await loadHandler();
+    getActiveProductsMock.mockResolvedValue({ data: [], total: 0 } as any);
+
+    const response = await GET(createProductsRequest('?locale=de'));
+
+    expect(response.status).toBe(200);
+    expect(getActiveProductsMock).toHaveBeenCalledWith({
+      page: 1,
+      perPage: 20,
+      sortBy: 'newest',
+      locale: 'de',
     });
   });
 
@@ -261,7 +278,7 @@ describe('GET /api/products/[id]', () => {
     );
     const body = await response.json();
 
-    expect(getProductByIdMock).toHaveBeenCalledWith('p1', true, false);
+    expect(getProductByIdMock).toHaveBeenCalledWith('p1', true, false, null);
     expect(body.product.price).toBe(10);
     expect(body.product.variants[0].priceAdjust).toBe(2);
   });
@@ -277,7 +294,36 @@ describe('GET /api/products/[id]', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(getProductByIdMock).toHaveBeenCalledWith('p1', false, true);
+    expect(getProductByIdMock).toHaveBeenCalledWith('p1', false, true, null);
+  });
+
+  it('does not localize admin raw product detail reads', async () => {
+    const { GET } = await loadHandler();
+    getServerSessionMock.mockResolvedValue(adminSession as any);
+    getProductByIdMock.mockResolvedValue({ id: 'p1', price: 10 } as any);
+
+    const response = await GET(
+      createProductRequest(
+        'p1',
+        '?includeRelations=true&includeInactive=true&locale=de'
+      ),
+      { params: { id: 'p1' } }
+    );
+
+    expect(response.status).toBe(200);
+    expect(getProductByIdMock).toHaveBeenCalledWith('p1', true, true, null);
+  });
+
+  it('passes locale query through to product detail service', async () => {
+    const { GET } = await loadHandler();
+    getProductByIdMock.mockResolvedValue({ id: 'p1', price: 10 } as any);
+
+    const response = await GET(createProductRequest('p1', '?locale=de'), {
+      params: { id: 'p1' },
+    });
+
+    expect(response.status).toBe(200);
+    expect(getProductByIdMock).toHaveBeenCalledWith('p1', false, false, 'de');
   });
 
   it('returns 404 when service fails', async () => {

@@ -10,9 +10,9 @@ import {
  */
 export default function ProductCardSkeleton() {
   return (
-    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
       {/* Product Image Skeleton */}
-      <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-gray-100 dark:bg-slate-800">
         <SkeletonImage aspectRatio="4/5" />
       </div>
 

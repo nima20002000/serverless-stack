@@ -1,8 +1,15 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { log } from '@/lib/logger';
-import { clearCachePattern } from '@/lib/redis/client';
 import { Tables, Inserts, Updates } from '@/lib/supabase/types';
+import { mergeLocalizedFields } from '@/lib/i18n/localized-content';
+import { type Locale } from '@/lib/i18n/config';
+import {
+  getCategoryTranslationsForCategoryIds,
+  getDefaultLanguageCode,
+  resolvePublicLocale,
+} from '@/services/localization-service';
+import { invalidateCategoryCache } from '@/lib/catalog-cache';
 
 /**
  * Category Service (Supabase)
@@ -18,13 +25,51 @@ type CategoryWithRelations = Category & {
   };
 };
 
-/**
- * Helper to invalidate all category caches
- */
-async function invalidateCategoryCache(): Promise<void> {
-  const cacheKeys = ['categories:active', 'categories:tree'];
-  await clearCachePattern(cacheKeys);
-  log.info('Category cache invalidated');
+async function localizeCategories<T extends CategoryWithRelations>(
+  categories: T[],
+  requestedLocale?: string | null
+): Promise<T[]> {
+  if (!requestedLocale || categories.length === 0) return categories;
+
+  const locale = await resolvePublicLocale(requestedLocale);
+  const fallbackLocale: Locale = await getDefaultLanguageCode();
+  const collectIds = (items: CategoryWithRelations[]): string[] =>
+    items.flatMap((category) => [
+      category.id,
+      ...(category.parent ? [category.parent.id] : []),
+      ...(category.children ? collectIds(category.children) : []),
+    ]);
+
+  const categoryIds = Array.from(new Set(collectIds(categories)));
+  const rows = await getCategoryTranslationsForCategoryIds(
+    categoryIds,
+    locale,
+    fallbackLocale
+  );
+  const translationMap = new Map(
+    rows.map((row) => [`${row.categoryId}:${row.locale}`, row])
+  );
+
+  const localize = (category: CategoryWithRelations): CategoryWithRelations => {
+    const localized = mergeLocalizedFields(
+      category,
+      ['name', 'description'],
+      locale,
+      fallbackLocale,
+      translationMap.get(`${category.id}:${locale}`),
+      translationMap.get(`${category.id}:${fallbackLocale}`)
+    );
+
+    return {
+      ...localized,
+      parent: category.parent
+        ? localize(category.parent as CategoryWithRelations)
+        : category.parent,
+      children: category.children?.map(localize),
+    };
+  };
+
+  return categories.map((category) => localize(category) as T);
 }
 
 /**
@@ -195,7 +240,9 @@ export async function getAllCategories(): Promise<CategoryWithRelations[]> {
 /**
  * Get active categories only
  */
-export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
+export async function getActiveCategories(options?: {
+  locale?: string | null;
+}): Promise<CategoryWithRelations[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -211,18 +258,22 @@ export async function getActiveCategories(): Promise<CategoryWithRelations[]> {
     throw new Error('Unable to load active categories');
   }
 
-  return (data || []).map((category) => ({
+  const categories = (data || []).map((category) => ({
     ...category,
     children: Array.isArray(category.children)
       ? category.children.filter((child) => child.isActive)
       : [],
   }));
+
+  return localizeCategories(categories, options?.locale);
 }
 
 /**
  * Get category tree (root categories with children)
  */
-export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
+export async function getCategoryTree(options?: {
+  locale?: string | null;
+}): Promise<CategoryWithRelations[]> {
   const supabase = await createClient();
 
   // First get root categories (parentId is null)
@@ -279,7 +330,7 @@ export async function getCategoryTree(): Promise<CategoryWithRelations[]> {
     };
   });
 
-  return tree;
+  return localizeCategories(tree, options?.locale);
 }
 
 /**
@@ -326,7 +377,8 @@ export async function getCategoryById(
  * Get category by slug
  */
 export async function getCategoryBySlug(
-  slug: string
+  slug: string,
+  options?: { locale?: string | null }
 ): Promise<CategoryWithRelations | null> {
   const supabase = await createClient();
 
@@ -359,8 +411,12 @@ export async function getCategoryBySlug(
     }
   }
 
-  // @ts-expect-error - Supabase join syntax returns children as object/null, not array
-  return data;
+  const [localized] = await localizeCategories(
+    [data as unknown as CategoryWithRelations],
+    options?.locale
+  );
+
+  return localized;
 }
 
 /**

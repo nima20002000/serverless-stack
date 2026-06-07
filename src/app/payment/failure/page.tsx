@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/solid';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { useI18n, useTranslations } from '@/components/providers/I18nProvider';
+import { prefixPathWithLocale } from '@/lib/i18n/routing';
 
 function providerLabel(provider: string | null) {
   const normalizedProvider = provider?.toLowerCase();
@@ -21,6 +23,8 @@ function providerLabel(provider: string | null) {
 function FailureContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { locale } = useI18n();
+  const t = useTranslations();
 
   const transactionCode = searchParams.get('code');
   const provider = searchParams.get('provider');
@@ -32,26 +36,26 @@ function FailureContent() {
   const hasMissingCode = !transactionCode;
 
   const title = hasMissingCode
-    ? 'Payment status unavailable'
+    ? t('payment.statusUnavailable')
     : isCancelled
-      ? 'Payment cancelled'
+      ? t('payment.cancelled')
       : isPending
-        ? 'Payment pending'
-        : 'Payment failed';
+        ? t('payment.pending')
+        : t('payment.failed');
   const subtitle = hasMissingCode
-    ? 'The payment provider returned without a transaction code.'
+    ? t('payment.unavailableDescription')
     : isCancelled
-      ? 'You cancelled checkout before payment was completed.'
+      ? t('payment.cancelledDescription')
       : isPending
-        ? 'The payment provider is still processing this transaction.'
-        : 'The payment provider could not complete this payment.';
+        ? t('payment.pendingDescription')
+        : t('payment.failedDescription');
   const infoMessage = hasMissingCode
-    ? 'Your cart has not been cleared. Return to the cart to continue checkout.'
+    ? t('payment.missingCodeInfo')
     : isCancelled
-      ? 'Your cart is still available so you can retry checkout.'
+      ? t('payment.cancelledInfo')
       : isPending
-        ? 'Your cart is still available. You can wait and check your profile later, or retry checkout.'
-        : 'No payment was captured by this page. Return to the cart to choose Stripe or PayPal again.';
+        ? t('payment.pendingInfo')
+        : t('payment.failedInfo');
   const icon = isPending ? (
     <ClockIcon className="w-20 h-20 text-amber-500 mx-auto" />
   ) : hasMissingCode ? (
@@ -61,7 +65,7 @@ function FailureContent() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 dark:bg-slate-950">
       <div className="max-w-md w-full">
         <Card>
           <div className="text-center">
@@ -69,58 +73,73 @@ function FailureContent() {
             <div className="mb-6">{icon}</div>
 
             {/* Error Message */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
-            <p className="text-gray-600 mb-6">{subtitle}</p>
+            <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">
+              {title}
+            </h1>
+            <p className="mb-6 text-gray-600 dark:text-slate-400">{subtitle}</p>
 
             {/* Transaction Code if available */}
             {transactionCode && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/80">
                 <div className="flex justify-between text-sm">
-                  <span className="font-mono font-bold text-gray-900">
+                  <span className="font-mono font-bold text-gray-900 dark:text-slate-100">
                     {transactionCode}
                   </span>
-                  <span className="text-gray-600">Transaction code</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    {t('payment.transactionCode')}
+                  </span>
                 </div>
               </div>
             )}
 
             {readableProvider && (
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-slate-800/80">
                 <div className="flex justify-between text-sm">
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 dark:text-slate-100">
                     {readableProvider}
                   </span>
-                  <span className="text-gray-600">Provider</span>
+                  <span className="text-gray-600 dark:text-slate-400">
+                    {t('payment.provider')}
+                  </span>
                 </div>
               </div>
             )}
 
             {/* Error Details */}
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800">{errorMessage}</p>
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-rose-800 dark:bg-rose-900/30">
+                <p className="text-sm text-red-800 dark:text-rose-200">
+                  {errorMessage}
+                </p>
               </div>
             )}
 
             {/* Info Message */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-yellow-800">{infoMessage}</p>
+            <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-amber-800 dark:bg-amber-900/25">
+              <p className="text-sm text-yellow-800 dark:text-amber-200">
+                {infoMessage}
+              </p>
             </div>
 
             {/* Actions */}
             <div className="space-y-3">
-              <Link href="/cart" className="block">
+              <Link
+                href={prefixPathWithLocale('/cart', locale)}
+                className="block"
+              >
                 <Button variant="primary" className="w-full">
-                  Return to cart
+                  {t('payment.returnToCart')}
                 </Button>
               </Link>
 
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => router.push('/products')}
+                onClick={() =>
+                  router.push(prefixPathWithLocale('/products', locale))
+                }
               >
-                Continue shopping
+                {t('payment.continueShopping')}
               </Button>
             </div>
           </div>
@@ -134,8 +153,8 @@ export default function PaymentFailurePage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-gray-600">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+          <div className="text-gray-600 dark:text-slate-400">Loading...</div>
         </div>
       }
     >

@@ -4,25 +4,13 @@ import { log } from '@/lib/logger';
 import { getAppBaseUrl } from '@/lib/utils/url';
 import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
 import { siteLocale } from '@/config/site';
+import {
+  normalizeCurrencyCode,
+  roundCurrencyAmount,
+  toCurrencyMinorUnits,
+} from '@/lib/utils/money';
 
-const ZERO_DECIMAL_CURRENCIES = new Set([
-  'bif',
-  'clp',
-  'djf',
-  'gnf',
-  'jpy',
-  'kmf',
-  'krw',
-  'mga',
-  'pyg',
-  'rwf',
-  'ugx',
-  'vnd',
-  'vuv',
-  'xaf',
-  'xof',
-  'xpf',
-]);
+const STRIPE_TWO_DECIMAL_API_CURRENCIES = new Set(['huf', 'isk']);
 
 let stripeClient: Stripe | null = null;
 
@@ -64,14 +52,23 @@ export function getStripeCurrency(): string {
 }
 
 export function toStripeMinorUnits(amount: number, currency: string): number {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new Error('Stripe amount must be a positive number');
+  const normalizedCurrency = normalizeCurrencyCode(currency).toLowerCase();
+
+  if (normalizedCurrency === 'isk') {
+    return toCurrencyMinorUnits(
+      roundCurrencyAmount(amount, currency),
+      currency,
+      {
+        fractionDigits: 2,
+      }
+    );
   }
 
-  const normalizedCurrency = currency.toLowerCase();
-  const usesZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(normalizedCurrency);
+  if (STRIPE_TWO_DECIMAL_API_CURRENCIES.has(normalizedCurrency)) {
+    return toCurrencyMinorUnits(amount, currency, { fractionDigits: 2 });
+  }
 
-  return usesZeroDecimal ? Math.round(amount) : Math.round(amount * 100);
+  return toCurrencyMinorUnits(amount, currency);
 }
 
 export function getStripeClient(): Stripe {

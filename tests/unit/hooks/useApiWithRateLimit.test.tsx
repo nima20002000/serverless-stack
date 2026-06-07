@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { useApiWithRateLimit } from '@/hooks/useApiWithRateLimit';
 import { renderHook } from '@utils/hook-utils';
 

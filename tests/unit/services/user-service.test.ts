@@ -129,6 +129,11 @@ describe('user-service', () => {
         role: 'USER',
         isVerified: true,
         shippingAddress: 'Address',
+        shippingCountry: null,
+        shippingRegion: null,
+        shippingCity: null,
+        shippingAddressLine1: 'Address',
+        shippingAddressLine2: null,
         postalCode: '12345',
         createdAt: '2024-01-01T00:00:00.000Z',
         updatedAt: '2024-01-02T00:00:00.000Z',
@@ -159,6 +164,11 @@ describe('user-service', () => {
       role: 'USER',
       isVerified: true,
       shippingAddress: 'Address',
+      shippingCountry: null,
+      shippingRegion: null,
+      shippingCity: null,
+      shippingAddressLine1: 'Address',
+      shippingAddressLine2: null,
       postalCode: '12345',
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
       updatedAt: new Date('2024-01-02T00:00:00.000Z'),
@@ -169,7 +179,148 @@ describe('user-service', () => {
       email: 'new@example.com',
       phone: null,
       shippingAddress: 'Address',
+      shippingCountry: null,
+      shippingRegion: null,
+      shippingCity: null,
+      shippingAddressLine1: 'Address',
+      shippingAddressLine2: null,
       postalCode: '12345',
+    });
+  });
+
+  it('preserves existing profile address fields during partial address updates', async () => {
+    const userService = await loadUserService();
+    const supabase = createSupabaseMock();
+    const updateQuery = createQueryMock({
+      data: {
+        id: 'user-1',
+        uid: 'U-000123',
+        email: 'user@example.com',
+        phone: null,
+        name: 'User',
+        role: 'USER',
+        isVerified: true,
+        shippingAddress: '42 Example Street\nBerlin, BE, 10117\nGermany',
+        shippingCountry: 'Germany',
+        shippingRegion: 'BE',
+        shippingCity: 'Berlin',
+        shippingAddressLine1: '42 Example Street',
+        shippingAddressLine2: null,
+        postalCode: '10117',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-02T00:00:00.000Z',
+      },
+      error: null,
+    });
+
+    supabase.from.mockReturnValue(updateQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    vi.spyOn(validation, 'validateEmailUniqueness').mockResolvedValue();
+    vi.spyOn(validation, 'validatePhoneUniqueness').mockResolvedValue();
+    vi.spyOn(queries, 'queryUser').mockResolvedValue({
+      id: 'user-1',
+      uid: 'U-000123',
+      email: 'user@example.com',
+      phone: null,
+      name: 'User',
+      role: 'USER',
+      isVerified: true,
+      shippingAddress: '42 Example Street\nBerlin, BE, 10115\nGermany',
+      shippingCountry: 'Germany',
+      shippingRegion: 'BE',
+      shippingCity: 'Berlin',
+      shippingAddressLine1: '42 Example Street',
+      shippingAddressLine2: null,
+      postalCode: '10115',
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+    });
+
+    await userService.updateUserProfile('user-1', {
+      postalCode: '10117',
+    });
+
+    expect(updateQuery.update).toHaveBeenCalledWith({
+      shippingAddress: '42 Example Street\nBerlin, BE, 10117\nGermany',
+      shippingCountry: 'Germany',
+      shippingRegion: 'BE',
+      shippingCity: 'Berlin',
+      shippingAddressLine1: '42 Example Street',
+      shippingAddressLine2: null,
+      postalCode: '10117',
+    });
+  });
+
+  it('keeps migrated legacy profile addresses legacy when unchanged blank structured fields are submitted', async () => {
+    const userService = await loadUserService();
+    const supabase = createSupabaseMock();
+    const updateQuery = createQueryMock({
+      data: {
+        id: 'user-1',
+        uid: 'U-000123',
+        email: 'user@example.com',
+        phone: null,
+        name: 'User',
+        role: 'USER',
+        isVerified: true,
+        shippingAddress: '123 Legacy Street',
+        shippingCountry: null,
+        shippingRegion: null,
+        shippingCity: null,
+        shippingAddressLine1: '123 Legacy Street',
+        shippingAddressLine2: null,
+        postalCode: '10001',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-02T00:00:00.000Z',
+      },
+      error: null,
+    });
+
+    supabase.from.mockReturnValue(updateQuery);
+    createClientMock.mockReturnValue(supabase as unknown);
+
+    vi.spyOn(validation, 'validateEmailUniqueness').mockResolvedValue();
+    vi.spyOn(validation, 'validatePhoneUniqueness').mockResolvedValue();
+    vi.spyOn(queries, 'queryUser').mockResolvedValue({
+      id: 'user-1',
+      uid: 'U-000123',
+      email: 'user@example.com',
+      phone: null,
+      name: 'User',
+      role: 'USER',
+      isVerified: true,
+      shippingAddress: '123 Legacy Street',
+      shippingCountry: null,
+      shippingRegion: null,
+      shippingCity: null,
+      shippingAddressLine1: '123 Legacy Street',
+      shippingAddressLine2: null,
+      postalCode: null,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+    });
+
+    await userService.updateUserProfile('user-1', {
+      name: 'User',
+      shippingAddress: '123 Legacy Street',
+      shippingCountry: '',
+      shippingRegion: '',
+      shippingCity: '',
+      shippingAddressLine1: '123 Legacy Street',
+      shippingAddressLine2: '',
+      postalCode: '10001',
+    });
+
+    expect(updateQuery.update).toHaveBeenCalledWith({
+      name: 'User',
+      shippingAddress: '123 Legacy Street',
+      shippingCountry: null,
+      shippingRegion: null,
+      shippingCity: null,
+      shippingAddressLine1: '123 Legacy Street',
+      shippingAddressLine2: null,
+      postalCode: '10001',
     });
   });
 

@@ -60,6 +60,14 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+
+  :root[dir='rtl'] :where(.text-left):not([dir='ltr'], [dir='ltr'] *) {
+    text-align: right;
+  }
+
+  :root[dir='rtl'] :where(.text-right):not([dir='ltr'], [dir='ltr'] *) {
+    text-align: left;
+  }
 }
 
 @layer utilities {

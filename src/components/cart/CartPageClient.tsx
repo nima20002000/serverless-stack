@@ -9,8 +9,15 @@ import CartItem from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
+import { getPreviousChevronClass } from '@/lib/i18n/direction';
 
 export default function CartPageClient() {
+  const t = useTranslations();
+  const direction = useTextDirection();
   const router = useRouter();
   const { items, updateQuantity, removeItem, clearCart } = useCartStore();
   const total = useCartStore(selectTotal);
@@ -26,7 +33,7 @@ export default function CartPageClient() {
       setError('');
       updateQuantity(productId, quantity, variantId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not update cart');
+      setError(err instanceof Error ? err.message : t('cart.couldNotUpdate'));
     }
   };
 
@@ -40,7 +47,7 @@ export default function CartPageClient() {
   };
 
   const handleClearCart = () => {
-    if (window.confirm('Clear all items from your cart?')) {
+    if (window.confirm(t('cart.clearConfirm'))) {
       clearCart();
       setError('');
     }
@@ -56,23 +63,31 @@ export default function CartPageClient() {
               className="rounded-lg p-2 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="Back to products"
             >
-              <ArrowLeftIcon className="h-5 w-5 text-slate-700 dark:text-slate-200" />
+              <ArrowLeftIcon
+                className={`h-5 w-5 text-slate-700 dark:text-slate-200 ${getPreviousChevronClass(direction)}`}
+              />
             </Link>
             <h1 className="text-2xl font-bold text-slate-950 dark:text-white">
-              Cart
+              {t('cart.title')}
             </h1>
           </div>
 
           {items.length > 0 && (
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                {itemCount} {itemCount === 1 ? 'item' : 'items'} in your cart
+                {t('cart.itemsInCart', {
+                  count: itemCount,
+                  itemLabel:
+                    itemCount === 1
+                      ? t('cart.itemSingular')
+                      : t('cart.itemPlural'),
+                })}
               </p>
               <button
                 onClick={handleClearCart}
-                className="text-left text-sm font-medium text-red-700 transition-colors hover:text-red-800"
+                className="text-start text-sm font-medium text-red-700 transition-colors hover:text-red-800"
               >
-                Clear cart
+                {t('cart.clearCart')}
               </button>
             </div>
           )}
@@ -89,16 +104,16 @@ export default function CartPageClient() {
             <div className="mx-auto max-w-md text-center">
               <ShoppingBagIcon className="mx-auto mb-6 h-20 w-20 text-slate-300" />
               <h2 className="mb-3 text-xl font-bold text-slate-950 dark:text-white">
-                Your cart is empty
+                {t('cart.emptyTitle')}
               </h2>
               <p className="mb-8 text-slate-600 dark:text-slate-400">
-                Browse products and add items when you are ready to checkout.
+                {t('cart.emptyDescription')}
               </p>
               <Button
                 variant="primary"
                 onClick={() => router.push('/products')}
               >
-                Browse products
+                {t('cart.browseProducts')}
               </Button>
             </div>
           </div>
@@ -107,7 +122,7 @@ export default function CartPageClient() {
             <div className="lg:col-span-2">
               <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <h2 className="mb-4 border-b border-slate-200 pb-3 text-lg font-bold text-slate-950 dark:border-slate-800 dark:text-white">
-                  Items
+                  {t('cart.items')}
                 </h2>
                 <div>
                   {items.map((item) => (
@@ -126,7 +141,7 @@ export default function CartPageClient() {
                   href="/products"
                   className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 transition-colors hover:text-blue-800 dark:text-blue-300"
                 >
-                  Continue shopping
+                  {t('cart.continueShopping')}
                 </Link>
               </div>
             </div>

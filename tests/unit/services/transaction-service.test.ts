@@ -122,7 +122,14 @@ describe('transaction-service', () => {
       shippingInfo: {
         fullName: 'Test',
         phone: '+12025556789',
-        shippingAddress: 'Addr',
+        shippingCountry: 'Germany',
+        shippingRegion: 'Berlin',
+        shippingCity: 'Berlin',
+        shippingAddressLine1: 'Invalidenstrasse 117',
+        shippingAddressLine2: 'Floor 2',
+        shippingAddress:
+          'Invalidenstrasse 117\nFloor 2\nBerlin, Berlin, 10115\nGermany',
+        postalCode: '10115',
       },
     });
 
@@ -140,6 +147,14 @@ describe('transaction-service', () => {
         amount: 50,
         status: 'PENDING',
         isGuest: true,
+        shippingCountry: 'Germany',
+        shippingRegion: 'Berlin',
+        shippingCity: 'Berlin',
+        shippingAddressLine1: 'Invalidenstrasse 117',
+        shippingAddressLine2: 'Floor 2',
+        shippingAddress:
+          'Invalidenstrasse 117\nFloor 2\nBerlin, Berlin, 10115\nGermany',
+        postalCode: '10115',
       })
     );
     expect(insertedItems).toHaveLength(1);

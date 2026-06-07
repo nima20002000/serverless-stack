@@ -7,6 +7,7 @@ import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 import Image from 'next/image';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 
 interface SiteSetting {
   key: string;
@@ -19,6 +20,7 @@ export default function SiteSettingsPage() {
     logo: '',
     site_name: 'Commerce Starter',
   });
+  const [languages, setLanguages] = useState<ManagedLanguage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isE2E =
     process.env.NEXT_PUBLIC_E2E_TEST === 'true' ||
@@ -37,9 +39,15 @@ export default function SiteSettingsPage() {
       if (!isE2E) {
         setIsLoading(true);
       }
-      const response = await fetch('/api/admin/settings');
-      if (!response.ok) throw new Error('Unable to load settings');
-      const data = await response.json();
+      const [settingsResponse, languagesResponse] = await Promise.all([
+        fetch('/api/admin/settings'),
+        fetch('/api/admin/languages'),
+      ]);
+      if (!settingsResponse.ok) throw new Error('Unable to load settings');
+      if (!languagesResponse.ok)
+        throw new Error('Unable to load language settings');
+      const data = await settingsResponse.json();
+      const languageData = await languagesResponse.json();
 
       // Convert array to object
       const settingsObj: Record<string, string> = {
@@ -53,6 +61,7 @@ export default function SiteSettingsPage() {
       });
 
       setSettings(settingsObj);
+      setLanguages(languageData.languages || []);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Error Unknown');
     } finally {
@@ -69,16 +78,31 @@ export default function SiteSettingsPage() {
       setIsSaving(true);
       setError('');
 
-      const response = await fetch('/api/admin/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings }),
-      });
+      const [settingsResponse, languagesResponse] = await Promise.all([
+        fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ settings }),
+        }),
+        fetch('/api/admin/languages', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ languages }),
+        }),
+      ]);
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      if (!settingsResponse.ok) {
+        const errorData = await settingsResponse.json();
         throw new Error(errorData.error || 'Unable to save settings');
       }
+
+      if (!languagesResponse.ok) {
+        const errorData = await languagesResponse.json();
+        throw new Error(errorData.error || 'Unable to save languages');
+      }
+
+      const languageData = await languagesResponse.json();
+      setLanguages(languageData.languages || languages);
 
       setSuccessMessage('Settings saved.');
     } catch (error: unknown) {
@@ -86,6 +110,26 @@ export default function SiteSettingsPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const toggleLanguage = (code: string, isEnabled: boolean) => {
+    setLanguages((current) =>
+      current.map((language) => {
+        if (language.code !== code) return language;
+        if (language.isDefault) return { ...language, isEnabled: true };
+        return { ...language, isEnabled };
+      })
+    );
+  };
+
+  const setDefaultLanguage = (code: string) => {
+    setLanguages((current) =>
+      current.map((language) => ({
+        ...language,
+        isDefault: language.code === code,
+        isEnabled: language.code === code ? true : language.isEnabled,
+      }))
+    );
   };
 
   const handleMediaSelect = (urls: string[]) => {
@@ -240,6 +284,63 @@ export default function SiteSettingsPage() {
               <p className="text-xs text-gray-500 dark:text-slate-500 text-left">
                 Use a transparent logo with a maximum width around 200 pixels.
               </p>
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-3">
+              <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 text-left">
+                Website languages
+              </h2>
+              <p className="mt-1 text-sm text-gray-600 dark:text-slate-400 text-left">
+                Enable storefront languages and review the fallback language.
+              </p>
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300 text-left">
+                Default language changes require a catalog content migration
+                before they can be enabled.
+              </p>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-800">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-3 bg-gray-50 px-4 py-2 text-xs font-semibold uppercase text-gray-500 dark:bg-slate-900 dark:text-slate-400">
+                <span>Language</span>
+                <span>Enabled</span>
+                <span>Default</span>
+              </div>
+              {languages.map((language) => (
+                <div
+                  key={language.code}
+                  className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-t border-gray-200 px-4 py-3 dark:border-slate-800"
+                >
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                      {language.label}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-slate-400">
+                      {language.nativeLabel} · {language.code.toUpperCase()} ·{' '}
+                      {language.direction.toUpperCase()}
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={language.isEnabled}
+                    disabled={language.isDefault}
+                    onChange={(event) =>
+                      toggleLanguage(language.code, event.target.checked)
+                    }
+                    aria-label={`Enable ${language.label}`}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  <input
+                    type="radio"
+                    name="default-language"
+                    checked={language.isDefault}
+                    disabled={!language.isDefault}
+                    onChange={() => setDefaultLanguage(language.code)}
+                    aria-label={`Set ${language.label} as default`}
+                    className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 

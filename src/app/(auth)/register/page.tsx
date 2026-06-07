@@ -164,7 +164,7 @@ export default function RegisterPage() {
 
   return (
     <Card>
-      <h2 className="text-2xl font-bold text-center mb-6 text-slate-950">
+      <h2 className="mb-6 text-center text-2xl font-bold text-slate-950 dark:text-white">
         Create account
       </h2>
 
@@ -258,11 +258,11 @@ export default function RegisterPage() {
       </form>
 
       <div className="mt-6 text-center">
-        <p className="text-slate-600">
+        <p className="text-slate-600 dark:text-slate-300">
           Already have an account?{' '}
           <Link
             href="/login"
-            className="text-slate-950 hover:text-slate-700 font-medium underline-offset-4 hover:underline"
+            className="font-medium text-slate-950 underline-offset-4 hover:text-slate-700 hover:underline dark:text-white dark:hover:text-slate-200"
           >
             Sign in
           </Link>

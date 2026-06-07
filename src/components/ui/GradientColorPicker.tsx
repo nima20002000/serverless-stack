@@ -242,15 +242,15 @@ export default function GradientColorPicker({
                   onClick={() => handleTemplateChange(template.id)}
                   className={`flex items-center gap-3 p-2 rounded-lg border transition-colors ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/50'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-500'
                   }`}
                 >
-                  <span className="text-xs text-gray-700">
+                  <span className="text-xs text-gray-700 dark:text-slate-300">
                     {template.label}
                   </span>
                   <span
-                    className="flex-1 h-10 rounded-md border border-gray-200"
+                    className="flex-1 h-10 rounded-md border border-gray-200 dark:border-slate-700"
                     style={{ background: template.build(baseColor) }}
                   />
                 </button>

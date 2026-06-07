@@ -27,6 +27,12 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { formatPrice } from '@/lib/utils/format';
 import { siteLocale } from '@/config/site';
+import {
+  DEFAULT_SWATCH_CROP,
+  SWATCH_CROP_LIMITS,
+  getVariantSwatchStyle,
+  normalizeVariantSwatchCrop,
+} from '@/lib/variant-swatch';
 
 interface VariantManagerProps {
   variants: Variant[];
@@ -34,7 +40,9 @@ interface VariantManagerProps {
   editingVariantId: string | null;
   variantForm: VariantFormData;
   variantMedia: MediaItem[];
+  productMedia?: MediaItem[];
   onVariantFormChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSetVariantForm: React.Dispatch<React.SetStateAction<VariantFormData>>;
   onAddOrUpdate: () => void;
   onEdit: (variant: Variant) => void;
   onDelete: (variantId: string) => void;
@@ -173,7 +181,9 @@ export default function VariantManager({
   editingVariantId,
   variantForm,
   variantMedia,
+  productMedia = [],
   onVariantFormChange,
+  onSetVariantForm,
   onAddOrUpdate,
   onEdit,
   onDelete,
@@ -185,6 +195,9 @@ export default function VariantManager({
   hasVariantsError,
 }: VariantManagerProps) {
   const [showVariantMediaBrowser, setShowVariantMediaBrowser] = useState(false);
+  const [swatchImageStatusByUrl, setSwatchImageStatusByUrl] = useState<
+    Record<string, 'loaded' | 'error'>
+  >({});
 
   // Drag and drop sensors - includes TouchSensor for mobile
   // Mobile/tablet: Requires press-and-hold (500ms) to activate drag, preventing scroll conflicts
@@ -250,6 +263,70 @@ export default function VariantManager({
 
     onSetVariantMedia(remaining);
   };
+
+  const swatchImageOptions = [...productMedia, ...variantMedia]
+    .filter((media) => media.type === 'IMAGE')
+    .filter(
+      (media, index, items) =>
+        items.findIndex((item) => item.url === media.url) === index
+    );
+
+  const handleSelectSwatchImage = (url: string) => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchImageUrl: url,
+      swatchCrop: normalizeVariantSwatchCrop(prev.swatchCrop),
+    }));
+  };
+
+  const handleSwatchImageLoad = (url: string, image: HTMLImageElement) => {
+    if (image.naturalWidth === 0 || image.naturalHeight === 0) {
+      handleSwatchImageError(url);
+      return;
+    }
+
+    setSwatchImageStatusByUrl((prev) => {
+      if (prev[url] === 'loaded') return prev;
+      return { ...prev, [url]: 'loaded' };
+    });
+  };
+
+  const handleSwatchImageError = (url: string) => {
+    setSwatchImageStatusByUrl((prev) => {
+      if (prev[url] === 'error') return prev;
+      return { ...prev, [url]: 'error' };
+    });
+  };
+
+  const handleClearSwatch = () => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchImageUrl: '',
+      swatchCrop: DEFAULT_SWATCH_CROP,
+    }));
+  };
+
+  const handleSwatchCropChange = (field: 'x' | 'y' | 'zoom', value: string) => {
+    onSetVariantForm((prev) => ({
+      ...prev,
+      swatchCrop: normalizeVariantSwatchCrop({
+        ...prev.swatchCrop,
+        [field]: Number(value),
+      }),
+    }));
+  };
+
+  const selectedSwatchStatus = variantForm.swatchImageUrl
+    ? swatchImageStatusByUrl[variantForm.swatchImageUrl]
+    : undefined;
+  const selectedSwatchImageUrl = variantForm.swatchImageUrl || '';
+  const selectedSwatchImagePending =
+    Boolean(variantForm.swatchImageUrl) && selectedSwatchStatus === undefined;
+  const selectedSwatchImageFailed =
+    Boolean(variantForm.swatchImageUrl) && selectedSwatchStatus === 'error';
+  const selectedSwatchImageBlocksSave =
+    Boolean(variantForm.swatchImageUrl) && selectedSwatchStatus !== 'loaded';
+  const swatchWarningId = 'variant-swatch-image-warning';
 
   return (
     <div>
@@ -392,6 +469,219 @@ export default function VariantManager({
             />
           </div>
 
+          <div className="border-t border-blue-200 dark:border-blue-900/50 pt-3 sm:pt-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+              <div className="flex-1">
+                <h4 className="mb-2 text-start text-xs font-medium text-gray-900 dark:text-slate-100 sm:text-sm">
+                  Variant swatch image
+                </h4>
+                <p className="mb-3 text-start text-[10px] text-gray-600 dark:text-slate-400 sm:text-xs">
+                  Select an existing product or variant image for the storefront
+                  swatch.
+                </p>
+
+                {swatchImageOptions.length > 0 ? (
+                  <div
+                    className="grid grid-cols-[repeat(auto-fit,minmax(3.25rem,1fr))] gap-2"
+                    role="group"
+                    aria-label="Variant swatch image choices"
+                  >
+                    {swatchImageOptions.map((media) => {
+                      const isSelected =
+                        variantForm.swatchImageUrl === media.url;
+                      const imageStatus = swatchImageStatusByUrl[media.url];
+                      const imageFailed = imageStatus === 'error';
+                      const swatchLabel = media.alt
+                        ? `Use ${media.alt} as swatch`
+                        : `Use image ${media.url.split('/').pop() || 'swatch'} as swatch`;
+
+                      return (
+                        <button
+                          key={`${media.id}-${media.url}`}
+                          type="button"
+                          onClick={() => handleSelectSwatchImage(media.url)}
+                          className={`relative aspect-square min-h-[3.25rem] overflow-hidden rounded border-2 bg-gray-100 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-slate-800 dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-950 ${
+                            isSelected
+                              ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+                              : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:hover:border-slate-500'
+                          } ${
+                            imageFailed
+                              ? 'border-red-500 bg-red-50 dark:border-rose-400 dark:bg-rose-950/30'
+                              : ''
+                          }`}
+                          aria-label={swatchLabel}
+                          aria-pressed={isSelected}
+                          aria-describedby={
+                            isSelected && selectedSwatchImageBlocksSave
+                              ? swatchWarningId
+                              : undefined
+                          }
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element -- Admin media thumbnails need native load/error events for broken-image validation. */}
+                          <img
+                            src={media.url}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className={`h-full w-full object-cover ${
+                              imageFailed ? 'opacity-20' : ''
+                            }`}
+                            onLoad={(event) =>
+                              handleSwatchImageLoad(
+                                media.url,
+                                event.currentTarget
+                              )
+                            }
+                            onError={() => handleSwatchImageError(media.url)}
+                          />
+                          {isSelected && (
+                            <span className="absolute inset-x-1 bottom-1 rounded bg-blue-600 px-1 py-0.5 text-[10px] font-medium text-white dark:bg-blue-500">
+                              Selected
+                            </span>
+                          )}
+                          {imageFailed && (
+                            <span className="absolute inset-0 flex items-center justify-center px-1 text-center text-[10px] font-medium text-red-700 dark:text-rose-200">
+                              Image failed
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="rounded border border-dashed border-gray-300 p-3 text-start text-xs text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                    Add product or variant images before choosing a swatch.
+                  </p>
+                )}
+              </div>
+
+              <div className="w-full rounded border border-gray-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950 lg:w-64">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div
+                    className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-slate-700 dark:bg-slate-800"
+                    style={getVariantSwatchStyle(
+                      variantForm.swatchImageUrl,
+                      variantForm.swatchCrop
+                    )}
+                    aria-label="Variant swatch preview"
+                    role="img"
+                    aria-describedby={
+                      selectedSwatchImageBlocksSave
+                        ? swatchWarningId
+                        : undefined
+                    }
+                  >
+                    {selectedSwatchImageUrl && (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- Hidden preload probe keeps the crop preview background while surfacing load failures. */}
+                        <img
+                          src={selectedSwatchImageUrl}
+                          alt=""
+                          className="sr-only"
+                          onLoad={(event) =>
+                            handleSwatchImageLoad(
+                              selectedSwatchImageUrl,
+                              event.currentTarget
+                            )
+                          }
+                          onError={() =>
+                            handleSwatchImageError(selectedSwatchImageUrl)
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 text-start">
+                    <p className="text-xs font-medium text-gray-900 dark:text-slate-100">
+                      Swatch preview
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleClearSwatch}
+                      disabled={!variantForm.swatchImageUrl}
+                      className="mt-2 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                </div>
+
+                {selectedSwatchImagePending && (
+                  <p
+                    id={swatchWarningId}
+                    className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-start text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+                    role="status"
+                  >
+                    Checking selected swatch image before saving.
+                  </p>
+                )}
+
+                {selectedSwatchImageFailed && (
+                  <p
+                    id={swatchWarningId}
+                    className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-start text-xs text-red-700 dark:border-rose-700 dark:bg-rose-950/40 dark:text-rose-200"
+                    role="alert"
+                  >
+                    Selected swatch image could not be loaded. Choose a
+                    different image or clear the swatch before saving.
+                  </p>
+                )}
+
+                {variantForm.swatchImageUrl && (
+                  <div className="mt-4 space-y-3">
+                    <label className="block text-start text-xs text-gray-600 dark:text-slate-400">
+                      Horizontal crop
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.x.min}
+                        max={SWATCH_CROP_LIMITS.x.max}
+                        step="1"
+                        value={variantForm.swatchCrop.x}
+                        onChange={(event) =>
+                          handleSwatchCropChange('x', event.target.value)
+                        }
+                        disabled={selectedSwatchImageBlocksSave}
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                    <label className="block text-start text-xs text-gray-600 dark:text-slate-400">
+                      Vertical crop
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.y.min}
+                        max={SWATCH_CROP_LIMITS.y.max}
+                        step="1"
+                        value={variantForm.swatchCrop.y}
+                        onChange={(event) =>
+                          handleSwatchCropChange('y', event.target.value)
+                        }
+                        disabled={selectedSwatchImageBlocksSave}
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                    <label className="block text-start text-xs text-gray-600 dark:text-slate-400">
+                      Zoom
+                      <input
+                        type="range"
+                        min={SWATCH_CROP_LIMITS.zoom.min}
+                        max={SWATCH_CROP_LIMITS.zoom.max}
+                        step="0.1"
+                        value={variantForm.swatchCrop.zoom}
+                        onChange={(event) =>
+                          handleSwatchCropChange('zoom', event.target.value)
+                        }
+                        disabled={selectedSwatchImageBlocksSave}
+                        className="mt-1 w-full"
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-2 justify-start">
             <Button
               type="button"
@@ -407,6 +697,7 @@ export default function VariantManager({
               variant="primary"
               size="sm"
               onClick={onAddOrUpdate}
+              disabled={disabled || selectedSwatchImageBlocksSave}
               className="w-full sm:w-auto order-1 sm:order-2 text-sm"
             >
               {editingVariantId ? 'Update' : 'Add'}

@@ -1,0 +1,201 @@
+# NIM-148 Coverage Matrix
+
+Date: 2026-06-06
+Branch: `linear-comprehensive-feature-goals`
+
+This matrix audits implemented `serverless-stack` behavior against authored test
+coverage. It distinguishes behavior coverage from file/line coverage. A feature
+is only marked covered when tests prove a user-visible behavior, data side
+effect, authorization boundary, or failure path.
+
+## Evidence Commands
+
+Run from the repo root:
+
+```bash
+git status --short --branch
+find src/app -path '*/api/*' -type f | sort
+find tests -path 'tests/node_modules' -prune -o -type f \( -name '*.test.ts' -o -name '*.test.tsx' -o -name '*.spec.ts' -o -name '*.spec.tsx' \) -print | sort
+sed -n '1,220p' tests/vitest.config.unit.ts
+sed -n '1,220p' tests/vitest.config.integration.ts
+cat tests/package.json
+```
+
+## Coverage Status Legend
+
+- Strong: unit/integration/E2E coverage proves meaningful behavior and side
+  effects.
+- Partial: useful tests exist, but an important route, UI path, side effect, or
+  failure mode is missing or only mocked.
+- Missing: implemented behavior has no meaningful test coverage found.
+- Manual-only: not reasonably automated today; reason must be explicit.
+
+## High-Priority Findings
+
+1. Hook test execution was backfilled by `NIM-153`: the unit config now includes
+   `unit/**/*.test.tsx`, and `tests/unit/hooks/*.test.tsx` run under
+   `npm run test:unit`.
+2. Admin product/category/tag API route coverage is weaker than service
+   coverage. Admin users, transactions, stats, and settings have direct route
+   tests; admin products/categories/tags mostly rely on service tests and E2E
+   happy paths.
+3. Several integration tests directly mutate Supabase to prove schema/data
+   behavior. Those are useful, but they do not always prove the app service/API
+   contract that production code uses.
+4. Payment E2E uses mock payment mode. Unit tests cover Stripe/PayPal webhook
+   validation, amount/currency mismatch, and idempotency, but real sandbox
+   provider E2E is not covered and should remain manual or a separately
+   configured contract suite.
+5. Admin UI and account E2E is strongest for auth, users, transactions,
+   dashboard, customer profile/password/account history, products/categories,
+   promo codes, settings, and variant images. Admin products/categories/tags
+   still need direct API route unit coverage.
+
+## Matrix
+
+| Feature area                            | Implemented behavior evidence                                                                                                                                                                                                 | Meaningful tests found                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Status  | Gaps and needed coverage                                                                                                                                                                                                                                                     |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth login/register/session             | `src/lib/auth/options.ts`, `src/app/api/auth/login/route.ts`, `src/app/api/auth/register/route.ts`, `src/services/auth-service.ts`, `src/services/user-service.ts`                                                            | `tests/unit/api/auth/login.test.ts`, `tests/unit/api/auth/register.test.ts`, `tests/unit/services/auth-service.test.ts`, `tests/unit/services/user-service.test.ts`, `tests/integration/auth-service.test.ts`, `tests/integration/activity-login.test.ts`, `tests/integration/activity-register.test.ts`, `tests/e2e/journeys/user-login.spec.ts`, `tests/e2e/journeys/user-registration.spec.ts`                                                                                                                    | Strong  | [Unit] NextAuth route test is mostly handler-export coverage. Add stronger session/callback behavior tests if session mapping changes.                                                                                                                                       |
+| Password/profile                        | `src/app/api/user/password/route.ts`, `src/app/api/user/profile/route.ts`, `src/components/profile/ProfileEditForm.tsx`, `src/components/profile/PasswordManagementCard.tsx`, `src/components/profile/TransactionHistory.tsx` | `tests/unit/api/user/password.test.ts`, `tests/unit/api/user/profile.test.ts`, `tests/unit/services/user-service-password.test.ts`, `tests/unit/services/user-service-validation.test.ts`, `tests/integration/activity-password.test.ts`, `tests/integration/activity-profile.test.ts`, `tests/integration/user-service.test.ts`, `tests/e2e/journeys/profile-account-management.spec.ts`                                                                                                                            | Strong  | Browser coverage now proves persisted profile edits, reload evidence, current-password failure copy, password hash change, login with the new password, and transaction history visibility against seeded Supabase state.                                                    |
+| Catalog products/categories/tags        | `src/services/product-service.ts`, `src/services/category-service.ts`, `src/services/tag-service.ts`, `src/app/products/page.tsx`, `src/app/products/[id]/page.tsx`, public product/category/tag APIs                         | `tests/unit/api/products/*.test.ts`, `tests/unit/api/categories.test.ts`, `tests/unit/api/tags.test.ts`, `tests/unit/services/product-service.test.ts`, `tests/unit/services/category-service.test.ts`, `tests/unit/services/tag-service.test.ts`, `tests/integration/product-service.test.ts`, `tests/integration/category-service.test.ts`, `tests/integration/tag-service.test.ts`, `tests/e2e/journeys/search.spec.ts`                                                                                           | Strong  | [Unit/API route] Add route-level coverage for admin product/category/tag APIs and bulk/reorder routes; current coverage is mostly service-level plus E2E happy path.                                                                                                         |
+| Localized commerce content              | `src/services/localization-service.ts`, localized product/category/media translation tables, admin language/settings controls, admin product/category translation UI, locale-aware product listing/detail APIs                | `tests/unit/lib/localized-content.test.ts`, `tests/integration/localization-service.test.ts`, `tests/e2e/journeys/admin-localized-commerce.spec.ts`                                                                                                                                                                                                                                                                                                                                                                  | Strong  | Focused tests prove validation, field fallback, Supabase persistence, admin edit UI, localized product/category storefront rendering, and locale-aware product API cache keys. SEO-specific localized metadata remains future scope under `NIM-152`.                         |
+| Search                                  | `src/services/search-service.ts`, `src/app/api/search/route.ts`, `src/components/ui/SearchBar.tsx`                                                                                                                            | `tests/unit/api/search.test.ts`, `tests/unit/services/search-service.test.ts`, `tests/integration/search-service.test.ts`, `tests/e2e/journeys/search.spec.ts`                                                                                                                                                                                                                                                                                                                                                       | Strong  | [Playwright E2E] Add coverage for empty/no-result and malformed query UI if search UX changes.                                                                                                                                                                               |
+| Cart store and UI                       | `src/store/cart-store.ts`, `src/components/cart/*`, `src/app/cart/page.tsx`                                                                                                                                                   | `tests/unit/store/cart-store.test.ts`, `tests/e2e/journeys/multi-product-cart.spec.ts`, `tests/e2e/smoke.spec.ts`, `tests/e2e/error-recovery.spec.ts`                                                                                                                                                                                                                                                                                                                                                                | Strong  | [Future feature] Cross-tab synchronization is not implemented yet and is tracked by `NIM-143`; not a current coverage gap.                                                                                                                                                   |
+| Checkout                                | `src/app/checkout/page.tsx`, `src/components/checkout/CheckoutForm.tsx`, `src/store/checkout-store.ts`, `src/app/api/transactions/create/route.ts`                                                                            | `tests/unit/store/checkout-store.test.ts`, `tests/unit/api/transactions/create-status.test.ts`, `tests/integration/transaction-service.test.ts`, `tests/e2e/journeys/guest-checkout.spec.ts`, `tests/e2e/journeys/authenticated-checkout.spec.ts`, `tests/e2e/error-recovery.spec.ts`                                                                                                                                                                                                                                | Strong  | [Playwright E2E] Payment result pages have less standalone coverage. [Manual-only/contract] Provider E2E is mocked by design; real sandbox provider checks need a safe sandbox suite.                                                                                        |
+| Transactions, Stripe, PayPal            | `src/services/transaction-service.ts`, `src/lib/payments/finalize-successful-transaction.ts`, `src/lib/stripe/client.ts`, `src/lib/paypal/client.ts`, transaction/webhook/capture APIs                                        | `tests/unit/api/transactions/*.test.ts`, `tests/unit/api/transactions/transaction-detail.test.ts`, `tests/unit/services/transaction-service.test.ts`, `tests/integration/transaction-service.test.ts`, `tests/integration/payment-verification.test.ts`, `tests/docs/payment-provider-contract-checks.md`, checkout E2E specs                                                                                                                                                                                        | Partial | App-side transaction route/webhook/capture behavior is covered. Real Stripe/PayPal sandbox provider E2E remains manual/contract-only unless safe credentials and cleanup are formalized. Mocked payment E2E must not be reported as real provider coverage.                  |
+| Promo codes                             | `src/services/promo-service.ts`, `src/app/api/promo/active/route.ts`, `src/app/api/promo/validate/route.ts`, `src/app/admin/promo-codes/page.tsx`                                                                             | `tests/unit/api/promo/active.test.ts`, `tests/unit/api/promo/validate.test.ts`, `tests/unit/services/promo-service.test.ts`, `tests/integration/promo-service.test.ts`, `tests/e2e/journeys/promo-codes.spec.ts`, `tests/e2e/journeys/admin-promo-codes.spec.ts`                                                                                                                                                                                                                                                     | Partial | [Unit/API route] Add direct admin promo API route tests for create/update/delete/toggle/error cases, or expand existing route tests if present later.                                                                                                                        |
+| Wishlist                                | `src/services/wishlist-service.ts`, `src/store/wishlist-store.ts`, `src/hooks/useWishlistSync.ts`, wishlist APIs, wishlist UI components                                                                                      | `tests/unit/api/user/wishlist*.test.ts`, `tests/unit/hooks/useWishlistSync.test.tsx`, `tests/unit/services/wishlist-service.test.ts`, `tests/unit/store/wishlist-store.test.ts`, `tests/integration/wishlist-service.test.ts`, `tests/e2e/journeys/wishlist.spec.ts`                                                                                                                                                                                                                                                 | Partial | [Playwright E2E] Add assertion for merge-on-login if not already covered end to end.                                                                                                                                                                                         |
+| Admin users/transactions/stats/settings | `src/services/admin-service.ts`, admin users/transactions/stats/settings APIs, admin pages                                                                                                                                    | `tests/unit/api/admin/users*.test.ts`, `tests/unit/api/admin/transactions*.test.ts`, `tests/unit/api/admin/stats.test.ts`, `tests/unit/api/admin/settings.test.ts`, `tests/unit/services/admin-service.test.ts`, `tests/integration/admin-service-routes.test.ts`, `tests/integration/admin-dashboard.test.ts`, `tests/integration/settings-service.test.ts`, `tests/e2e/journeys/admin-panel.spec.ts`, `tests/e2e/journeys/admin-users-transactions-dashboard.spec.ts`, `tests/e2e/journeys/admin-settings.spec.ts` | Strong  | Admin users, transactions, and dashboard E2E now seed Supabase state and assert database-backed UI. [Integration caveat] `tests/integration/admin-dashboard.test.ts` still uses mocked Supabase/query-building, so dashboard DB behavior relies on Playwright coverage.      |
+| Admin products/categories/tags          | Admin product/category/tag pages and APIs, `src/components/admin/ProductFormFields.tsx`, `src/components/admin/VariantManager.tsx`, `src/components/admin/CategorySelector.tsx`, `src/components/admin/TagInput.tsx`          | `tests/unit/services/product-service.test.ts`, `tests/unit/services/category-service.test.ts`, `tests/unit/services/tag-service.test.ts`, `tests/e2e/journeys/admin-categories-products.spec.ts`, `tests/e2e/journeys/admin-variant-images.spec.ts`                                                                                                                                                                                                                                                                  | Partial | [Unit/API route] Add direct route tests for `/api/admin/products`, `/api/admin/products/bulk`, `/api/admin/products/reorder`, `/api/admin/categories`, `/api/admin/categories/bulk`, `/api/admin/tags`, and `/api/admin/tags/[id]`.                                          |
+| Storage/media                           | `src/lib/storage/index.ts`, `src/lib/storage/adapters/r2.ts`, `src/lib/storage/validators.ts`, product media APIs, `src/components/admin/R2MediaBrowser.tsx`, `src/components/admin/MediaManager.tsx`                         | `tests/unit/lib/storage.test.ts`, `tests/unit/lib/storage-r2-adapter.test.ts`, `tests/unit/lib/storage-validators.test.ts`, `tests/integration/storage-service.test.ts`, `tests/unit/api/products/media.test.ts`, `tests/unit/api/admin/r2-browser.test.ts`, `tests/e2e/journeys/admin-variant-images.spec.ts`                                                                                                                                                                                                       | Partial | R2 browser route list/delete behavior is covered. [Playwright E2E] Admin media browser edge cases still require safe Supabase/R2 test credentials. [Integration/manual] Real R2 coverage needs test bucket config.                                                           |
+| Rate limiting                           | `src/lib/rate-limit/index.ts`, `src/lib/api/with-rate-limit.ts`, `src/proxy.ts`, middleware                                                                                                                                   | `tests/unit/middleware.test.ts`, `tests/unit/lib/rate-limit.test.ts`, `tests/unit/lib/with-rate-limit.test.ts`, `tests/integration/rate-limiting.test.ts`, `tests/integration/middleware-rate-limiting.test.ts`, `tests/e2e/error-recovery.spec.ts`                                                                                                                                                                                                                                                                  | Strong  | [Unit/Integration] Fail-open is tested, but future fallback observability work should assert warnings/admin-visible reporting under `NIM-140`.                                                                                                                               |
+| Cache/versioning                        | `src/lib/api/with-cache.ts`, `src/lib/redis/client.ts`, `src/components/providers/VersionProvider.tsx`, version API/service worker assets                                                                                     | `tests/unit/hooks/useVersionCheck.test.tsx`, `tests/unit/lib/with-cache.test.ts`, `tests/unit/lib/redis-client.test.ts`, `tests/integration/cache-busting.test.ts`, `tests/integration/cache-invalidation.test.ts`, `tests/e2e/cache-busting.spec.ts`                                                                                                                                                                                                                                                                | Partial | [Playwright E2E] Some version checks prove availability/headers more than runtime update UX.                                                                                                                                                                                 |
+| Activity logs                           | `src/services/activity-log-service.ts`, login/register/profile/password routes, checkout activity flows                                                                                                                       | `tests/unit/services/activity-log-service.test.ts`, `tests/integration/activity-*.test.ts`, `tests/utils/activity-log-assertions.ts`                                                                                                                                                                                                                                                                                                                                                                                 | Strong  | [Unit/API route or Playwright E2E] Logout activity is not strongly covered beyond service-level behavior. Add route/UI coverage if logout audit logging becomes a requirement.                                                                                               |
+| Error recovery                          | Checkout/product/payment error UI and API failure handling                                                                                                                                                                    | `tests/e2e/error-recovery.spec.ts`, route/service negative-path unit tests across auth/promo/payment/admin                                                                                                                                                                                                                                                                                                                                                                                                           | Partial | [Playwright E2E] E2E uses intercepted/mocked failures. [Unit/API route] Add focused tests when `NIM-140` adds real client error/fallback reporting endpoints.                                                                                                                |
+| SEO/static pages                        | `src/app/layout.tsx`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/lib/seo/*`, static policy pages, product metadata                                                                                                       | `tests/unit/app/sitemap.test.ts`, `tests/unit/app/robots.test.ts`, `tests/unit/lib/seo.test.ts`, `tests/unit/utils/url.test.ts`, E2E smoke/search/product navigation, cache-busting E2E indirectly                                                                                                                                                                                                                                                                                                                   | Strong  | Sitemap/robots/SEO helper behavior is covered for current non-localized output. Localization SEO remains future scope in `NIM-152`.                                                                                                                                          |
+| Email notifications                     | `src/lib/email/client.ts`, OTP email sending, buyer/admin order confirmation calls from `src/lib/payments/finalize-successful-transaction.ts`                                                                                 | `tests/unit/lib/email-client.test.ts`, `tests/unit/lib/finalize-successful-transaction.test.ts`, `tests/integration/email-service.test.ts`, `tests/docs/email-delivery-checks.md`                                                                                                                                                                                                                                                                                                                                    | Partial | Unit coverage proves rendered payloads, recipients, provider selection, skipped-recipient behavior, sanitized provider failures, and payment-finalization notification side effects. Real delivery remains sandbox-only/manual unless safe email credentials are configured. |
+| Schema, migrations, RLS, DB invariants  | `supabase/migrations/20260531190011_initial_public_schema.sql`, root migration files, RLS policies, public read grants, service-role grants, unique constraints, indexes, revenue RPCs                                        | Integration service tests indirectly exercise many constraints and relations, for example `tests/integration/product-service.test.ts`, `tests/integration/category-service.test.ts`, `tests/integration/wishlist-service.test.ts`, and `tests/integration/transaction-service.test.ts`. `tests/integration/schema-contract.test.ts` directly proves publishable-key RLS/grant behavior, core unique/check constraints, service-role-only revenue RPC behavior, and live catalog invariants.                          | Strong  | Keep future schema changes covered by direct behavior checks plus live catalog assertions. Static SQL presence alone is not behavior proof.                                                                                                                                  |
+| Hooks                                   | `src/hooks/useApiWithRateLimit.ts`, `useFormState`, `useHydration`, `useMediaManager`, `useVariantManager`, `useVersionCheck`, `useWishlistSync`                                                                              | `tests/unit/hooks/*.test.tsx` run through `tests/vitest.config.unit.ts` and prove rate-limit state, form state transitions, hydration transition, media defaults/removal, variant add/edit/delete/reorder, version cache/service-worker side effects, and wishlist unauthenticated/authenticated/merge behavior.                                                                                                                                                                                                     | Strong  | [No current hook harness gap] Keep future hook tests under `.test.ts` or `.test.tsx` so the unit config includes them.                                                                                                                                                       |
+
+## Behavior Proof Notes
+
+These notes expand the matrix's test-file citations with what the tests
+actually prove.
+
+- Auth login/register/session: unit route/service tests prove validation,
+  password checks, missing-user and wrong-password errors, UID creation, phone
+  normalization, and sanitized user return values; integration/activity tests
+  prove database inserts and activity-log side effects; Playwright login and
+  registration journeys prove user-visible auth flow, session persistence, and
+  redirects.
+- Password/profile: route and service tests prove password validation, current
+  password checks, password hashing, profile payload validation, and activity
+  logging; Playwright now proves the full browser profile edit/password
+  workflow with persisted reload evidence, useful wrong-current-password copy,
+  password-hash verification, re-login with the changed password, and seeded
+  transaction history visibility.
+- Catalog/search: service and integration tests prove CRUD constraints,
+  active/inactive filtering, category/tag relations, variant stock aggregation,
+  media/default behavior, search filtering, and error handling; E2E proves
+  search/navigation behavior.
+- Cart/checkout/transactions: store tests prove quantity/stock rules and totals;
+  API/service/integration tests prove transaction creation, item persistence,
+  status transitions, stock updates, provider references, promo fields,
+  insufficient stock, and guest/auth linking; Playwright checkout specs prove
+  user-visible checkout and database-backed completed transactions under mocked
+  payments.
+- Stripe/PayPal: webhook and capture tests prove signature/header rejection,
+  amount/currency/reference mismatch rejection, idempotent completion, and
+  provider metadata handling. They do not prove real sandbox checkout provider
+  behavior.
+- Promo codes: service/API tests prove active lookup, validation failures,
+  percent/fixed discount math, expiry, usage limits, user-specific codes, and
+  usage recording; E2E proves customer promo application and admin create/update
+  flows.
+- Wishlist: route/service/store tests prove auth guards, add/remove/count/check,
+  merge/clear, active product filtering, uniqueness/foreign-key constraints, and
+  variant-aware wishlist items; E2E proves guest and authenticated wishlist UI
+  and add-to-cart behavior.
+- Admin: route/service tests prove RBAC, pagination/filter parsing,
+  self-demotion/delete guards, transaction normalization, settings persistence,
+  and dashboard aggregation; E2E now proves admin users, transactions, and
+  dashboard workflows against seeded Supabase state, plus access and selected
+  product/category/settings/promo workflows.
+- Storage/media: storage unit tests prove provider selection, type/size
+  validation, path generation, upload/delete/list behavior under mocked or
+  configured storage; product media tests prove default promotion and variant
+  media persistence; E2E proves variant image admin persistence, not the full
+  media browser.
+- Rate limiting/cache/activity/error recovery: tests prove endpoint bucket
+  selection, 429 headers, fail-open behavior, cache hit/miss/invalidation,
+  request/client info extraction, activity-log writes, and selected browser
+  failure UI via intercepted failures.
+- SEO/static: current tests prove URL helper behavior and some runtime
+  navigation/smoke behavior; they do not directly prove sitemap, robots, or
+  structured data correctness.
+- Email notifications: unit/integration tests prove configured-provider send
+  calls and skip behavior for missing recipients/config, but not every
+  payment-finalization email side effect with sanitized template variables.
+- Schema/migrations/RLS: `tests/integration/schema-contract.test.ts` proves
+  publishable-key read access is limited to intended public catalog rows,
+  restricted tables and writes are blocked, core unique/check constraints are
+  enforced by the database, revenue RPCs are service-role-only and count only
+  completed transactions, and live catalogs contain the expected RLS, policies,
+  grants, indexes, enums, and shipping/swatch columns. Hosted Supabase
+  projects with `supabase_admin`-owned public default ACLs may require the
+  manual hardening SQL in `tests/docs/database-contract-checks.md` if the
+  migration role cannot alter that owner.
+
+## Follow-Up Coverage Work For NIM-149
+
+Created child issues under `NIM-149`:
+
+1. `NIM-153`: completed in this backfill; hook `.test.tsx` files now run in the
+   unit suite and pass.
+2. `NIM-154`: admin route coverage for products/categories/tags APIs,
+   including bulk, reorder, permission errors, invalid input, and mutation side
+   effects.
+3. `NIM-155`: completed in this backfill; admin users, transactions, and
+   dashboard E2E now assert seeded database-backed state.
+4. `NIM-156`: completed in this backfill; profile and customer account E2E now
+   covers profile edit, password change, transaction history visibility, and
+   persisted data assertions.
+5. `NIM-157`: storage/media route and browser coverage for
+   `/api/admin/r2-browser`, media-browser list/delete edge cases, and product
+   media stale/default behavior.
+6. `NIM-158`: SEO/static route tests for sitemap, robots, structured data, and
+   metadata helper behavior.
+7. `NIM-159`: payment route edge coverage for direct `/api/transactions/[id]`
+   route tests plus documented manual/contract plan for real Stripe/PayPal
+   sandbox validation.
+8. `NIM-160`: email notification behavior coverage for OTP and order
+   confirmation emails.
+9. `NIM-161`: completed in this backfill; schema, migration, RLS, grants,
+   constraints, and database invariant coverage now has a direct Supabase
+   integration contract suite.
+
+## Manual-Only Or Separately Configured Areas
+
+- Real Stripe/PayPal sandbox end-to-end payment provider flows: current E2E uses
+  `E2E_MOCK_PAYMENTS=true`. Real provider runs need dedicated sandbox accounts,
+  idempotent cleanup, and credential handling outside normal local E2E.
+- Real R2 storage integration: covered only when test R2 credentials/bucket are
+  configured. Normal local runs should not touch production storage.
+- Full production rate-limit behavior under real Upstash outages: fail-open is
+  unit/integration tested, but production outage behavior should be monitored
+  through `NIM-140` observability once implemented.
+
+## Baseline Commands
+
+Normal verification commands:
+
+```bash
+npm run test:unit
+npm run test:integration
+npm run test:e2e -- --project=chromium <focused-spec>
+npm run lint
+npm run build
+```
+
+For this audit issue, broad full-suite execution is not required. The necessary
+discovery evidence is the file inventory and config inspection listed above.

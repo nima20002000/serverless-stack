@@ -12,6 +12,11 @@ import { optimizeImage } from '@/lib/cloudflare-images-client';
 import { generateProductAltText } from '@/lib/seo/alt-text';
 import { WishlistButton } from '@/components/wishlist/WishlistButton';
 import Badge from '@/components/ui/Badge';
+import {
+  useTextDirection,
+  useTranslations,
+} from '@/components/providers/I18nProvider';
+import { getVariantSwatchStyle } from '@/lib/variant-swatch';
 
 interface Variant {
   id: string;
@@ -22,6 +27,8 @@ interface Variant {
   priceAdjust: number;
   stock: number;
   isActive: boolean;
+  swatchImageUrl?: string | null;
+  swatchCrop?: unknown;
   media?: Array<{
     id: string;
     type: 'IMAGE' | 'VIDEO';
@@ -48,6 +55,9 @@ interface ProductCardProps {
 }
 
 function ProductCard({ product }: ProductCardProps) {
+  const t = useTranslations();
+  const direction = useTextDirection();
+  const isRtl = direction === 'rtl';
   const addItem = useCartStore((state) => state.addItem);
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
@@ -91,7 +101,9 @@ function ProductCard({ product }: ProductCardProps) {
   // Get color variants for image swapping
   const colorVariants = useMemo(() => {
     return activeVariants.filter(
-      (v) => v.color && v.media && v.media.length > 0
+      (v) =>
+        (v.color || v.swatchImageUrl) &&
+        (v.swatchImageUrl || (v.media && v.media.length > 0))
     );
   }, [activeVariants]);
 
@@ -167,8 +179,10 @@ function ProductCard({ product }: ProductCardProps) {
     setSelectedVariant(nextVariant);
     if (nextVariant.media && nextVariant.media.length > 0) {
       setCurrentImage(nextVariant.media[0].url);
+    } else {
+      setCurrentImage(product.images[0] || '');
     }
-  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+  }, [hasColorVariants, currentVariantIndex, colorVariants, product.images]);
 
   // Navigate to previous color variant image
   const goToPrevVariant = useCallback(() => {
@@ -183,8 +197,10 @@ function ProductCard({ product }: ProductCardProps) {
     setSelectedVariant(prevVariant);
     if (prevVariant.media && prevVariant.media.length > 0) {
       setCurrentImage(prevVariant.media[0].url);
+    } else {
+      setCurrentImage(product.images[0] || '');
     }
-  }, [hasColorVariants, currentVariantIndex, colorVariants]);
+  }, [hasColorVariants, currentVariantIndex, colorVariants, product.images]);
 
   // Touch swipe handlers
   const onTouchStart = useCallback(
@@ -213,22 +229,29 @@ function ProductCard({ product }: ProductCardProps) {
       const isLeftSwipe = distance > minSwipeDistance;
       const isRightSwipe = distance < -minSwipeDistance;
 
-      // In RTL, left swipe = next, right swipe = previous
       if (isLeftSwipe) {
         e.preventDefault();
         e.stopPropagation();
-        goToNextVariant();
+        if (isRtl) {
+          goToPrevVariant();
+        } else {
+          goToNextVariant();
+        }
       } else if (isRightSwipe) {
         e.preventDefault();
         e.stopPropagation();
-        goToPrevVariant();
+        if (isRtl) {
+          goToNextVariant();
+        } else {
+          goToPrevVariant();
+        }
       }
 
       // Reset
       touchStartX.current = 0;
       touchEndX.current = 0;
     },
-    [hasColorVariants, goToNextVariant, goToPrevVariant]
+    [hasColorVariants, goToNextVariant, goToPrevVariant, isRtl]
   );
 
   // Calculate discounted price
@@ -260,7 +283,7 @@ function ProductCard({ product }: ProductCardProps) {
     }
 
     // Update carousel index if this is a color variant
-    if (hasColorVariants && variant.color) {
+    if (hasColorVariants && (variant.color || variant.swatchImageUrl)) {
       const variantIndex = colorVariants.findIndex((v) => v.id === variant.id);
       if (variantIndex >= 0) {
         setCurrentVariantIndex(variantIndex);
@@ -349,8 +372,8 @@ function ProductCard({ product }: ProductCardProps) {
               <div className="text-sm font-medium text-slate-400">No image</div>
             </div>
           )}
-          {/* Wishlist Button - Left side (RTL: visually on right) */}
-          <div className="absolute left-2 top-2 z-10">
+          {/* Wishlist Button */}
+          <div className="absolute start-2 top-2 z-10">
             <WishlistButton
               product={{
                 id: product.id,
@@ -370,11 +393,11 @@ function ProductCard({ product }: ProductCardProps) {
                   : null
               }
               size="md"
-              className="bg-white/90 shadow-sm backdrop-blur-sm"
+              className="bg-white/90 shadow-sm backdrop-blur-sm dark:bg-slate-950/85"
             />
           </div>
           {/* Badges */}
-          <div className="absolute top-2 right-2 flex flex-col gap-2">
+          <div className="absolute end-2 top-2 flex flex-col gap-2">
             {product.isFeatured && (
               <Badge variant="premium" size="sm">
                 Featured
@@ -425,6 +448,11 @@ function ProductCard({ product }: ProductCardProps) {
                 {colorVariants.map((variant) => {
                   const isSelected = selectedVariant?.id === variant.id;
                   const variantOutOfStock = variant.stock === 0;
+                  const imageSwatchStyle = getVariantSwatchStyle(
+                    variant.swatchImageUrl,
+                    variant.swatchCrop
+                  );
+                  const hasImageSwatch = !!variant.swatchImageUrl;
 
                   return (
                     <button
@@ -434,17 +462,23 @@ function ProductCard({ product }: ProductCardProps) {
                         if (!variantOutOfStock) handleVariantSelect(variant);
                       }}
                       disabled={variantOutOfStock}
-                      className={`relative h-6 w-6 rounded-lg border transition-all ${
+                      aria-pressed={isSelected}
+                      className={`relative h-6 w-6 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900 ${
                         isSelected
-                          ? 'border-blue-600 ring-2 ring-blue-200/70'
-                          : 'border-slate-200 hover:border-slate-300'
+                          ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
+                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
                       } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                       title={variantOutOfStock ? 'Out of stock' : variant.name}
-                      aria-label={variant.name}
+                      aria-label={`${variant.name}${variantOutOfStock ? ' (Out of stock)' : ''}`}
+                      data-testid={`product-card-swatch-${variant.id}`}
                     >
                       <span
                         className="absolute inset-0 rounded-[6px] border border-white/70"
-                        style={{ background: variant.color || '#e2e8f0' }}
+                        style={
+                          hasImageSwatch
+                            ? imageSwatchStyle
+                            : { background: variant.color || '#e2e8f0' }
+                        }
                       />
                     </button>
                   );
@@ -452,10 +486,14 @@ function ProductCard({ product }: ProductCardProps) {
               </div>
             )}
 
-            {activeVariants.some((variant) => !variant.color) && (
+            {activeVariants.some(
+              (variant) => !variant.color && !variant.swatchImageUrl
+            ) && (
               <div className="flex flex-wrap gap-1.5">
                 {activeVariants
-                  .filter((variant) => !variant.color)
+                  .filter(
+                    (variant) => !variant.color && !variant.swatchImageUrl
+                  )
                   .map((variant) => {
                     const isSelected = selectedVariant?.id === variant.id;
                     const variantOutOfStock = variant.stock === 0;
@@ -470,14 +508,16 @@ function ProductCard({ product }: ProductCardProps) {
                           if (!variantOutOfStock) handleVariantSelect(variant);
                         }}
                         disabled={variantOutOfStock}
-                        className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                        aria-pressed={isSelected}
+                        className={`px-2.5 py-1 text-xs rounded-full border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900 ${
                           isSelected
-                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-600'
+                            ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
                         } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed line-through' : 'cursor-pointer'}`}
                         title={
                           variantOutOfStock ? 'Out of stock' : variant.name
                         }
+                        aria-label={`${variant.name}${variantOutOfStock ? ' (Out of stock)' : ''}`}
                       >
                         {label}
                       </button>
@@ -516,10 +556,10 @@ function ProductCard({ product }: ProductCardProps) {
           onClick={handleAddToCart}
         >
           {isOutOfStock
-            ? 'Out of stock'
+            ? t('products.outOfStock')
             : isAdding
-              ? 'Adding...'
-              : 'Add to Cart'}
+              ? t('products.adding')
+              : t('products.addToCart')}
         </Button>
       </div>
     </div>

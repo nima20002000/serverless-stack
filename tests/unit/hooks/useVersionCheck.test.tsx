@@ -3,11 +3,34 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useVersionCheck } from '@/hooks/useVersionCheck';
 import { renderHook, waitForEffects } from '@utils/hook-utils';
 
+function createStorageMock() {
+  const store = new Map<string, string>();
+
+  return {
+    getItem: vi.fn((key: string) => store.get(key) ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store.set(key, value);
+    }),
+    removeItem: vi.fn((key: string) => {
+      store.delete(key);
+    }),
+    clear: vi.fn(() => {
+      store.clear();
+    }),
+  };
+}
+
 describe('useVersionCheck', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
     vi.useFakeTimers();
+
+    const localStorageMock = createStorageMock();
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      configurable: true,
+    });
+    vi.stubGlobal('localStorage', localStorageMock);
 
     Object.defineProperty(window, 'caches', {
       value: {
@@ -48,22 +71,18 @@ describe('useVersionCheck', () => {
     });
     vi.stubGlobal('fetch', fetchMock as any);
 
-    const reloadSpy = vi
-      .spyOn(window.location, 'reload')
-      .mockImplementation(() => {});
-
     const { unmount } = renderHook(() => useVersionCheck());
     await waitForEffects();
 
     expect(localStorage.getItem('commerce_boilerplate_build_version')).toBe(
       'build-1'
     );
-    expect(reloadSpy).not.toHaveBeenCalled();
+    expect(window.caches.delete).not.toHaveBeenCalled();
 
     unmount();
   });
 
-  it('clears caches and reloads when version changes', async () => {
+  it('clears caches and stores new version when version changes', async () => {
     localStorage.setItem('commerce_boilerplate_build_version', 'build-old');
 
     const fetchMock = vi.fn().mockResolvedValue({
@@ -79,9 +98,6 @@ describe('useVersionCheck', () => {
     vi.stubGlobal('fetch', fetchMock as any);
 
     const onUpdateAvailable = vi.fn();
-    const reloadSpy = vi
-      .spyOn(window.location, 'reload')
-      .mockImplementation(() => {});
 
     const { unmount } = renderHook(() =>
       useVersionCheck({ onUpdateAvailable })
@@ -101,7 +117,6 @@ describe('useVersionCheck', () => {
     expect(localStorage.getItem('commerce_boilerplate_build_version')).toBe(
       'build-new'
     );
-    expect(reloadSpy).toHaveBeenCalled();
 
     unmount();
   });

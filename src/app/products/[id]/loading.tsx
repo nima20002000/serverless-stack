@@ -10,9 +10,9 @@ import {
  */
 export default function ProductDetailLoading() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-slate-900">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Product Images Section */}
             <div>
@@ -51,7 +51,7 @@ export default function ProductDetailLoading() {
               </div>
 
               {/* Price */}
-              <div className="border-t border-b py-4">
+              <div className="border-y border-gray-200 py-4 dark:border-slate-800">
                 <Skeleton className="h-10 w-40" />
               </div>
 
@@ -72,7 +72,7 @@ export default function ProductDetailLoading() {
               <Skeleton className="h-12 w-full rounded-lg" />
 
               {/* Additional Info */}
-              <div className="space-y-3 pt-4 border-t">
+              <div className="space-y-3 border-t border-gray-200 pt-4 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <Skeleton variant="circular" className="w-5 h-5" />
                   <Skeleton className="h-4 w-48" />

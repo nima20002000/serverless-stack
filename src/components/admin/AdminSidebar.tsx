@@ -8,6 +8,7 @@ import {
   UsersIcon,
   ShoppingBagIcon,
   CreditCardIcon,
+  ChartBarIcon,
   Bars3Icon,
   XMarkIcon,
   FolderIcon,
@@ -27,6 +28,7 @@ const navigation: NavItem[] = [
   { name: 'Products', href: '/admin/products', icon: ShoppingBagIcon },
   { name: 'Categories', href: '/admin/categories', icon: FolderIcon },
   { name: 'Transactions', href: '/admin/transactions', icon: CreditCardIcon },
+  { name: 'Sales analytics', href: '/admin/sales', icon: ChartBarIcon },
   { name: 'Site settings', href: '/admin/settings', icon: Cog6ToothIcon },
 ];
 
@@ -39,7 +41,7 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileMenuOpen(true)}
-        className="lg:hidden fixed bottom-4 left-4 z-40 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700"
+        className="fixed bottom-4 start-4 z-40 rounded-full bg-blue-600 p-3 text-white shadow-lg transition-colors hover:bg-blue-700 lg:hidden dark:bg-slate-800 dark:hover:bg-slate-700"
         aria-label="Open admin menu"
       >
         <Bars3Icon className="w-6 h-6" />
@@ -59,11 +61,11 @@ export default function AdminSidebar() {
           w-64 flex-shrink-0
           lg:block
           ${isMobileMenuOpen ? 'block' : 'hidden'}
-          lg:relative fixed inset-y-0 left-0 z-50
+          lg:relative fixed inset-y-0 start-0 z-50
           lg:z-auto
         `}
       >
-        <nav className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-md dark:shadow-none p-4 sticky top-4 lg:top-4 mt-4 lg:mt-0 ml-4 lg:ml-0">
+        <nav className="sticky top-4 mt-4 rounded-lg bg-white p-4 shadow-md lg:top-4 lg:mt-0 lg:ms-0 ms-4 dark:border dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
           {/* Mobile Close Button */}
           <div className="lg:hidden flex justify-between items-center mb-4">
             <button
@@ -79,7 +81,7 @@ export default function AdminSidebar() {
           </div>
 
           {/* Desktop Header */}
-          <h2 className="hidden lg:block text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 text-left">
+          <h2 className="mb-4 hidden text-start text-lg font-bold text-gray-900 lg:block dark:text-slate-100">
             Admin panel Commerce Starter
           </h2>
 
@@ -93,7 +95,7 @@ export default function AdminSidebar() {
                   <Link
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg px-4 py-2.5 text-start transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-blue-600 font-medium dark:bg-slate-800 dark:text-slate-100'
                         : item.disabled

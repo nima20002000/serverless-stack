@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -11,6 +11,7 @@ import BulkActionsToolbar, {
 } from '@/components/admin/BulkActionsToolbar';
 import R2MediaBrowser from '@/components/admin/R2MediaBrowser';
 import { formatNumber } from '@/lib/utils/format';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 
 interface Category {
   id: string;
@@ -40,6 +41,10 @@ export default function CategoriesManagementPage() {
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(
     new Set()
   );
+  const [languages, setLanguages] = useState<ManagedLanguage[]>([]);
+  const [categoryTranslations, setCategoryTranslations] = useState<
+    Record<string, { name?: string; description?: string }>
+  >({});
 
   // Form state
   const [formData, setFormData] = useState({
@@ -55,10 +60,17 @@ export default function CategoriesManagementPage() {
   const fetchCategories = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/admin/categories');
+      const [response, languagesResponse] = await Promise.all([
+        fetch('/api/admin/categories'),
+        fetch('/api/admin/languages'),
+      ]);
       if (!response.ok) throw new Error('Unable to load categories');
+      if (!languagesResponse.ok)
+        throw new Error('Unable to load language settings');
       const data = await response.json();
+      const languageData = await languagesResponse.json();
       setCategories(data.categories || []);
+      setLanguages(languageData.languages || []);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Error Unknown');
       setCategories([]);
@@ -90,9 +102,28 @@ export default function CategoriesManagementPage() {
         }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Unable to save category');
+        throw new Error(data.error || 'Unable to save category');
+      }
+
+      const categoryId = editingCategory?.id || data.category?.id;
+      if (categoryId) {
+        const translationResponse = await fetch(
+          `/api/admin/categories/${categoryId}/translations`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ translations: categoryTranslations }),
+          }
+        );
+
+        if (!translationResponse.ok) {
+          const errorData = await translationResponse.json();
+          throw new Error(
+            errorData.error || 'Unable to save category translations'
+          );
+        }
       }
 
       setSuccessMessage(
@@ -108,13 +139,14 @@ export default function CategoriesManagementPage() {
         parentId: '',
         isActive: true,
       });
+      setCategoryTranslations({});
       fetchCategories();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'Error Unknown');
     }
   };
 
-  const handleEdit = (category: Category) => {
+  const handleEdit = async (category: Category) => {
     setEditingCategory(category);
     setFormData({
       name: category.name,
@@ -124,6 +156,33 @@ export default function CategoriesManagementPage() {
       parentId: category.parentId || '',
       isActive: category.isActive,
     });
+    try {
+      const response = await fetch(
+        `/api/admin/categories/${category.id}/translations`
+      );
+      if (!response.ok) throw new Error('Unable to load category translations');
+      const data = await response.json();
+      setCategoryTranslations(
+        Object.fromEntries(
+          (data.translations || []).map(
+            (translation: {
+              locale: string;
+              name: string | null;
+              description: string | null;
+            }) => [
+              translation.locale,
+              {
+                name: translation.name || '',
+                description: translation.description || '',
+              },
+            ]
+          )
+        )
+      );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error Unknown');
+      setCategoryTranslations({});
+    }
     setShowForm(true);
   };
 
@@ -160,6 +219,7 @@ export default function CategoriesManagementPage() {
       parentId: '',
       isActive: true,
     });
+    setCategoryTranslations({});
   };
 
   const handleImageSelect = (urls: string[]) => {
@@ -400,6 +460,68 @@ export default function CategoriesManagementPage() {
                 />
               </div>
 
+              {languages.filter(
+                (language) => language.isEnabled && !language.isDefault
+              ).length > 0 && (
+                <div className="space-y-4 rounded-lg border border-gray-200 p-4 dark:border-slate-800">
+                  <div className="text-left">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                      Localized category content
+                    </h3>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">
+                      Empty fields fall back to the default language.
+                    </p>
+                  </div>
+                  {languages
+                    .filter(
+                      (language) => language.isEnabled && !language.isDefault
+                    )
+                    .map((language) => {
+                      const translation =
+                        categoryTranslations[language.code] || {};
+                      return (
+                        <div key={language.code} className="space-y-3">
+                          <div className="text-left text-xs font-semibold text-gray-700 dark:text-slate-300">
+                            {language.label}
+                          </div>
+                          <input
+                            type="text"
+                            data-testid={`category-translation-${language.code}-name`}
+                            value={translation.name || ''}
+                            onChange={(event) =>
+                              setCategoryTranslations({
+                                ...categoryTranslations,
+                                [language.code]: {
+                                  ...translation,
+                                  name: event.target.value,
+                                },
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
+                            placeholder={`${language.label} name`}
+                          />
+                          <textarea
+                            data-testid={`category-translation-${language.code}-description`}
+                            value={translation.description || ''}
+                            onChange={(event) =>
+                              setCategoryTranslations({
+                                ...categoryTranslations,
+                                [language.code]: {
+                                  ...translation,
+                                  description: event.target.value,
+                                },
+                              })
+                            }
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-left dark:bg-slate-900 dark:text-slate-100"
+                            rows={2}
+                            placeholder={`${language.label} description`}
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2 text-left">
                   Image Category
@@ -531,7 +653,7 @@ export default function CategoriesManagementPage() {
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
               {rootCategories.map((category) => (
-                <>
+                <Fragment key={category.id}>
                   <tr
                     key={category.id}
                     className="hover:bg-gray-50 dark:hover:bg-slate-900/60"
@@ -660,7 +782,7 @@ export default function CategoriesManagementPage() {
                       </td>
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

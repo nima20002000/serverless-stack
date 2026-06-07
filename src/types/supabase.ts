@@ -44,6 +44,48 @@ export type Database = {
           },
         ];
       };
+      category_translations: {
+        Row: {
+          categoryId: string;
+          createdAt: string;
+          description: string | null;
+          locale: string;
+          name: string | null;
+          updatedAt: string;
+        };
+        Insert: {
+          categoryId: string;
+          createdAt?: string;
+          description?: string | null;
+          locale: string;
+          name?: string | null;
+          updatedAt?: string;
+        };
+        Update: {
+          categoryId?: string;
+          createdAt?: string;
+          description?: string | null;
+          locale?: string;
+          name?: string | null;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'category_translations_categoryId_fkey';
+            columns: ['categoryId'];
+            isOneToOne: false;
+            referencedRelation: 'categories';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'category_translations_locale_fkey';
+            columns: ['locale'];
+            isOneToOne: false;
+            referencedRelation: 'supported_languages';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
       categories: {
         Row: {
           createdAt: string;
@@ -171,6 +213,93 @@ export type Database = {
           },
         ];
       };
+      product_media_translations: {
+        Row: {
+          alt: string | null;
+          createdAt: string;
+          locale: string;
+          mediaId: string;
+          updatedAt: string;
+        };
+        Insert: {
+          alt?: string | null;
+          createdAt?: string;
+          locale: string;
+          mediaId: string;
+          updatedAt?: string;
+        };
+        Update: {
+          alt?: string | null;
+          createdAt?: string;
+          locale?: string;
+          mediaId?: string;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_media_translations_locale_fkey';
+            columns: ['locale'];
+            isOneToOne: false;
+            referencedRelation: 'supported_languages';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'product_media_translations_mediaId_fkey';
+            columns: ['mediaId'];
+            isOneToOne: false;
+            referencedRelation: 'product_media';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      product_translations: {
+        Row: {
+          createdAt: string;
+          description: string | null;
+          locale: string;
+          name: string | null;
+          productId: string;
+          seoDescription: string | null;
+          seoTitle: string | null;
+          updatedAt: string;
+        };
+        Insert: {
+          createdAt?: string;
+          description?: string | null;
+          locale: string;
+          name?: string | null;
+          productId: string;
+          seoDescription?: string | null;
+          seoTitle?: string | null;
+          updatedAt?: string;
+        };
+        Update: {
+          createdAt?: string;
+          description?: string | null;
+          locale?: string;
+          name?: string | null;
+          productId?: string;
+          seoDescription?: string | null;
+          seoTitle?: string | null;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'product_translations_locale_fkey';
+            columns: ['locale'];
+            isOneToOne: false;
+            referencedRelation: 'supported_languages';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'product_translations_productId_fkey';
+            columns: ['productId'];
+            isOneToOne: false;
+            referencedRelation: 'products';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       product_variants: {
         Row: {
           color: string | null;
@@ -185,6 +314,8 @@ export type Database = {
           size: string | null;
           sku: string | null;
           stock: number;
+          swatchCrop: Json | null;
+          swatchImageUrl: string | null;
           updatedAt: string;
         };
         Insert: {
@@ -200,6 +331,8 @@ export type Database = {
           size?: string | null;
           sku?: string | null;
           stock?: number;
+          swatchCrop?: Json | null;
+          swatchImageUrl?: string | null;
           updatedAt: string;
         };
         Update: {
@@ -215,6 +348,8 @@ export type Database = {
           size?: string | null;
           sku?: string | null;
           stock?: number;
+          swatchCrop?: Json | null;
+          swatchImageUrl?: string | null;
           updatedAt?: string;
         };
         Relationships: [
@@ -419,6 +554,81 @@ export type Database = {
         };
         Relationships: [];
       };
+      site_setting_translations: {
+        Row: {
+          createdAt: string;
+          key: string;
+          locale: string;
+          updatedAt: string;
+          value: string;
+        };
+        Insert: {
+          createdAt?: string;
+          key: string;
+          locale: string;
+          updatedAt?: string;
+          value: string;
+        };
+        Update: {
+          createdAt?: string;
+          key?: string;
+          locale?: string;
+          updatedAt?: string;
+          value?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'site_setting_translations_key_fkey';
+            columns: ['key'];
+            isOneToOne: false;
+            referencedRelation: 'site_settings';
+            referencedColumns: ['key'];
+          },
+          {
+            foreignKeyName: 'site_setting_translations_locale_fkey';
+            columns: ['locale'];
+            isOneToOne: false;
+            referencedRelation: 'supported_languages';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      supported_languages: {
+        Row: {
+          code: string;
+          createdAt: string;
+          direction: string;
+          isDefault: boolean;
+          isEnabled: boolean;
+          label: string;
+          nativeLabel: string;
+          sortOrder: number;
+          updatedAt: string;
+        };
+        Insert: {
+          code: string;
+          createdAt?: string;
+          direction?: string;
+          isDefault?: boolean;
+          isEnabled?: boolean;
+          label: string;
+          nativeLabel: string;
+          sortOrder?: number;
+          updatedAt?: string;
+        };
+        Update: {
+          code?: string;
+          createdAt?: string;
+          direction?: string;
+          isDefault?: boolean;
+          isEnabled?: boolean;
+          label?: string;
+          nativeLabel?: string;
+          sortOrder?: number;
+          updatedAt?: string;
+        };
+        Relationships: [];
+      };
       tags: {
         Row: {
           createdAt: string;
@@ -442,6 +652,48 @@ export type Database = {
           updatedAt?: string;
         };
         Relationships: [];
+      };
+      tag_translations: {
+        Row: {
+          createdAt: string;
+          description: string | null;
+          locale: string;
+          name: string | null;
+          tagId: string;
+          updatedAt: string;
+        };
+        Insert: {
+          createdAt?: string;
+          description?: string | null;
+          locale: string;
+          name?: string | null;
+          tagId: string;
+          updatedAt?: string;
+        };
+        Update: {
+          createdAt?: string;
+          description?: string | null;
+          locale?: string;
+          name?: string | null;
+          tagId?: string;
+          updatedAt?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tag_translations_locale_fkey';
+            columns: ['locale'];
+            isOneToOne: false;
+            referencedRelation: 'supported_languages';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'tag_translations_tagId_fkey';
+            columns: ['tagId'];
+            isOneToOne: false;
+            referencedRelation: 'tags';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       transaction_items: {
         Row: {
@@ -513,6 +765,11 @@ export type Database = {
           postalCode: string | null;
           promoCodeId: string | null;
           shippingAddress: string | null;
+          shippingAddressLine1: string | null;
+          shippingAddressLine2: string | null;
+          shippingCity: string | null;
+          shippingCountry: string | null;
+          shippingRegion: string | null;
           status: Database['public']['Enums']['TransactionStatus'];
           stripeChargeId: string | null;
           stripeCheckoutSessionId: string | null;
@@ -543,6 +800,11 @@ export type Database = {
           postalCode?: string | null;
           promoCodeId?: string | null;
           shippingAddress?: string | null;
+          shippingAddressLine1?: string | null;
+          shippingAddressLine2?: string | null;
+          shippingCity?: string | null;
+          shippingCountry?: string | null;
+          shippingRegion?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
           stripeChargeId?: string | null;
           stripeCheckoutSessionId?: string | null;
@@ -573,6 +835,11 @@ export type Database = {
           postalCode?: string | null;
           promoCodeId?: string | null;
           shippingAddress?: string | null;
+          shippingAddressLine1?: string | null;
+          shippingAddressLine2?: string | null;
+          shippingCity?: string | null;
+          shippingCountry?: string | null;
+          shippingRegion?: string | null;
           status?: Database['public']['Enums']['TransactionStatus'];
           stripeChargeId?: string | null;
           stripeCheckoutSessionId?: string | null;
@@ -656,6 +923,11 @@ export type Database = {
           postalCode: string | null;
           role: Database['public']['Enums']['Role'];
           shippingAddress: string | null;
+          shippingAddressLine1: string | null;
+          shippingAddressLine2: string | null;
+          shippingCity: string | null;
+          shippingCountry: string | null;
+          shippingRegion: string | null;
           uid: string;
           updatedAt: string;
         };
@@ -670,6 +942,11 @@ export type Database = {
           postalCode?: string | null;
           role?: Database['public']['Enums']['Role'];
           shippingAddress?: string | null;
+          shippingAddressLine1?: string | null;
+          shippingAddressLine2?: string | null;
+          shippingCity?: string | null;
+          shippingCountry?: string | null;
+          shippingRegion?: string | null;
           uid: string;
           updatedAt: string;
         };
@@ -684,6 +961,11 @@ export type Database = {
           postalCode?: string | null;
           role?: Database['public']['Enums']['Role'];
           shippingAddress?: string | null;
+          shippingAddressLine1?: string | null;
+          shippingAddressLine2?: string | null;
+          shippingCity?: string | null;
+          shippingCountry?: string | null;
+          shippingRegion?: string | null;
           uid?: string;
           updatedAt?: string;
         };
@@ -742,6 +1024,10 @@ export type Database = {
     Functions: {
       get_monthly_revenue: { Args: { month_start: string }; Returns: number };
       get_total_revenue: { Args: never; Returns: number };
+      update_supported_languages: {
+        Args: { payload: Json };
+        Returns: Database['public']['Tables']['supported_languages']['Row'][];
+      };
     };
     Enums: {
       activity_type:

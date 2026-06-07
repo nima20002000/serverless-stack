@@ -18,7 +18,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./setup.ts'],
-    include: ['unit/**/*.test.ts'],
+    include: ['unit/**/*.test.ts', 'unit/**/*.test.tsx'],
     exclude: ['node_modules', 'dist'],
     testTimeout: 30000,
     hookTimeout: 30000,

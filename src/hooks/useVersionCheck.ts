@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
+import { reportFallbackWarning } from '@/lib/observability/client';
 
 interface BuildVersion {
   buildId: string;
@@ -60,7 +61,13 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
       }
 
       return null;
-    } catch {
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'version-storage-read-failed',
+        primary: 'localStorage build version read',
+        fallback: 'treat as first version check',
+        reason: error instanceof Error ? error.message : 'storage unavailable',
+      });
       return null;
     }
   }, []);
@@ -70,8 +77,13 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
     try {
       localStorage.setItem(STORAGE_KEY, version);
       localStorage.removeItem(LEGACY_STORAGE_KEY);
-    } catch {
-      // localStorage might be disabled
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'version-storage-write-failed',
+        primary: 'localStorage build version write',
+        fallback: 'continue without persisted build version',
+        reason: error instanceof Error ? error.message : 'storage unavailable',
+      });
     }
   }, []);
 
@@ -81,8 +93,14 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
     try {
       const cacheNames = await caches.keys();
       await Promise.all(cacheNames.map((name) => caches.delete(name)));
-    } catch {
-      // Silently fail - caches may not be available
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'cache-clear-failed',
+        primary: 'service worker cache clear',
+        fallback: 'continue version update without cache clear',
+        reason:
+          error instanceof Error ? error.message : 'cache API unavailable',
+      });
     }
   }, []);
 
@@ -94,8 +112,14 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
       await Promise.all(registrations.map((reg) => reg.unregister()));
-    } catch {
-      // Silently fail - service workers may not be available
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'service-worker-unregister-failed',
+        primary: 'service worker unregister',
+        fallback: 'continue version update with existing registrations',
+        reason:
+          error instanceof Error ? error.message : 'service worker unavailable',
+      });
     }
   }, []);
 
@@ -124,8 +148,14 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
           });
         }
       });
-    } catch {
-      // Silently fail - service worker registration may fail in some environments
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'service-worker-register-failed',
+        primary: 'service worker register',
+        fallback: 'continue without service worker cache coordination',
+        reason:
+          error instanceof Error ? error.message : 'service worker unavailable',
+      });
     }
   }, []);
 
@@ -174,8 +204,13 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
         reloadUrl.searchParams.set('v', newVersion);
         window.location.replace(reloadUrl.toString());
       }
-    } catch {
-      // Silently fail - version check may fail due to network issues
+    } catch (error) {
+      reportFallbackWarning({
+        name: 'version-check-failed',
+        primary: 'fetch /api/version',
+        fallback: 'continue with current loaded bundle',
+        reason: error instanceof Error ? error.message : 'version check failed',
+      });
     }
   }, [
     getStoredVersion,

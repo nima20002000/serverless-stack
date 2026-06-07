@@ -8,6 +8,11 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/options';
 import { withLogging } from '@/lib/api/with-logging';
 import { withCache } from '@/lib/api/with-cache';
+import { localeHeaderName } from '@/lib/i18n/config';
+import {
+  getLocaleCacheBucket,
+  normalizeLocaleForDataFetch,
+} from '@/lib/i18n/locale-cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +32,9 @@ async function getHandler(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('perPage') || '20');
     const sortByParam = searchParams.get('sortBy');
+    const locale = normalizeLocaleForDataFetch(
+      searchParams.get('locale') || req.headers.get(localeHeaderName)
+    );
 
     // Validate sortBy parameter
     let sortBy: ProductSortOption = 'newest';
@@ -37,7 +45,7 @@ async function getHandler(req: NextRequest) {
       sortBy = sortByParam as ProductSortOption;
     }
 
-    const result = await getActiveProducts({ page, perPage, sortBy });
+    const result = await getActiveProducts({ page, perPage, sortBy, locale });
 
     // Serialize Decimal prices to numbers and ensure discount fields are included
     const serializedProducts = result.data.map(
@@ -144,7 +152,11 @@ export const GET = withLogging(
       const page = req.nextUrl.searchParams.get('page') || '1';
       const perPage = req.nextUrl.searchParams.get('perPage') || '20';
       const sortBy = req.nextUrl.searchParams.get('sortBy') || 'newest';
-      return `products:active:page:${page}:limit:${perPage}:sort:${sortBy}`;
+      const locale = getLocaleCacheBucket(
+        req.nextUrl.searchParams.get('locale') ||
+          req.headers.get(localeHeaderName)
+      );
+      return `products:active:page:${page}:limit:${perPage}:sort:${sortBy}:locale:${locale}`;
     },
     3600 // 60 minutes (1 hour)
   ),

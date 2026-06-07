@@ -23,6 +23,11 @@ interface Transaction {
   phone: string;
   email: string | null;
   shippingAddress: string;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string | null;
   createAccount: boolean;
   user: {

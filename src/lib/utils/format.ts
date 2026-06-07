@@ -1,33 +1,62 @@
 import { siteLocale } from '@/config/site';
+import { formatCurrencyAmount } from '@/lib/utils/money';
+import type { SiteCurrencyDisplay } from '@/config/site';
 
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat(siteLocale.locale, {
-    style: 'currency',
-    currency: siteLocale.currency,
-  }).format(price);
+type FormatPriceOptions = {
+  currency?: string;
+  locale?: string;
+  currencyDisplay?: SiteCurrencyDisplay;
+  minimumFractionDigits?: number;
+  maximumFractionDigits?: number;
+};
+
+type FormatNumberOptions = {
+  locale?: string;
+};
+
+type FormatDateOptions = Intl.DateTimeFormatOptions & {
+  locale?: string;
+};
+
+export function formatPrice(
+  price: number,
+  options: FormatPriceOptions = {}
+): string {
+  return formatCurrencyAmount(price, options);
 }
 
-export function formatNumber(value: number): string {
-  return new Intl.NumberFormat(siteLocale.locale).format(value);
+export function formatNumber(
+  value: number,
+  options: FormatNumberOptions = {}
+): string {
+  return new Intl.NumberFormat(options.locale || siteLocale.locale).format(
+    value
+  );
 }
 
 export function formatDate(
   value: Date | string | number,
-  options: Intl.DateTimeFormatOptions = {}
+  options: FormatDateOptions = {}
 ): string {
-  return new Intl.DateTimeFormat(siteLocale.locale, {
+  const { locale, ...dateOptions } = options;
+
+  return new Intl.DateTimeFormat(locale || siteLocale.locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     timeZone: siteLocale.timeZone,
-    ...options,
+    ...dateOptions,
   }).format(new Date(value));
 }
 
-export function formatDateTime(value: Date | string | number): string {
+export function formatDateTime(
+  value: Date | string | number,
+  options: FormatDateOptions = {}
+): string {
   return formatDate(value, {
     hour: '2-digit',
     minute: '2-digit',
+    ...options,
   });
 }
 

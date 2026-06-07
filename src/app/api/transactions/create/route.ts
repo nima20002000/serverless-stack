@@ -22,6 +22,12 @@ import { getAppBaseUrl } from '@/lib/utils/url';
 import { isValidPhoneNumber, normalizePhoneNumber } from '@/lib/utils/text';
 import { getPaymentOrderLabel } from '@/lib/payments/provider-labels';
 import { normalizePaymentProvider } from '@/lib/payments/providers';
+import { validateShippingAddress } from '@/lib/shipping-address';
+import {
+  defaultLocale,
+  isSupportedLocale,
+  localeHeaderName,
+} from '@/lib/i18n/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +36,10 @@ async function postHandler(req: NextRequest) {
   const startTime = Date.now();
   // Extract client info for storing in transaction
   const { ipAddress, userAgent } = getClientInfo(req);
+  const headerLocale = req.headers.get(localeHeaderName);
+  const checkoutLocale = isSupportedLocale(headerLocale)
+    ? headerLocale
+    : defaultLocale;
 
   try {
     const session = await getServerSession(authOptions);
@@ -168,14 +178,33 @@ async function postHandler(req: NextRequest) {
     }
 
     // Validate shipping address (both logged-in and guest users)
-    const { shippingAddress, postalCode, createAccount } = shippingInfo;
+    const {
+      shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      postalCode,
+      createAccount,
+    } = shippingInfo;
+    const shippingAddressResult = validateShippingAddress({
+      shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      postalCode,
+    });
 
-    if (!shippingAddress) {
+    if (!shippingAddressResult.valid) {
       return NextResponse.json(
-        { error: 'Please enter a shipping address.' },
+        { error: shippingAddressResult.error },
         { status: 400 }
       );
     }
+    const normalizedShippingAddress = shippingAddressResult.address;
 
     // Validate phone format
     finalPhone = normalizePhoneNumber(finalPhone);
@@ -442,8 +471,13 @@ async function postHandler(req: NextRequest) {
         fullName: finalFullName,
         phone: finalPhone,
         email: finalEmail,
-        shippingAddress,
-        postalCode: postalCode || undefined,
+        shippingAddress: normalizedShippingAddress.shippingAddress,
+        shippingCountry: normalizedShippingAddress.shippingCountry,
+        shippingRegion: normalizedShippingAddress.shippingRegion,
+        shippingCity: normalizedShippingAddress.shippingCity,
+        shippingAddressLine1: normalizedShippingAddress.shippingAddressLine1,
+        shippingAddressLine2: normalizedShippingAddress.shippingAddressLine2,
+        postalCode: normalizedShippingAddress.postalCode || undefined,
         createAccount: createAccount && !session, // Only for guest users
       },
       // Include client info for tracking
@@ -459,8 +493,13 @@ async function postHandler(req: NextRequest) {
     if (session?.user) {
       // Always update shipping info
       await updateUserShippingInfo(session.user.id, {
-        shippingAddress,
-        postalCode: postalCode || undefined,
+        shippingAddress: normalizedShippingAddress.shippingAddress,
+        shippingCountry: normalizedShippingAddress.shippingCountry,
+        shippingRegion: normalizedShippingAddress.shippingRegion,
+        shippingCity: normalizedShippingAddress.shippingCity,
+        shippingAddressLine1: normalizedShippingAddress.shippingAddressLine1,
+        shippingAddressLine2: normalizedShippingAddress.shippingAddressLine2,
+        postalCode: normalizedShippingAddress.postalCode || undefined,
       });
 
       // Update profile with new contact info if user filled in null fields
@@ -549,6 +588,7 @@ async function postHandler(req: NextRequest) {
             checkoutSessionId: stripeSession.id,
             paymentIntentId: stripePaymentIntentId,
             currency: stripeCurrency.toUpperCase(),
+            locale: checkoutLocale,
           },
         })
         .eq('id', transaction.id);
@@ -602,6 +642,7 @@ async function postHandler(req: NextRequest) {
             provider: 'PAYPAL',
             orderId: paypalOrder.id,
             currency: paypalCurrency,
+            locale: checkoutLocale,
           },
         })
         .eq('id', transaction.id);

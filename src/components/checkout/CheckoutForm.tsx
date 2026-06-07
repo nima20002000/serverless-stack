@@ -12,7 +12,9 @@ import {
   isValidPhoneNumber,
   isValidName,
 } from '@/lib/utils/text';
+import { validateShippingAddress } from '@/lib/shipping-address';
 import { useCheckoutStore } from '@/store/checkout-store';
+import { useTranslations } from '@/components/providers/I18nProvider';
 
 interface CheckoutFormProps {
   session: Session | null;
@@ -21,6 +23,11 @@ interface CheckoutFormProps {
     phone: string;
     email: string;
     shippingAddress: string;
+    shippingCountry: string;
+    shippingRegion: string;
+    shippingCity: string;
+    shippingAddressLine1: string;
+    shippingAddressLine2: string;
     postalCode: string;
   }) => void;
   isProcessing: boolean;
@@ -37,6 +44,7 @@ export default function CheckoutForm({
   formRef,
   compact = false,
 }: CheckoutFormProps) {
+  const t = useTranslations();
   const {
     formData: savedFormData,
     setFormData: saveFormData,
@@ -47,6 +55,11 @@ export default function CheckoutForm({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState('');
+  const [shippingCountry, setShippingCountry] = useState('');
+  const [shippingRegion, setShippingRegion] = useState('');
+  const [shippingCity, setShippingCity] = useState('');
+  const [shippingAddressLine1, setShippingAddressLine1] = useState('');
+  const [shippingAddressLine2, setShippingAddressLine2] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [formError, setFormError] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -86,14 +99,26 @@ export default function CheckoutForm({
         setEmail(session.user.email || '');
 
         setShippingAddress(savedFormData.shippingAddress || '');
+        setShippingCountry(savedFormData.shippingCountry || '');
+        setShippingRegion(savedFormData.shippingRegion || '');
+        setShippingCity(savedFormData.shippingCity || '');
+        setShippingAddressLine1(savedFormData.shippingAddressLine1 || '');
+        setShippingAddressLine2(savedFormData.shippingAddressLine2 || '');
         setPostalCode(savedFormData.postalCode || '');
 
         try {
           const response = await fetch('/api/user/profile');
           if (response.ok) {
             const data = await response.json();
-            if (data.shippingAddress) setShippingAddress(data.shippingAddress);
-            if (data.postalCode) setPostalCode(data.postalCode);
+            setShippingAddress(data.shippingAddress ?? '');
+            setShippingCountry(data.shippingCountry ?? '');
+            setShippingRegion(data.shippingRegion ?? '');
+            setShippingCity(data.shippingCity ?? '');
+            setShippingAddressLine1(
+              data.shippingAddressLine1 ?? data.shippingAddress ?? ''
+            );
+            setShippingAddressLine2(data.shippingAddressLine2 ?? '');
+            setPostalCode(data.postalCode ?? '');
           }
         } catch (error) {
           console.error('Error loading shipping data:', error);
@@ -106,6 +131,16 @@ export default function CheckoutForm({
         if (savedFormData.email) setEmail(savedFormData.email);
         if (savedFormData.shippingAddress)
           setShippingAddress(savedFormData.shippingAddress);
+        if (savedFormData.shippingCountry)
+          setShippingCountry(savedFormData.shippingCountry);
+        if (savedFormData.shippingRegion)
+          setShippingRegion(savedFormData.shippingRegion);
+        if (savedFormData.shippingCity)
+          setShippingCity(savedFormData.shippingCity);
+        if (savedFormData.shippingAddressLine1)
+          setShippingAddressLine1(savedFormData.shippingAddressLine1);
+        if (savedFormData.shippingAddressLine2)
+          setShippingAddressLine2(savedFormData.shippingAddressLine2);
         if (savedFormData.postalCode) setPostalCode(savedFormData.postalCode);
       }
 
@@ -125,6 +160,11 @@ export default function CheckoutForm({
       phone,
       email,
       shippingAddress,
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
       postalCode,
     });
   }, [
@@ -132,6 +172,11 @@ export default function CheckoutForm({
     phone,
     email,
     shippingAddress,
+    shippingCountry,
+    shippingRegion,
+    shippingCity,
+    shippingAddressLine1,
+    shippingAddressLine2,
     postalCode,
     hasLoadedSavedData,
     saveFormData,
@@ -142,25 +187,37 @@ export default function CheckoutForm({
     setFormError('');
 
     if (!fullName.trim()) {
-      setFormError('Please enter your full name.');
+      setFormError(t('checkout.enterFullName'));
       return;
     }
 
     if (fullName.trim() && !isValidName(fullName)) {
-      setFormError(
-        'Name can contain letters, spaces, hyphens, periods, and apostrophes.'
-      );
+      setFormError(t('checkout.invalidName'));
       return;
     }
 
     const normalizedPhone = normalizePhoneNumber(phone);
     if (!phone.trim() || !isValidPhoneNumber(normalizedPhone)) {
-      setFormError('Please enter a valid phone number.');
+      setFormError(t('checkout.invalidPhone'));
       return;
     }
 
-    if (!shippingAddress.trim()) {
-      setFormError('Please enter a shipping address.');
+    const shippingAddressResult = validateShippingAddress({
+      shippingCountry,
+      shippingRegion,
+      shippingCity,
+      shippingAddressLine1,
+      shippingAddressLine2,
+      postalCode,
+      shippingAddress,
+    });
+
+    if (!shippingAddressResult.valid) {
+      setFormError(
+        shippingAddressResult.error.includes('country')
+          ? t('validation.shippingCountry')
+          : t('validation.addressLine1')
+      );
       return;
     }
 
@@ -168,18 +225,29 @@ export default function CheckoutForm({
       fullName,
       phone: normalizedPhone,
       email,
-      shippingAddress,
-      postalCode,
+      shippingAddress: shippingAddressResult.address.shippingAddress,
+      shippingCountry: shippingAddressResult.address.shippingCountry,
+      shippingRegion: shippingAddressResult.address.shippingRegion,
+      shippingCity: shippingAddressResult.address.shippingCity,
+      shippingAddressLine1: shippingAddressResult.address.shippingAddressLine1,
+      shippingAddressLine2: shippingAddressResult.address.shippingAddressLine2,
+      postalCode: shippingAddressResult.address.postalCode,
     });
   };
 
   if (!_hasHydrated || (isLoadingProfile && session)) {
     if (compact) {
-      return <div className="text-center py-8 text-slate-500">Loading...</div>;
+      return (
+        <div className="text-center py-8 text-slate-500">
+          {t('common.loading')}
+        </div>
+      );
     }
     return (
       <Card className="mt-6">
-        <div className="text-center py-8 text-slate-500">Loading...</div>
+        <div className="text-center py-8 text-slate-500">
+          {t('common.loading')}
+        </div>
       </Card>
     );
   }
@@ -188,17 +256,6 @@ export default function CheckoutForm({
   const hasProfileName = !!(isLoggedIn && initialProfileData.name);
   const hasProfilePhone = !!(isLoggedIn && initialProfileData.phone);
   const hasProfileEmail = !!(isLoggedIn && initialProfileData.email);
-
-  const textareaClassName = [
-    'w-full min-h-[96px] px-4 py-2',
-    'text-slate-900 text-sm text-start placeholder:text-slate-400',
-    'bg-white border border-slate-200 rounded-lg',
-    'focus:outline-none focus:border-slate-400 focus:ring-4 focus:ring-slate-100/80',
-    'transition-all duration-200 ease-out',
-    'disabled:opacity-50 disabled:cursor-not-allowed',
-    'dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500',
-    'dark:focus:border-slate-500 dark:focus:ring-slate-700/60',
-  ].join(' ');
 
   const formContent = (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
@@ -211,7 +268,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="fullName"
-          label="Full name *"
+          label={t('checkout.fullName')}
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -222,11 +279,17 @@ export default function CheckoutForm({
         />
         {hasProfileName && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your name, go to{' '}
+            {
+              t('checkout.profileNameHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profileNameHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
@@ -235,7 +298,7 @@ export default function CheckoutForm({
         <Input
           id="phone"
           name="phone"
-          label="Phone number *"
+          label={t('checkout.phone')}
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
@@ -247,11 +310,17 @@ export default function CheckoutForm({
         />
         {hasProfilePhone && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your phone number, go to{' '}
+            {
+              t('checkout.profilePhoneHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profilePhoneHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
@@ -259,7 +328,7 @@ export default function CheckoutForm({
       <div>
         <Input
           id="email"
-          label="Email (optional)"
+          label={t('checkout.email')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -269,38 +338,87 @@ export default function CheckoutForm({
         />
         {hasProfileEmail && (
           <p className="text-sm text-slate-500 text-start mt-2">
-            To change your email, go to{' '}
+            {
+              t('checkout.profileEmailHint', {
+                profileLink: t('checkout.profileLink'),
+              }).split(t('checkout.profileLink'))[0]
+            }
             <Link href="/profile" className="underline hover:text-slate-700">
-              your profile
+              {t('checkout.profileLink')}
             </Link>
-            .
+            {t('checkout.profileEmailHint', {
+              profileLink: t('checkout.profileLink'),
+            }).split(t('checkout.profileLink'))[1] ?? ''}
           </p>
         )}
       </div>
 
       <div>
-        <label
-          htmlFor="shippingAddress"
-          className="block text-sm font-medium text-slate-700 text-start mb-2"
-        >
-          Shipping address *
-        </label>
-        <textarea
-          id="shippingAddress"
-          value={shippingAddress}
-          onChange={(e) => setShippingAddress(e.target.value)}
-          rows={3}
-          className={`${textareaClassName} resize-none`}
+        <Input
+          id="shippingCountry"
+          label={t('checkout.country')}
+          type="text"
+          value={shippingCountry}
+          onChange={(e) => setShippingCountry(e.target.value)}
           required
           dir="auto"
-          autoComplete="street-address"
+          autoComplete="country-name"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          id="shippingCity"
+          label={t('checkout.city')}
+          type="text"
+          value={shippingCity}
+          onChange={(e) => setShippingCity(e.target.value)}
+          dir="auto"
+          autoComplete="address-level2"
+        />
+        <Input
+          id="shippingRegion"
+          label={t('checkout.region')}
+          type="text"
+          value={shippingRegion}
+          onChange={(e) => setShippingRegion(e.target.value)}
+          dir="auto"
+          autoComplete="address-level1"
+        />
+      </div>
+
+      <div>
+        <Input
+          id="shippingAddressLine1"
+          label={t('checkout.addressLine1')}
+          type="text"
+          value={shippingAddressLine1}
+          onChange={(e) => {
+            setShippingAddressLine1(e.target.value);
+            setShippingAddress(e.target.value);
+          }}
+          required
+          dir="auto"
+          autoComplete="address-line1"
+        />
+      </div>
+
+      <div>
+        <Input
+          id="shippingAddressLine2"
+          label={t('checkout.addressLine2')}
+          type="text"
+          value={shippingAddressLine2}
+          onChange={(e) => setShippingAddressLine2(e.target.value)}
+          dir="auto"
+          autoComplete="address-line2"
         />
       </div>
 
       <div>
         <Input
           id="postalCode"
-          label="Postal code (optional)"
+          label={t('checkout.postalCodeOptional')}
           type="text"
           value={postalCode}
           onChange={(e) => setPostalCode(e.target.value.slice(0, 32))}
@@ -311,9 +429,9 @@ export default function CheckoutForm({
         />
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-        <p className="text-sm text-amber-800 text-start">
-          Shipping and tax are calculated by the configured fulfillment setup.
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/25">
+        <p className="text-start text-sm text-amber-800 dark:text-amber-200">
+          {t('checkout.fulfillmentNotice')}
         </p>
       </div>
 
@@ -325,7 +443,7 @@ export default function CheckoutForm({
           isLoading={isProcessing}
           disabled={isProcessing}
         >
-          Continue to payment
+          {t('checkout.continueToPayment')}
         </Button>
       )}
     </form>
@@ -335,8 +453,8 @@ export default function CheckoutForm({
 
   return (
     <Card className="mt-6">
-      <h2 className="text-lg font-bold text-slate-900 text-start mb-4 border-b border-slate-100 pb-3">
-        Shipping information
+      <h2 className="mb-4 border-b border-slate-100 pb-3 text-start text-lg font-bold text-slate-900 dark:border-slate-800 dark:text-white">
+        {t('checkout.shippingInformation')}
       </h2>
       {formContent}
     </Card>

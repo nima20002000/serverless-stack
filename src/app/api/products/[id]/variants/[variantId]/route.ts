@@ -8,6 +8,14 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+function isVariantSwatchValidationError(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.startsWith('Variant swatch image must reference') ||
+      error.message.startsWith('Variant swatch crop'))
+  );
+}
+
 export async function PUT(
   req: NextRequest,
   {
@@ -22,8 +30,18 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, sku, color, size, material, priceAdjust, stock, isActive } =
-      body;
+    const {
+      name,
+      sku,
+      color,
+      size,
+      material,
+      priceAdjust,
+      stock,
+      isActive,
+      swatchImageUrl,
+      swatchCrop,
+    } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -48,6 +66,8 @@ export async function PUT(
       priceAdjust: priceAdjust || 0,
       stock,
       isActive,
+      swatchImageUrl,
+      swatchCrop,
     });
 
     return NextResponse.json({ variant });
@@ -58,7 +78,7 @@ export async function PUT(
         error:
           error instanceof Error ? error.message : 'Unable to update product',
       },
-      { status: 500 }
+      { status: isVariantSwatchValidationError(error) ? 400 : 500 }
     );
   }
 }

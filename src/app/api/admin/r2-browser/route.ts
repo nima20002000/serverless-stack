@@ -6,6 +6,22 @@ import { log } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_MAX_KEYS = 100;
+const MAX_KEYS_LIMIT = 1000;
+
+function parseMaxKeys(maxKeysParam: string | null) {
+  if (maxKeysParam === null) {
+    return DEFAULT_MAX_KEYS;
+  }
+
+  const maxKeys = Number(maxKeysParam);
+  if (!Number.isInteger(maxKeys) || maxKeys < 1 || maxKeys > MAX_KEYS_LIMIT) {
+    return null;
+  }
+
+  return maxKeys;
+}
+
 /**
  * GET /api/admin/r2-browser
  * List objects in R2 storage
@@ -23,7 +39,13 @@ export async function GET(req: NextRequest) {
     const prefix = searchParams.get('prefix') || undefined;
     const delimiter = searchParams.get('delimiter') || undefined;
     const maxKeysParam = searchParams.get('maxKeys');
-    const maxKeys = maxKeysParam ? parseInt(maxKeysParam) : 100;
+    const maxKeys = parseMaxKeys(maxKeysParam);
+    if (maxKeys === null) {
+      return NextResponse.json(
+        { error: `maxKeys must be an integer between 1 and ${MAX_KEYS_LIMIT}` },
+        { status: 400 }
+      );
+    }
     const continuationToken =
       searchParams.get('continuationToken') || undefined;
 

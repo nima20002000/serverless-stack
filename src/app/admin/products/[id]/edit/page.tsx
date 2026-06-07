@@ -1,16 +1,26 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, use, useMemo } from 'react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/admin/Breadcrumbs';
 import ProductFormFields from '@/components/admin/ProductFormFields';
+import LocalizedProductFields, {
+  type ProductMediaTranslationDraft,
+  type ProductTranslationDraft,
+  type TagTranslationDraft,
+} from '@/components/admin/LocalizedProductFields';
 import MediaManager from '@/components/admin/MediaManager';
 import VariantManager from '@/components/admin/VariantManager';
 import { useMediaManager } from '@/hooks/useMediaManager';
 import { useVariantManager } from '@/hooks/useVariantManager';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
+import {
+  createProductFormSnapshot,
+  isProductFormDirty,
+  type ProductFormSnapshot,
+} from '@/lib/admin/product-form-dirty';
 import type {
   ProductFormData,
   Tag,
@@ -18,6 +28,7 @@ import type {
   Variant,
 } from '@/types/product-admin';
 import { toast } from '@/store/toast-store';
+import type { ManagedLanguage } from '@/lib/i18n/localized-content';
 
 interface EditProductPageProps {
   params: Promise<{ id: string }>;
@@ -54,9 +65,33 @@ async function readErrorMessage(
   return text || fallbackMessage;
 }
 
+function getSavedTranslationMedia(
+  productLevelMedia: MediaItem[],
+  variants: Variant[]
+): MediaItem[] {
+  const mediaById = new Map<string, MediaItem>();
+
+  for (const mediaItem of productLevelMedia) {
+    if (!mediaItem.id.startsWith('new-')) {
+      mediaById.set(mediaItem.id, mediaItem);
+    }
+  }
+
+  for (const variant of variants) {
+    for (const mediaItem of variant.media || []) {
+      if (!mediaItem.id.startsWith('new-')) {
+        mediaById.set(mediaItem.id, mediaItem);
+      }
+    }
+  }
+
+  return Array.from(mediaById.values()).sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0)
+  );
+}
+
 export default function EditProductPage({ params }: EditProductPageProps) {
   const { id } = useUnwrappedParams(params);
-  const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
@@ -69,11 +104,29 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     categoryId: null,
   });
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
+  const [languages, setLanguages] = useState<ManagedLanguage[]>([]);
+  const [translations, setTranslations] = useState<
+    Record<string, ProductTranslationDraft>
+  >({});
+  const [initialTranslations, setInitialTranslations] = useState<
+    Record<string, ProductTranslationDraft>
+  >({});
+  const [mediaTranslations, setMediaTranslations] =
+    useState<ProductMediaTranslationDraft>({});
+  const [initialMediaTranslations, setInitialMediaTranslations] =
+    useState<ProductMediaTranslationDraft>({});
+  const [tagTranslations, setTagTranslations] = useState<TagTranslationDraft>(
+    {}
+  );
+  const [initialTagTranslations, setInitialTagTranslations] =
+    useState<TagTranslationDraft>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [originalVariants, setOriginalVariants] = useState<Variant[]>([]);
+  const [initialSnapshot, setInitialSnapshot] =
+    useState<ProductFormSnapshot | null>(null);
 
   // Media management (product-level)
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
@@ -92,8 +145,19 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       const data = await response.json();
       const product = data.product;
-
-      setFormData({
+      const [languagesResponse, translationsResponse] = await Promise.all([
+        fetch('/api/admin/languages'),
+        fetch(`/api/admin/products/${id}/translations`),
+      ]);
+      if (!languagesResponse.ok) {
+        throw new Error('Unable to load language settings');
+      }
+      if (!translationsResponse.ok) {
+        throw new Error('Unable to load product translations');
+      }
+      const languageData = await languagesResponse.json();
+      const translationData = await translationsResponse.json();
+      const nextFormData = {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
@@ -103,24 +167,74 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         isFeatured: product.isFeatured || false,
         isActive: product.isActive,
         categoryId: product.categoryId || null,
-      });
+      };
+
+      setFormData(nextFormData);
+      setLanguages(languageData.languages || []);
+      const nextTranslations = Object.fromEntries(
+        (translationData.translations || []).map(
+          (translation: ProductTranslationDraft & { locale: string }) => [
+            translation.locale,
+            {
+              name: translation.name || '',
+              description: translation.description || '',
+              seoTitle: translation.seoTitle || '',
+              seoDescription: translation.seoDescription || '',
+            },
+          ]
+        )
+      );
+      setTranslations(nextTranslations);
+      setInitialTranslations(nextTranslations);
+      const nextMediaTranslations: ProductMediaTranslationDraft = {};
+      for (const translation of translationData.mediaTranslations || []) {
+        nextMediaTranslations[translation.mediaId] = {
+          ...(nextMediaTranslations[translation.mediaId] || {}),
+          [translation.locale]: { alt: translation.alt || '' },
+        };
+      }
+      setMediaTranslations(nextMediaTranslations);
+      setInitialMediaTranslations(nextMediaTranslations);
 
       // Load existing media (product-level only, not variant media)
+      let nextProductMedia: MediaItem[] = [];
       if (product.media) {
-        const productMediaItems = product.media.filter(
-          (m: MediaItem) => !m.variantId
-        );
-        productMedia.setMedia(productMediaItems);
+        nextProductMedia = product.media.filter((m: MediaItem) => !m.variantId);
       }
+      productMedia.setMedia(nextProductMedia);
 
       // Load existing tags
+      let nextSelectedTags: Tag[] = [];
       if (product.tags) {
-        setSelectedTags(product.tags);
+        nextSelectedTags = product.tags;
       }
+      setSelectedTags(nextSelectedTags);
+      const nextTagTranslations: TagTranslationDraft = {};
+      await Promise.all(
+        nextSelectedTags.map(async (tag) => {
+          const tagResponse = await fetch(
+            `/api/admin/tags/${tag.id}/translations`
+          );
+          if (!tagResponse.ok) return;
+
+          const tagData = await tagResponse.json();
+          nextTagTranslations[tag.id] = Object.fromEntries(
+            (tagData.translations || []).map(
+              (translation: { locale: string; name?: string | null }) => [
+                translation.locale,
+                { name: translation.name || '' },
+              ]
+            )
+          );
+        })
+      );
+      setTagTranslations(nextTagTranslations);
+      setInitialTagTranslations(nextTagTranslations);
 
       // Load existing variants with their media (sorted by order)
+      let nextVariants: Variant[] = [];
       if (product.variants) {
-        const formattedVariants = product.variants
+        nextVariants = product.variants
           .sort((a: Variant, b: Variant) => (a.order ?? 0) - (b.order ?? 0))
           .map((v: Variant) => ({
             id: v.id,
@@ -134,10 +248,27 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             order: v.order ?? 0,
             isActive: v.isActive,
             media: v.media || [],
+            swatchImageUrl: v.swatchImageUrl || null,
+            swatchCrop: v.swatchCrop || null,
           }));
-        variantManager.setVariants(formattedVariants);
-        setOriginalVariants(formattedVariants); // Store original state for comparison
       }
+      variantManager.setVariants(nextVariants);
+      setOriginalVariants(nextVariants); // Store original state for comparison
+
+      setInitialSnapshot(
+        createProductFormSnapshot({
+          formData: nextFormData,
+          selectedTags: nextSelectedTags,
+          productMedia: nextProductMedia,
+          variants: nextVariants,
+          variantDraft: {
+            showVariantForm: false,
+            editingVariantId: null,
+            form: variantManager.variantForm,
+            media: [],
+          },
+        })
+      );
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Unable to load product';
@@ -181,6 +312,40 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const currentSnapshot = useMemo(
+    () =>
+      createProductFormSnapshot({
+        formData,
+        selectedTags,
+        productMedia: productMedia.media,
+        variants: variantManager.variants,
+        variantDraft: {
+          showVariantForm: variantManager.showVariantForm,
+          editingVariantId: variantManager.editingVariantId,
+          form: variantManager.variantForm,
+          media: variantManager.variantMedia,
+        },
+      }),
+    [
+      formData,
+      productMedia.media,
+      selectedTags,
+      variantManager.editingVariantId,
+      variantManager.showVariantForm,
+      variantManager.variantForm,
+      variantManager.variantMedia,
+      variantManager.variants,
+    ]
+  );
+  const unsavedChangesGuard = useUnsavedChangesGuard({
+    isDirty:
+      isProductFormDirty(initialSnapshot, currentSnapshot) ||
+      JSON.stringify(translations) !== JSON.stringify(initialTranslations) ||
+      JSON.stringify(mediaTranslations) !==
+        JSON.stringify(initialMediaTranslations) ||
+      JSON.stringify(tagTranslations) !==
+        JSON.stringify(initialTagTranslations),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,8 +437,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         v.id.startsWith('variant-')
       );
 
-      // Helper: Check if variant properties changed
-      const variantPropsChanged = (
+      // Helper: Check if non-swatch variant properties changed
+      const variantBasePropsChanged = (
         current: (typeof existingVariants)[0],
         original: (typeof originalVariants)[0] | undefined
       ) => {
@@ -287,6 +452,18 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           current.priceAdjust !== original.priceAdjust ||
           current.stock !== original.stock ||
           current.isActive !== original.isActive
+        );
+      };
+
+      const variantSwatchPropsChanged = (
+        current: (typeof existingVariants)[0],
+        original: (typeof originalVariants)[0] | undefined
+      ) => {
+        if (!original) return Boolean(current.swatchImageUrl);
+        return (
+          current.swatchImageUrl !== original.swatchImageUrl ||
+          JSON.stringify(current.swatchCrop || null) !==
+            JSON.stringify(original.swatchCrop || null)
         );
       };
 
@@ -308,7 +485,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Update changed variants using batch API (single request instead of N parallel requests)
       const variantsToUpdate = existingVariants.filter((variant) => {
         const original = originalVariants.find((v) => v.id === variant.id);
-        return variantPropsChanged(variant, original);
+        return variantBasePropsChanged(variant, original);
       });
 
       if (variantsToUpdate.length > 0) {
@@ -518,6 +695,111 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         }
       }
 
+      const swatchVariantsToUpdate = variantManager.variants.filter(
+        (variant) => {
+          const realVariantId = variantIdMapping[variant.id] || variant.id;
+          if (!realVariantId) return false;
+          if (variant.id.startsWith('variant-')) {
+            return Boolean(variant.swatchImageUrl);
+          }
+
+          const original = originalVariants.find((v) => v.id === variant.id);
+          return variantSwatchPropsChanged(variant, original);
+        }
+      );
+
+      if (swatchVariantsToUpdate.length > 0) {
+        const swatchUpdateResponse = await fetch(
+          `/api/products/${id}/variants`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              variants: swatchVariantsToUpdate.map((variant) => ({
+                id: variantIdMapping[variant.id] || variant.id,
+                name: variant.name,
+                sku: variant.sku || undefined,
+                color: variant.color || undefined,
+                size: variant.size || undefined,
+                material: variant.material || undefined,
+                priceAdjust: parseFloat(variant.priceAdjust),
+                stock: parseInt(variant.stock),
+                isActive: variant.isActive,
+                swatchImageUrl: variant.swatchImageUrl || null,
+                swatchCrop: variant.swatchCrop || null,
+              })),
+            }),
+          }
+        );
+
+        if (!swatchUpdateResponse.ok) {
+          throw new Error(
+            await readErrorMessage(
+              swatchUpdateResponse,
+              'Unable to save variant swatches'
+            )
+          );
+        }
+      }
+
+      const remainingSavedMediaIds = new Set(
+        getSavedTranslationMedia(
+          productMedia.media,
+          variantManager.variants
+        ).map((mediaItem) => mediaItem.id)
+      );
+      const remainingMediaTranslations = Object.fromEntries(
+        Object.entries(mediaTranslations).filter(([mediaId]) =>
+          remainingSavedMediaIds.has(mediaId)
+        )
+      );
+
+      const translationResponse = await fetch(
+        `/api/admin/products/${id}/translations`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            translations,
+            mediaTranslations: remainingMediaTranslations,
+          }),
+        }
+      );
+
+      if (!translationResponse.ok) {
+        throw new Error(
+          await readErrorMessage(
+            translationResponse,
+            'Unable to save product translations'
+          )
+        );
+      }
+
+      await Promise.all(
+        selectedTags.map(async (tag) => {
+          const translationsForTag = tagTranslations[tag.id];
+          if (!translationsForTag) return;
+
+          const tagTranslationResponse = await fetch(
+            `/api/admin/tags/${tag.id}/translations`,
+            {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ translations: translationsForTag }),
+            }
+          );
+
+          if (!tagTranslationResponse.ok) {
+            throw new Error(
+              await readErrorMessage(
+                tagTranslationResponse,
+                'Unable to save tag translations'
+              )
+            );
+          }
+        })
+      );
+
       // Step 5: Reorder variants only if order changed
       const orderChanged =
         variantManager.variants.some((variant) => {
@@ -540,7 +822,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         });
       }
 
-      router.push('/admin/products');
+      unsavedChangesGuard.allowedPush('/admin/products');
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : 'Unable to save product';
@@ -633,6 +915,27 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           />
         </Card>
 
+        <Card padding="sm">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-100 mb-3 sm:mb-4 text-left">
+            Localized content
+          </h2>
+          <LocalizedProductFields
+            languages={languages}
+            translations={translations}
+            mediaTranslations={mediaTranslations}
+            media={getSavedTranslationMedia(
+              productMedia.media,
+              variantManager.variants
+            )}
+            selectedTags={selectedTags}
+            tagTranslations={tagTranslations}
+            disabled={isSaving}
+            onTranslationsChange={setTranslations}
+            onMediaTranslationsChange={setMediaTranslations}
+            onTagTranslationsChange={setTagTranslations}
+          />
+        </Card>
+
         {/* Variants */}
         <Card padding="sm">
           <VariantManager
@@ -641,7 +944,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             editingVariantId={variantManager.editingVariantId}
             variantForm={variantManager.variantForm}
             variantMedia={variantManager.variantMedia}
+            productMedia={productMedia.media}
             onVariantFormChange={variantManager.handleVariantFormChange}
+            onSetVariantForm={variantManager.setVariantForm}
             onAddOrUpdate={variantManager.addOrUpdateVariant}
             onEdit={variantManager.editVariant}
             onDelete={variantManager.deleteVariant}
@@ -660,7 +965,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => router.back()}
+              onClick={unsavedChangesGuard.guardedBack}
               disabled={isSaving}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
@@ -678,6 +983,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           </div>
         </Card>
       </form>
+      {unsavedChangesGuard.dialog}
     </div>
   );
 }

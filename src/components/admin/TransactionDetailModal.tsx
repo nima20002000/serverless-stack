@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Modal from '@/components/ui/Modal';
 import { formatDateTime, formatNumber, formatPrice } from '@/lib/utils/format';
+import { formatShippingAddress } from '@/lib/shipping-address';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -32,6 +33,11 @@ interface Transaction {
   phone: string;
   email: string | null;
   shippingAddress: string;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string | null;
   createAccount: boolean;
   user: {
@@ -144,6 +150,8 @@ export default function TransactionDetailModal({
     (sum, item) => sum + item.quantity,
     0
   );
+  const formattedShippingAddress =
+    formatShippingAddress(transaction) || transaction.shippingAddress;
 
   return (
     <Modal
@@ -366,8 +374,8 @@ export default function TransactionDetailModal({
             Shipping address
           </h3>
           <div className="bg-gray-50 dark:bg-slate-900/60 p-4 rounded-lg">
-            <p className="text-sm leading-relaxed">
-              {transaction.shippingAddress}
+            <p className="text-sm leading-relaxed whitespace-pre-line">
+              {formattedShippingAddress || 'Not provided'}
             </p>
             {transaction.postalCode && (
               <div className="mt-2 flex items-center gap-2">

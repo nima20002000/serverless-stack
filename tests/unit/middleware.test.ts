@@ -50,6 +50,7 @@ function mockRateLimitFailure(reset: number = Date.now() + 120000) {
 
 describe('middleware', () => {
   let proxy: (req: NextRequest) => Promise<NextResponse>;
+  let middlewareConfig: { matcher: string[] };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -60,6 +61,7 @@ describe('middleware', () => {
     // Import proxy fresh for each test
     const module = await import('@/proxy');
     proxy = module.proxy;
+    middlewareConfig = module.config;
   });
 
   afterEach(() => {
@@ -206,6 +208,21 @@ describe('middleware', () => {
 
       await proxy(req);
 
+      expect(checkRateLimitMock).toHaveBeenCalledWith(
+        req,
+        expect.objectContaining({ name: 'publicLimiter' }),
+        'public'
+      );
+    });
+
+    it('uses publicLimiter for dotted category API slugs', async () => {
+      const req = createRequest('/api/categories/summer.sale');
+      mockRateLimitSuccess();
+      getTokenMock.mockResolvedValue(null);
+
+      await proxy(req);
+
+      expect(middlewareConfig.matcher).toContain('/api/:path*');
       expect(checkRateLimitMock).toHaveBeenCalledWith(
         req,
         expect.objectContaining({ name: 'publicLimiter' }),
@@ -378,7 +395,7 @@ describe('middleware', () => {
       expect(location).toContain('http://localhost/');
     });
 
-    it('allows admin users to access admin routes', async () => {
+    it('redirects admin users on unprefixed admin routes to locale-prefixed admin routes', async () => {
       const req = createRequest('/admin/users');
       getTokenMock.mockResolvedValue({
         role: 'ADMIN',
@@ -387,7 +404,8 @@ describe('middleware', () => {
 
       const response = await proxy(req);
 
-      expect(response.status).not.toBe(307);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/en/admin/users');
     });
 
     it('redirects to login for unauthenticated profile requests', async () => {
@@ -400,16 +418,17 @@ describe('middleware', () => {
       expect(response.headers.get('Location')).toContain('/login');
     });
 
-    it('allows any authenticated user to access profile', async () => {
+    it('redirects authenticated users on unprefixed profile routes to locale-prefixed profile routes', async () => {
       const req = createRequest('/profile');
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
       const response = await proxy(req);
 
-      expect(response.status).not.toBe(307);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/en/profile');
     });
 
-    it('allows admin users to access profile', async () => {
+    it('redirects admin users on unprefixed profile routes to locale-prefixed profile routes', async () => {
       const req = createRequest('/profile');
       getTokenMock.mockResolvedValue({
         role: 'ADMIN',
@@ -418,7 +437,8 @@ describe('middleware', () => {
 
       const response = await proxy(req);
 
-      expect(response.status).not.toBe(307);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/en/profile');
     });
   });
 
@@ -445,13 +465,14 @@ describe('middleware', () => {
       expect(checkRateLimitMock).not.toHaveBeenCalled();
     });
 
-    it('does not check auth for public pages', async () => {
+    it('redirects public pages to the negotiated locale without requiring auth', async () => {
       const req = createRequest('/');
       getTokenMock.mockResolvedValue(null);
 
       const response = await proxy(req);
 
-      expect(response.status).not.toBe(307);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/en');
     });
   });
 
@@ -517,13 +538,16 @@ describe('middleware', () => {
       expect(response.headers.get('Location')).toContain('/login');
     });
 
-    it('allows authenticated user on nested profile routes', async () => {
+    it('redirects authenticated user on unprefixed nested profile routes to locale-prefixed routes', async () => {
       const req = createRequest('/profile/settings');
       getTokenMock.mockResolvedValue({ role: 'USER', email: 'user@test.com' });
 
       const response = await proxy(req);
 
-      expect(response.status).not.toBe(307);
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain(
+        '/en/profile/settings'
+      );
     });
 
     it('uses apiLimiter for /api/admin endpoints', async () => {
@@ -638,6 +662,172 @@ describe('middleware', () => {
       await proxy(req);
 
       expect(checkRateLimitMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Locale routing', () => {
+    it('uses URL locale before cookie and Accept-Language', async () => {
+      const req = createRequest('/de/cart', {
+        headers: {
+          cookie: 'site-locale=en',
+          'accept-language': 'en-US',
+        },
+      });
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.status).not.toBe(307);
+      expect(response.headers.get('Set-Cookie')).toContain('site-locale=de');
+      expect(response.headers.get('x-middleware-rewrite')).toContain('/cart');
+    });
+
+    it('does not overwrite locale cookies on API responses', async () => {
+      const req = createRequest('/api/auth/session', {
+        headers: {
+          cookie: 'site-locale=de',
+        },
+      });
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.headers.get('Set-Cookie')).toBeNull();
+    });
+
+    it('preserves explicit locale headers on API requests', async () => {
+      const req = createRequest('/api/products', {
+        headers: {
+          'x-site-locale': 'de',
+          'accept-language': 'en-US',
+        },
+      });
+      mockRateLimitSuccess();
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.headers.get('x-middleware-request-x-site-locale')).toBe(
+        'de'
+      );
+      expect(response.headers.get('Set-Cookie')).toBeNull();
+    });
+
+    it('negotiates API locale from cookie and Accept-Language when no locale header is present', async () => {
+      const req = createRequest('/api/products', {
+        headers: {
+          cookie: 'site-locale=de',
+          'accept-language': 'en-US',
+        },
+      });
+      mockRateLimitSuccess();
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.headers.get('x-middleware-request-x-site-locale')).toBe(
+        'de'
+      );
+      expect(response.headers.get('Set-Cookie')).toBeNull();
+    });
+
+    it('uses locale cookie before Accept-Language on unprefixed pages', async () => {
+      const req = createRequest('/cart', {
+        headers: {
+          cookie: 'site-locale=de',
+          'accept-language': 'en-US',
+        },
+      });
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/de/cart');
+    });
+
+    it('does not parse auth tokens for public locale redirects', async () => {
+      const req = createRequest('/products', {
+        headers: {
+          'accept-language': 'de-DE,en;q=0.8',
+        },
+      });
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe(
+        'http://localhost/de/products'
+      );
+      expect(getTokenMock).not.toHaveBeenCalled();
+    });
+
+    it('uses Accept-Language when URL and cookie locale are absent', async () => {
+      const req = createRequest('/cart', {
+        headers: {
+          'accept-language': 'de-DE,en;q=0.8',
+        },
+      });
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/de/cart');
+    });
+
+    it('treats malformed locale cookies as absent', async () => {
+      const req = createRequest('/cart', {
+        headers: {
+          cookie: 'site-locale=%',
+          'accept-language': 'de-DE,en;q=0.8',
+        },
+      });
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/de/cart');
+    });
+
+    it('falls back to the default locale for unsupported locale URLs', async () => {
+      const req = createRequest('/fr/cart', {
+        headers: {
+          'accept-language': 'de-DE',
+        },
+      });
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/en/cart');
+      expect(response.headers.get('Set-Cookie')).toContain('site-locale=en');
+    });
+
+    it('redirects regional URL locales to configured locale routes', async () => {
+      const req = createRequest('/de-DE/cart', {
+        headers: {
+          'accept-language': 'en-US',
+        },
+      });
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toBe('http://localhost/de/cart');
+      expect(response.headers.get('Set-Cookie')).toContain('site-locale=de');
+      expect(getTokenMock).not.toHaveBeenCalled();
+    });
+
+    it('protects localized admin routes without redirecting to the locale prefix first', async () => {
+      const req = createRequest('/de/admin/users');
+      getTokenMock.mockResolvedValue(null);
+
+      const response = await proxy(req);
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get('Location')).toContain('/de/login');
     });
   });
 });

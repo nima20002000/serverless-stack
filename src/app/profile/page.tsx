@@ -13,6 +13,7 @@ import TransactionHistory from '@/components/profile/TransactionHistory';
 import ProfileSkeleton from '@/components/profile/ProfileSkeleton';
 import { useFormState } from '@/hooks/useFormState';
 import { formatDate } from '@/lib/utils/format';
+import { formatShippingAddress } from '@/lib/shipping-address';
 
 interface UserProfile {
   id: string;
@@ -21,6 +22,11 @@ interface UserProfile {
   email: string | null;
   phone: string | null;
   shippingAddress: string | null;
+  shippingCountry: string | null;
+  shippingRegion: string | null;
+  shippingCity: string | null;
+  shippingAddressLine1: string | null;
+  shippingAddressLine2: string | null;
   postalCode: string | null;
   role: string;
   createdAt: string;
@@ -38,6 +44,13 @@ interface Transaction {
   isGuest: boolean;
   transactionCode: string;
   createdAt: string;
+  shippingAddress?: string | null;
+  shippingCountry?: string | null;
+  shippingRegion?: string | null;
+  shippingCity?: string | null;
+  shippingAddressLine1?: string | null;
+  shippingAddressLine2?: string | null;
+  postalCode?: string | null;
   items: {
     id: string;
     quantity: number;
@@ -142,6 +155,11 @@ export default function ProfilePage() {
       email: string;
       phone: string;
       shippingAddress: string;
+      shippingCountry: string;
+      shippingRegion: string;
+      shippingCity: string;
+      shippingAddressLine1: string;
+      shippingAddressLine2: string;
       postalCode: string;
     }) => {
       editFormActions.setIsSubmitting(true);
@@ -199,10 +217,13 @@ export default function ProfilePage() {
     return null;
   }
 
+  const profileShippingAddress =
+    formatShippingAddress(userProfile) || userProfile.shippingAddress || '';
+
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-slate-50 py-8 dark:bg-slate-950">
       <div className="max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-slate-950 mb-8">
+        <h1 className="mb-8 text-3xl font-bold text-slate-950 dark:text-white">
           Account profile
         </h1>
 
@@ -225,7 +246,7 @@ export default function ProfilePage() {
         {/* User Info Card */}
         <Card className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-slate-950">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-white">
               Profile details
             </h2>
             {!isEditingProfile && (
@@ -242,6 +263,14 @@ export default function ProfilePage() {
                 email: userProfile.email || '',
                 phone: userProfile.phone || '',
                 shippingAddress: userProfile.shippingAddress || '',
+                shippingCountry: userProfile.shippingCountry || '',
+                shippingRegion: userProfile.shippingRegion || '',
+                shippingCity: userProfile.shippingCity || '',
+                shippingAddressLine1:
+                  userProfile.shippingAddressLine1 ||
+                  userProfile.shippingAddress ||
+                  '',
+                shippingAddressLine2: userProfile.shippingAddressLine2 || '',
                 postalCode: userProfile.postalCode || '',
               }}
               onSave={handleSaveProfile}
@@ -252,50 +281,75 @@ export default function ProfilePage() {
           ) : (
             <div className="space-y-3">
               <div>
-                <span className="text-slate-600">Account ID:</span>{' '}
-                <code className="font-medium text-slate-700 bg-slate-100 px-2 py-1 rounded-lg text-sm border border-slate-200">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Account ID:
+                </span>{' '}
+                <code className="rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   {userProfile.uid}
                 </code>
               </div>
               <div>
-                <span className="text-slate-600">Name:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Name:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {userProfile.name || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Email:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Email:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.email || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Phone number:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Phone number:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.phone || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Shipping address:</span>{' '}
-                <span className="font-medium text-slate-950">
-                  {userProfile.shippingAddress || 'Not provided'}
+                <span className="text-slate-600 dark:text-slate-400">
+                  Shipping address:
+                </span>{' '}
+                <span className="whitespace-pre-line font-medium text-slate-950 dark:text-white">
+                  {profileShippingAddress || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Postal code:</span>{' '}
-                <span className="font-medium text-slate-950" dir="ltr">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Postal code:
+                </span>{' '}
+                <span
+                  className="font-medium text-slate-950 dark:text-white"
+                  dir="ltr"
+                >
                   {userProfile.postalCode || 'Not provided'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Role:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Role:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {userProfile.role === 'ADMIN' ? 'Admin' : 'User'}
                 </span>
               </div>
               <div>
-                <span className="text-slate-600">Joined:</span>{' '}
-                <span className="font-medium text-slate-950">
+                <span className="text-slate-600 dark:text-slate-400">
+                  Joined:
+                </span>{' '}
+                <span className="font-medium text-slate-950 dark:text-white">
                   {formatDate(userProfile.createdAt)}
                 </span>
               </div>
@@ -305,7 +359,7 @@ export default function ProfilePage() {
 
         {/* Password Management Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+          <h2 className="mb-4 text-xl font-semibold text-slate-950 dark:text-white">
             Password
           </h2>
 
@@ -317,7 +371,7 @@ export default function ProfilePage() {
 
         {/* Transaction History Card */}
         <Card className="mb-6">
-          <h2 className="text-xl font-semibold text-slate-950 mb-4">
+          <h2 className="mb-4 text-xl font-semibold text-slate-950 dark:text-white">
             Transactions
           </h2>
           <TransactionHistory

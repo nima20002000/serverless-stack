@@ -7,6 +7,12 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 import { vi } from 'vitest';
 
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT?: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
+
 // Load test environment variables
 config({ path: resolve(__dirname, '.env') });
 

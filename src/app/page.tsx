@@ -14,6 +14,7 @@ import CtaSection from '@/components/home/CtaSection';
 import { DEFAULT_OG_IMAGE } from '@/lib/seo/og-images';
 import { getAbsoluteUrl } from '@/lib/seo/config';
 import { siteConfig, siteLocale } from '@/config/site';
+import { getServerI18n } from '@/lib/i18n/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,13 +48,14 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
+  const { locale, t } = await getServerI18n();
   let featuredProductsRaw: Awaited<ReturnType<typeof getFeaturedProducts>> = [];
   let discountedProductsRaw: Awaited<ReturnType<typeof getDiscountedProducts>> =
     [];
 
   const [featuredResult, discountedResult] = await Promise.allSettled([
-    getFeaturedProducts({ limit: 4 }),
-    getDiscountedProducts({ limit: 4 }),
+    getFeaturedProducts({ limit: 4, locale }),
+    getDiscountedProducts({ limit: 4, locale }),
   ]);
 
   if (featuredResult.status === 'fulfilled') {
@@ -76,7 +78,7 @@ export default async function Home() {
 
   let categories: Awaited<ReturnType<typeof getCategoryTree>> = [];
   try {
-    categories = await getCategoryTree();
+    categories = await getCategoryTree({ locale });
   } catch (error) {
     console.error('Failed to load category tree for homepage', error);
   }
@@ -109,26 +111,25 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 md:grid-cols-[1.1fr_0.9fr] md:py-14 lg:px-8">
           <div className="flex flex-col justify-center">
             <div className="mb-5 flex flex-wrap gap-2">
-              <Pill tone="primary">Supabase ready</Pill>
-              <Pill tone="success">Stripe and PayPal</Pill>
-              <Pill tone="neutral">LTR and RTL capable</Pill>
+              <Pill tone="primary">{t('home.badges.supabase')}</Pill>
+              <Pill tone="success">{t('home.badges.payments')}</Pill>
+              <Pill tone="neutral">{t('home.badges.direction')}</Pill>
             </div>
             <h1 className="max-w-3xl text-4xl font-bold leading-tight text-slate-950 sm:text-5xl dark:text-white">
-              A production-minded commerce storefront for modern stacks.
+              {t('home.title')}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg dark:text-slate-300">
-              Start with a working storefront, product catalog, wishlist, cart,
-              and checkout-ready commerce flow powered by Supabase and Vercel.
+              {t('home.subtitle')}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/products">
                 <Button variant="primary" size="lg">
-                  Browse products
+                  {t('home.browseProducts')}
                 </Button>
               </Link>
               <Link href="/cart">
                 <Button variant="secondary" size="lg">
-                  View cart
+                  {t('home.viewCart')}
                 </Button>
               </Link>
             </div>
@@ -137,26 +138,24 @@ export default async function Home() {
           <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1">
             <Card className="bg-white p-6 dark:bg-slate-900">
               <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Storefront surface
+                {t('home.storefrontSurface')}
               </p>
               <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">
-                Catalog first
+                {t('home.catalogFirst')}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                The first screen sends shoppers directly into live product data
-                instead of a marketing-only landing page.
+                {t('home.catalogFirstDescription')}
               </p>
             </Card>
             <Card className="bg-white p-6 dark:bg-slate-900">
               <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Payment stack
+                {t('home.paymentStack')}
               </p>
               <p className="mt-3 text-3xl font-bold text-slate-950 dark:text-white">
-                Provider neutral
+                {t('home.providerNeutral')}
               </p>
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                Built-in commerce contracts stay aligned with Stripe and PayPal
-                while keeping copy and policies configurable.
+                {t('home.providerNeutralDescription')}
               </p>
             </Card>
           </div>
@@ -167,16 +166,16 @@ export default async function Home() {
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Pill tone="primary">Featured</Pill>
+              <Pill tone="primary">{t('home.featured')}</Pill>
               <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
-                Featured products
+                {t('home.featuredProducts')}
               </h2>
               <p className="mt-2 text-slate-600 dark:text-slate-400">
-                A compact section for curated or high-priority catalog items.
+                {t('home.featuredProductsDescription')}
               </p>
             </div>
             <Link href="/products">
-              <Button variant="secondary">View all products</Button>
+              <Button variant="secondary">{t('home.viewAllProducts')}</Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -191,17 +190,16 @@ export default async function Home() {
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <Pill tone="warning">Promotions</Pill>
+              <Pill tone="warning">{t('home.promotions')}</Pill>
               <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
-                Current offers
+                {t('home.currentOffers')}
               </h2>
               <p className="mt-2 text-slate-600 dark:text-slate-400">
-                Highlight discounted products without locking the boilerplate to
-                a specific product category.
+                {t('home.currentOffersDescription')}
               </p>
             </div>
             <Link href="/products?discounted=true">
-              <Button variant="secondary">Shop offers</Button>
+              <Button variant="secondary">{t('home.shopOffers')}</Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -215,12 +213,12 @@ export default async function Home() {
       {topCategories.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="mb-8">
-            <Pill tone="neutral">Categories</Pill>
+            <Pill tone="neutral">{t('home.categories')}</Pill>
             <h2 className="mt-4 text-3xl font-bold text-slate-950 dark:text-white">
-              Shop by category
+              {t('home.shopByCategory')}
             </h2>
             <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Use your own category tree to guide product discovery.
+              {t('home.shopByCategoryDescription')}
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -240,7 +238,7 @@ export default async function Home() {
                     </p>
                   )}
                   <span className="mt-4 inline-flex text-sm font-medium text-blue-700 dark:text-blue-300">
-                    View products
+                    {t('home.viewProducts')}
                   </span>
                 </Card>
               </Link>
