@@ -49,6 +49,29 @@ export function createTestSupabaseClient() {
 }
 
 /**
+ * Create a Supabase client that uses the browser-safe publishable key.
+ * Use this for integration tests that must prove Data API grants and RLS.
+ */
+export function createTestSupabasePublishableClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabasePublishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabasePublishableKey) {
+    throw new Error(
+      'Missing Supabase publishable credentials. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY are set in tests/.env'
+    );
+  }
+
+  return createSupabaseClient<Database>(supabaseUrl, supabasePublishableKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
  * Create a Redis client for testing
  * Uses REST API via Upstash
  */
