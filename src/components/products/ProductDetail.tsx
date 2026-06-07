@@ -176,13 +176,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
       setIsAdding(true);
 
-      // Get the first media URL or fallback to legacy images
+      const selectedVariantImage = selectedVariant?.media?.find(
+        (item) => item.type === 'IMAGE'
+      );
+      const productImage = product.media?.find((item) => item.type === 'IMAGE');
+
+      // Prefer the selected variant image shoppers are acting on, then fall
+      // back through product-level media and legacy product images.
       const imageUrl =
-        product.media && product.media.length > 0
-          ? product.media[0].url
-          : product.images && product.images.length > 0
-            ? product.images[0]
-            : '';
+        selectedVariantImage?.url ||
+        productImage?.url ||
+        (product.images && product.images.length > 0 ? product.images[0] : '');
 
       addItem(
         {

@@ -95,7 +95,8 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`relative w-12 h-12 rounded-full border-2 transition-all ${
+        aria-pressed={isSelected}
+        className={`relative w-12 h-12 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-950 ${
           isSelected
             ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
             : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
@@ -106,7 +107,7 @@ function VariantSelector({
             : { background: variant.color || '#ddd' }
         }
         title={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
-        aria-label={variant.name}
+        aria-label={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
         data-testid={`variant-swatch-${variant.id}`}
       >
         {isSelected && (
@@ -132,12 +133,14 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`px-4 py-2 rounded-2xl border-2 transition-all min-w-[4rem] ${
+        aria-pressed={isSelected}
+        className={`px-4 py-2 rounded-2xl border-2 transition-all min-w-[4rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-950 ${
           isSelected
             ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
             : 'border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed line-through' : 'cursor-pointer'}`}
         title={outOfStock ? 'Out of stock' : variant.name}
+        aria-label={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
       >
         <div className="text-sm font-medium">{variant.size}</div>
       </button>
@@ -153,11 +156,13 @@ function VariantSelector({
       <button
         onClick={() => !outOfStock && handleSelect(variant)}
         disabled={outOfStock}
-        className={`rounded-lg border-2 px-4 py-3 text-start transition-all ${
+        aria-pressed={isSelected}
+        className={`rounded-lg border-2 px-4 py-3 text-start transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-950 ${
           isSelected
             ? 'border-blue-600 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/50'
             : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
         } ${outOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        aria-label={`${variant.name}${outOfStock ? ' (Out of stock)' : ''}`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -238,11 +243,14 @@ function VariantSelector({
                 key={variant.id}
                 onClick={() => !isOutOfStock(variant) && handleSelect(variant)}
                 disabled={isOutOfStock(variant)}
-                className={`px-4 py-2 rounded-2xl border-2 transition-all ${
+                aria-pressed={selected === variant.id}
+                className={`px-4 py-2 rounded-2xl border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-950 ${
                   selected === variant.id
                     ? 'border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
                     : 'border-slate-200 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
                 } ${isOutOfStock(variant) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                title={isOutOfStock(variant) ? 'Out of stock' : variant.name}
+                aria-label={`${variant.name}${isOutOfStock(variant) ? ' (Out of stock)' : ''}`}
               >
                 {variant.material}
               </button>

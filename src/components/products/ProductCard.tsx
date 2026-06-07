@@ -462,13 +462,14 @@ function ProductCard({ product }: ProductCardProps) {
                         if (!variantOutOfStock) handleVariantSelect(variant);
                       }}
                       disabled={variantOutOfStock}
-                      className={`relative h-6 w-6 rounded-lg border transition-all ${
+                      aria-pressed={isSelected}
+                      className={`relative h-6 w-6 rounded-lg border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900 ${
                         isSelected
                           ? 'border-blue-600 ring-2 ring-blue-200/70 dark:border-blue-300 dark:ring-blue-500/40'
                           : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-500'
                       } ${variantOutOfStock ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                       title={variantOutOfStock ? 'Out of stock' : variant.name}
-                      aria-label={variant.name}
+                      aria-label={`${variant.name}${variantOutOfStock ? ' (Out of stock)' : ''}`}
                       data-testid={`product-card-swatch-${variant.id}`}
                     >
                       <span
@@ -507,7 +508,8 @@ function ProductCard({ product }: ProductCardProps) {
                           if (!variantOutOfStock) handleVariantSelect(variant);
                         }}
                         disabled={variantOutOfStock}
-                        className={`px-2.5 py-1 text-xs rounded-full border transition-all ${
+                        aria-pressed={isSelected}
+                        className={`px-2.5 py-1 text-xs rounded-full border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-blue-300 dark:focus-visible:ring-offset-slate-900 ${
                           isSelected
                             ? 'border-blue-600 bg-blue-50 text-blue-700 font-medium dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-200'
                             : 'border-slate-200 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500'
@@ -515,6 +517,7 @@ function ProductCard({ product }: ProductCardProps) {
                         title={
                           variantOutOfStock ? 'Out of stock' : variant.name
                         }
+                        aria-label={`${variant.name}${variantOutOfStock ? ' (Out of stock)' : ''}`}
                       >
                         {label}
                       </button>
