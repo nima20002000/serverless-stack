@@ -82,14 +82,15 @@ set -a; source .env; set +a
 unset UPSTASH_REDIS_REST_URL UPSTASH_REDIS_REST_TOKEN
 E2E_ALLOW_DESTRUCTIVE_DB=I_UNDERSTAND_E2E_DATABASE_IS_DESTRUCTIVE \
   npm --prefix tests run test:e2e -- --project=chromium \
+  journeys/presentation-admin-snapshots.spec.ts \
   journeys/presentation-storefront-snapshots.spec.ts \
   journeys/presentation-snapshots.spec.ts
 ```
 
 The workflow:
 
-1. seeds deterministic storefront demo data and captures the `NIM-227`
-   storefront entries;
+1. seeds deterministic storefront/admin demo data and captures the `NIM-227`
+   storefront and `NIM-228` admin entries;
 2. validates required manifest fields;
 3. ensures output paths stay inside `docs/presentation-snapshots/`;
 4. captures the `captureStatus: "sample"` entries to their manifest paths;
