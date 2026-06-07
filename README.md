@@ -8,6 +8,35 @@ This is not designed as a human page-builder or drag-and-drop customization prod
 
 ![Serverless Stack storefront](docs/assets/home.png)
 
+## What You Get
+
+- A polished storefront with catalog, product detail, cart, checkout, wishlist, profile, localization, and theme support.
+- A role-protected admin area for products, variants, media, swatches, categories, users, transactions, analytics, promo codes, and site settings.
+- Supabase schema, migrations, seed data, RLS policies, and service-layer boundaries.
+- Stripe and PayPal payment flows with webhooks, transaction records, invoices, status pages, and provider-neutral order state.
+- A documented setup path for Vercel, Supabase, payments, storage, email, cache, testing, and release readiness.
+- Presentation snapshots under `docs/presentation-snapshots/` so visitors and builders can inspect what the stack already includes.
+
+## Product Tour
+
+| Storefront                                                                                                                                      | Product Detail                                                                                                                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Storefront home with navigation and product sections](docs/presentation-snapshots/storefront/storefront-home-navigation-desktop-light-en.png) | ![Product detail page with variants, media, swatches, stock, and cart action](docs/presentation-snapshots/storefront/storefront-product-detail-variants-desktop-light-en.png) |
+
+| Cart And Checkout                                                                                                             | Customer Account                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Dark theme cart with populated items](docs/presentation-snapshots/storefront/storefront-cart-populated-desktop-dark-en.png) | ![Profile page with safe demo account details and order history](docs/presentation-snapshots/storefront/storefront-profile-order-history-desktop-light-en.png) |
+
+| Admin Dashboard                                                                                                                            | Product Operations                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Admin dashboard with commerce metrics and quick actions](docs/presentation-snapshots/admin/admin-dashboard-overview-desktop-dark-en.png) | ![Admin product list with search, status, stock, and bulk actions](docs/presentation-snapshots/admin/admin-products-list-management-desktop-light-en.png) |
+
+| Variant Swatches                                                                                                                                    | Site Settings                                                                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ![Admin variant editor with swatch image and crop controls](docs/presentation-snapshots/admin/admin-product-variants-swatches-desktop-light-en.png) | ![Admin site settings with language and RTL options](docs/presentation-snapshots/admin/admin-settings-language-theme-currency-desktop-light-en.png) |
+
+More screenshots are organized in [`docs/presentation-snapshots`](docs/presentation-snapshots/README.md), including media storage, transactions, invoices, users, analytics, fallback states, localized storefront pages, wishlist, checkout, and payment messages.
+
 ## Why It Exists
 
 Most small commerce projects do not need a hosted storefront subscription, a WordPress plugin stack, or a manually managed server. They need a real storefront foundation that can be customized quickly:
@@ -21,15 +50,15 @@ Most small commerce projects do not need a hosted storefront subscription, a Wor
 ## Feature Priorities
 
 1. Storefront and catalog
-   - Product listing, product detail pages, featured products, sale badges, categories, tags, related products, stock-aware product cards, and search entry points.
+   - Product listing, product detail pages, featured products, sale badges, categories, tags, related products, stock-aware product cards, variant media, swatches, and search entry points.
    - Client-side sorting and pagination for a responsive catalog experience.
 
 2. Cart, wishlist, and checkout
-   - Persistent cart, wishlist, quantity controls, stock checks, guest checkout, shipping contact fields, promo code support, and checkout handoff.
+   - Persistent cart, wishlist, quantity controls, stock checks, guest checkout, international shipping contact fields, promo code support, and checkout handoff.
    - Stripe Checkout and PayPal order creation/capture routes are built in.
 
 3. Admin operations
-   - Admin dashboard surfaces for products, categories, tags, users, transactions, promo codes, settings, media, and bulk operations.
+   - Admin dashboard surfaces for products, variants, swatches, media, categories, tags, users, transactions, analytics, promo codes, settings, and bulk operations.
    - Role-protected admin routes and service-layer business logic.
 
 4. Payments and order records
@@ -42,12 +71,10 @@ Most small commerce projects do not need a hosted storefront subscription, a Wor
    - Product media tables, variant-aware media support, Cloudflare R2-compatible object storage helpers, optional image resizing, and backup helper configuration.
 
 7. Accounts, email, and activity
-   - NextAuth integration, user profile workflows, password handling, OTP/email infrastructure, activity logs, and user transaction history.
+   - NextAuth integration, user profile workflows, password handling, email infrastructure, activity logs, wishlist, and user transaction history.
 
 8. Production-oriented operations
    - Vercel deployment docs, environment templates, release checklist, payment deployment checklist, logging, optional Redis cache/rate limiting, unit/integration/E2E test structure, and route/config verification scripts.
-
-![Serverless Stack product catalog](docs/assets/products.png)
 
 ## What You Need To Launch
 
@@ -263,15 +290,16 @@ tests/          Unit, integration, and E2E tests
 
 ## Documentation
 
-- `docs/FEATURES.md`
-- `docs/SETUP_CHECKLIST.md`
-- `docs/TERMINAL_SETUP.md`
-- `docs/ENVIRONMENT.md`
-- `docs/DEPLOYMENT.md`
-- `docs/RELEASE_CHECKLIST.md`
-- `docs/PAYMENT_METHOD_DEPLOYMENT.md`
-- `docs/R2_SETUP.md`
-- `tests/README.md`
+- [`docs/FEATURES.md`](docs/FEATURES.md): detailed feature inventory and screenshots.
+- [`docs/presentation-snapshots/README.md`](docs/presentation-snapshots/README.md): presentation snapshot manifest, safety rules, and capture workflow.
+- [`docs/SETUP_CHECKLIST.md`](docs/SETUP_CHECKLIST.md): setup sequence and validation checklist.
+- [`docs/TERMINAL_SETUP.md`](docs/TERMINAL_SETUP.md): terminal-first setup notes.
+- [`docs/ENVIRONMENT.md`](docs/ENVIRONMENT.md): environment variable reference.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md): Vercel deployment guide.
+- [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md): release readiness checklist.
+- [`docs/PAYMENT_METHOD_DEPLOYMENT.md`](docs/PAYMENT_METHOD_DEPLOYMENT.md): Stripe and PayPal deployment notes.
+- [`docs/R2_SETUP.md`](docs/R2_SETUP.md): Cloudflare R2-compatible media storage setup.
+- [`tests/README.md`](tests/README.md): test suite structure and commands.
 
 ## Contributing
 
