@@ -76,7 +76,7 @@
     "@storybook/addon-vitest": "^10.1.11",
     "@storybook/nextjs-vite": "^10.1.11",
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20.12.0",
+    "@types/node": "^25.9.2",
     "@types/nodemailer": "^7.0.4",
     "@types/pdfkit": "^0.13.4",
     "@types/react": "^19.2.14",
