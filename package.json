@@ -81,7 +81,7 @@
     "@types/pdfkit": "^0.13.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/uuid": "^9.0.8",
+    "@types/uuid": "^11.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
     "@vitest/browser-playwright": "^4.1.8",
